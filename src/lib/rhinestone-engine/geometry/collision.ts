@@ -1,5 +1,5 @@
-import type { Circle } from '../types/index.js';
-import { distanceBetweenPoints } from './distance.js';
+import type { Circle } from '../types/index';
+import { distanceBetweenPoints } from './distance';
 
 /**
  * Returns true when two circles overlap (i.e. they are closer together than

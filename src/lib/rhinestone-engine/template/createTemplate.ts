@@ -1,4 +1,4 @@
-import type { RhinestoneTemplate, Stone } from '../types/index.js';
+import type { RhinestoneTemplate, Stone } from '../types/index';
 
 // ─── Input type ───────────────────────────────────────────────────────────────
 

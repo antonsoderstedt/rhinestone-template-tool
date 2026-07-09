@@ -15,7 +15,7 @@
  * using any of these values in a production cut.
  */
 
-import type { StoneSizeId, StoneSizeProfile } from '../types/index.js';
+import type { StoneSizeId, StoneSizeProfile } from '../types/index';
 
 // ─── Profiles ─────────────────────────────────────────────────────────────────
 

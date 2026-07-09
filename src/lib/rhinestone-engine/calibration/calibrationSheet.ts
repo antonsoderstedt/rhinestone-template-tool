@@ -17,10 +17,10 @@
  * 5. Update the material profile's kerfCompensationMm accordingly.
  */
 
-import type { MaterialProfile, RhinestoneTemplate, Stone } from '../types/index.js';
-import { getStoneSizeProfile } from '../profiles/stoneSizes.js';
-import { getDefaultMaterialProfile } from '../profiles/materialProfiles.js';
-import { roundMm } from '../geometry/rounding.js';
+import type { MaterialProfile, RhinestoneTemplate, Stone } from '../types/index';
+import { getStoneSizeProfile } from '../profiles/stoneSizes';
+import { getDefaultMaterialProfile } from '../profiles/materialProfiles';
+import { roundMm } from '../geometry/rounding';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 

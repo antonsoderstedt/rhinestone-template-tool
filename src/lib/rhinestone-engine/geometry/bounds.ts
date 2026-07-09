@@ -1,4 +1,4 @@
-import type { Circle } from '../types/index.js';
+import type { Circle } from '../types/index';
 
 /** Axis-aligned bounding box in millimeters. */
 export interface Bounds {

@@ -1,4 +1,4 @@
-import type { Point } from '../types/index.js';
+import type { Point } from '../types/index';
 
 /**
  * Returns the Euclidean distance between two points (mm).

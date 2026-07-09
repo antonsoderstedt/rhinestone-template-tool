@@ -16,6 +16,25 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 1.5 — First UI: Manual Grid Generator (Implemented)
+
+- [x] `ManualGridGenerator` component exists at `app/components/ManualGridGenerator.tsx`
+- [x] Component uses `createStoneGridTemplate` from the engine — no engine logic duplicated in React
+- [x] Component calls `validateRhinestoneTemplate` before export
+- [x] Validation status (valid/invalid + issue list) is shown in the UI
+- [x] Export uses `createBasicSvgExport` — all holes are `<circle>` elements
+- [x] Exported SVG has `width`/`height` in `mm` units
+- [x] Exported SVG does not contain `<image>` or raster data
+- [x] Download button creates a Blob and uses `URL.createObjectURL`
+- [x] Filename is deterministic: `rhinestone-grid-{size}-{cols}x{rows}.svg`
+- [x] Copy SVG button copies the SVG string to clipboard
+- [x] Template stats (stone size, count, columns, rows) are displayed
+- [x] SVG preview renders inline using `dangerouslySetInnerHTML` on engine-only output
+- [x] No raw SVG input from the user is accepted
+- [x] `npm run build`, `typecheck`, and `lint` all pass
+
+---
+
 ## Phase 0.5 — Template Creation and Validation (Implemented)
 
 - [x] `createRhinestoneTemplate(input)` returns a `RhinestoneTemplate` with `unit: 'mm'`

@@ -1,6 +1,6 @@
-import type { RhinestoneTemplate } from '../types/index.js';
-import { circleToStoneCircle } from '../geometry/circle.js';
-import { hasCircleCollisions, findOverlappingCirclePairs } from '../geometry/collision.js';
+import type { RhinestoneTemplate } from '../types/index';
+import { circleToStoneCircle } from '../geometry/circle';
+import { hasCircleCollisions, findOverlappingCirclePairs } from '../geometry/collision';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

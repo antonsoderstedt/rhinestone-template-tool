@@ -1,10 +1,10 @@
-import type { StoneSizeId, Stone, RhinestoneTemplate } from '../types/index.js';
+import type { StoneSizeId, Stone, RhinestoneTemplate } from '../types/index';
 import {
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
-} from '../profiles/materialProfiles.js';
-import { getStoneSizeProfile } from '../profiles/stoneSizes.js';
-import { roundMm } from '../geometry/rounding.js';
+} from '../profiles/materialProfiles';
+import { getStoneSizeProfile } from '../profiles/stoneSizes';
+import { roundMm } from '../geometry/rounding';
 
 // ─── Options type ─────────────────────────────────────────────────────────────
 

@@ -8,8 +8,8 @@
  * any profile is used in a production run. See docs/CALIBRATION_PLAN.md.
  */
 
-import type { MaterialProfile, StoneSizeId } from '../types/index.js';
-import { getStoneSizeProfile } from './stoneSizes.js';
+import type { MaterialProfile, StoneSizeId } from '../types/index';
+import { getStoneSizeProfile } from './stoneSizes';
 
 // ─── Magic Flock + Cricut Maker ────────────────────────────────────────────────
 

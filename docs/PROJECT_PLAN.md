@@ -26,6 +26,17 @@
 - [ ] Preview in-browser
 - [ ] Download Cricut-ready SVG
 
+### Phase 1.5 — First UI: Manual Grid Generator (Implemented)
+- [x] `ManualGridGenerator` React component (`app/components/ManualGridGenerator.tsx`)
+- [x] Uses `createStoneGridTemplate` from the engine — no duplicated logic in the component
+- [x] Runs `validateRhinestoneTemplate` before export — shows validation status in UI
+- [x] Exports via `createBasicSvgExport` — Cricut-safe SVG, mm dimensions, no rasterization
+- [x] Download button (Blob + `URL.createObjectURL`)
+- [x] Copy SVG button (Clipboard API)
+- [x] Deterministic filename: `rhinestone-grid-{size}-{cols}x{rows}.svg`
+- [x] Template stats: stone size, count, columns, rows
+- [x] SVG preview inline
+
 ### Phase 3 — SVG/Logo Input
 - [ ] Accept user-uploaded SVG
 - [ ] Parse and normalize input SVG paths

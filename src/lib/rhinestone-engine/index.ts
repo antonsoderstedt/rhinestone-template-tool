@@ -20,14 +20,14 @@ export type {
   MaterialProfile,
   RhinestoneTemplate,
   ExportOptions,
-} from './types/index.js';
+} from './types/index';
 
 // Stone size profiles
 export {
   STONE_SIZE_PROFILES,
   getStoneSizeProfile,
   assertStoneSizeProfile,
-} from './profiles/stoneSizes.js';
+} from './profiles/stoneSizes';
 
 // Material profiles
 export {
@@ -37,31 +37,31 @@ export {
   getDefaultMaterialProfile,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
-} from './profiles/materialProfiles.js';
+} from './profiles/materialProfiles';
 
 // Geometry utilities
-export { distanceBetweenPoints } from './geometry/distance.js';
-export { circleCenterDistance, circleDiameter, circleToStoneCircle } from './geometry/circle.js';
-export type { Bounds } from './geometry/bounds.js';
-export { calculateBounds, expandBounds, isCircleInsideBounds } from './geometry/bounds.js';
-export { circlesOverlap, findOverlappingCirclePairs, hasCircleCollisions } from './geometry/collision.js';
-export { roundMm } from './geometry/rounding.js';
+export { distanceBetweenPoints } from './geometry/distance';
+export { circleCenterDistance, circleDiameter, circleToStoneCircle } from './geometry/circle';
+export type { Bounds } from './geometry/bounds';
+export { calculateBounds, expandBounds, isCircleInsideBounds } from './geometry/bounds';
+export { circlesOverlap, findOverlappingCirclePairs, hasCircleCollisions } from './geometry/collision';
+export { roundMm } from './geometry/rounding';
 
 // SVG export
-export { createBasicSvgExport } from './export/svgExport.js';
+export { createBasicSvgExport } from './export/svgExport';
 
 // Calibration
-export type { CalibrationSheetOptions } from './calibration/calibrationSheet.js';
+export type { CalibrationSheetOptions } from './calibration/calibrationSheet';
 export {
   createCalibrationSheet,
   createDefaultMagicFlockCalibrationSheet,
-} from './calibration/calibrationSheet.js';
+} from './calibration/calibrationSheet';
 
 // Template creation
-export type { CreateRhinestoneTemplateInput } from './template/createTemplate.js';
-export { createRhinestoneTemplate } from './template/createTemplate.js';
-export type { CreateStoneGridTemplateOptions } from './template/gridTemplate.js';
-export { createStoneGridTemplate } from './template/gridTemplate.js';
+export type { CreateRhinestoneTemplateInput } from './template/createTemplate';
+export { createRhinestoneTemplate } from './template/createTemplate';
+export type { CreateStoneGridTemplateOptions } from './template/gridTemplate';
+export { createStoneGridTemplate } from './template/gridTemplate';
 
 // Template validation
 export type {
@@ -69,5 +69,5 @@ export type {
   TemplateValidationIssue,
   TemplateValidationResult,
   TemplateValidationOptions,
-} from './validation/templateValidation.js';
-export { validateRhinestoneTemplate } from './validation/templateValidation.js';
+} from './validation/templateValidation';
+export { validateRhinestoneTemplate } from './validation/templateValidation';

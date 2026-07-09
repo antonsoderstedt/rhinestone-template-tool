@@ -1,5 +1,5 @@
-export type { CalibrationSheetOptions } from './calibrationSheet.js';
+export type { CalibrationSheetOptions } from './calibrationSheet';
 export {
   createCalibrationSheet,
   createDefaultMagicFlockCalibrationSheet,
-} from './calibrationSheet.js';
+} from './calibrationSheet';

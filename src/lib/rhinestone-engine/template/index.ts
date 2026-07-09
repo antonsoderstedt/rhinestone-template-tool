@@ -1,5 +1,5 @@
-export type { CreateRhinestoneTemplateInput } from './createTemplate.js';
-export { createRhinestoneTemplate } from './createTemplate.js';
+export type { CreateRhinestoneTemplateInput } from './createTemplate';
+export { createRhinestoneTemplate } from './createTemplate';
 
-export type { CreateStoneGridTemplateOptions } from './gridTemplate.js';
-export { createStoneGridTemplate } from './gridTemplate.js';
+export type { CreateStoneGridTemplateOptions } from './gridTemplate';
+export { createStoneGridTemplate } from './gridTemplate';

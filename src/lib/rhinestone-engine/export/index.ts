@@ -1,1 +1,1 @@
-export { createBasicSvgExport } from './svgExport.js';
+export { createBasicSvgExport } from './svgExport';

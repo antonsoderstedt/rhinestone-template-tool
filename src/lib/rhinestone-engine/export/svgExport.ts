@@ -9,10 +9,10 @@
  * - Output is deterministic: same template + options → byte-identical SVG.
  */
 
-import type { RhinestoneTemplate, ExportOptions, Stone } from '../types/index.js';
-import { circleToStoneCircle } from '../geometry/circle.js';
-import { calculateBounds, expandBounds } from '../geometry/bounds.js';
-import { roundMm } from '../geometry/rounding.js';
+import type { RhinestoneTemplate, ExportOptions, Stone } from '../types/index';
+import { circleToStoneCircle } from '../geometry/circle';
+import { calculateBounds, expandBounds } from '../geometry/bounds';
+import { roundMm } from '../geometry/rounding';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 

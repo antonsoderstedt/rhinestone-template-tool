@@ -1,5 +1,5 @@
-import type { Circle, Stone } from '../types/index.js';
-import { distanceBetweenPoints } from './distance.js';
+import type { Circle, Stone } from '../types/index';
+import { distanceBetweenPoints } from './distance';
 
 /**
  * Returns the distance between the centers of two circles (mm).

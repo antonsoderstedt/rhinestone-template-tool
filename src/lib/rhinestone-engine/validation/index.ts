@@ -3,5 +3,5 @@ export type {
   TemplateValidationIssue,
   TemplateValidationResult,
   TemplateValidationOptions,
-} from './templateValidation.js';
-export { validateRhinestoneTemplate } from './templateValidation.js';
+} from './templateValidation';
+export { validateRhinestoneTemplate } from './templateValidation';
