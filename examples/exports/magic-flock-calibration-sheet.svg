@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="49.35mm"
+  height="48.9mm"
+  viewBox="3.4 3.85 49.35 48.9"
+  data-template-id="magic-flock-calibration-sheet"
+  data-template-name="Magic Flock Calibration Sheet"
+  data-unit="mm"
+>
+  <title>Magic Flock Calibration Sheet</title>
+  <desc>Rhinestone template — Magic Flock Calibration Sheet — 16 stone(s)</desc>
+  <g id="guide">
+    <rect x="3.4" y="3.85" width="49.35" height="48.9" fill="none" stroke="#cccccc" stroke-width="0.1" />
+  </g>
+  <g id="stones">
+    <circle id="stone-SS6-recommended-0.1mm-row0-col0" cx="10" cy="10" r="1" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended-0.1mm-row0-col0" data-stone-size="SS6" data-hole-diameter-mm="2" />
+    <circle id="stone-SS6-recommended-row0-col1" cx="22" cy="10" r="1.05" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended-row0-col1" data-stone-size="SS6" data-hole-diameter-mm="2.1" />
+    <circle id="stone-SS6-recommended+0.1mm-row0-col2" cx="34" cy="10" r="1.1" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended+0.1mm-row0-col2" data-stone-size="SS6" data-hole-diameter-mm="2.2" />
+    <circle id="stone-SS6-recommended+0.2mm-row0-col3" cx="46" cy="10" r="1.15" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended+0.2mm-row0-col3" data-stone-size="SS6" data-hole-diameter-mm="2.3" />
+    <circle id="stone-SS8-recommended-0.1mm-row1-col0" cx="10" cy="22" r="1.25" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS8-recommended-0.1mm-row1-col0" data-stone-size="SS8" data-hole-diameter-mm="2.5" />
+    <circle id="stone-SS8-recommended-row1-col1" cx="22" cy="22" r="1.3" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS8-recommended-row1-col1" data-stone-size="SS8" data-hole-diameter-mm="2.6" />
+    <circle id="stone-SS8-recommended+0.1mm-row1-col2" cx="34" cy="22" r="1.35" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS8-recommended+0.1mm-row1-col2" data-stone-size="SS8" data-hole-diameter-mm="2.7" />
+    <circle id="stone-SS8-recommended+0.2mm-row1-col3" cx="46" cy="22" r="1.4" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS8-recommended+0.2mm-row1-col3" data-stone-size="SS8" data-hole-diameter-mm="2.8" />
+    <circle id="stone-SS10-recommended-0.1mm-row2-col0" cx="10" cy="34" r="1.45" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS10-recommended-0.1mm-row2-col0" data-stone-size="SS10" data-hole-diameter-mm="2.9" />
+    <circle id="stone-SS10-recommended-row2-col1" cx="22" cy="34" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS10-recommended-row2-col1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-SS10-recommended+0.1mm-row2-col2" cx="34" cy="34" r="1.55" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS10-recommended+0.1mm-row2-col2" data-stone-size="SS10" data-hole-diameter-mm="3.1" />
+    <circle id="stone-SS10-recommended+0.2mm-row2-col3" cx="46" cy="34" r="1.6" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS10-recommended+0.2mm-row2-col3" data-stone-size="SS10" data-hole-diameter-mm="3.2" />
+    <circle id="stone-SS12-recommended-0.1mm-row3-col0" cx="10" cy="46" r="1.6" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS12-recommended-0.1mm-row3-col0" data-stone-size="SS12" data-hole-diameter-mm="3.2" />
+    <circle id="stone-SS12-recommended-row3-col1" cx="22" cy="46" r="1.65" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS12-recommended-row3-col1" data-stone-size="SS12" data-hole-diameter-mm="3.3" />
+    <circle id="stone-SS12-recommended+0.1mm-row3-col2" cx="34" cy="46" r="1.7" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS12-recommended+0.1mm-row3-col2" data-stone-size="SS12" data-hole-diameter-mm="3.4" />
+    <circle id="stone-SS12-recommended+0.2mm-row3-col3" cx="46" cy="46" r="1.75" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS12-recommended+0.2mm-row3-col3" data-stone-size="SS12" data-hole-diameter-mm="3.5" />
+  </g>
+  <g id="labels">
+    <text x="10" y="10" text-anchor="middle" dominant-baseline="middle" font-size="0.6mm" fill="#666666">SS6</text>
+    <text x="22" y="10" text-anchor="middle" dominant-baseline="middle" font-size="0.63mm" fill="#666666">SS6</text>
+    <text x="34" y="10" text-anchor="middle" dominant-baseline="middle" font-size="0.66mm" fill="#666666">SS6</text>
+    <text x="46" y="10" text-anchor="middle" dominant-baseline="middle" font-size="0.69mm" fill="#666666">SS6</text>
+    <text x="10" y="22" text-anchor="middle" dominant-baseline="middle" font-size="0.75mm" fill="#666666">SS8</text>
+    <text x="22" y="22" text-anchor="middle" dominant-baseline="middle" font-size="0.78mm" fill="#666666">SS8</text>
+    <text x="34" y="22" text-anchor="middle" dominant-baseline="middle" font-size="0.81mm" fill="#666666">SS8</text>
+    <text x="46" y="22" text-anchor="middle" dominant-baseline="middle" font-size="0.84mm" fill="#666666">SS8</text>
+    <text x="10" y="34" text-anchor="middle" dominant-baseline="middle" font-size="0.87mm" fill="#666666">SS10</text>
+    <text x="22" y="34" text-anchor="middle" dominant-baseline="middle" font-size="0.9mm" fill="#666666">SS10</text>
+    <text x="34" y="34" text-anchor="middle" dominant-baseline="middle" font-size="0.93mm" fill="#666666">SS10</text>
+    <text x="46" y="34" text-anchor="middle" dominant-baseline="middle" font-size="0.96mm" fill="#666666">SS10</text>
+    <text x="10" y="46" text-anchor="middle" dominant-baseline="middle" font-size="0.96mm" fill="#666666">SS12</text>
+    <text x="22" y="46" text-anchor="middle" dominant-baseline="middle" font-size="0.99mm" fill="#666666">SS12</text>
+    <text x="34" y="46" text-anchor="middle" dominant-baseline="middle" font-size="1.02mm" fill="#666666">SS12</text>
+    <text x="46" y="46" text-anchor="middle" dominant-baseline="middle" font-size="1.05mm" fill="#666666">SS12</text>
+  </g>
+</svg>
