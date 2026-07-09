@@ -71,3 +71,13 @@ export type {
   TemplateValidationOptions,
 } from './validation/templateValidation';
 export { validateRhinestoneTemplate } from './validation/templateValidation';
+
+// Text — dot matrix (Text v1)
+export type { DotMatrixGlyph } from './text/dotMatrixFont';
+export {
+  DOT_MATRIX_5X7_FONT,
+  SUPPORTED_DOT_MATRIX_CHARACTERS,
+  getDotMatrixGlyph,
+} from './text/dotMatrixFont';
+export type { CreateDotMatrixTextTemplateOptions } from './text/textTemplate';
+export { createDotMatrixTextTemplate } from './text/textTemplate';

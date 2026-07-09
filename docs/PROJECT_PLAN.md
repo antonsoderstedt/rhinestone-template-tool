@@ -37,6 +37,16 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 2 — Text-to-Rhinestones v1: Dot Matrix (Implemented)
+- [x] Built-in 5×7 dot-matrix font (`dotMatrixFont.ts`) — A–Z, 0–9, space, . , ! ? - _
+- [x] `createDotMatrixTextTemplate(options)` — text → RhinestoneTemplate via engine pipeline
+- [x] Multiline text support (split on `\n`)
+- [x] Deterministic stone IDs and positions
+- [x] `TextMatrixGenerator` React component using shared preview/export components
+- [x] Home page: Dot Matrix Text section added above the grid generator
+- [ ] Font-outline vector text (deferred — requires path-fill algorithm)
+- [ ] Custom font upload (deferred)
+
 ### Phase 1.7 — Shared SVG UI Components (Implemented)
 - [x] `SvgPreview` — safe inline SVG preview (`dangerouslySetInnerHTML` on engine-only output)
 - [x] `SvgExportActions` — Download + Copy buttons with disabled/error states

@@ -1,5 +1,6 @@
 import ManualGridGenerator from './components/ManualGridGenerator';
 import CalibrationSheetGenerator from './components/CalibrationSheetGenerator';
+import TextMatrixGenerator from './components/TextMatrixGenerator';
 
 export default function Home() {
   return (
@@ -22,6 +23,18 @@ export default function Home() {
             ⚠ Run a calibration cut before production. Stone size values are provisional.
           </div>
         </header>
+
+        {/* ── Text Matrix Generator ────────────────────────────────────────── */}
+        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-base font-semibold text-zinc-800">
+            Dot Matrix Text
+          </h2>
+          <p className="mb-5 text-xs text-zinc-500">
+            Text v1 — built-in 5×7 dot-matrix alphabet. Font-outline text will
+            come in a future version.
+          </p>
+          <TextMatrixGenerator />
+        </section>
 
         {/* ── Manual Grid Generator ────────────────────────────────────────── */}
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
@@ -61,4 +74,3 @@ export default function Home() {
     </div>
   );
 }
-

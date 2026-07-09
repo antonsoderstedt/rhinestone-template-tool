@@ -16,6 +16,27 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 2 — Text-to-Rhinestones v1: Dot Matrix (Implemented)
+
+- [x] `DOT_MATRIX_5X7_FONT` has entries for all uppercase A–Z, 0–9, space, and . , ! ? - _
+- [x] Every glyph is exactly 7 rows of 5 characters each
+- [x] All glyph cells are only `"0"` or `"1"`
+- [x] `getDotMatrixGlyph(char)` returns the `?` glyph for unsupported characters
+- [x] `createDotMatrixTextTemplate` returns a `RhinestoneTemplate` with `unit: 'mm'`
+- [x] `createDotMatrixTextTemplate` generates 18 stones for text `"A"` (SS10)
+- [x] Stone IDs are deterministic and unique
+- [x] Lowercase input is uppercased by default
+- [x] Multiline text (split on `\n`) produces stones on separate rows
+- [x] Generated template passes `validateRhinestoneTemplate` with zero issues
+- [x] Generated template exports via `createBasicSvgExport` — each stone is a `<circle>`
+- [x] Exported SVG has no `<image>` elements
+- [x] `TextMatrixGenerator` component uses `createDotMatrixTextTemplate` from the engine
+- [x] `TextMatrixGenerator` uses shared `SvgPreview`, `SvgExportActions`, `TemplateStatsCard`, `ValidationIssuesList`
+- [x] Filename is deterministic: `rhinestone-text-dot-matrix-{size}.svg`
+- [x] `npm run build`, `typecheck`, `lint`, and `test` all pass
+
+---
+
 ## Phase 1.7 — Shared SVG UI Components (Implemented)
 
 - [x] `SvgPreview` renders engine-generated SVG safely; shows empty state when svg is empty

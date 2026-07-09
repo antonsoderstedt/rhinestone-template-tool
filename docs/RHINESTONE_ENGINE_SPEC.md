@@ -104,6 +104,37 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Text Module (Text v1)
+
+### Overview
+
+Text-to-Rhinestones v1 uses a built-in 5×7 dot-matrix bitmap font. Each “1” pixel in a glyph row becomes a stone hole in the output `RhinestoneTemplate`. The output is then exported via `createBasicSvgExport` like any other template.
+
+**Why font-outline conversion is deferred:**  
+Path-fill (placing stones inside a closed SVG path) requires a ray-casting point-in-path algorithm that has not yet been implemented. Font-outline text would generate a path outline per character and fill it with stones. Dot-matrix text bypasses this by using a pre-defined bitmap per character.
+
+### `getDotMatrixGlyph(character: string): DotMatrixGlyph`
+
+Returns the 5×7 glyph for the given character. The lookup is case-sensitive; the font only contains uppercase entries. Falls back to the “?” glyph for unsupported characters.
+
+### `createDotMatrixTextTemplate(options)`
+
+Converts a text string to a `RhinestoneTemplate`:
+
+1. Uppercase the text (if `uppercase: true`, the default).
+2. Split on `\n` to get lines.
+3. For each character in each line, look up the glyph.
+4. For each `1` cell in the glyph, place a stone at the corresponding mm position.
+5. Stone x = `startXmm + (charIndex * (5 + characterSpacingColumns) + col) * spacingMm`
+6. Stone y = `startYmm + (lineIndex * (7 + lineSpacingRows) + row) * spacingMm`
+7. Wrap in `createRhinestoneTemplate` (which validates all stones).
+
+**Future text modes:**
+- Font-outline fill: render font glyphs as SVG paths, then fill with stones using a path-fill algorithm.
+- Custom font upload: allow users to upload a TTF/OTF and generate path outlines.
+
+---
+
 ## Template Module
 
 ### `createRhinestoneTemplate(input)`
