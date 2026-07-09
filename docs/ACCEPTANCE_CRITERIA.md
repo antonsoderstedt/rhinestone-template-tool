@@ -16,6 +16,25 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 3 — SVG/Logo Foundation v1: Polyline Sampling (Implemented)
+
+- [x] `getPolylineLength` returns correct length for single segments, multi-segment, and closed polylines
+- [x] `normalizePolylineInput` clones input, throws on < 2 points, throws on non-finite values
+- [x] `samplePolylineBySpacing` always includes the first point
+- [x] `samplePolylineBySpacing` returns deterministic results
+- [x] `samplePolylineBySpacing` throws if spacingMm <= 0
+- [x] `samplePolylineBySpacing` supports closed polylines (more points than open)
+- [x] `createPolylineRhinestoneTemplate` returns `RhinestoneTemplate` with `unit: 'mm'`
+- [x] Template passes `validateRhinestoneTemplate` with zero issues
+- [x] Template exports via `createBasicSvgExport` — each stone is a `<circle>`
+- [x] Exported SVG has no `<image>` elements
+- [x] `PolylineLogoGenerator` component uses `createPolylineRhinestoneTemplate` from the engine
+- [x] Demo shapes (diamond, triangle, rectangle, zigzag) work correctly
+- [x] No raw SVG input accepted by the component
+- [x] `npm run build`, `typecheck`, `lint`, and `test` all pass
+
+---
+
 ## Phase 2 — Text-to-Rhinestones v1: Dot Matrix (Implemented)
 
 - [x] `DOT_MATRIX_5X7_FONT` has entries for all uppercase A–Z, 0–9, space, and . , ! ? - _

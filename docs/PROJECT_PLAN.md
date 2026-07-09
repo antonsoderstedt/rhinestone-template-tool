@@ -37,6 +37,17 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 3 — SVG/Logo-to-Rhinestones Foundation v1: Polyline Sampling (Implemented)
+- [x] `getPolylineLength`, `samplePolylineBySpacing`, `normalizePolylineInput` in `path/polyline.ts`
+- [x] `createPolylineRhinestoneTemplate` — polylines → RhinestoneTemplate via engine pipeline
+- [x] Open and closed polylines supported
+- [x] Deterministic stone IDs and positions
+- [x] `PolylineLogoGenerator` React component using shared preview/export components
+- [x] Demo shapes: diamond, triangle, rectangle, zigzag
+- [ ] Raw SVG upload (deferred — requires SVG parsing and path extraction)
+- [ ] SVG path-fill (deferred — requires point-in-path algorithm)
+- [ ] Outline vs fill mode (deferred)
+
 ### Phase 2 — Text-to-Rhinestones v1: Dot Matrix (Implemented)
 - [x] Built-in 5×7 dot-matrix font (`dotMatrixFont.ts`) — A–Z, 0–9, space, . , ! ? - _
 - [x] `createDotMatrixTextTemplate(options)` — text → RhinestoneTemplate via engine pipeline

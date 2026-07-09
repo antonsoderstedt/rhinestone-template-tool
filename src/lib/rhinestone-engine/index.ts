@@ -81,3 +81,13 @@ export {
 } from './text/dotMatrixFont';
 export type { CreateDotMatrixTextTemplateOptions } from './text/textTemplate';
 export { createDotMatrixTextTemplate } from './text/textTemplate';
+
+// Path / polyline (SVG/logo foundation v1)
+export type { PolylinePoint, Polyline } from './path/polyline';
+export {
+  getPolylineLength,
+  samplePolylineBySpacing,
+  normalizePolylineInput,
+} from './path/polyline';
+export type { CreatePolylineRhinestoneTemplateOptions } from './path/pathTemplate';
+export { createPolylineRhinestoneTemplate } from './path/pathTemplate';

@@ -104,6 +104,44 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Path Module (SVG/Logo Foundation v1)
+
+### Overview
+
+The path module places rhinestone holes along polylines (sequences of connected straight line segments). It is the foundation for future SVG/logo-to-rhinestones features.
+
+**Why raw SVG upload is deferred:**  
+Parsing an arbitrary SVG file requires handling `<path>` d-attribute commands (M, L, C, Q, A, Z), resolving transforms, flattening groups, and handling fill vs. outline modes. This infrastructure is significant and is deferred to a future phase. Polyline input provides a clean, testable foundation without the SVG parsing complexity.
+
+### `normalizePolylineInput(points)`
+
+Validates and deep-clones a `PolylinePoint[]`. Throws if fewer than 2 points or if any coordinate is non-finite.
+
+### `getPolylineLength(polyline)`
+
+Returns the total arc length in mm. Includes the closing segment for `closed: true` polylines.
+
+### `samplePolylineBySpacing(polyline, spacingMm)`
+
+Walks along the polyline segments and places a sample point every `spacingMm` mm. The first point of the polyline is always included. Uses linear interpolation within segments. Output coordinates are rounded to 4 decimal places for determinism. Automatically removes a duplicate endpoint for exactly-divisible closed polylines.
+
+### `createPolylineRhinestoneTemplate(options)`
+
+Convert an array of `Polyline` objects to a `RhinestoneTemplate`:
+
+1. For each polyline, validate and clone points with `normalizePolylineInput`.
+2. Sample positions using `samplePolylineBySpacing`.
+3. Assign each position a stone with `holeDiameterMm = getRecommendedHoleDiameter(stoneSize)`.
+4. ID format: `{stoneSize.toLowerCase()}-path{N}-p{M}` (1-based).
+5. Wrap in `createRhinestoneTemplate`.
+
+**Future path modes:**
+- SVG upload + path extraction from `<path>` d-attribute commands
+- Path-fill: place stones inside a closed path (requires point-in-path algorithm)
+- Outline vs fill selection
+
+---
+
 ## Text Module (Text v1)
 
 ### Overview
