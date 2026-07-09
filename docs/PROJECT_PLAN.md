@@ -37,6 +37,17 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 1.6 — Calibration Sheet UI (Implemented)
+- [x] `CalibrationSheetGenerator` React component (`app/components/CalibrationSheetGenerator.tsx`)
+- [x] Uses `createDefaultMagicFlockCalibrationSheet()` from the engine
+- [x] Exports via `createBasicSvgExport()` — same Cricut-safe pipeline as production templates
+- [x] Shows stats: material, cutter, stone sizes, total hole count
+- [x] Shows explanation of the four diameter variants and how to use them
+- [x] Download button (`magic-flock-calibration-sheet.svg`)
+- [x] Copy SVG button
+- [x] Prominent warning that values are provisional until physically tested
+- [x] Calibration UI is on the home page alongside the grid generator
+
 ### Phase 3 — SVG/Logo Input
 - [ ] Accept user-uploaded SVG
 - [ ] Parse and normalize input SVG paths

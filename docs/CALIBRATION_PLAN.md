@@ -1,5 +1,22 @@
 # Calibration Plan — Rhinestone Template Tool
 
+## Calibration UI
+
+The calibration sheet is accessible directly from the home page via the **Calibration Sheet** section (`app/components/CalibrationSheetGenerator.tsx`).
+
+### What the UI provides
+- Generates the default Magic Flock calibration sheet using `createDefaultMagicFlockCalibrationSheet()`.
+- Exports the sheet through `createBasicSvgExport()` — the same Cricut-safe pipeline used for production templates.
+- Shows a description of the four diameter variants and instructions for interpreting the cut results.
+- Provides a Download SVG button (`magic-flock-calibration-sheet.svg`) and a Copy SVG button.
+- Displays a prominent warning that values are provisional until physically tested.
+
+### Limitations (current)
+- The material profile cannot yet be edited or saved from the UI.
+- Calibration results (correct `kerfCompensationMm`) must be manually updated in the engine profile source code (`src/lib/rhinestone-engine/profiles/materialProfiles.ts`) until a settings UI is built.
+
+---
+
 ## Calibration Sheet
 
 The calibration sheet is generated programmatically by `createCalibrationSheet()` (or `createDefaultMagicFlockCalibrationSheet()`) in `src/lib/rhinestone-engine/calibration/calibrationSheet.ts`.

@@ -16,6 +16,23 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 1.6 — Calibration Sheet UI (Implemented)
+
+- [x] `CalibrationSheetGenerator` component exists at `app/components/CalibrationSheetGenerator.tsx`
+- [x] Uses `createDefaultMagicFlockCalibrationSheet()` — no engine logic duplicated in React
+- [x] Exports via `createBasicSvgExport()` — same pipeline as production templates
+- [x] Exported SVG has `width`/`height` in `mm` units, no `<image>`, all holes are `<circle>`
+- [x] Shows material, cutter, stone sizes, and total hole count
+- [x] Shows description of diameter variant columns and how to use them
+- [x] Prominent provisional warning banner
+- [x] Download button creates a Blob (`magic-flock-calibration-sheet.svg`)
+- [x] Copy SVG button
+- [x] Component appears on home page below the grid generator
+- [x] No raw user SVG input accepted
+- [x] `npm run build`, `typecheck`, and `lint` all pass
+
+---
+
 ## Phase 1.5 — First UI: Manual Grid Generator (Implemented)
 
 - [x] `ManualGridGenerator` component exists at `app/components/ManualGridGenerator.tsx`
