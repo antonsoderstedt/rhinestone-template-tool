@@ -1,0 +1,70 @@
+# Material Profiles — Rhinestone Template Tool
+
+## Overview
+
+Material profiles define the physical constraints that govern how stones are placed for a given material. Different materials stretch, compress, or resist differently — so hole sizing and spacing must be tuned per material.
+
+---
+
+## Magic Flock (Primary Target Material)
+
+Magic Flock is a heat-transfer flock material designed for rhinestone templates. When cut by a Cricut Maker and rhinestones are pressed in, the material grips the stones.
+
+### Properties Relevant to Hole Sizing
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Material stretch | Low | Flock has minimal stretch compared to HTV |
+| Hole tolerance | ±0.1 mm | Holes must be precise; too large = stones fall out |
+| Min material bridge | 0.4 mm | Minimum material between any two holes |
+| Recommended safety margin | 0.3 mm | Additional gap added to min center-to-center |
+
+### Default Profile
+
+```typescript
+const MAGIC_FLOCK_PROFILE: MaterialProfile = {
+  id: 'magic-flock',
+  name: 'Magic Flock',
+  safetyMargin: 0.3,           // mm between hole edges
+  holeDiameterScale: 0.90,     // hole = 90% of stone physical diameter
+  calibrationOffset: {
+    holeDiameterAdjustment: 0, // set after physical calibration
+    spacingAdjustment: 0,      // set after physical calibration
+  },
+};
+```
+
+### Why Calibration is Required
+
+Magic Flock reacts to the Cricut blade pressure and speed in ways that vary by:
+- Blade age
+- Mat condition
+- Ambient temperature and humidity
+
+A freshly calibrated profile ensures that the holes cut in the real world match the dimensions designed in the tool. **Do not use default offsets for production runs without running the calibration workflow first.**
+
+See `docs/CALIBRATION_PLAN.md` for the calibration procedure.
+
+---
+
+## Future Materials (Post-MVP)
+
+| Material | Status | Notes |
+|----------|--------|-------|
+| Rhinestone Flock (generic) | Planned | Similar to Magic Flock, different hole tolerance |
+| Cotton T-shirt (direct) | Planned | Higher stretch, requires larger safety margin |
+| Leather/Vinyl | Planned | Low stretch, tighter tolerances possible |
+
+Each new material will require its own profile and physical calibration before use.
+
+---
+
+## Profile Data Location
+
+Material profile constants live in:
+
+```
+/src/lib/rhinestone-engine/profiles/
+```
+
+Each material has its own file, e.g. `magic-flock.ts`. The engine reads the active profile from the user's selected configuration.
