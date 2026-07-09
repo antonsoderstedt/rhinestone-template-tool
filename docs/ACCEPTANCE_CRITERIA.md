@@ -16,6 +16,22 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 0.5 — Template Creation and Validation (Implemented)
+
+- [x] `createRhinestoneTemplate(input)` returns a `RhinestoneTemplate` with `unit: 'mm'`
+- [x] `createRhinestoneTemplate` throws on empty id, empty name, duplicate stone ids, invalid hole diameters
+- [x] `createStoneGridTemplate(options)` generates a correct rectangular grid with deterministic ids
+- [x] `createStoneGridTemplate` uses recommended hole diameter and spacing from material profile
+- [x] `createStoneGridTemplate` throws on rows/columns < 1 or insufficient spacing
+- [x] `validateRhinestoneTemplate` returns `valid: true` for a clean template
+- [x] `validateRhinestoneTemplate` returns `valid: false` and error codes for unit mismatch, empty fields, bad hole diameter, duplicate ids, collisions
+- [x] Collision issues include the `stoneIds` of both offending stones
+- [x] `requireNoCollisions: false` option suppresses collision errors
+- [x] `requireUniqueStoneIds: false` option suppresses duplicate-id errors
+- [x] Grid templates pass `validateRhinestoneTemplate` with zero issues
+
+---
+
 ## Phase 1 — Engine Core
 
 ### Geometry

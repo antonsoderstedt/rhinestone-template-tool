@@ -104,6 +104,38 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Template Module
+
+### `createRhinestoneTemplate(input)`
+
+Creates a validated `RhinestoneTemplate` from explicit input. Validates all fields and throws descriptive errors for: empty id/name, duplicate stone ids, invalid hole diameters, and non-finite coordinates. The returned template always has `unit: 'mm'`.
+
+### `createStoneGridTemplate(options)`
+
+Generates a rectangular hex-row grid of rhinestones. Stone ids are deterministic: `${stoneSize.toLowerCase()}-r{row}-c{col}` (1-based). Hole diameter and spacing are sourced from the material profile via `getRecommendedHoleDiameter` and `getRecommendedCenterDistance`. Throws if a custom `spacingMm` would cause collisions.
+
+---
+
+## Validation Module
+
+### `validateRhinestoneTemplate(template, options?)`
+
+Runs a structured validation pass on any `RhinestoneTemplate`. Returns `{ valid: boolean, issues: TemplateValidationIssue[] }`. A template is `valid` when there are no `'error'`-severity issues.
+
+**Why validation is mandatory before export:**  
+A template with overlapping holes will tear the flock material. A template with a wrong unit will be exported at the wrong physical scale. Running `validateRhinestoneTemplate` before `createBasicSvgExport` catches these problems in software before any physical cut.
+
+**Default checks:**
+- `template.unit === 'mm'`
+- Non-empty `id` and `name`
+- All `holeDiameterMm > 0`
+- No duplicate stone ids
+- No overlapping stone circles (uses `hasCircleCollisions` from the geometry module)
+
+Collision issues include the `stoneIds` of both offending stones for easy debugging.
+
+---
+
 ## Calibration Module
 
 ### `createCalibrationSheet(profile, options?)`

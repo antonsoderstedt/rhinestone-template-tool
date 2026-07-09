@@ -8,12 +8,17 @@
 - [ ] Define TypeScript types for the engine
 - [ ] Write unit tests for geometry utilities
 
+### Phase 0.5 — Template Creation and Validation
+- [x] `createRhinestoneTemplate` — validated manual template creation
+- [x] `createStoneGridTemplate` — deterministic rectangular grid helper
+- [x] `validateRhinestoneTemplate` — pre-export safety check (unit, ids, hole diameters, collisions)
+
 ### Phase 1 — Engine Core
-- [ ] Implement stone size profiles (SS6–SS12)
-- [ ] Implement hex grid placement algorithm
-- [ ] Implement collision detection
+- [ ] Implement hex grid placement algorithm (path-fill variant)
+- [x] Implement collision detection
+- [x] Implement stone size profiles (SS6–SS12)
 - [ ] Implement path-fill algorithm (place stones inside an arbitrary SVG path)
-- [ ] Export engine as pure functions with no UI dependency
+- [x] Export engine as pure functions with no UI dependency
 
 ### Phase 2 — Text Input
 - [ ] Render text to SVG path using a web font

@@ -56,3 +56,18 @@ export {
   createCalibrationSheet,
   createDefaultMagicFlockCalibrationSheet,
 } from './calibration/calibrationSheet.js';
+
+// Template creation
+export type { CreateRhinestoneTemplateInput } from './template/createTemplate.js';
+export { createRhinestoneTemplate } from './template/createTemplate.js';
+export type { CreateStoneGridTemplateOptions } from './template/gridTemplate.js';
+export { createStoneGridTemplate } from './template/gridTemplate.js';
+
+// Template validation
+export type {
+  TemplateValidationSeverity,
+  TemplateValidationIssue,
+  TemplateValidationResult,
+  TemplateValidationOptions,
+} from './validation/templateValidation.js';
+export { validateRhinestoneTemplate } from './validation/templateValidation.js';
