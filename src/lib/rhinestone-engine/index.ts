@@ -38,3 +38,11 @@ export {
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
 } from './profiles/materialProfiles.js';
+
+// Geometry utilities
+export { distanceBetweenPoints } from './geometry/distance.js';
+export { circleCenterDistance, circleDiameter, circleToStoneCircle } from './geometry/circle.js';
+export type { Bounds } from './geometry/bounds.js';
+export { calculateBounds, expandBounds, isCircleInsideBounds } from './geometry/bounds.js';
+export { circlesOverlap, findOverlappingCirclePairs, hasCircleCollisions } from './geometry/collision.js';
+export { roundMm } from './geometry/rounding.js';
