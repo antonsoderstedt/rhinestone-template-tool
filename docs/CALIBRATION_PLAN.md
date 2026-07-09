@@ -1,5 +1,26 @@
 # Calibration Plan — Rhinestone Template Tool
 
+## Calibration Sheet
+
+The calibration sheet is generated programmatically by `createCalibrationSheet()` (or `createDefaultMagicFlockCalibrationSheet()`) in `src/lib/rhinestone-engine/calibration/calibrationSheet.ts`.
+
+It is exported to SVG using **the same `createBasicSvgExport()` pipeline used for production templates** — not a separate code path. This means a calibration cut validates the full export system, not just the hole sizes.
+
+### Diameter variants per stone size
+
+For each supported stone size (SS6, SS8, SS10, SS12), the sheet includes four holes:
+
+| Column | Diameter | Purpose |
+|--------|----------|---------|
+| 1 | recommendedHoleDiameterMm − 0.1 mm | Undersized — stone may not seat |
+| 2 | recommendedHoleDiameterMm | Baseline estimate |
+| 3 | recommendedHoleDiameterMm + 0.1 mm | Slightly oversize |
+| 4 | recommendedHoleDiameterMm + 0.2 mm | Noticeably oversize |
+
+Place stones in each hole after cutting. The column where the stone snaps in firmly without falling out or tearing the flock is the correct diameter for your machine and batch. Record that offset as `kerfCompensationMm` in the material profile.
+
+---
+
 ## Why Calibration is Required
 
 Magic Flock is a physical material. The same SVG cut file may produce slightly different hole sizes depending on:
@@ -16,14 +37,22 @@ Without physical calibration, holes may be too large (stones fall out), too smal
 
 ## Calibration Workflow
 
-### Step 1 — Cut the Calibration Sheet
+### Step 1 — Generate and Cut the Calibration Sheet
 
-A calibration sheet is a pre-defined SVG containing:
-- A row of individual circles at each stone size (SS6, SS8, SS10, SS12)
-- A grid of each stone size to check spacing
-- A scale bar (10 mm reference line)
+Generate the calibration sheet using the engine:
 
-The calibration sheet is stored in `/calibration/calibration-sheet.svg`.
+```typescript
+import { createDefaultMagicFlockCalibrationSheet, createBasicSvgExport } from './src/lib/rhinestone-engine/index.js';
+
+const sheet = createDefaultMagicFlockCalibrationSheet();
+const svg = createBasicSvgExport(sheet, { includeGuideBox: true, paddingMm: 5 });
+// write svg to a .svg file and open in Cricut Design Space
+```
+
+The sheet contains:
+- One row per stone size (SS6, SS8, SS10, SS12)
+- Four holes per row at: recommended−0.1, recommended, recommended+0.1, recommended+0.2 mm
+- All holes are real SVG `<circle>` elements — never rasterized
 
 Cut the calibration sheet on Magic Flock at your normal Cricut settings.
 

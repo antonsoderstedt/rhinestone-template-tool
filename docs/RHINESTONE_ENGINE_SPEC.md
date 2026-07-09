@@ -99,7 +99,30 @@ The engine must produce **byte-identical output** for identical inputs. This mea
   profiles/             — Stone size data, material profiles
   geometry/             — Grid gen, collision, path fill, point-in-path
   export/               — SVG construction (circles → SVG string)
-  calibration/          — Apply calibration offsets to profiles
+  calibration/          — Calibration sheet generator
 ```
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
+
+## Calibration Module
+
+### `createCalibrationSheet(profile, options?)`
+
+Generates a `RhinestoneTemplate` containing rows of holes at varying diameters for each stone size supported by the material profile.
+
+**Purpose:** Allow a crafter to cut a test sheet on their actual machine and material, place stones in each hole, and find the diameter that seats the stone correctly. The correct diameter is then set as `kerfCompensationMm` in the material profile.
+
+**Why physical testing is required:** Recommended hole diameters in stone size profiles are provisional estimates. Actual cut size depends on blade depth, blade wear, cut pressure, mat tackiness, flock batch, and ambient humidity. No software can substitute for a physical cut test.
+
+**Diameter variants (default):**
+
+| Column | Offset | Label |
+|--------|--------|-------|
+| 0 | −0.1 mm | `recommended-0.1mm` |
+| 1 | 0 | `recommended` |
+| 2 | +0.1 mm | `recommended+0.1mm` |
+| 3 | +0.2 mm | `recommended+0.2mm` |
+
+**Output:** A `RhinestoneTemplate` with `unit: 'mm'`. Every stone has a `metadata` object containing `calibration: true`, `materialProfileId`, `variantLabel`, `recommendedHoleDiameterMm`, and `testedHoleDiameterMm`.
+
+**Export:** Use `createBasicSvgExport()` — the same function used for production templates. The calibration sheet and production templates share a single, audited export path.

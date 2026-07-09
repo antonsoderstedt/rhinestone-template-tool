@@ -80,15 +80,27 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ## Phase 4 — Calibration
 
-### Workflow
-- [ ] Calibration sheet SVG is generated correctly for each stone size
+### Engine (Implemented)
+- [x] `createCalibrationSheet(profile, options?)` returns a `RhinestoneTemplate` with `unit: 'mm'`
+- [x] Sheet contains one row per supported stone size
+- [x] Default variant mode produces 4 holes per size (−0.1, 0, +0.1, +0.2 mm)
+- [x] Variant-off mode produces 1 hole per size
+- [x] All stones carry `calibration: true`, `materialProfileId`, `testedHoleDiameterMm`, `variantLabel` in metadata
+- [x] Generated IDs and positions are deterministic
+- [x] Calibration sheet exports via `createBasicSvgExport()` without error
+- [x] Exported SVG contains `<circle>`, `data-stone-size`, `data-hole-diameter-mm`
+- [x] Exported SVG does not contain `<image>`
+
+### UI (Pending)
+- [ ] User can trigger calibration sheet download from the UI
 - [ ] User can enter measured offsets in the UI
 - [ ] Offsets are applied to engine output
 - [ ] Calibrated profile is saved to `/calibration/`
 
 ### Physical Test (Required)
 - [ ] Calibration sheet is cut on Magic Flock with a Cricut Maker
-- [ ] Holes measured with calipers, offsets entered, second cut made
+- [ ] Holes at all four diameter variants are tested with real stones
+- [ ] Correct diameter variant identified; `kerfCompensationMm` updated
 - [ ] All stone sizes seat correctly with no tearing after calibration
 
 ---

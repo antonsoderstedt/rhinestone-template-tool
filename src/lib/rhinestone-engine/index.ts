@@ -49,3 +49,10 @@ export { roundMm } from './geometry/rounding.js';
 
 // SVG export
 export { createBasicSvgExport } from './export/svgExport.js';
+
+// Calibration
+export type { CalibrationSheetOptions } from './calibration/calibrationSheet.js';
+export {
+  createCalibrationSheet,
+  createDefaultMagicFlockCalibrationSheet,
+} from './calibration/calibrationSheet.js';
