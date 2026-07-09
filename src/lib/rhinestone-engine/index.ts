@@ -46,3 +46,6 @@ export type { Bounds } from './geometry/bounds.js';
 export { calculateBounds, expandBounds, isCircleInsideBounds } from './geometry/bounds.js';
 export { circlesOverlap, findOverlappingCirclePairs, hasCircleCollisions } from './geometry/collision.js';
 export { roundMm } from './geometry/rounding.js';
+
+// SVG export
+export { createBasicSvgExport } from './export/svgExport.js';
