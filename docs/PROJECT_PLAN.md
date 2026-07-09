@@ -37,6 +37,15 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 1.7 — Shared SVG UI Components (Implemented)
+- [x] `SvgPreview` — safe inline SVG preview (`dangerouslySetInnerHTML` on engine-only output)
+- [x] `SvgExportActions` — Download + Copy buttons with disabled/error states
+- [x] `TemplateStatsCard` — compact stats display (stone count, size, material, etc.)
+- [x] `ValidationIssuesList` — validation status + per-issue list with stone IDs
+- [x] `ManualGridGenerator` refactored to use all four shared components
+- [x] `CalibrationSheetGenerator` refactored to use `SvgPreview`, `SvgExportActions`, `TemplateStatsCard`
+- [x] Future text/SVG/image generators should reuse these same components
+
 ### Phase 1.6 — Calibration Sheet UI (Implemented)
 - [x] `CalibrationSheetGenerator` React component (`app/components/CalibrationSheetGenerator.tsx`)
 - [x] Uses `createDefaultMagicFlockCalibrationSheet()` from the engine

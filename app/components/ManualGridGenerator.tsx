@@ -7,6 +7,10 @@ import {
   createBasicSvgExport,
 } from '@/src/lib/rhinestone-engine/index';
 import type { StoneSizeId, TemplateValidationResult } from '@/src/lib/rhinestone-engine/index';
+import SvgPreview from './SvgPreview';
+import SvgExportActions from './SvgExportActions';
+import TemplateStatsCard from './TemplateStatsCard';
+import ValidationIssuesList from './ValidationIssuesList';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -34,15 +38,12 @@ export default function ManualGridGenerator() {
   const [includeLabels, setIncludeLabels] = useState(true);
   const [paddingMm, setPaddingMm] = useState(5);
 
-  // Transient UI state
-  const [copied, setCopied] = useState(false);
-
-  // Derived: template + validation + SVG — recomputed whenever form values change
+  // Derived: template + validation + SVG
   const result = useMemo<GeneratorResult>(() => {
     try {
       const template = createStoneGridTemplate({
         id: `grid-${stoneSize.toLowerCase()}-${columns}x${rows}`,
-        name: `${stoneSize} Grid ${columns}×${rows}`,
+        name: `${stoneSize} Grid ${columns}\u00d7${rows}`,
         stoneSize,
         columns,
         rows,
@@ -50,9 +51,6 @@ export default function ManualGridGenerator() {
 
       const validation = validateRhinestoneTemplate(template);
 
-      // createBasicSvgExport only accepts unit="mm" templates — guaranteed by
-      // createStoneGridTemplate, but validateRhinestoneTemplate would catch any
-      // issue before we reach here.
       const svgString = createBasicSvgExport(template, {
         includeGuideBox,
         includeLabels,
@@ -70,30 +68,6 @@ export default function ManualGridGenerator() {
   }, [stoneSize, columns, rows, includeGuideBox, includeLabels, paddingMm]);
 
   const filename = `rhinestone-grid-${stoneSize.toLowerCase()}-${columns}x${rows}.svg`;
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  function handleDownload() {
-    if (!result.ok) return;
-    const blob = new Blob([result.svgString], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleCopy() {
-    if (!result.ok) return;
-    try {
-      await navigator.clipboard.writeText(result.svgString);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API may be unavailable in non-secure contexts
-    }
-  }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -183,79 +157,21 @@ export default function ManualGridGenerator() {
 
       {result.ok && (
         <>
-          {/* ── Validation status ──────────────────────────────────────── */}
-          <div
-            className={`rounded border p-3 text-sm ${
-              result.validation.valid
-                ? 'border-green-300 bg-green-50 text-green-800'
-                : 'border-red-300 bg-red-50 text-red-700'
-            }`}
-          >
-            <strong>
-              {result.validation.valid ? '✓ Template valid' : '✗ Template invalid'}
-            </strong>
-            {result.validation.issues.length > 0 && (
-              <ul className="mt-1 list-disc pl-4">
-                {result.validation.issues.map((issue, i) => (
-                  <li key={i}>
-                    <span className="font-mono text-xs">[{issue.code}]</span>{' '}
-                    {issue.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <ValidationIssuesList
+            valid={result.validation.valid}
+            issues={result.validation.issues}
+          />
 
-          {/* ── Template stats ─────────────────────────────────────────── */}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-            {(
-              [
-                ['Stone size', stoneSize],
-                ['Stone count', result.stoneCount],
-                ['Columns', columns],
-                ['Rows', rows],
-              ] as [string, string | number][]
-            ).map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-zinc-500">{label}</dt>
-                <dd className="font-semibold text-zinc-900">{value}</dd>
-              </div>
-            ))}
-          </dl>
+          <TemplateStatsCard
+            stoneSize={stoneSize}
+            stoneCount={result.stoneCount}
+            columns={columns}
+            rows={rows}
+          />
 
-          {/* ── SVG preview ────────────────────────────────────────────── */}
-          <div className="overflow-auto rounded border border-zinc-200 bg-zinc-50 p-3">
-            <p className="mb-2 text-xs text-zinc-400">
-              Preview — dimensions are in mm (not to screen scale)
-            </p>
-            {/*
-              The SVG string below is produced entirely by our deterministic engine
-              (createBasicSvgExport) from validated number and select inputs only.
-              No raw SVG input from the user is accepted or parsed here.
-              dangerouslySetInnerHTML is safe for this controlled, engine-only source.
-            */}
-            <div
-              className="[&_svg]:h-auto [&_svg]:max-w-full"
-              dangerouslySetInnerHTML={{ __html: result.svgString }}
-            />
-          </div>
+          <SvgPreview svg={result.svgString} title="Template preview" />
 
-          {/* ── Actions ────────────────────────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleDownload}
-              className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-            >
-              Download SVG
-            </button>
-            <button
-              onClick={() => void handleCopy()}
-              className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            >
-              {copied ? 'Copied!' : 'Copy SVG'}
-            </button>
-            <span className="text-xs text-zinc-400">{filename}</span>
-          </div>
+          <SvgExportActions svg={result.svgString} filename={filename} />
         </>
       )}
     </div>

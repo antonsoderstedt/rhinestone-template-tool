@@ -16,6 +16,21 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 1.7 — Shared SVG UI Components (Implemented)
+
+- [x] `SvgPreview` renders engine-generated SVG safely; shows empty state when svg is empty
+- [x] `SvgPreview` has a code comment explaining the `dangerouslySetInnerHTML` security contract
+- [x] `SvgExportActions` handles Download and Copy with disabled state when svg is empty
+- [x] `SvgExportActions` shows copy success/error state
+- [x] `TemplateStatsCard` renders any combination of stone count, size, columns, rows, material, cutter, and extra stats
+- [x] `ValidationIssuesList` shows valid/invalid status, issue list with codes, and stone IDs
+- [x] `ManualGridGenerator` uses all four shared components
+- [x] `CalibrationSheetGenerator` uses `SvgPreview`, `SvgExportActions`, `TemplateStatsCard`
+- [x] `npm run build`, `typecheck`, and `lint` all pass
+- [x] Duplicate download/copy/preview logic removed from individual components
+
+---
+
 ## Phase 1.6 — Calibration Sheet UI (Implemented)
 
 - [x] `CalibrationSheetGenerator` component exists at `app/components/CalibrationSheetGenerator.tsx`
