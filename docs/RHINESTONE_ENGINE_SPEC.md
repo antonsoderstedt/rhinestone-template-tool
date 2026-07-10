@@ -104,6 +104,34 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Sizing Module
+
+### Why physical size matters
+
+An uploaded SVG or polyline may have arbitrary coordinate values — user units with no defined physical scale. Without scaling, a 10-unit-wide SVG would place stones at 10mm spacing, a 1000-unit-wide SVG at 1000mm. Physical size controls allow the user to say “make this design 80mm wide” before stones are sampled.
+
+### `calculatePolylineBounds(polylines)`
+
+Returns the axis-aligned bounding box of all points across all polylines in mm.
+
+### `scalePolylinesToFit(polylines, options)`
+
+Scales all polylines to fit a target physical size:
+
+- Only `targetWidthMm`: scale both X and Y uniformly to hit the target width.
+- Only `targetHeightMm`: scale both X and Y uniformly to hit the target height.
+- Both + `preserveAspectRatio: true` (default): scale by the smaller factor (no distortion).
+- Both + `preserveAspectRatio: false`: scale X and Y independently (stretches to fill).
+- After scaling, the top-left is moved to (`originXmm`, `originYmm`) (default 10, 10).
+
+Input polylines are never mutated. Output is a new array with rounded (4dp) coordinates.
+
+### `getTemplatePhysicalSize(template)`
+
+Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radius). This is an estimate — actual cut dimensions depend on calibration.
+
+---
+
 ## SVG Parser Module (Upload v2)
 
 ### Security model

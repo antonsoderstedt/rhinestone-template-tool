@@ -16,6 +16,26 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 6 — Physical Size Controls v1 (Implemented)
+
+- [x] `calculatePolylineBounds` returns correct bounds for one and multiple polylines
+- [x] `scalePolylinesToWidth` scales to exact target width (aspect preserved)
+- [x] `scalePolylinesToHeight` scales to exact target height (aspect preserved)
+- [x] `scalePolylinesToFit` with both dimensions + `preserveAspectRatio:true` fits inside box
+- [x] `scalePolylinesToFit` with `preserveAspectRatio:false` stretches independently
+- [x] Scaling moves minX/minY to `originXmm`/`originYmm`
+- [x] Scaling does not mutate input polylines
+- [x] Throws on empty polylines, invalid target dimensions
+- [x] `getTemplateStoneBounds` includes full hole radius
+- [x] `getTemplatePhysicalSize` returns `widthMm`/`heightMm`
+- [x] `createPolylineRhinestoneTemplate` accepts `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`
+- [x] Scaled template passes `validateRhinestoneTemplate`
+- [x] Exported SVG width/height are in mm (not px)
+- [x] `SvgUploadGenerator` and `PolylineLogoGenerator` show estimated physical output size
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 5 — SVG Upload v2: Curves + Transforms (Implemented)
 
 - [x] C/c cubic Bezier flattened to `curveSegments` polyline points

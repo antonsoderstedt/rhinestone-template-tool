@@ -17,6 +17,7 @@ import { getStoneSizeProfile } from '../profiles/stoneSizes';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { Polyline } from './polyline';
 import { samplePolylineBySpacing, normalizePolylineInput } from './polyline';
+import { scalePolylinesToFit } from '../sizing/scalePolylines';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,20 @@ export interface CreatePolylineRhinestoneTemplateOptions {
    */
   materialProfileId?: string;
   /** Optional extra metadata attached to the template. */
+  // ── Physical size controls ────────────────────────────────────────────────
+  /** Scale polylines to this width before sampling stones (mm). */
+  targetWidthMm?: number;
+  /** Scale polylines to this height before sampling stones (mm). */
+  targetHeightMm?: number;
+  /**
+   * When true (default), scale preserving aspect ratio.
+   * When false and both dimensions given, scale X and Y independently.
+   */
+  preserveAspectRatio?: boolean;
+  /** X coordinate of the top-left corner after scaling (mm). Default: 10. */
+  originXmm?: number;
+  /** Y coordinate of the top-left corner after scaling (mm). Default: 10. */
+  originYmm?: number;
   metadata?: Record<string, string | number | boolean>;
 }
 
@@ -85,10 +100,23 @@ export function createPolylineRhinestoneTemplate(
 
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
 
+  // ── Apply physical sizing (optional) ─────────────────────────────────────
+  const { targetWidthMm, targetHeightMm, preserveAspectRatio, originXmm, originYmm } = options;
+  const workingPolylines =
+    targetWidthMm !== undefined || targetHeightMm !== undefined
+      ? scalePolylinesToFit(polylines, {
+          targetWidthMm,
+          targetHeightMm,
+          preserveAspectRatio: preserveAspectRatio ?? true,
+          originXmm,
+          originYmm,
+        })
+      : polylines;
+
   // ── Place stones ─────────────────────────────────────────────────────────
   const stones: Stone[] = [];
 
-  polylines.forEach((polyline, pi) => {
+  workingPolylines.forEach((polyline, pi) => {
     // Validate and clone points before sampling
     const validatedPoints = normalizePolylineInput(polyline.points);
     const normalizedPolyline: Polyline = {
@@ -120,6 +148,11 @@ export function createPolylineRhinestoneTemplate(
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
       pathCount: polylines.length,
       spacingMm,
+      ...(targetWidthMm  !== undefined && { targetWidthMm }),
+      ...(targetHeightMm !== undefined && { targetHeightMm }),
+      ...(preserveAspectRatio !== undefined && { preserveAspectRatio }),
+      ...(originXmm !== undefined && { originXmm }),
+      ...(originYmm !== undefined && { originYmm }),
       ...options.metadata,
     },
   });

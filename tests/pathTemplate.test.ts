@@ -348,3 +348,78 @@ describe('createPolylineRhinestoneTemplate — integration', () => {
     expect(createBasicSvgExport(t)).not.toContain('<image');
   });
 });
+
+// ─── Physical sizing integration ──────────────────────────────────────────────
+
+describe('createPolylineRhinestoneTemplate — physical sizing', () => {
+  const LINE_100: import('../src/lib/rhinestone-engine/index.js').Polyline = {
+    points: [{ x: 0, y: 0 }, { x: 100, y: 0 }],
+  };
+
+  it('supports targetWidthMm — metadata includes the value', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 50,
+    });
+    expect(t.metadata?.targetWidthMm).toBe(50);
+  });
+
+  it('supports targetHeightMm — metadata includes the value', () => {
+    const RECT: import('../src/lib/rhinestone-engine/index.js').Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }],
+    };
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [RECT], stoneSize: 'SS10',
+      targetHeightMm: 50,
+    });
+    expect(t.metadata?.targetHeightMm).toBe(50);
+  });
+
+  it('scaling changes stone positions compared to unscaled', () => {
+    const unscaled = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+    });
+    const scaled = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 30,
+    });
+    const unscaledMaxX = Math.max(...unscaled.stones.map((s) => s.center.x));
+    const scaledMaxX   = Math.max(...scaled.stones.map((s) => s.center.x));
+    expect(scaledMaxX).toBeLessThan(unscaledMaxX);
+  });
+
+  it('scaled template passes validateRhinestoneTemplate', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 50,
+    });
+    expect(validateRhinestoneTemplate(t).valid).toBe(true);
+  });
+
+  it('scaled template exports via createBasicSvgExport', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 50,
+    });
+    expect(() => createBasicSvgExport(t)).not.toThrow();
+  });
+
+  it('exported SVG width/height use mm units (not px)', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 50,
+    });
+    const svg = createBasicSvgExport(t);
+    expect(svg).toMatch(/width="[\d.]+mm"/);
+    expect(svg).toMatch(/height="[\d.]+mm"/);
+    expect(svg).not.toMatch(/width="[\d.]+px"/);
+  });
+
+  it('exported SVG does not contain <image', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'test', name: 'Test', polylines: [LINE_100], stoneSize: 'SS10',
+      targetWidthMm: 50,
+    });
+    expect(createBasicSvgExport(t)).not.toContain('<image');
+  });
+});

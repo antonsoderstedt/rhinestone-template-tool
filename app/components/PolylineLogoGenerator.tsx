@@ -5,6 +5,7 @@ import {
   createPolylineRhinestoneTemplate,
   validateRhinestoneTemplate,
   createBasicSvgExport,
+  getTemplatePhysicalSize,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
   StoneSizeId,
@@ -94,6 +95,8 @@ type GeneratorResult =
       ok: true;
       svgString: string;
       stoneCount: number;
+      physicalWidthMm: number;
+      physicalHeightMm: number;
       validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
@@ -106,6 +109,9 @@ export default function PolylineLogoGenerator() {
   const [includeGuideBox, setIncludeGuideBox] = useState(true);
   const [includeLabels, setIncludeLabels] = useState(false);
   const [paddingMm, setPaddingMm] = useState(5);
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(80);
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
 
   const result = useMemo<GeneratorResult>(() => {
     try {
@@ -115,9 +121,13 @@ export default function PolylineLogoGenerator() {
         name: `${shape.charAt(0).toUpperCase() + shape.slice(1)} — ${stoneSize}`,
         polylines,
         stoneSize,
+        targetWidthMm: targetWidthMm !== '' ? targetWidthMm : undefined,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
+        preserveAspectRatio,
       });
 
       const validation = validateRhinestoneTemplate(template);
+      const { widthMm: physicalWidthMm, heightMm: physicalHeightMm } = getTemplatePhysicalSize(template);
 
       const svgString = createBasicSvgExport(template, {
         includeGuideBox,
@@ -126,14 +136,14 @@ export default function PolylineLogoGenerator() {
         decimalPlaces: 3,
       });
 
-      return { ok: true, svgString, stoneCount: template.stones.length, validation };
+      return { ok: true, svgString, stoneCount: template.stones.length, physicalWidthMm, physicalHeightMm, validation };
     } catch (err) {
       return {
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       };
     }
-  }, [shape, stoneSize, includeGuideBox, includeLabels, paddingMm]);
+  }, [shape, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio]);
 
   const filename = `rhinestone-polyline-logo-${stoneSize.toLowerCase()}.svg`;
 
@@ -181,26 +191,38 @@ export default function PolylineLogoGenerator() {
           />
         </label>
 
-        <div className="flex flex-col gap-2 justify-end">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={includeGuideBox}
-              onChange={(e) => setIncludeGuideBox(e.target.checked)}
-              className="h-4 w-4 rounded"
-            />
-            <span className="text-sm font-medium text-zinc-700">Include guide box</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={includeLabels}
-              onChange={(e) => setIncludeLabels(e.target.checked)}
-              className="h-4 w-4 rounded"
-            />
-            <span className="text-sm font-medium text-zinc-700">Include labels</span>
-          </label>
-        </div>
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Target Width (mm)</span>
+          <input
+            type="number" min={1} step={1} value={targetWidthMm} placeholder="e.g. 80"
+            onChange={(e) => setTargetWidthMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Target Height (mm)</span>
+          <input
+            type="number" min={1} step={1} value={targetHeightMm} placeholder="optional"
+            onChange={(e) => setTargetHeightMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={preserveAspectRatio} onChange={(e) => setPreserveAspectRatio(e.target.checked)} className="h-4 w-4 rounded" />
+          <span className="text-sm font-medium text-zinc-700">Preserve aspect ratio</span>
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={includeGuideBox} onChange={(e) => setIncludeGuideBox(e.target.checked)} className="h-4 w-4 rounded" />
+          <span className="text-sm font-medium text-zinc-700">Include guide box</span>
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={includeLabels} onChange={(e) => setIncludeLabels(e.target.checked)} className="h-4 w-4 rounded" />
+          <span className="text-sm font-medium text-zinc-700">Include labels</span>
+        </label>
 
       </div>
 
@@ -224,6 +246,8 @@ export default function PolylineLogoGenerator() {
             extraStats={[
               { label: 'Shape', value: shape },
               { label: 'Path mode', value: 'Polyline Sampling' },
+              { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
+              { label: 'Est. height', value: `${result.physicalHeightMm.toFixed(1)} mm` },
             ]}
           />
 

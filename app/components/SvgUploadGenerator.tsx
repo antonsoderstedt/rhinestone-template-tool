@@ -6,6 +6,7 @@ import {
   createPolylineRhinestoneTemplate,
   validateRhinestoneTemplate,
   createBasicSvgExport,
+  getTemplatePhysicalSize,
 } from '@/src/lib/rhinestone-engine/index';
 import type { StoneSizeId, TemplateValidationResult } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
@@ -24,6 +25,8 @@ type GeneratorResult =
       exportedSvg: string;
       stoneCount: number;
       pathCount: number;
+      physicalWidthMm: number;
+      physicalHeightMm: number;
       validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
@@ -40,6 +43,9 @@ export default function SvgUploadGenerator() {
   const [includeGuideBox, setIncludeGuideBox] = useState(true);
   const [includeLabels, setIncludeLabels] = useState(false);
   const [paddingMm, setPaddingMm] = useState(5);
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(100);
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
 
   // ── File handler ────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -72,8 +78,13 @@ export default function SvgUploadGenerator() {
         name: 'Uploaded SVG',
         polylines,
         stoneSize,
+        targetWidthMm: targetWidthMm !== '' ? targetWidthMm : undefined,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
+        preserveAspectRatio,
       });
       const validation = validateRhinestoneTemplate(template);
+      const { widthMm: physicalWidthMm, heightMm: physicalHeightMm } = getTemplatePhysicalSize(template);
+      // IMPORTANT: exportedSvg is engine-generated, NOT the uploaded raw SVG
       const exportedSvg = createBasicSvgExport(template, {
         includeGuideBox,
         includeLabels,
@@ -85,6 +96,8 @@ export default function SvgUploadGenerator() {
         exportedSvg,
         stoneCount: template.stones.length,
         pathCount: polylines.length,
+        physicalWidthMm,
+        physicalHeightMm,
         validation,
       };
     } catch (err) {
@@ -93,7 +106,7 @@ export default function SvgUploadGenerator() {
         error: err instanceof Error ? err.message : String(err),
       };
     }
-  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm]);
+  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio]);
 
   const filename = `rhinestone-uploaded-svg-${stoneSize.toLowerCase()}.svg`;
 
@@ -150,6 +163,42 @@ export default function SvgUploadGenerator() {
           />
         </label>
 
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Target Width (mm)</span>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={targetWidthMm}
+            placeholder="e.g. 100"
+            onChange={(e) => setTargetWidthMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Target Height (mm)</span>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={targetHeightMm}
+            placeholder="optional"
+            onChange={(e) => setTargetHeightMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={preserveAspectRatio}
+            onChange={(e) => setPreserveAspectRatio(e.target.checked)}
+            className="h-4 w-4 rounded"
+          />
+          <span className="text-sm font-medium text-zinc-700">Preserve aspect ratio</span>
+        </label>
+
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -200,6 +249,8 @@ export default function SvgUploadGenerator() {
             extraStats={[
               { label: 'Source', value: 'Uploaded SVG' },
               { label: 'Path count', value: result.pathCount },
+              { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
+              { label: 'Est. height', value: `${result.physicalHeightMm.toFixed(1)} mm` },
             ]}
           />
 

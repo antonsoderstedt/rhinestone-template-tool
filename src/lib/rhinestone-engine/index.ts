@@ -103,3 +103,18 @@ export type { SvgToPolylineOptions } from './svg/svgToPolyline';
 export { svgStringToPolylines } from './svg/svgToPolyline';
 export type { SvgViewBox, SvgRootAttributes } from './svg/svgUnits';
 export { parseSvgViewBox, getSvgRootAttributes } from './svg/svgUnits';
+
+// Physical size controls
+export type { PolylineBounds, ScalePolylinesToFitOptions } from './sizing/scalePolylines';
+export {
+  calculatePolylineBounds,
+  scalePolylinesToWidth,
+  scalePolylinesToHeight,
+  scalePolylinesToFit,
+} from './sizing/scalePolylines';
+export type { TemplatePhysicalSize } from './sizing/templateSizing';
+export {
+  getTemplateStoneBounds,
+  getTemplatePhysicalSize,
+  estimateTemplatePhysicalSizeFromStones,
+} from './sizing/templateSizing';

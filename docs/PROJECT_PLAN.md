@@ -37,6 +37,18 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 6 — Physical Size Controls v1 (Implemented)
+- [x] `calculatePolylineBounds` — bounding box of all points across all polylines
+- [x] `scalePolylinesToWidth` / `scalePolylinesToHeight` — uniform scaling helpers
+- [x] `scalePolylinesToFit` — general fit-to-box with optional aspect ratio control
+- [x] `getTemplateStoneBounds`, `getTemplatePhysicalSize`, `estimateTemplatePhysicalSizeFromStones`
+- [x] `createPolylineRhinestoneTemplate` supports `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`
+- [x] `SvgUploadGenerator`: target width/height inputs + preserve aspect ratio
+- [x] `PolylineLogoGenerator`: target width/height inputs (default 80mm) + preserve aspect ratio
+- [x] Both UIs show estimated physical output size in stats
+- [ ] Physical size normalization from SVG viewBox/width/height (deferred)
+- [ ] Cricut calibration scale compensation (deferred)
+
 ### Phase 5 — SVG Upload v2: Curves + Transforms (Implemented)
 - [x] Cubic Bezier C/c, smooth cubic S/s, quadratic Q/q, smooth quadratic T/t curve flattening
 - [x] `curveSegments` option (default 24) for configurable curve smoothness
