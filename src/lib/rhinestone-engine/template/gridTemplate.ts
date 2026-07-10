@@ -5,6 +5,8 @@ import {
 } from '../profiles/materialProfiles';
 import { getStoneSizeProfile } from '../profiles/stoneSizes';
 import { roundMm } from '../geometry/rounding';
+import type { DensityPreset, DensitySpacingResult } from '../spacing/density';
+import { getDensitySpacing } from '../spacing/density';
 
 // ─── Options type ─────────────────────────────────────────────────────────────
 
@@ -29,6 +31,11 @@ export interface CreateStoneGridTemplateOptions {
    * Defaults to the default Magic Flock profile.
    */
   materialProfileId?: string;
+  // ── Density controls ────────────────────────────────────────────────────
+  /** Density preset. If spacingMm is also set, spacingMm takes precedence. */
+  densityPreset?: DensityPreset;
+  /** Required when densityPreset is "custom". */
+  customSpacingMm?: number;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -70,16 +77,31 @@ export function createStoneGridTemplate(
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
   const dp = 3;
 
-  // Validate custom spacing
-  const spacing = options.spacingMm ?? recommendedSpacing;
-  if (spacing < recommendedSpacing) {
-    const sizeProfile = getStoneSizeProfile(stoneSize);
-    throw new Error(
-      `createStoneGridTemplate: spacingMm (${spacing} mm) is smaller than the ` +
-        `recommended centre distance for ${stoneSize} ` +
-        `(${recommendedSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
-        `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
-    );
+  // ── Spacing ──────────────────────────────────────────────────────────────
+  let spacing: number;
+  let densityResult: DensitySpacingResult | undefined;
+
+  if (options.spacingMm !== undefined) {
+    spacing = options.spacingMm;
+    if (spacing < recommendedSpacing) {
+      const sizeProfile = getStoneSizeProfile(stoneSize);
+      throw new Error(
+        `createStoneGridTemplate: spacingMm (${spacing} mm) is smaller than the ` +
+          `recommended centre distance for ${stoneSize} ` +
+          `(${recommendedSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
+          `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
+      );
+    }
+  } else if (options.densityPreset !== undefined) {
+    densityResult = getDensitySpacing({
+      stoneSize,
+      materialProfileId,
+      preset: options.densityPreset,
+      customSpacingMm: options.customSpacingMm,
+    });
+    spacing = densityResult.spacingMm;
+  } else {
+    spacing = recommendedSpacing;
   }
 
   const stones: Stone[] = [];
@@ -106,10 +128,25 @@ export function createStoneGridTemplate(
     }
   }
 
+  const templateMetadata: Record<string, string | number | boolean> = {
+    generatedBy: 'createStoneGridTemplate',
+    stoneSize,
+    columns,
+    rows,
+    materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
+    spacingMm: spacing,
+  };
+  if (densityResult) {
+    templateMetadata.densityPreset = densityResult.preset;
+    templateMetadata.resolvedSpacingMm = densityResult.spacingMm;
+    if (densityResult.warning) templateMetadata.densityWarning = densityResult.warning;
+  }
+
   return {
     id,
     name,
     unit: 'mm',
     stones,
+    metadata: templateMetadata,
   };
 }

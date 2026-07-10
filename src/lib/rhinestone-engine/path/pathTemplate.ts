@@ -18,6 +18,8 @@ import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { Polyline } from './polyline';
 import { samplePolylineBySpacing, normalizePolylineInput } from './polyline';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
+import type { DensityPreset, DensitySpacingResult } from '../spacing/density';
+import { getDensitySpacing } from '../spacing/density';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +55,11 @@ export interface CreatePolylineRhinestoneTemplateOptions {
   /** Y coordinate of the top-left corner after scaling (mm). Default: 10. */
   originYmm?: number;
   metadata?: Record<string, string | number | boolean>;
+  // ── Density controls ─────────────────────────────────────────────────────
+  /** Density preset. If spacingMm is also set, spacingMm takes precedence. */
+  densityPreset?: DensityPreset;
+  /** Required when densityPreset is "custom". */
+  customSpacingMm?: number;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -86,16 +93,30 @@ export function createPolylineRhinestoneTemplate(
 
   // ── Spacing ──────────────────────────────────────────────────────────────
   const minSpacing = getRecommendedCenterDistance(stoneSize, materialProfileId);
-  const spacingMm = options.spacingMm ?? minSpacing;
+  let spacingMm: number;
+  let densityResult: DensitySpacingResult | undefined;
 
-  if (options.spacingMm !== undefined && options.spacingMm < minSpacing) {
-    const sizeProfile = getStoneSizeProfile(stoneSize);
-    throw new Error(
-      `createPolylineRhinestoneTemplate: spacingMm (${options.spacingMm} mm) is ` +
-        `smaller than the recommended centre distance for ${stoneSize} ` +
-        `(${minSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
-        `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
-    );
+  if (options.spacingMm !== undefined) {
+    spacingMm = options.spacingMm;
+    if (spacingMm < minSpacing) {
+      const sizeProfile = getStoneSizeProfile(stoneSize);
+      throw new Error(
+        `createPolylineRhinestoneTemplate: spacingMm (${options.spacingMm} mm) is ` +
+          `smaller than the recommended centre distance for ${stoneSize} ` +
+          `(${minSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
+          `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
+      );
+    }
+  } else if (options.densityPreset !== undefined) {
+    densityResult = getDensitySpacing({
+      stoneSize,
+      materialProfileId,
+      preset: options.densityPreset,
+      customSpacingMm: options.customSpacingMm,
+    });
+    spacingMm = densityResult.spacingMm;
+  } else {
+    spacingMm = minSpacing;
   }
 
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
@@ -153,6 +174,11 @@ export function createPolylineRhinestoneTemplate(
       ...(preserveAspectRatio !== undefined && { preserveAspectRatio }),
       ...(originXmm !== undefined && { originXmm }),
       ...(originYmm !== undefined && { originYmm }),
+      ...(densityResult && {
+        densityPreset: densityResult.preset,
+        resolvedSpacingMm: densityResult.spacingMm,
+        ...(densityResult.warning && { densityWarning: densityResult.warning }),
+      }),
       ...options.metadata,
     },
   });

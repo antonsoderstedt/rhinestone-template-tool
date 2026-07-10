@@ -118,3 +118,7 @@ export {
   getTemplatePhysicalSize,
   estimateTemplatePhysicalSizeFromStones,
 } from './sizing/templateSizing';
+
+// Spacing / density controls
+export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
+export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';

@@ -7,8 +7,9 @@ import {
   validateRhinestoneTemplate,
   createBasicSvgExport,
   getTemplatePhysicalSize,
+  getDensityPresetOptions,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
@@ -46,6 +47,8 @@ export default function SvgUploadGenerator() {
   const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(100);
   const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
   const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
+  const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
+  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
 
   // ── File handler ────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,6 +84,8 @@ export default function SvgUploadGenerator() {
         targetWidthMm: targetWidthMm !== '' ? targetWidthMm : undefined,
         targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
         preserveAspectRatio,
+        densityPreset,
+        customSpacingMm: densityPreset === 'custom' && customSpacingMm !== '' ? customSpacingMm : undefined,
       });
       const validation = validateRhinestoneTemplate(template);
       const { widthMm: physicalWidthMm, heightMm: physicalHeightMm } = getTemplatePhysicalSize(template);
@@ -106,7 +111,7 @@ export default function SvgUploadGenerator() {
         error: err instanceof Error ? err.message : String(err),
       };
     }
-  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio]);
+  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm]);
 
   const filename = `rhinestone-uploaded-svg-${stoneSize.toLowerCase()}.svg`;
 
@@ -219,6 +224,25 @@ export default function SvgUploadGenerator() {
           <span className="text-sm font-medium text-zinc-700">Include labels</span>
         </label>
 
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Density</span>
+          <select value={densityPreset} onChange={(e) => setDensityPreset(e.target.value as DensityPreset)}
+            className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+            {getDensityPresetOptions().map((o) => (
+              <option key={o.value} value={o.value}>{o.label} — {o.description}</option>
+            ))}
+          </select>
+        </label>
+
+        {densityPreset === 'custom' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Custom spacing (mm)</span>
+            <input type="number" min={0.1} step={0.05} value={customSpacingMm}
+              onChange={(e) => setCustomSpacingMm(e.target.value === '' ? '' : Number(e.target.value))}
+              className="rounded border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400" />
+          </label>
+        )}
+
       </div>
 
       {/* ── No file yet ───────────────────────────────────────────────────── */}
@@ -251,6 +275,7 @@ export default function SvgUploadGenerator() {
               { label: 'Path count', value: result.pathCount },
               { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
               { label: 'Est. height', value: `${result.physicalHeightMm.toFixed(1)} mm` },
+              { label: 'Density', value: densityPreset },
             ]}
           />
 

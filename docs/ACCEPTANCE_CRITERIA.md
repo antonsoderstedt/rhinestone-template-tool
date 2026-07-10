@@ -16,6 +16,24 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 7 — Stone Spacing / Density Controls v1 (Implemented)
+
+- [x] `standard` preset equals recommended center distance
+- [x] `safe` preset is recommended + 0.25 mm
+- [x] `dense` preset is recommended − 0.15 mm, clamped to `minCenterDistanceMm`
+- [x] `loose` preset is recommended + 0.5 mm
+- [x] `custom` preset uses caller-supplied value, validated against `minCenterDistanceMm`
+- [x] `custom` with missing value throws; `custom` below min throws
+- [x] Dense never produces spacing below `minAllowedSpacingMm` (safe to cut)
+- [x] `createDotMatrixTextTemplate`, `createPolylineRhinestoneTemplate`, `createStoneGridTemplate` all support `densityPreset`
+- [x] Templates with any preset pass `validateRhinestoneTemplate`
+- [x] `densityPreset` and `resolvedSpacingMm` recorded in template metadata
+- [x] All four UI components have density preset dropdown and custom spacing input
+- [x] Density math is in the engine — React only passes the preset name and optional value
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 6 — Physical Size Controls v1 (Implemented)
 
 - [x] `calculatePolylineBounds` returns correct bounds for one and multiple polylines

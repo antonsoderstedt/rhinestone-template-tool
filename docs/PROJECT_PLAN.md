@@ -37,6 +37,19 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 7 — Stone Spacing / Density Controls v1 (Implemented)
+- [x] `getDensitySpacing` — safe/standard/dense/loose/custom presets with clamping
+- [x] `getDensityPresetOptions` — returns labelled preset list for UI rendering
+- [x] `createDotMatrixTextTemplate` supports `densityPreset` + `customSpacingMm`
+- [x] `createPolylineRhinestoneTemplate` supports `densityPreset` + `customSpacingMm`
+- [x] `createStoneGridTemplate` supports `densityPreset` + `customSpacingMm`
+- [x] All four UI components (text, polyline, SVG upload, manual grid) have density controls
+- [x] Density math lives in the engine; React only passes preset name and value
+- [x] Templates with dense spacing still pass `validateRhinestoneTemplate` (never below min)
+- [x] resolvedSpacingMm and densityPreset recorded in template metadata
+- [ ] Per-region density controls (deferred)
+- [ ] Manual stone editing (deferred)
+
 ### Phase 6 — Physical Size Controls v1 (Implemented)
 - [x] `calculatePolylineBounds` — bounding box of all points across all polylines
 - [x] `scalePolylinesToWidth` / `scalePolylinesToHeight` — uniform scaling helpers

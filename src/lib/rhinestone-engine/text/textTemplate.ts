@@ -19,6 +19,8 @@ import { getStoneSizeProfile } from '../profiles/stoneSizes';
 import { roundMm } from '../geometry/rounding';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import { getDotMatrixGlyph } from './dotMatrixFont';
+import type { DensityPreset, DensitySpacingResult } from '../spacing/density';
+import { getDensitySpacing } from '../spacing/density';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,14 @@ export interface CreateDotMatrixTextTemplateOptions {
    * with uppercase:false will fall back to the "?" glyph.
    */
   uppercase?: boolean;
+  // ── Density controls ─────────────────────────────────────────────────────
+  /**
+   * Density preset. If spacingMm is also provided, spacingMm takes precedence.
+   * Default behaviour (neither specified): uses recommended center distance.
+   */
+  densityPreset?: DensityPreset;
+  /** Required when densityPreset is "custom". Ignored for other presets. */
+  customSpacingMm?: number;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -100,16 +110,30 @@ export function createDotMatrixTextTemplate(
 
   // ── Spacing ──────────────────────────────────────────────────────────────
   const minSpacing = getRecommendedCenterDistance(stoneSize, materialProfileId);
-  const spacingMm = options.spacingMm ?? minSpacing;
+  let spacingMm: number;
+  let densityResult: DensitySpacingResult | undefined;
 
-  if (options.spacingMm !== undefined && options.spacingMm < minSpacing) {
-    const sizeProfile = getStoneSizeProfile(stoneSize);
-    throw new Error(
-      `createDotMatrixTextTemplate: spacingMm (${options.spacingMm} mm) is smaller ` +
-        `than the recommended centre distance for ${stoneSize} ` +
-        `(${minSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
-        `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
-    );
+  if (options.spacingMm !== undefined) {
+    spacingMm = options.spacingMm;
+    if (spacingMm < minSpacing) {
+      const sizeProfile = getStoneSizeProfile(stoneSize);
+      throw new Error(
+        `createDotMatrixTextTemplate: spacingMm (${options.spacingMm} mm) is smaller ` +
+          `than the recommended centre distance for ${stoneSize} ` +
+          `(${minSpacing} mm = minCenterDistanceMm ${sizeProfile.minCenterDistanceMm} + ` +
+          `spacingSafetyMarginMm). Stones would overlap or tear the material.`,
+      );
+    }
+  } else if (options.densityPreset !== undefined) {
+    densityResult = getDensitySpacing({
+      stoneSize,
+      materialProfileId,
+      preset: options.densityPreset,
+      customSpacingMm: options.customSpacingMm,
+    });
+    spacingMm = densityResult.spacingMm;
+  } else {
+    spacingMm = minSpacing;
   }
 
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
@@ -165,6 +189,11 @@ export function createDotMatrixTextTemplate(
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
       fontMode: 'dot-matrix-5x7',
       spacingMm,
+      ...(densityResult && {
+        densityPreset: densityResult.preset,
+        resolvedSpacingMm: densityResult.spacingMm,
+        ...(densityResult.warning && { densityWarning: densityResult.warning }),
+      }),
     },
   });
 }

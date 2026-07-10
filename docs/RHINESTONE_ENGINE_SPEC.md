@@ -104,6 +104,37 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Spacing / Density Module
+
+### Why density controls matter
+
+Stone spacing directly affects both material safety and visual quality:
+- Too close (below `minCenterDistanceMm`): holes merge, material tears.
+- Too loose: wasted material, gaps visible in the design.
+- `dense` mode intentionally approaches the minimum but is **always clamped** so the output is safe to cut.
+- `custom` is validated against the physical minimum before the template is created.
+
+### `getDensitySpacing(options)`
+
+| Preset | Spacing | Notes |
+|--------|---------|-------|
+| `safe` | recommended + 0.25 mm | Conservative extra gap |
+| `standard` | recommended center distance | Default |
+| `dense` | recommended − 0.15 mm, clamped to `minCenterDistanceMm` | If clamped, `warning` is set |
+| `loose` | recommended + 0.5 mm | Open/decorative designs |
+| `custom` | caller-supplied | Validated against `minCenterDistanceMm`; throws if too small |
+
+The `recommendedCenterDistanceMm` is `minCenterDistanceMm + spacingSafetyMarginMm` (from the material profile). The `minAllowedSpacingMm` is just `minCenterDistanceMm` (the bare physical minimum).
+
+### Template metadata
+
+When a density preset is used, the template metadata includes:
+- `densityPreset`: the preset name
+- `resolvedSpacingMm`: the actual spacing used
+- `densityWarning`: present only if dense was clamped
+
+---
+
 ## Sizing Module
 
 ### Why physical size matters
