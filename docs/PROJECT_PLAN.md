@@ -37,6 +37,17 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 4 — SVG Upload v1: Safe Primitive Parsing (Implemented)
+- [x] `validateSafeSvgInput` — blocks script, foreignObject, image, href, javascript: patterns
+- [x] `extractSvgElements` — extracts line/polyline/polygon/rect/circle/ellipse/path elements
+- [x] `svgStringToPolylines` — converts safe SVG primitives to Polylines
+- [x] Path support: M/m/L/l/H/h/V/v/Z/z (Bezier/arc commands throw with clear error)
+- [x] Transform attributes throw with clear message
+- [x] `SvgUploadGenerator` React component — raw uploaded SVG is never rendered
+- [ ] Full path flattening (Bezier curves) — deferred
+- [ ] SVG transform resolution — deferred
+- [ ] Complex SVG parsing (nested groups, use, symbols) — deferred
+
 ### Phase 3 — SVG/Logo-to-Rhinestones Foundation v1: Polyline Sampling (Implemented)
 - [x] `getPolylineLength`, `samplePolylineBySpacing`, `normalizePolylineInput` in `path/polyline.ts`
 - [x] `createPolylineRhinestoneTemplate` — polylines → RhinestoneTemplate via engine pipeline

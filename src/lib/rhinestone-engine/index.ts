@@ -91,3 +91,13 @@ export {
 } from './path/polyline';
 export type { CreatePolylineRhinestoneTemplateOptions } from './path/pathTemplate';
 export { createPolylineRhinestoneTemplate } from './path/pathTemplate';
+
+// SVG upload (v1 — safe primitive parsing, no raw SVG rendering)
+export type { ParsedSvgElement, SvgSafetyResult } from './svg/svgParser';
+export {
+  parseSvgAttributes,
+  validateSafeSvgInput,
+  extractSvgElements,
+} from './svg/svgParser';
+export type { SvgToPolylineOptions } from './svg/svgToPolyline';
+export { svgStringToPolylines } from './svg/svgToPolyline';

@@ -2,6 +2,7 @@ import ManualGridGenerator from './components/ManualGridGenerator';
 import CalibrationSheetGenerator from './components/CalibrationSheetGenerator';
 import TextMatrixGenerator from './components/TextMatrixGenerator';
 import PolylineLogoGenerator from './components/PolylineLogoGenerator';
+import SvgUploadGenerator from './components/SvgUploadGenerator';
 
 export default function Home() {
   return (
@@ -35,6 +36,19 @@ export default function Home() {
             come in a future version.
           </p>
           <TextMatrixGenerator />
+        </section>
+
+        {/* ── SVG Upload Generator ─────────────────────────────────────────── */}
+        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-base font-semibold text-zinc-800">
+            SVG Upload
+          </h2>
+          <p className="mb-5 text-xs text-zinc-500">
+            SVG Upload v1 — simple primitives only. Curves, transforms, and complex
+            paths should be flattened before upload. Real SVG upload and full path
+            support coming in a future version.
+          </p>
+          <SvgUploadGenerator />
         </section>
 
         {/* ── Polyline Logo Generator ──────────────────────────────────────── */}

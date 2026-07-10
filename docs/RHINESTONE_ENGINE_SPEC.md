@@ -104,6 +104,36 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## SVG Parser Module (Upload v1)
+
+### Security model
+
+The uploaded SVG is NEVER rendered, embedded in output, or passed to `dangerouslySetInnerHTML`. It is treated as untrusted text that is validated and converted to internal polylines, then discarded.
+
+**Blocked patterns (any match aborts processing):**
+`<script`, `<foreignObject`, `onload=`, `onclick=`, `javascript:`, `href=`, `xlink:href=`, `<image`
+
+### Supported primitives
+
+| Element | Conversion |
+|---------|------------|
+| `<line>` | Open 2-point polyline |
+| `<polyline>` | Open polyline |
+| `<polygon>` | Closed polyline |
+| `<rect>` | Closed 4-point polyline |
+| `<circle>` | Closed N-point polygon approximation (default 64 segments) |
+| `<ellipse>` | Closed N-point polygon approximation (default 64 segments) |
+| `<path>` | Simple subpaths from M/m/L/l/H/h/V/v/Z/z only |
+
+**Not supported in v1 (throw with clear error):**
+- `transform` attribute on any element
+- Bezier/arc path commands: C/c/S/s/Q/q/T/t/A/a
+- Nested groups, `<use>`, `<symbol>`, `<defs>`
+
+**Future:** full path flattening, transform resolution, compound paths.
+
+---
+
 ## Path Module (SVG/Logo Foundation v1)
 
 ### Overview

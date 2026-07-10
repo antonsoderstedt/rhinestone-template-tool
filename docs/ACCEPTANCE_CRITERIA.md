@@ -16,6 +16,27 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 4 — SVG Upload v1: Safe Primitive Parsing (Implemented)
+
+- [x] `validateSafeSvgInput` returns safe for simple primitive SVG
+- [x] `validateSafeSvgInput` flags script, foreignObject, image, javascript:, onload=, href=, xlink:href=
+- [x] `extractSvgElements` extracts line, polyline, polygon, rect, circle, ellipse, path elements
+- [x] `svgStringToPolylines` converts all supported primitives to Polylines
+- [x] Circle/ellipse approximated with configurable segment count (default 64)
+- [x] Path M/L/H/V/Z commands supported
+- [x] Bezier curve commands (C/Q/A/…) throw with clear error mentioning “flatten”
+- [x] `transform` attribute throws with clear error
+- [x] Unsafe SVG throws
+- [x] SVG with no supported shapes throws
+- [x] Generated polylines pass through `createPolylineRhinestoneTemplate`
+- [x] Generated template passes `validateRhinestoneTemplate`
+- [x] Exported SVG contains real `<circle>` elements, no `<image>`, no raw uploaded SVG data
+- [x] `SvgUploadGenerator` component never passes uploaded SVG to `dangerouslySetInnerHTML`
+- [x] Preview shows only engine-generated rhinestone SVG
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 3 — SVG/Logo Foundation v1: Polyline Sampling (Implemented)
 
 - [x] `getPolylineLength` returns correct length for single segments, multi-segment, and closed polylines
