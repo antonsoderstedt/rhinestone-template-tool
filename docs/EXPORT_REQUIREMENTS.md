@@ -1,5 +1,18 @@
 # Export Requirements — Rhinestone Template Tool
 
+## Export Readiness Check (Required Before Download)
+
+Every generator calls `checkExportReadiness(template)` before the download button is enabled. The check is performed by the engine, not by React.
+
+Download is disabled (`SvgExportActions disabled={true}`) when `readiness.ready === false`. This happens when:
+- The template has no stones
+- The template has stone collisions
+- The template unit is not `"mm"`
+- Duplicate stone IDs exist
+- Stone count is below a configured minimum
+
+**Warnings do not block export.** The calibration warning (`REQUIRES_CALIBRATION`) is always present because all current profiles are uncalibrated. Crafters should cut a calibration sheet before production runs, but the warning alone does not prevent download.
+
 ## Physical Size and the SVG Export Pipeline
 
 Uploaded SVG files have coordinates in arbitrary user units with no defined physical scale. Physical Size Controls v1 ensures that before stones are placed:

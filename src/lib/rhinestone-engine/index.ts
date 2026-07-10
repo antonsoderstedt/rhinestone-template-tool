@@ -122,3 +122,13 @@ export {
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';
+
+// Export readiness / Cricut QA
+export type {
+  ExportReadinessSeverity,
+  ExportReadinessIssue,
+  ExportReadinessSummary,
+  ExportReadinessResult,
+  ExportReadinessOptions,
+} from './exportQa/exportReadiness';
+export { checkExportReadiness } from './exportQa/exportReadiness';

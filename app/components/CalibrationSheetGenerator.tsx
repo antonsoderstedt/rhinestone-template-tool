@@ -5,16 +5,18 @@ import {
   createDefaultMagicFlockCalibrationSheet,
   createBasicSvgExport,
   MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
+  checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
+import ExportReadinessPanel from './ExportReadinessPanel';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CalibrationSheetGenerator() {
   // Calibration sheet generation is deterministic — no user inputs needed.
-  const { svgString, stoneCount, stoneSizes } = useMemo(() => {
+  const { svgString, stoneCount, stoneSizes, readiness } = useMemo(() => {
     const sheet = createDefaultMagicFlockCalibrationSheet();
 
     const svgString = createBasicSvgExport(sheet, {
@@ -25,11 +27,13 @@ export default function CalibrationSheetGenerator() {
     });
 
     const uniqueSizes = [...new Set(sheet.stones.map((s) => s.stoneSize))];
+    const readiness = checkExportReadiness(sheet);
 
     return {
       svgString,
       stoneCount: sheet.stones.length,
       stoneSizes: uniqueSizes,
+      readiness,
     };
   }, []);
 
@@ -74,8 +78,12 @@ export default function CalibrationSheetGenerator() {
         extraStats={[{ label: 'Stone sizes', value: stoneSizes.join(', ') }]}
       />
 
+      <ExportReadinessPanel result={readiness} />
+
       <SvgPreview svg={svgString} title="Calibration sheet preview" />
 
+      {/* Calibration sheet download is never blocked by calibration warnings alone —
+          warnings are expected on a sheet whose purpose is to find the correct values. */}
       <SvgExportActions svg={svgString} filename={filename} />
 
     </div>

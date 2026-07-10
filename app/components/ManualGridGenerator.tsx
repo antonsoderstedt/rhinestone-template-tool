@@ -6,12 +6,13 @@ import {
   validateRhinestoneTemplate,
   createBasicSvgExport,
   getDensityPresetOptions,
+  checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
-import ValidationIssuesList from './ValidationIssuesList';
+import ExportReadinessPanel from './ExportReadinessPanel';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,8 +24,7 @@ type GeneratorResult =
   | {
       ok: true;
       svgString: string;
-      stoneCount: number;
-      validation: TemplateValidationResult;
+      stoneCount: number;      readiness: ExportReadinessResult;      validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
 
@@ -55,6 +55,7 @@ export default function ManualGridGenerator() {
       });
 
       const validation = validateRhinestoneTemplate(template);
+      const readiness = checkExportReadiness(template);
 
       const svgString = createBasicSvgExport(template, {
         includeGuideBox,
@@ -63,7 +64,7 @@ export default function ManualGridGenerator() {
         decimalPlaces: 3,
       });
 
-      return { ok: true, svgString, stoneCount: template.stones.length, validation };
+      return { ok: true, svgString, stoneCount: template.stones.length, readiness, validation };
     } catch (err) {
       return {
         ok: false,
@@ -186,10 +187,7 @@ export default function ManualGridGenerator() {
 
       {result.ok && (
         <>
-          <ValidationIssuesList
-            valid={result.validation.valid}
-            issues={result.validation.issues}
-          />
+          <ExportReadinessPanel result={result.readiness} />
 
           <TemplateStatsCard
             stoneSize={stoneSize}
@@ -201,7 +199,7 @@ export default function ManualGridGenerator() {
 
           <SvgPreview svg={result.svgString} title="Template preview" />
 
-          <SvgExportActions svg={result.svgString} filename={filename} />
+          <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
     </div>

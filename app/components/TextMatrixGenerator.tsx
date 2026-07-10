@@ -6,12 +6,13 @@ import {
   validateRhinestoneTemplate,
   createBasicSvgExport,
   getDensityPresetOptions,
+  checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
-import ValidationIssuesList from './ValidationIssuesList';
+import ExportReadinessPanel from './ExportReadinessPanel';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,8 +24,7 @@ type GeneratorResult =
   | {
       ok: true;
       svgString: string;
-      stoneCount: number;
-      validation: TemplateValidationResult;
+      stoneCount: number;      readiness: ExportReadinessResult;      validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
 
@@ -51,6 +51,7 @@ export default function TextMatrixGenerator() {
       });
 
       const validation = validateRhinestoneTemplate(template);
+      const readiness = checkExportReadiness(template);
 
       const svgString = createBasicSvgExport(template, {
         includeGuideBox,
@@ -59,7 +60,7 @@ export default function TextMatrixGenerator() {
         decimalPlaces: 3,
       });
 
-      return { ok: true, svgString, stoneCount: template.stones.length, validation };
+      return { ok: true, svgString, stoneCount: template.stones.length, readiness, validation };
     } catch (err) {
       return {
         ok: false,
@@ -165,22 +166,21 @@ export default function TextMatrixGenerator() {
 
       {result.ok && (
         <>
-          <ValidationIssuesList
-            valid={result.validation.valid}
-            issues={result.validation.issues}
-          />
+          <ExportReadinessPanel result={result.readiness} />
 
           <TemplateStatsCard
             stoneSize={stoneSize}
             stoneCount={result.stoneCount}
             extraStats={[
-              { label: 'Text', value: text.replace(/\n/g, ' ↵ ') },
-              { label: 'Font mode', value: 'Dot Matrix 5×7' },              { label: 'Density', value: densityPreset },            ]}
+              { label: 'Text', value: text.replace(/\n/g, ' \u21b5 ') },
+              { label: 'Font mode', value: 'Dot Matrix 5\u00d77' },
+              { label: 'Density', value: densityPreset },
+            ]}
           />
 
           <SvgPreview svg={result.svgString} title="Text template preview" />
 
-          <SvgExportActions svg={result.svgString} filename={filename} />
+          <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
     </div>

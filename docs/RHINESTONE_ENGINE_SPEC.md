@@ -104,6 +104,45 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## Export QA Module
+
+### Why export readiness is required before production cutting
+
+A template that fails readiness checks will produce a cut file that:
+- Has overlapping holes (tears the flock)
+- Has zero stones (cuts nothing)
+- Uses the wrong coordinate unit (wrong physical scale)
+- Has collisions that split the material bridge between holes
+
+`checkExportReadiness` catches all of these problems before the SVG is exported.
+
+### `checkExportReadiness(template, options?)`
+
+Checks a `RhinestoneTemplate` against the material profile and physical constraints.
+
+**Errors** (block export — `ready = false`):
+- `INVALID_UNIT`: unit is not `"mm"`
+- `NO_STONES`: template is empty
+- `INSUFFICIENT_STONES`: fewer than `minStoneCount`
+- Validation errors from `validateRhinestoneTemplate` (duplicate IDs, invalid hole sizes, `STONE_COLLISION`)
+
+**Warnings** (do not block export):
+- `REQUIRES_CALIBRATION`: material profile needs physical calibration
+- `EXCEEDS_MAX_WIDTH`/`BELOW_MIN_WIDTH`: physical size out of range
+- `EXCEEDS_MAX_HEIGHT`/`BELOW_MIN_HEIGHT`: same for height
+- `UNSUPPORTED_STONE_SIZE`: stone size not in material profile's supported list
+
+**Info** (always present):
+- `PHYSICAL_SIZE`: estimated output dimensions including hole radii
+
+The summary object includes `widthMm`, `heightMm`, `stoneCount`, `materialProfileId`, `cutter`, `stoneSizes`, `hasCollisions`, `hasCalibrationWarning`.
+
+### Calibration sheet special case
+
+Calibration sheets intentionally trigger the `REQUIRES_CALIBRATION` warning (since calibrating IS their purpose). Because warnings do not block export (`ready = true` when only warnings exist), calibration sheet downloads are never blocked.
+
+---
+
 ## Spacing / Density Module
 
 ### Why density controls matter

@@ -7,17 +7,19 @@ import {
   createBasicSvgExport,
   getTemplatePhysicalSize,
   getDensityPresetOptions,
+  checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
   StoneSizeId,
   Polyline,
   TemplateValidationResult,
   DensityPreset,
+  ExportReadinessResult,
 } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
-import ValidationIssuesList from './ValidationIssuesList';
+import ExportReadinessPanel from './ExportReadinessPanel';
 
 // ─── Demo shapes ──────────────────────────────────────────────────────────────
 
@@ -99,6 +101,7 @@ type GeneratorResult =
       stoneCount: number;
       physicalWidthMm: number;
       physicalHeightMm: number;
+      readiness: ExportReadinessResult;
       validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
@@ -133,6 +136,7 @@ export default function PolylineLogoGenerator() {
       });
 
       const validation = validateRhinestoneTemplate(template);
+      const readiness = checkExportReadiness(template);
       const { widthMm: physicalWidthMm, heightMm: physicalHeightMm } = getTemplatePhysicalSize(template);
 
       const svgString = createBasicSvgExport(template, {
@@ -142,7 +146,7 @@ export default function PolylineLogoGenerator() {
         decimalPlaces: 3,
       });
 
-      return { ok: true, svgString, stoneCount: template.stones.length, physicalWidthMm, physicalHeightMm, validation };
+      return { ok: true, svgString, stoneCount: template.stones.length, physicalWidthMm, physicalHeightMm, readiness, validation };
     } catch (err) {
       return {
         ok: false,
@@ -260,10 +264,7 @@ export default function PolylineLogoGenerator() {
 
       {result.ok && (
         <>
-          <ValidationIssuesList
-            valid={result.validation.valid}
-            issues={result.validation.issues}
-          />
+          <ExportReadinessPanel result={result.readiness} />
 
           <TemplateStatsCard
             stoneSize={stoneSize}
@@ -279,7 +280,7 @@ export default function PolylineLogoGenerator() {
 
           <SvgPreview svg={result.svgString} title="Polyline template preview" />
 
-          <SvgExportActions svg={result.svgString} filename={filename} />
+          <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
     </div>

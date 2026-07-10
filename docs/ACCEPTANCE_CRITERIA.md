@@ -16,6 +16,26 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 8 — Export Readiness / Cricut QA v1 (Implemented)
+
+- [x] `checkExportReadiness` returns `ready: false` for empty, non-mm, or colliding templates
+- [x] `checkExportReadiness` returns errors for duplicate IDs, invalid holes, collisions
+- [x] `checkExportReadiness` returns calibration warning (not error) — template stays ready
+- [x] `checkExportReadiness` returns physical size warnings for out-of-range dimensions
+- [x] `checkExportReadiness` returns `PHYSICAL_SIZE` info issue always
+- [x] `minStoneCount` option produces error when count is too low
+- [x] Summary includes `stoneCount`, `widthMm`, `heightMm`, `materialProfileId`, `cutter`, `stoneSizes`, `hasCollisions`
+- [x] Result is deterministic
+- [x] Grid, text, and polyline templates pass readiness with no errors
+- [x] `ExportReadinessPanel` shows ready/not ready status with errors, warnings, info
+- [x] All four generators and `CalibrationSheetGenerator` render `ExportReadinessPanel`
+- [x] `SvgExportActions` is disabled when `readiness.ready === false`
+- [x] Calibration sheet download is never blocked by calibration warning alone
+- [x] Readiness math lives in engine, not duplicated in React
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 7 — Stone Spacing / Density Controls v1 (Implemented)
 
 - [x] `standard` preset equals recommended center distance

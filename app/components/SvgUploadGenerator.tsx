@@ -8,12 +8,13 @@ import {
   createBasicSvgExport,
   getTemplatePhysicalSize,
   getDensityPresetOptions,
+  checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
-import ValidationIssuesList from './ValidationIssuesList';
+import ExportReadinessPanel from './ExportReadinessPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,8 +28,7 @@ type GeneratorResult =
       stoneCount: number;
       pathCount: number;
       physicalWidthMm: number;
-      physicalHeightMm: number;
-      validation: TemplateValidationResult;
+      physicalHeightMm: number;      readiness: ExportReadinessResult;      validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
 
@@ -88,6 +88,7 @@ export default function SvgUploadGenerator() {
         customSpacingMm: densityPreset === 'custom' && customSpacingMm !== '' ? customSpacingMm : undefined,
       });
       const validation = validateRhinestoneTemplate(template);
+      const readiness = checkExportReadiness(template);
       const { widthMm: physicalWidthMm, heightMm: physicalHeightMm } = getTemplatePhysicalSize(template);
       // IMPORTANT: exportedSvg is engine-generated, NOT the uploaded raw SVG
       const exportedSvg = createBasicSvgExport(template, {
@@ -103,6 +104,7 @@ export default function SvgUploadGenerator() {
         pathCount: polylines.length,
         physicalWidthMm,
         physicalHeightMm,
+        readiness,
         validation,
       };
     } catch (err) {
@@ -262,10 +264,7 @@ export default function SvgUploadGenerator() {
       {/* ── Results ──────────────────────────────────────────────────────── */}
       {result && result.ok && (
         <>
-          <ValidationIssuesList
-            valid={result.validation.valid}
-            issues={result.validation.issues}
-          />
+          <ExportReadinessPanel result={result.readiness} />
 
           <TemplateStatsCard
             stoneSize={stoneSize}
@@ -285,7 +284,7 @@ export default function SvgUploadGenerator() {
           */}
           <SvgPreview svg={result.exportedSvg} title="Rhinestone template preview" />
 
-          <SvgExportActions svg={result.exportedSvg} filename={filename} />
+          <SvgExportActions svg={result.exportedSvg} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
     </div>

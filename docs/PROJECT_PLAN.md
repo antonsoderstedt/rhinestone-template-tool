@@ -37,6 +37,19 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 8 — Export Readiness / Cricut QA v1 (Implemented)
+- [x] `checkExportReadiness(template, options?)` — single engine function for all export readiness checks
+- [x] Errors: invalid unit, no stones, stone count below minimum, duplicate IDs, collisions
+- [x] Warnings: calibration required, physical size out of range, unsupported stone size
+- [x] Info: physical size summary (always present)
+- [x] `ExportReadinessPanel` React component — renders result, never recomputes logic
+- [x] All four generators (text, polyline, SVG upload, manual grid) use `ExportReadinessPanel`
+- [x] `CalibrationSheetGenerator` shows readiness (calibration warning expected and does not block download)
+- [x] `SvgExportActions` disabled when `readiness.ready === false`
+- [x] Readiness logic lives entirely in the engine
+- [ ] Per-stone QA (deferred)
+- [ ] Advanced Cricut mat size limits as default options (deferred)
+
 ### Phase 7 — Stone Spacing / Density Controls v1 (Implemented)
 - [x] `getDensitySpacing` — safe/standard/dense/loose/custom presets with clamping
 - [x] `getDensityPresetOptions` — returns labelled preset list for UI rendering
