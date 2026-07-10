@@ -104,6 +104,45 @@ The engine must produce **byte-identical output** for identical inputs. This mea
 
 No module in `/src/lib/rhinestone-engine/` may import from `/app/`.
 
+## SVG Parser Module (Upload v2)
+
+### Security model
+
+Same as v1. The uploaded SVG is NEVER rendered. It is safety-validated, parsed into internal polylines, then discarded. Three new unsafe patterns added: `<style`, `data:`, `@import`.
+
+### Supported primitives (unchanged from v1)
+
+line, polyline, polygon, rect, circle, ellipse — see v1 section.
+
+### Path commands (v2 expansion)
+
+| Command | Description |
+|---------|-------------|
+| M/m/L/l/H/h/V/v/Z/z | Straight lines (v1) |
+| C/c | Cubic Bezier (flattened to `curveSegments` points) |
+| S/s | Smooth cubic Bezier (reflected control point) |
+| Q/q | Quadratic Bezier (flattened) |
+| T/t | Smooth quadratic Bezier (reflected control point) |
+| A/a | **Not supported** — throws with clear message asking to expand arcs |
+
+Curve smoothness is controlled by `curveSegments` (default 24). Higher = smoother.
+
+### Transform support (v2)
+
+Element-level `transform` attributes are now parsed and applied:
+- `translate(tx [ty])` — shifts all points
+- `scale(s)` or `scale(sx, sy)` — scales from origin
+- `rotate(angle)` or `rotate(angle, cx, cy)` — rotation in degrees
+- `matrix(a,b,c,d,e,f)` — raw SVG matrix
+
+Compose order: left-to-right in attribute string (same as SVG spec). Throws on `skewX`/`skewY` and malformed matrices.
+
+### svgUnits.ts (groundwork)
+
+Provides `parseSvgViewBox` and `getSvgRootAttributes` for reading the root SVG's `viewBox`, `width`, and `height`. These are not yet used for coordinate rescaling but provide the foundation for future physical-size normalization.
+
+---
+
 ## SVG Parser Module (Upload v1)
 
 ### Security model

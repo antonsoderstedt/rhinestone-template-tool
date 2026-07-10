@@ -45,6 +45,9 @@ const UNSAFE_PATTERNS: Array<[RegExp, string]> = [
   [/\bhref\s*=/i, 'href='],
   [/xlink:href\s*=/i, 'xlink:href='],
   [/<image/i, '<image'],
+  [/<style/i, '<style'],
+  [/data:/i, 'data:'],
+  [/@import/i, '@import'],
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────

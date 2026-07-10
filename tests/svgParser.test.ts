@@ -158,3 +158,25 @@ describe('parseSvgAttributes', () => {
     expect(attrs.r).toBe('5');
   });
 });
+
+// ─── Additional safety patterns (v2) ─────────────────────────────────────────
+
+describe('validateSafeSvgInput — v2 safety additions', () => {
+  it('flags <style tag', () => {
+    const r = validateSafeSvgInput('<svg><style>rect{fill:red}</style><rect /></svg>');
+    expect(r.safe).toBe(false);
+    expect(r.issues.some((i) => i.toLowerCase().includes('style'))).toBe(true);
+  });
+
+  it('flags data: URL', () => {
+    const r = validateSafeSvgInput('<svg><image href="data:image/png;base64,abc"/></svg>');
+    expect(r.safe).toBe(false);
+    expect(r.issues.some((i) => i.toLowerCase().includes('data:'))).toBe(true);
+  });
+
+  it('flags @import (external CSS)', () => {
+    const r = validateSafeSvgInput('<svg><style>@import url("ext.css");</style></svg>');
+    expect(r.safe).toBe(false);
+    expect(r.issues.some((i) => i.toLowerCase().includes('@import'))).toBe(true);
+  });
+});

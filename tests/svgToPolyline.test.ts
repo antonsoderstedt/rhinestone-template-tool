@@ -92,12 +92,14 @@ describe('svgStringToPolylines — conversions', () => {
 // ─── svgStringToPolylines — error cases ──────────────────────────────────────
 
 describe('svgStringToPolylines — error cases', () => {
-  it('throws on unsupported path curve command C', () => {
-    expect(() => svgStringToPolylines(pathCurveSvg)).toThrow(/C/);
+  it('cubic Bezier C is now supported in v2 (does not throw)', () => {
+    // In v1, C threw. In v2, C is supported via curve flattening.
+    expect(() => svgStringToPolylines(pathCurveSvg)).not.toThrow();
   });
 
-  it('throws on transform attribute', () => {
-    expect(() => svgStringToPolylines(transformSvg)).toThrow(/transform/i);
+  it('transform attribute is now supported in v2 (does not throw for translate/scale/rotate/matrix)', () => {
+    // In v1, any transform threw. In v2, translate/scale/rotate/matrix are applied.
+    expect(() => svgStringToPolylines(transformSvg)).not.toThrow();
   });
 
   it('throws on unsafe SVG (script tag)', () => {
@@ -108,8 +110,9 @@ describe('svgStringToPolylines — error cases', () => {
     expect(() => svgStringToPolylines(noShapesSvg)).toThrow(/no supported/i);
   });
 
-  it('error message for curve command includes "flatten"', () => {
-    expect(() => svgStringToPolylines(pathCurveSvg)).toThrow(/flatten/i);
+  it('arc A still throws in v2 with a clear message', () => {
+    const arcSvg = '<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>';
+    expect(() => svgStringToPolylines(arcSvg)).toThrow(/arc/i);
   });
 });
 
@@ -176,5 +179,141 @@ describe('svgStringToPolylines — rhinestone engine integration', () => {
     const template = createPolylineRhinestoneTemplate({ id: 't', name: 'T', polylines, stoneSize: 'SS10' });
     const svg = createBasicSvgExport(template);
     expect(svg).toContain('data-stone-size="SS10"');
+  });
+});
+
+// ─── Bezier curve support (v2) ────────────────────────────────────────────────
+
+describe('svgStringToPolylines — Bezier curves', () => {
+  it('converts cubic Bezier C to polyline (curveSegments points added)', () => {
+    const svg = '<svg><path d="M 0 0 C 10 0 10 20 20 20" /></svg>';
+    const polys = svgStringToPolylines(svg, { curveSegments: 4 });
+    // 1 start + 4 curve points = 5
+    expect(polys[0]!.points.length).toBe(5);
+    expect(polys[0]!.points[0]).toEqual({ x: 0, y: 0 });
+    expect(polys[0]!.points[4]!.x).toBeCloseTo(20, 2);
+    expect(polys[0]!.points[4]!.y).toBeCloseTo(20, 2);
+  });
+
+  it('converts relative cubic c to polyline', () => {
+    const svg = '<svg><path d="M 0 0 c 10 0 10 20 20 20" /></svg>';
+    const polys = svgStringToPolylines(svg, { curveSegments: 4 });
+    expect(polys[0]!.points.length).toBe(5);
+    expect(polys[0]!.points[4]!.x).toBeCloseTo(20, 2);
+    expect(polys[0]!.points[4]!.y).toBeCloseTo(20, 2);
+  });
+
+  it('converts smooth cubic S (uses reflected control point)', () => {
+    const svg = '<svg><path d="M 0 0 C 5 -5 15 25 20 20 S 35 15 40 20" /></svg>';
+    const polys = svgStringToPolylines(svg, { curveSegments: 4 });
+    // 1 start + 4 (C) + 4 (S) = 9 points
+    expect(polys[0]!.points.length).toBe(9);
+    expect(polys[0]!.points[8]!.x).toBeCloseTo(40, 2);
+  });
+
+  it('converts quadratic Bezier Q to polyline', () => {
+    const svg = '<svg><path d="M 0 0 Q 10 20 20 0" /></svg>';
+    const polys = svgStringToPolylines(svg, { curveSegments: 4 });
+    expect(polys[0]!.points.length).toBe(5);
+    expect(polys[0]!.points[4]!.x).toBeCloseTo(20, 2);
+    expect(polys[0]!.points[4]!.y).toBeCloseTo(0, 2);
+  });
+
+  it('converts smooth quadratic T (uses reflected control point)', () => {
+    const svg = '<svg><path d="M 0 0 Q 10 20 20 0 T 40 0" /></svg>';
+    const polys = svgStringToPolylines(svg, { curveSegments: 4 });
+    expect(polys[0]!.points.length).toBe(9);
+    expect(polys[0]!.points[8]!.x).toBeCloseTo(40, 2);
+  });
+
+  it('supports multiple subpaths in one path element', () => {
+    const svg = '<svg><path d="M 0 0 L 10 0 M 20 0 L 30 0" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    expect(polys.length).toBe(2);
+    expect(polys[0]!.points[0]).toEqual({ x: 0, y: 0 });
+    expect(polys[1]!.points[0]).toEqual({ x: 20, y: 0 });
+  });
+
+  it('curve produces more points than a straight line', () => {
+    const straight = svgStringToPolylines('<svg><path d="M 0 0 L 20 20" /></svg>');
+    const curve    = svgStringToPolylines('<svg><path d="M 0 0 C 10 0 10 20 20 20" /></svg>');
+    expect(curve[0]!.points.length).toBeGreaterThan(straight[0]!.points.length);
+  });
+
+  it('throws on arc A command (not supported in v2)', () => {
+    expect(() =>
+      svgStringToPolylines('<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>'),
+    ).toThrow(/arc/i);
+  });
+
+  it('curve-based SVG → template → valid → exported SVG with real circles', () => {
+    const polys = svgStringToPolylines(
+      '<svg><path d="M 0 0 C 20 0 20 20 40 20" /></svg>',
+    );
+    const template = createPolylineRhinestoneTemplate({ id: 't', name: 'T', polylines: polys, stoneSize: 'SS10' });
+    expect(validateRhinestoneTemplate(template).valid).toBe(true);
+    const svg = createBasicSvgExport(template);
+    expect(svg).toContain('<circle');
+    expect(svg).not.toContain('<image');
+  });
+});
+
+// ─── Transform support (v2) ───────────────────────────────────────────────────
+
+describe('svgStringToPolylines — transforms', () => {
+  it('translate moves line points', () => {
+    const svg = '<svg><line x1="0" y1="0" x2="10" y2="0" transform="translate(5, 3)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    expect(polys[0]!.points[0]).toEqual({ x: 5, y: 3 });
+    expect(polys[0]!.points[1]).toEqual({ x: 15, y: 3 });
+  });
+
+  it('scale(2) doubles all coordinates', () => {
+    const svg = '<svg><rect x="0" y="0" width="10" height="5" transform="scale(2)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    expect(polys[0]!.points[0]).toEqual({ x: 0, y: 0 });
+    expect(polys[0]!.points[1]).toEqual({ x: 20, y: 0 });
+    expect(polys[0]!.points[2]).toEqual({ x: 20, y: 10 });
+  });
+
+  it('rotate(90°) rotates points', () => {
+    const svg = '<svg><line x1="10" y1="0" x2="0" y2="0" transform="rotate(90)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    // (10,0) rotated 90°: x'=0, y'=10
+    expect(polys[0]!.points[0]!.x).toBeCloseTo(0, 2);
+    expect(polys[0]!.points[0]!.y).toBeCloseTo(10, 2);
+    expect(polys[0]!.points[1]!.x).toBeCloseTo(0, 2);
+    expect(polys[0]!.points[1]!.y).toBeCloseTo(0, 2);
+  });
+
+  it('rotate(90, cx, cy) rotates around a center point', () => {
+    // (10,0) rotated 90° around (10,10) → (20,10)
+    const svg = '<svg><line x1="10" y1="0" x2="10" y2="10" transform="rotate(90, 10, 10)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    expect(polys[0]!.points[0]!.x).toBeCloseTo(20, 2);
+    expect(polys[0]!.points[0]!.y).toBeCloseTo(10, 2);
+    // (10,10) rotated around itself stays (10,10)
+    expect(polys[0]!.points[1]!.x).toBeCloseTo(10, 2);
+    expect(polys[0]!.points[1]!.y).toBeCloseTo(10, 2);
+  });
+
+  it('matrix(2,0,0,2,5,3) acts as scale(2) + translate', () => {
+    const svg = '<svg><line x1="0" y1="0" x2="5" y2="0" transform="matrix(2,0,0,2,5,3)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    // x'=2*0+5=5, y'=2*0+3=3 ; x'=2*5+5=15, y'=3
+    expect(polys[0]!.points[0]).toEqual({ x: 5, y: 3 });
+    expect(polys[0]!.points[1]).toEqual({ x: 15, y: 3 });
+  });
+
+  it('transform chain: two translates add up', () => {
+    const svg = '<svg><line x1="0" y1="0" x2="0" y2="5" transform="translate(10,0) translate(5,0)" /></svg>';
+    const polys = svgStringToPolylines(svg);
+    expect(polys[0]!.points[0]!.x).toBeCloseTo(15, 3);
+    expect(polys[0]!.points[1]!.x).toBeCloseTo(15, 3);
+  });
+
+  it('malformed transform throws a clear error', () => {
+    const svg = '<svg><line x1="0" y1="0" x2="10" y2="0" transform="skewX(45)" /></svg>';
+    expect(() => svgStringToPolylines(svg)).toThrow();
   });
 });

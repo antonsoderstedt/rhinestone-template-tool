@@ -37,6 +37,18 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 5 — SVG Upload v2: Curves + Transforms (Implemented)
+- [x] Cubic Bezier C/c, smooth cubic S/s, quadratic Q/q, smooth quadratic T/t curve flattening
+- [x] `curveSegments` option (default 24) for configurable curve smoothness
+- [x] Transform support: translate, scale, rotate(angle), rotate(angle,cx,cy), matrix
+- [x] Arc A/a still throws with clear message (expand arcs before upload)
+- [x] `svgUnits.ts`: `parseSvgViewBox`, `getSvgRootAttributes` groundwork
+- [x] Additional safety patterns: `<style`, `data:`, `@import`
+- [x] `SvgUploadGenerator` messaging updated for v2 capabilities
+- [ ] Arc support (deferred — requires parametric arc-to-Bezier conversion)
+- [ ] viewBox-based physical scale normalization (deferred)
+- [ ] Nested group flattening (deferred)
+
 ### Phase 4 — SVG Upload v1: Safe Primitive Parsing (Implemented)
 - [x] `validateSafeSvgInput` — blocks script, foreignObject, image, href, javascript: patterns
 - [x] `extractSvgElements` — extracts line/polyline/polygon/rect/circle/ellipse/path elements

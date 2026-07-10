@@ -92,7 +92,7 @@ export {
 export type { CreatePolylineRhinestoneTemplateOptions } from './path/pathTemplate';
 export { createPolylineRhinestoneTemplate } from './path/pathTemplate';
 
-// SVG upload (v1 — safe primitive parsing, no raw SVG rendering)
+// SVG upload (v2 — curves + transforms, no raw SVG rendering)
 export type { ParsedSvgElement, SvgSafetyResult } from './svg/svgParser';
 export {
   parseSvgAttributes,
@@ -101,3 +101,5 @@ export {
 } from './svg/svgParser';
 export type { SvgToPolylineOptions } from './svg/svgToPolyline';
 export { svgStringToPolylines } from './svg/svgToPolyline';
+export type { SvgViewBox, SvgRootAttributes } from './svg/svgUnits';
+export { parseSvgViewBox, getSvgRootAttributes } from './svg/svgUnits';

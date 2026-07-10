@@ -16,6 +16,26 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 5 — SVG Upload v2: Curves + Transforms (Implemented)
+
+- [x] C/c cubic Bezier flattened to `curveSegments` polyline points
+- [x] S/s smooth cubic Bezier (reflected control point)
+- [x] Q/q quadratic Bezier flattened
+- [x] T/t smooth quadratic Bezier (reflected control point)
+- [x] A/a arc throws with message `"arc commands are not supported"`
+- [x] `curveSegments` option controls smoothness (default 24)
+- [x] translate, scale, rotate, matrix transforms applied to element points
+- [x] Transform chain (multiple transforms) applied in SVG left-to-right order
+- [x] Unsupported transforms (skewX/skewY) throw with clear error
+- [x] Malformed matrix throws with clear error
+- [x] `parseSvgViewBox` returns `{minX,minY,width,height}` or null
+- [x] `getSvgRootAttributes` returns viewBox, width, height from root `<svg>`
+- [x] `<style`, `data:`, `@import` added to safety block list
+- [x] `SvgUploadGenerator` banner updated for v2
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 4 — SVG Upload v1: Safe Primitive Parsing (Implemented)
 
 - [x] `validateSafeSvgInput` returns safe for simple primitive SVG

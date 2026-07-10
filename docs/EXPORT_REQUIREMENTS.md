@@ -1,5 +1,14 @@
 # Export Requirements — Rhinestone Template Tool
 
+## SVG Upload Safety (v2 update)
+
+In v2, the safety guarantees from v1 are extended:
+- `<style`, `data:` URLs, and `@import` are now also blocked.
+- Curves are flattened to polylines internally. No Bezier mathematics appears in the output SVG.
+- Transform attributes are resolved to point coordinates before creating the template. No `transform` attribute appears in the output SVG.
+- The arc command A/a still throws — arcs must be expanded to curves before upload.
+- The raw uploaded SVG text is still NEVER rendered, embedded, or stored.
+
 ## SVG Upload Safety
 
 When a user uploads an SVG file:

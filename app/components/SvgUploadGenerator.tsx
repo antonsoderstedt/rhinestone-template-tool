@@ -102,9 +102,11 @@ export default function SvgUploadGenerator() {
 
       {/* ── Info banner ──────────────────────────────────────────────────── */}
       <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-        <strong>SVG v1 — Simple primitives only.</strong> Supported: line, polyline,
-        polygon, rect, circle, ellipse, and path (M/L/H/V/Z). Curves, transforms, and
-        complex paths should be flattened before upload.
+        <strong>SVG Upload v2 — curves + transforms supported.</strong>{' '}
+        Supported elements: line, polyline, polygon, rect, circle, ellipse, and
+        path (M/L/H/V/Z/C/S/Q/T). Arcs (A) may still need to be expanded before
+        upload. The app converts SVG geometry into internal stone positions and
+        exports a new clean SVG — the raw uploaded SVG is never rendered.
       </div>
 
       {/* ── Controls ─────────────────────────────────────────────────────── */}
