@@ -16,14 +16,18 @@
  *   → RhinestoneTemplate with metadata
  */
 
-import type { StoneSizeId, RhinestoneTemplate } from '../types/index';
+import type { StoneSizeId, RhinestoneTemplate, Stone } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { Polyline } from '../path/polyline';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
 import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
 import { getVectorGlyph, BUILT_IN_VECTOR_FONT } from './vectorFont';
 import { createRhinestoneTemplate } from '../template/createTemplate';
-import { getRecommendedHoleDiameter } from '../profiles/materialProfiles';
+import { getRecommendedHoleDiameter, getRecommendedCenterDistance } from '../profiles/materialProfiles';
+import { getDensitySpacing } from '../spacing/density';
+import type { TemplateFillMode } from '../fill/fillTemplate';
+import type { FillPattern, PolygonFillOptions } from '../fill/polygonFill';
+import { generateFillPointsForClosedPolylines } from '../fill/polygonFill';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -71,6 +75,13 @@ export interface CreateOutlineTextTemplateOptions {
    */
   spacingMm?: number;
   materialProfileId?: string;
+  /**
+   * Fill mode for closed glyph shapes (e.g. the oval in 'O').
+   * Default: 'outline'.
+   */
+  fillMode?: TemplateFillMode;
+  /** Fill grid pattern. Default: 'offset-grid'. */
+  fillPattern?: FillPattern;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -103,6 +114,8 @@ export function createOutlineTextTemplate(
     customSpacingMm,
     spacingMm,
     materialProfileId,
+    fillMode = 'outline',
+    fillPattern = 'offset-grid',
   } = options;
 
   // ── Guards ──────────────────────────────────────────────────────────────
@@ -247,6 +260,8 @@ export function createOutlineTextTemplate(
   if (targetHeightMm !== undefined) metadata['targetHeightMm'] = targetHeightMm;
   if (densityPreset !== undefined) metadata['densityPreset'] = densityPreset;
   if (customSpacingMm !== undefined) metadata['customSpacingMm'] = customSpacingMm;
+  metadata['fillMode'] = fillMode;
+  metadata['fillPattern'] = fillPattern;
 
   // ── Sample stones ────────────────────────────────────────────────────────
   const rawTemplate = createPolylineRhinestoneTemplate({
@@ -271,7 +286,7 @@ export function createOutlineTextTemplate(
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
   const minDist2 = holeDiameterMm * holeDiameterMm;
 
-  const keptStones: (typeof rawTemplate.stones[0])[] = [];
+  const keptStones: Stone[] = [];
   for (const stone of rawTemplate.stones) {
     let tooClose = false;
     for (const prev of keptStones) {
@@ -285,10 +300,61 @@ export function createOutlineTextTemplate(
     if (!tooClose) keptStones.push(stone);
   }
 
+  // ── Fill mode ────────────────────────────────────────────────────────────
+  if (fillMode === 'outline') {
+    return createRhinestoneTemplate({ id, name, stones: keptStones, metadata });
+  }
+
+  // Resolve spacing for fill generation
+  const minSpacing = getRecommendedCenterDistance(stoneSize, materialProfileId);
+  let resolvedFillSpacingMm: number;
+  if (spacingMm !== undefined) {
+    resolvedFillSpacingMm = spacingMm;
+  } else if (densityPreset !== undefined) {
+    resolvedFillSpacingMm = getDensitySpacing({
+      stoneSize, materialProfileId, preset: densityPreset, customSpacingMm,
+    }).spacingMm;
+  } else {
+    resolvedFillSpacingMm = minSpacing;
+  }
+
+  const fillOpts: PolygonFillOptions = {
+    spacingMm: resolvedFillSpacingMm,
+    pattern: fillPattern,
+    insetMm: 0,
+  };
+  const fillPoints = generateFillPointsForClosedPolylines(finalPolylines, fillOpts);
+  const fillStones: Stone[] = fillPoints.map((pt, i) => ({
+    id: `fill-f${i + 1}`,
+    center: pt,
+    stoneSize,
+    holeDiameterMm,
+  }));
+
+  // Combine outline stones (if outline-fill) with fill stones
+  const baseStones: Stone[] = fillMode === 'outline-fill' ? keptStones : [];
+  const combined: Stone[] = [...baseStones, ...fillStones];
+
+  if (combined.length === 0) {
+    return createRhinestoneTemplate({ id, name, stones: [], metadata });
+  }
+
+  // Global greedy collision filter across outline + fill
+  const allKept: Stone[] = [];
+  for (const stone of combined) {
+    let tooClose = false;
+    for (const prev of allKept) {
+      const dx = stone.center.x - prev.center.x;
+      const dy = stone.center.y - prev.center.y;
+      if (dx * dx + dy * dy < minDist2) { tooClose = true; break; }
+    }
+    if (!tooClose) allKept.push(stone);
+  }
+
   return createRhinestoneTemplate({
     id,
     name,
-    stones: keptStones,
+    stones: allKept,
     metadata,
   });
 }

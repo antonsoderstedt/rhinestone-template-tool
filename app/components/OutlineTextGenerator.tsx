@@ -15,6 +15,8 @@ import type {
   DensityPreset,
   ExportReadinessResult,
   OutlineTextAlign,
+  TemplateFillMode,
+  FillPattern,
 } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
@@ -59,6 +61,8 @@ export default function OutlineTextGenerator() {
   const [align, setAlign] = useState<OutlineTextAlign>('left');
   const [letterSpacingMm, setLetterSpacingMm] = useState<number | ''>(2);
   const [lineSpacingMm, setLineSpacingMm] = useState<number | ''>(8);
+  const [fillMode, setFillMode] = useState<TemplateFillMode>('outline');
+  const [fillPattern, setFillPattern] = useState<FillPattern>('offset-grid');
   const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
   const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
   const [includeGuideBox, setIncludeGuideBox] = useState(true);
@@ -79,6 +83,8 @@ export default function OutlineTextGenerator() {
         align,
         letterSpacingMm: letterSpacingMm !== '' ? letterSpacingMm : 2,
         lineSpacingMm: lineSpacingMm !== '' ? lineSpacingMm : 8,
+        fillMode,
+        fillPattern,
         densityPreset,
         customSpacingMm:
           densityPreset === 'custom' && customSpacingMm !== ''
@@ -116,6 +122,7 @@ export default function OutlineTextGenerator() {
     text, stoneSize, fontSizeMm, targetWidthMm, targetHeightMm,
     preserveAspectRatio, align, letterSpacingMm, lineSpacingMm,
     densityPreset, customSpacingMm, includeGuideBox, includeLabels, paddingMm,
+    fillMode, fillPattern,
   ]);
 
   const filename = `rhinestone-outline-text-${stoneSize.toLowerCase()}.svg`;
@@ -189,6 +196,27 @@ export default function OutlineTextGenerator() {
             <option value="right">Right</option>
           </select>
         </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Fill mode</span>
+          <select value={fillMode} onChange={(e) => setFillMode(e.target.value as TemplateFillMode)}
+            className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+            <option value="outline">Outline — stroke paths only</option>
+            <option value="fill">Fill — inside closed shapes (O, 0…)</option>
+            <option value="outline-fill">Outline + Fill — combined</option>
+          </select>
+        </label>
+
+        {fillMode !== 'outline' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Fill pattern</span>
+            <select value={fillPattern} onChange={(e) => setFillPattern(e.target.value as FillPattern)}
+              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+              <option value="offset-grid">Offset grid (denser)</option>
+              <option value="grid">Regular grid</option>
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium text-zinc-700">Density</span>
@@ -349,6 +377,7 @@ export default function OutlineTextGenerator() {
             extraStats={[
               { label: 'Width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
               { label: 'Height', value: `${result.physicalHeightMm.toFixed(1)} mm` },
+              { label: 'Fill mode', value: fillMode },
               { label: 'Font mode', value: 'Built-in Vector Outline v1' },
             ]}
           />

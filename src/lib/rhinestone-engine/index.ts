@@ -176,6 +176,17 @@ export {
 export type { OutlineTextAlign, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate } from './textOutline/outlineTextTemplate';
 
+// Fill Mode v1 — outline, fill, outline-fill
+export type { FillPattern, PolygonFillOptions, PolygonBounds } from './fill/polygonFill';
+export {
+  pointInPolygon,
+  calculatePolygonBounds,
+  generateFillPointsForClosedPolyline,
+  generateFillPointsForClosedPolylines,
+} from './fill/polygonFill';
+export type { TemplateFillMode, CreatePolylineFilledRhinestoneTemplateOptions } from './fill/fillTemplate';
+export { createPolylineFilledRhinestoneTemplate } from './fill/fillTemplate';
+
 // Manual Stone Editor
 export type {
   TemplateEditOperationType,

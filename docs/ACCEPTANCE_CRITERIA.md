@@ -16,6 +16,33 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 15 — Fill Mode v1 (Implemented)
+
+- [x] `pointInPolygon` returns true for inside points, false for outside
+- [x] `calculatePolygonBounds` returns correct AABB
+- [x] `generateFillPointsForClosedPolyline` places points inside a closed rectangle
+- [x] Open polylines produce no fill points (no error)
+- [x] Grid and offset-grid patterns are deterministic
+- [x] `spacingMm <= 0` throws an error
+- [x] Polygon with fewer than 3 points throws an error
+- [x] Fill generation does not mutate input
+- [x] `createPolylineFilledRhinestoneTemplate` outline mode equals `createPolylineRhinestoneTemplate`
+- [x] Fill mode creates stones inside closed shapes
+- [x] Outline-fill creates more or equal stones than outline alone
+- [x] All modes support densityPreset and targetWidthMm
+- [x] Fill mode passes `validateRhinestoneTemplate` (no collision errors)
+- [x] Fill mode passes `checkExportReadiness`
+- [x] Exported SVG from fill mode contains `<circle>` elements
+- [x] Exported SVG does not contain `<image>` tags
+- [x] Fill output is deterministic (same input → same positions)
+- [x] `createOutlineTextTemplate` supports `fillMode` and `fillPattern`
+- [x] Filled outline text passes validation and exports correctly
+- [x] SVG Upload, Polyline Demo, Outline Text UI all expose fill mode controls
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+- [x] Raw uploaded SVG is never rendered
+
+---
+
 ## Phase 14 — Font Outline Text Foundation v1 (Implemented)
 
 - [x] `BUILT_IN_VECTOR_FONT` covers A–Z, 0–9, space, `. , ! ? - _`

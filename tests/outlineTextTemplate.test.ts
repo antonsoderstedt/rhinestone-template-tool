@@ -305,3 +305,61 @@ describe('createOutlineTextTemplate', () => {
     }
   });
 });
+
+// ─── Fill mode integration ────────────────────────────────────────────────────
+
+describe('createOutlineTextTemplate — fill mode integration', () => {
+  // "O" contains a closed oval glyph, so fill mode should produce stones inside it.
+  it('fill mode creates stones for text containing closed glyphs ("O")', () => {
+    const t = createOutlineTextTemplate({
+      id: 'fill-o', name: 'Fill O', text: 'O', stoneSize: 'SS10',
+      fillMode: 'fill',
+    });
+    // The O glyph has a closed oval — fill should place stones inside
+    expect(t.stones.length).toBeGreaterThan(0);
+    expect(t.metadata?.['fillMode']).toBe('fill');
+  });
+
+  it('outline-fill mode creates more or equal stones than outline alone for "O"', () => {
+    const outline = createOutlineTextTemplate({
+      id: 'out', name: 'Out', text: 'O', stoneSize: 'SS10',
+      fillMode: 'outline',
+    });
+    const outlineFill = createOutlineTextTemplate({
+      id: 'outfill', name: 'OutFill', text: 'O', stoneSize: 'SS10',
+      fillMode: 'outline-fill',
+    });
+    expect(outlineFill.stones.length).toBeGreaterThanOrEqual(outline.stones.length);
+  });
+
+  it('generated filled outline text passes validateRhinestoneTemplate', () => {
+    const t = createOutlineTextTemplate({
+      id: 'val', name: 'Val', text: 'OO', stoneSize: 'SS10',
+      fillMode: 'outline-fill',
+    });
+    const r = validateRhinestoneTemplate(t);
+    const errors = r.issues.filter(i => i.severity === 'error');
+    expect(errors).toHaveLength(0);
+  });
+
+  it('generated filled outline text exports through createBasicSvgExport', () => {
+    const t = createOutlineTextTemplate({
+      id: 'exp', name: 'Exp', text: 'O', stoneSize: 'SS10',
+      fillMode: 'fill',
+    });
+    const svg = createBasicSvgExport(t, { includeGuideBox: false });
+    expect(svg).toContain('<circle');
+    expect(svg.toLowerCase()).not.toContain('<image');
+  });
+
+  it('fill mode metadata includes fillMode and fillPattern', () => {
+    const t = createOutlineTextTemplate({
+      id: 'meta', name: 'Meta', text: 'O', stoneSize: 'SS10',
+      fillMode: 'outline-fill',
+      fillPattern: 'grid',
+    });
+    expect(t.metadata?.['fillMode']).toBe('outline-fill');
+    expect(t.metadata?.['fillPattern']).toBe('grid');
+  });
+});
+

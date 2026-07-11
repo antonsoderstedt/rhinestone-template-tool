@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import {
-  createPolylineRhinestoneTemplate,
+  createPolylineFilledRhinestoneTemplate,
   validateRhinestoneTemplate,
   createBasicSvgExport,
   getTemplatePhysicalSize,
@@ -15,6 +15,8 @@ import type {
   TemplateValidationResult,
   DensityPreset,
   ExportReadinessResult,
+  TemplateFillMode,
+  FillPattern,
 } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
@@ -119,15 +121,19 @@ export default function PolylineLogoGenerator() {
   const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
   const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
   const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
+  const [fillMode, setFillMode] = useState<TemplateFillMode>('outline-fill');
+  const [fillPattern, setFillPattern] = useState<FillPattern>('offset-grid');
 
   const result = useMemo<GeneratorResult>(() => {
     try {
       const polylines = buildDemoPolylines(shape);
-      const template = createPolylineRhinestoneTemplate({
+      const template = createPolylineFilledRhinestoneTemplate({
         id: `polyline-${shape}-${stoneSize.toLowerCase()}`,
         name: `${shape.charAt(0).toUpperCase() + shape.slice(1)} — ${stoneSize}`,
         polylines,
         stoneSize,
+        fillMode,
+        fillPattern,
         targetWidthMm: targetWidthMm !== '' ? targetWidthMm : undefined,
         targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
         preserveAspectRatio,
@@ -153,7 +159,7 @@ export default function PolylineLogoGenerator() {
         error: err instanceof Error ? err.message : String(err),
       };
     }
-  }, [shape, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm]);
+  }, [shape, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm, fillMode, fillPattern]);
 
   const filename = `rhinestone-polyline-logo-${stoneSize.toLowerCase()}.svg`;
 
@@ -253,6 +259,27 @@ export default function PolylineLogoGenerator() {
           </label>
         )}
 
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Fill mode</span>
+          <select value={fillMode} onChange={(e) => setFillMode(e.target.value as TemplateFillMode)}
+            className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+            <option value="outline">Outline — stones along paths</option>
+            <option value="fill">Fill — stones inside closed shapes</option>
+            <option value="outline-fill">Outline + Fill — combined</option>
+          </select>
+        </label>
+
+        {fillMode !== 'outline' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Fill pattern</span>
+            <select value={fillPattern} onChange={(e) => setFillPattern(e.target.value as FillPattern)}
+              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+              <option value="offset-grid">Offset grid (denser)</option>
+              <option value="grid">Regular grid</option>
+            </select>
+          </label>
+        )}
+
       </div>
 
       {/* ── Error state ──────────────────────────────────────────────────── */}
@@ -271,6 +298,7 @@ export default function PolylineLogoGenerator() {
             stoneCount={result.stoneCount}
             extraStats={[
               { label: 'Shape', value: shape },
+              { label: 'Fill mode', value: fillMode },
               { label: 'Path mode', value: 'Polyline Sampling' },
               { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
               { label: 'Est. height', value: `${result.physicalHeightMm.toFixed(1)} mm` },

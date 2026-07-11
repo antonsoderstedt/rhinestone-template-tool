@@ -37,6 +37,21 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 15 — Fill Mode v1 (Implemented)
+- [x] `pointInPolygon` — ray-casting, deterministic
+- [x] `calculatePolygonBounds` — AABB for polygon
+- [x] `generateFillPointsForClosedPolyline` — grid and offset-grid patterns
+- [x] `generateFillPointsForClosedPolylines` — multi-shape fill, skips open paths
+- [x] `createPolylineFilledRhinestoneTemplate` — outline / fill / outline-fill modes
+- [x] Fill mode integrated into `createOutlineTextTemplate` (fillMode + fillPattern options)
+- [x] Global cross-stroke collision filter applied after combining outline + fill stones
+- [x] Fill mode controls added to SVG Upload, Polyline Demo, and Outline Text UI
+- [ ] Better edge inset control (deferred)
+- [ ] Hole-aware fill (deferred — avoids placing stones over other stones when importing from editor)
+- [ ] Manual fill cleanup (deferred)
+- [ ] Advanced packing algorithms (hex, circular offset)
+- [ ] Fill for non-convex and self-intersecting polygons via winding number (deferred)
+
 ### Phase 14 — Font Outline Text Foundation v1 (Implemented)
 - [x] Built-in vector outline font (`built-in-vector-outline-v1`) — A–Z, 0–9, space, `. , ! ? - _`
 - [x] `VectorGlyph` / `VectorFont` types — `character`, `advanceWidth`, `polylines` in font units (0–100 per em)

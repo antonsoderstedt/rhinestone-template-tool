@@ -202,6 +202,71 @@ Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radiu
 
 ---
 
+## Fill Mode Module (v1)
+
+### Overview
+
+Fill Mode places stones inside closed polygon shapes using a deterministic grid.
+Three modes are available:
+- `'outline'` (default): stones along polyline paths (existing behaviour)
+- `'fill'`: stones inside closed shapes only
+- `'outline-fill'`: both outline and fill, deduplicated with a global collision filter
+
+Fill only works well on **closed** polylines (`closed: true`). Open polylines are silently
+skipped for fill generation.
+
+### Why fill output needs export readiness validation
+
+Fill stones are generated from a regular grid — not from physical measurements. The grid
+spacing uses the same density presets as outline mode, but the collision filter is a
+greedy Euclidean pass, not a physical cut simulation. Export readiness validation catches
+any residual overlaps and flags templates with too few or too many stones.
+
+### `pointInPolygon(point, polygonPoints)`
+
+Ray-casting (Jordan curve theorem) implementation. Deterministic, no randomness.
+Returns `true` for strictly-inside points. Boundary behaviour is unspecified.
+
+### `generateFillPointsForClosedPolyline(polyline, options)`
+
+Candidates are placed on a regular grid starting at (bounds.minX + spacing/2, bounds.minY + spacing/2).
+Each candidate is tested with `pointInPolygon`. Optional `insetMm` applies an additional edge-distance filter.
+
+Patterns:
+- `'grid'`: uniform rows and columns
+- `'offset-grid'`: every odd row is shifted right by spacing/2 for denser, more natural coverage
+
+### `createPolylineFilledRhinestoneTemplate(options)` pipeline
+
+```
+For 'outline':      → createPolylineRhinestoneTemplate (unchanged)
+For 'fill':         → generateFillPointsForClosedPolylines
+                    → stone id: {size}-fill-f{N}
+                    → global greedy collision filter
+                    → createRhinestoneTemplate
+For 'outline-fill': → createPolylineRhinestoneTemplate (outline stones)
+                    → generateFillPointsForClosedPolylines (fill stones)
+                    → combine (outline first)
+                    → global greedy collision filter
+                    → createRhinestoneTemplate
+```
+
+### Cross-mode collision filter
+
+Same algorithm used in `createOutlineTextTemplate`: O(n²) greedy pass,
+keeps each stone only when its centre is ≥ holeDiameterMm from all kept stones.
+Outline stones have priority (they come first in the combined array).
+
+### Future phases
+
+- Better edge inset (insetMm ≈ holeDiameterMm/2)
+- Hole-aware fill (avoid placing fill stones over existing holes)
+- Manual fill cleanup tool
+- Advanced packing: hex grid, circular offset
+- Fill for non-convex polygons via winding-number rule
+
+---
+
 ## Font Outline Text Module (v1 — Font Outline Foundation)
 
 ### Why TTF/OTF is deferred

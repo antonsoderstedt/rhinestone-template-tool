@@ -3,14 +3,14 @@
 import { useState, useMemo } from 'react';
 import {
   svgStringToPolylines,
-  createPolylineRhinestoneTemplate,
+  createPolylineFilledRhinestoneTemplate,
   validateRhinestoneTemplate,
   createBasicSvgExport,
   getTemplatePhysicalSize,
   getDensityPresetOptions,
   checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult, PolylineCleanupOptions } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult, PolylineCleanupOptions, TemplateFillMode, FillPattern } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
@@ -58,6 +58,8 @@ export default function SvgUploadGenerator() {
   const [cleanupMinLength, setCleanupMinLength] = useState(1);
   const [cleanupRemoveDups, setCleanupRemoveDups] = useState(true);
   const [cleanupDupTol, setCleanupDupTol] = useState(0.05);
+  const [fillMode, setFillMode] = useState<TemplateFillMode>('outline');
+  const [fillPattern, setFillPattern] = useState<FillPattern>('offset-grid');
 
   // ── File handler ────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -97,11 +99,13 @@ export default function SvgUploadGenerator() {
         cleanup: cleanupEnabled,
         cleanupOptions,
       });
-      const template = createPolylineRhinestoneTemplate({
+      const template = createPolylineFilledRhinestoneTemplate({
         id: 'uploaded-svg',
         name: 'Uploaded SVG',
         polylines,
         stoneSize,
+        fillMode,
+        fillPattern,
         targetWidthMm: targetWidthMm !== '' ? targetWidthMm : undefined,
         targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
         preserveAspectRatio,
@@ -137,7 +141,8 @@ export default function SvgUploadGenerator() {
   }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm,
       targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm,
       cleanupEnabled, cleanupRemoveDups, cleanupDupTol, cleanupRemoveTiny,
-      cleanupMinLength, cleanupSimplify, cleanupSimplifyTol]);
+      cleanupMinLength, cleanupSimplify, cleanupSimplifyTol,
+      fillMode, fillPattern]);
 
   const filename = `rhinestone-uploaded-svg-${stoneSize.toLowerCase()}.svg`;
 
@@ -269,6 +274,27 @@ export default function SvgUploadGenerator() {
           </label>
         )}
 
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Fill mode</span>
+          <select value={fillMode} onChange={(e) => setFillMode(e.target.value as TemplateFillMode)}
+            className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+            <option value="outline">Outline — stones along paths</option>
+            <option value="fill">Fill — stones inside closed shapes</option>
+            <option value="outline-fill">Outline + Fill — combined</option>
+          </select>
+        </label>
+
+        {fillMode !== 'outline' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Fill pattern</span>
+            <select value={fillPattern} onChange={(e) => setFillPattern(e.target.value as FillPattern)}
+              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+              <option value="offset-grid">Offset grid (denser)</option>
+              <option value="grid">Regular grid</option>
+            </select>
+          </label>
+        )}
+
       </div>
 
       {/* ── SVG cleanup settings ──────────────────────────────────────────── */}
@@ -356,6 +382,7 @@ export default function SvgUploadGenerator() {
             extraStats={[
               { label: 'Source', value: 'Uploaded SVG' },
               { label: 'Path count', value: result.pathCount },
+              { label: 'Fill mode', value: fillMode },
               { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
               { label: 'Est. height', value: `${result.physicalHeightMm.toFixed(1)} mm` },
               { label: 'Density', value: densityPreset },
