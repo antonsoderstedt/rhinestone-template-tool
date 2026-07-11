@@ -146,12 +146,17 @@ export function samplePolylineBySpacing(
     }
   }
 
-  // For closed polylines, the sampling may land exactly on the start point.
-  // Remove the duplicate to prevent a stone on top of the first stone.
+  // For closed polylines, the last sampled stone may be too close to the first
+  // stone (the closure point). This happens when the remaining path distance
+  // after the last stone (distanceAccumulated) is less than spacingMm — the
+  // "rhythm" of spacing would place the next stone at the first point but
+  // there isn't a full spacing gap before it.
+  //
+  // In that case, remove the last stone to prevent a collision between it and
+  // the first stone. The resulting gap (distanceAccumulated + spacingMm from
+  // the new last stone) is always ≥ spacingMm, so no collision can occur.
   if (polyline.closed && result.length > 1) {
-    const first = result[0]!;
-    const last = result[result.length - 1]!;
-    if (Math.hypot(last.x - first.x, last.y - first.y) < 1e-4) {
+    if (distanceAccumulated < spacingMm) {
       result.pop();
     }
   }

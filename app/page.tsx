@@ -7,7 +7,7 @@ import SvgUploadGenerator from './components/SvgUploadGenerator';
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-50">
-      <main className="mx-auto max-w-3xl px-6 py-12 space-y-10">
+      <main className="mx-auto max-w-5xl px-6 py-14 space-y-14">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <header>

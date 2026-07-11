@@ -8,6 +8,8 @@ import {
   createBasicSvgExport,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
+  checkExportReadiness,
+  distanceBetweenPoints,
 } from '../src/lib/rhinestone-engine/index.js';
 import type { Polyline } from '../src/lib/rhinestone-engine/index.js';
 
@@ -421,5 +423,58 @@ describe('createPolylineRhinestoneTemplate — physical sizing', () => {
       targetWidthMm: 50,
     });
     expect(createBasicSvgExport(t)).not.toContain('<image');
+  });
+});
+
+// ─── Closed polyline collision fix ────────────────────────────────────────────
+
+describe('samplePolylineBySpacing — closed polyline closure safety', () => {
+  const DIAMOND: Polyline = {
+    points: [{ x: 20, y: 0 }, { x: 40, y: 15 }, { x: 20, y: 30 }, { x: 0, y: 15 }],
+    closed: true,
+  };
+
+  it('no two stone centers are closer than holeDiameterMm for SS10 diamond template', () => {
+    // After Euclidean post-processing in createPolylineRhinestoneTemplate,
+    // no two stone centers should violate the physical minimum distance.
+    const holeDiameter = getRecommendedHoleDiameter('SS10');
+    const t = createPolylineRhinestoneTemplate({
+      id: 'diamond', name: 'Diamond', polylines: [DIAMOND], stoneSize: 'SS10',
+    });
+    for (let i = 0; i < t.stones.length; i++) {
+      for (let j = i + 1; j < t.stones.length; j++) {
+        const dist = distanceBetweenPoints(t.stones[i]!.center, t.stones[j]!.center);
+        expect(dist).toBeGreaterThanOrEqual(holeDiameter - 0.001);
+      }
+    }
+  });
+
+  it('default diamond polyline with SS10 passes validateRhinestoneTemplate', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'diamond', name: 'Diamond', polylines: [DIAMOND], stoneSize: 'SS10',
+    });
+    const result = validateRhinestoneTemplate(t);
+    expect(result.valid).toBe(true);
+    expect(result.issues.filter((i) => i.code === 'STONE_COLLISION')).toHaveLength(0);
+  });
+
+  it('default diamond polyline with SS10 passes checkExportReadiness', () => {
+    const t = createPolylineRhinestoneTemplate({
+      id: 'diamond', name: 'Diamond', polylines: [DIAMOND], stoneSize: 'SS10',
+    });
+    const r = checkExportReadiness(t, { requireCalibration: false });
+    expect(r.ready).toBe(true);
+    expect(r.issues.filter((i) => i.severity === 'error')).toHaveLength(0);
+  });
+
+  it('last sampled stone on closed polyline is at least spacingMm from first stone along path', () => {
+    // This checks that the fix removes any stone that would be < spacingMm from the start
+    const spacing = getRecommendedCenterDistance('SS10');
+    const sampled = samplePolylineBySpacing(DIAMOND, spacing);
+    const first = sampled[0]!;
+    const last  = sampled[sampled.length - 1]!;
+    // The Euclidean distance from last to first should be at least spacingMm
+    const dist = distanceBetweenPoints(first, last);
+    expect(dist).toBeGreaterThanOrEqual(spacing - 0.001);
   });
 });

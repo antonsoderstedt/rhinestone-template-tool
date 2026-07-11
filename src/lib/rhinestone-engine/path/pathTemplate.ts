@@ -147,7 +147,34 @@ export function createPolylineRhinestoneTemplate(
 
     const sampled = samplePolylineBySpacing(normalizedPolyline, spacingMm);
 
-    sampled.forEach((pt, si) => {
+    // Post-process: enforce Euclidean minimum distance between consecutive
+    // stones. Path spacing alone doesn't guarantee Euclidean spacing at sharp
+    // corners — stones placed on either side of an acute vertex can be closer
+    // in straight-line distance than their path-distance spacing suggests.
+    // We keep each stone only when it is at least holeDiameterMm away from
+    // the previously kept stone (greedy forward pass).
+    const safePoints: typeof sampled = [];
+    for (const pt of sampled) {
+      if (safePoints.length === 0) {
+        safePoints.push(pt);
+        continue;
+      }
+      const prev = safePoints[safePoints.length - 1]!;
+      if (Math.hypot(pt.x - prev.x, pt.y - prev.y) >= holeDiameterMm) {
+        safePoints.push(pt);
+      }
+      // else: skip — Euclidean distance too small due to sharp corner
+    }
+    // For closed polylines also verify last stone is not too close to first.
+    if (normalizedPolyline.closed && safePoints.length > 1) {
+      const first = safePoints[0]!;
+      const last  = safePoints[safePoints.length - 1]!;
+      if (Math.hypot(last.x - first.x, last.y - first.y) < holeDiameterMm) {
+        safePoints.pop();
+      }
+    }
+
+    safePoints.forEach((pt, si) => {
       const stoneId = `${stoneSize.toLowerCase()}-path${pi + 1}-p${si + 1}`;
       stones.push({
         id: stoneId,

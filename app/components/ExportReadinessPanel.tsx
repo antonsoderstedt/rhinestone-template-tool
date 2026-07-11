@@ -1,15 +1,11 @@
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface ExportReadinessPanelProps {
   result: ExportReadinessResult | null;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 /**
- * Displays the export readiness status for a RhinestoneTemplate.
+ * Displays export readiness status for a RhinestoneTemplate.
  *
  * Readiness logic lives entirely in the engine (checkExportReadiness).
  * This component only renders the result — it never recomputes readiness.
@@ -22,77 +18,95 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
   const infos    = result.issues.filter((i) => i.severity === 'info');
 
   return (
-    <div
-      className={`rounded border p-3 text-sm ${
-        result.ready
-          ? 'border-green-300 bg-green-50'
-          : 'border-red-300 bg-red-50'
-      }`}
-    >
-      {/* ── Status ──────────────────────────────────────────────────────── */}
-      <p
-        className={`font-semibold mb-2 ${
-          result.ready ? 'text-green-800' : 'text-red-700'
+    <div className="rounded-lg border overflow-hidden text-sm">
+
+      {/* ── Status bar ────────────────────────────────────────────────── */}
+      <div
+        className={`flex items-center gap-2 px-4 py-2.5 font-semibold ${
+          result.ready ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
         }`}
       >
-        {result.ready
-          ? '✓ Ready for Cricut SVG export'
-          : '✗ Fix errors before cutting'}
-      </p>
+        <span className="text-base">{result.ready ? '✓' : '✗'}</span>
+        <span>
+          {result.ready ? 'Ready for Cricut SVG export' : 'Fix errors before cutting'}
+        </span>
+      </div>
 
-      {/* ── Summary stats ───────────────────────────────────────────────── */}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 text-xs sm:grid-cols-4">
-        <div>
-          <dt className="text-zinc-500">Stones</dt>
-          <dd className="font-medium text-zinc-900">{result.summary.stoneCount}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Width</dt>
-          <dd className="font-medium text-zinc-900">{result.summary.widthMm.toFixed(1)} mm</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Height</dt>
-          <dd className="font-medium text-zinc-900">{result.summary.heightMm.toFixed(1)} mm</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Cutter</dt>
-          <dd className="font-medium text-zinc-900">{result.summary.cutter}</dd>
-        </div>
-      </dl>
+      {/* ── Summary stats ─────────────────────────────────────────────── */}
+      <div className="bg-zinc-50 border-b border-zinc-200 px-4 py-3">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
+          <div>
+            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Stones</dt>
+            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.stoneCount}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Width</dt>
+            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.widthMm.toFixed(1)} mm</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Height</dt>
+            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.heightMm.toFixed(1)} mm</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Cutter</dt>
+            <dd className="font-semibold text-zinc-900 text-sm truncate">{result.summary.cutter}</dd>
+          </div>
+        </dl>
+      </div>
 
-      {/* ── Errors ──────────────────────────────────────────────────────── */}
-      {errors.length > 0 && (
-        <ul className="list-disc pl-4 text-xs space-y-0.5 text-red-700">
-          {errors.map((issue, i) => (
-            <li key={i}>
-              <span className="font-mono">[{issue.code}]</span> {issue.message}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* ── Issues ────────────────────────────────────────────────────── */}
+      {(errors.length > 0 || warnings.length > 0 || infos.length > 0) && (
+        <div className="divide-y divide-zinc-100">
 
-      {/* ── Warnings ────────────────────────────────────────────────────── */}
-      {warnings.length > 0 && (
-        <ul className="list-disc pl-4 text-xs space-y-0.5 text-amber-700 mt-1">
-          {warnings.map((issue, i) => (
-            <li key={i}>
-              <span className="font-mono">[{issue.code}]</span> {issue.message}
-            </li>
-          ))}
-        </ul>
-      )}
+          {errors.length > 0 && (
+            <div className="bg-red-50 px-4 py-3">
+              <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1.5">
+                Errors — must fix before export
+              </p>
+              <ul className="space-y-1">
+                {errors.map((issue, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-red-700">
+                    <span className="shrink-0 font-mono text-red-400">[{issue.code}]</span>
+                    <span>{issue.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-      {/* ── Info ────────────────────────────────────────────────────────── */}
-      {infos.length > 0 && (
-        <ul className="list-none text-xs space-y-0.5 text-zinc-500 mt-1">
-          {infos.map((issue, i) => (
-            <li key={i}>
-              <span className="font-mono text-zinc-400">[{issue.code}]</span>{' '}
-              {issue.message}
-            </li>
-          ))}
-        </ul>
+          {warnings.length > 0 && (
+            <div className="bg-amber-50 px-4 py-3">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">
+                Warnings — export allowed, review before cutting
+              </p>
+              <ul className="space-y-1">
+                {warnings.map((issue, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-amber-700">
+                    <span className="shrink-0 font-mono text-amber-500">[{issue.code}]</span>
+                    <span>{issue.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {infos.length > 0 && (
+            <div className="bg-white px-4 py-3">
+              <ul className="space-y-1">
+                {infos.map((issue, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-zinc-500">
+                    <span className="shrink-0 font-mono text-zinc-300">[{issue.code}]</span>
+                    <span>{issue.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+        </div>
       )}
     </div>
   );
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
