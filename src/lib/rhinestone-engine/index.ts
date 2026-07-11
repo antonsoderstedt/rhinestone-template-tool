@@ -165,6 +165,17 @@ export { checkExportReadiness } from './exportQa/exportReadiness';
 export type { CricutTestPackOptions, CricutTestPackItem, CricutTestPack } from './testPack/cricutTestPack';
 export { createCricutTestPack } from './testPack/cricutTestPack';
 
+// Font Outline Text (Font Outline Foundation v1)
+// Real TTF/OTF parsing is deferred — uses built-in vector-outline glyphs only.
+export type { VectorGlyph, VectorFont } from './textOutline/vectorFont';
+export {
+  BUILT_IN_VECTOR_FONT,
+  SUPPORTED_VECTOR_FONT_CHARACTERS,
+  getVectorGlyph,
+} from './textOutline/vectorFont';
+export type { OutlineTextAlign, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
+export { createOutlineTextTemplate } from './textOutline/outlineTextTemplate';
+
 // Manual Stone Editor
 export type {
   TemplateEditOperationType,

@@ -16,6 +16,38 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 14 — Font Outline Text Foundation v1 (Implemented)
+
+- [x] `BUILT_IN_VECTOR_FONT` covers A–Z, 0–9, space, `. , ! ? - _`
+- [x] `getVectorGlyph` maps lowercase to uppercase glyph
+- [x] `getVectorGlyph` returns `?` fallback for any unsupported character
+- [x] Space glyph has advance width but zero polylines
+- [x] All supported glyphs have at least 2 points per polyline
+- [x] All glyph coordinates are finite numbers
+- [x] `createOutlineTextTemplate` creates stones for single-character text
+- [x] `createOutlineTextTemplate` creates stones for multi-character text (SMOOCH)
+- [x] Lowercase input maps to uppercase glyphs (stone count equal)
+- [x] Multiline text lays glyphs on separate rows
+- [x] Center / right alignment shifts stone positions
+- [x] `fontSizeMm` scales stone positions
+- [x] `targetWidthMm` / `targetHeightMm` scale the final layout
+- [x] `densityPreset` and `customSpacingMm` pass through to stone spacing
+- [x] Template metadata includes `generatedBy`, `text`, `fontMode`, `fontSizeMm`, `align`, spacing fields
+- [x] Throws on empty id / name / text
+- [x] Throws on invalid `fontSizeMm` (zero, negative, non-finite)
+- [x] Generated template passes `validateRhinestoneTemplate` (no collision errors)
+- [x] Generated template passes `checkExportReadiness`
+- [x] Exports through `createBasicSvgExport` without error
+- [x] Exported SVG contains `<circle>` elements
+- [x] Exported SVG does not contain `<image>` tags
+- [x] Output is deterministic (identical input → identical stone positions)
+- [x] `OutlineTextGenerator` component renders and generates valid SVG
+- [x] All engine outline logic in `src/lib/rhinestone-engine/textOutline/`
+- [x] No TTF/OTF parsing, no font file upload, no system font access
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 13 — Manual Stone Editor v1 (Implemented)
 
 - [x] `addStoneToTemplate` adds stone, rejects duplicate ids, rejects invalid holes

@@ -202,6 +202,89 @@ Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radiu
 
 ---
 
+## Font Outline Text Module (v1 — Font Outline Foundation)
+
+### Why TTF/OTF is deferred
+
+Real font parsing requires either shipping a large WebAssembly binary (HarfBuzz ~2MB)
+or a JavaScript font parser. Both increase bundle size and introduce file-upload
+attack surface. The built-in vector font proves the complete end-to-end pipeline
+(outline → polyline → stones → validated SVG) without any dependency risk.
+
+Future phases: real font parsing, font upload, fill mode, centerline mode, better
+kerning, text warping.
+
+### Built-in Vector Outline Font
+
+```
+id:         built-in-vector-outline-v1
+unitsPerEm: 100
+glyphs:     A–Z, 0–9, space, . , ! ? - _
+fallback:   ?
+```
+
+Each glyph is stored as one or more stroke `Polyline` objects in font units (0–100 per em).
+Coordinate convention: x ∈ [5, 75], y ∈ [5, 90], advanceWidth ≈ 42–80 units.
+
+Lowercase input is mapped to uppercase glyphs. Unknown characters use the `?` fallback.
+
+### `getVectorGlyph(character)`
+
+Lookup order: as-is → uppercased → fallback `?`.
+
+### `createOutlineTextTemplate(options)` pipeline
+
+```
+text.split('\n')             → lines
+lines[i].split('')           → characters
+getVectorGlyph(char)         → VectorGlyph (font units)
+glyph.polylines.map(scale)   → Polyline[] in mm  (scale = fontSizeMm / unitsPerEm)
+offset by (currentX, lineY) → positioned polylines
+align offset per line        → center / right shift
+scalePolylinesToFit          → optional physical size scaling
+createPolylineRhinestoneTemplate  → samples stones along outlines
+global cross-stroke filter   → removes stones overlapping ANY previous stone
+createRhinestoneTemplate     → final RhinestoneTemplate with metadata
+```
+
+### Cross-stroke collision filter
+
+The per-polyline greedy filter in `pathTemplate.ts` prevents within-stroke collisions
+but cannot prevent collisions between strokes sharing endpoints (e.g. H's spine/crossbar
+junction) or between non-adjacent stones on a zigzag path (e.g. M's valley peaks).
+
+`createOutlineTextTemplate` applies a global O(n²) greedy pass after all stones are
+collected: a stone is kept only if its center is ≥ `holeDiameterMm` from every
+already-kept stone.
+
+### Metadata attached to every outline text template
+
+```typescript
+{
+  generatedBy:        'createOutlineTextTemplate',
+  text,
+  fontMode:           'built-in-vector-outline-v1',
+  fontSizeMm,
+  preserveAspectRatio,
+  align,
+  letterSpacingMm,
+  lineSpacingMm,
+  // optional:
+  targetWidthMm, targetHeightMm, densityPreset, customSpacingMm
+}
+```
+
+### Future phases
+
+- Real TTF/OTF font parsing (opentype.js or HarfBuzz WASM)
+- Font file upload (drag-and-drop .ttf / .otf)
+- Fill mode (stones fill glyph interior)
+- Centerline mode (stroke centreline only)
+- Better kerning / pair-adjustment tables
+- Text warping / path text
+
+---
+
 ## Manual Stone Editor Module (v1)
 
 ### Architecture

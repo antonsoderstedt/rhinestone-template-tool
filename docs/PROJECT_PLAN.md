@@ -37,6 +37,32 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 14 — Font Outline Text Foundation v1 (Implemented)
+- [x] Built-in vector outline font (`built-in-vector-outline-v1`) — A–Z, 0–9, space, `. , ! ? - _`
+- [x] `VectorGlyph` / `VectorFont` types — `character`, `advanceWidth`, `polylines` in font units (0–100 per em)
+- [x] `getVectorGlyph(char)` — maps lowercase to uppercase, returns fallback for unknown chars
+- [x] `createOutlineTextTemplate` — text → glyph polylines → rhinestone template
+- [x] Multiline text support (`\n`)
+- [x] Left / center / right alignment
+- [x] `fontSizeMm`, `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`
+- [x] `letterSpacingMm`, `lineSpacingMm`
+- [x] Density preset + custom spacing pass-through
+- [x] Global cross-stroke collision filter (greedy, O(n²))
+- [x] `OutlineTextGenerator` React component — all controls exposed
+- [ ] Real TTF/OTF font parsing (deferred — requires HarfBuzz/opentype.js or similar)
+- [ ] Font file upload (deferred)
+- [ ] Fill mode (stones fill glyph interior, not just outline)
+- [ ] Centerline mode
+- [ ] Advanced kerning / ligatures
+- [ ] Text warping / path text
+
+Why TTF/OTF is deferred:
+Real font parsing requires either shipping a large WebAssembly binary (HarfBuzz ~2MB)
+or a JS font parser (opentype.js). Both increase bundle size significantly and
+introduce new file-upload attack surface. The built-in vector font proves the full
+end-to-end pipeline (outline → polyline → stones → validated SVG) without any
+dependency risk.
+
 ### Phase 13 — Manual Stone Editor v1 (Implemented)
 - [x] `createEditHistory`, `commitEditedTemplate`, `undoEdit`, `redoEdit` — immutable undo/redo
 - [x] `addStoneToTemplate` — validated add with unique-id enforcement

@@ -1,6 +1,7 @@
 import ManualGridGenerator from './components/ManualGridGenerator';
 import CalibrationSheetGenerator from './components/CalibrationSheetGenerator';
 import TextMatrixGenerator from './components/TextMatrixGenerator';
+import OutlineTextGenerator from './components/OutlineTextGenerator';
 import PolylineLogoGenerator from './components/PolylineLogoGenerator';
 import SvgUploadGenerator from './components/SvgUploadGenerator';
 import CricutTestPack from './components/CricutTestPack';
@@ -54,12 +55,26 @@ export default function Home() {
           <CalibrationWorkflow />
         </section>
 
+        {/* ── Outline Text Generator ───────────────────────────────────────── */}
+        <section className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-zinc-900">Outline Text Generator</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              The first real text-outline foundation — rhinestones placed along
+              vector stroke outlines. Built-in font only (no TTF/OTF upload yet).
+              Dot Matrix remains available below as a deterministic grid-based fallback.
+            </p>
+          </div>
+          <OutlineTextGenerator />
+        </section>
+
         {/* ── Text Matrix Generator ────────────────────────────────────────── */}
         <section className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm">
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-zinc-900">Dot Matrix Text</h2>
             <p className="mt-1 text-sm text-zinc-500">
               Convert text into a rhinestone template using the built-in 5×7 dot-matrix alphabet.
+              Deterministic grid fallback — no font outlines, just dots in a matrix.
             </p>
           </div>
           <TextMatrixGenerator />
