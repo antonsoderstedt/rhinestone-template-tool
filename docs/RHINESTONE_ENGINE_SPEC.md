@@ -202,6 +202,45 @@ Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radiu
 
 ---
 
+## Manual Stone Editor Module (v1)
+
+### Architecture
+
+All editing logic is pure and deterministic. React state holds a `TemplateEditHistory`; each edit creates a new template via engine functions.
+
+### Undo/Redo
+
+```
+commitEditedTemplate(history, nextTemplate)  → new history (past + present, future cleared)
+undoEdit(history)                            → restores previous present; pushes current to future
+redoEdit(history)                            → re-applies most-recently-undone state
+```
+
+All operations return new history objects — nothing is mutated in place.
+
+### Stone operations
+
+| Function | Description |
+|---|---|
+| `addStoneToTemplate(t, stone)` | Appends stone; throws on duplicate id, invalid dimensions |
+| `removeStoneFromTemplate(t, id)` | Removes stone; throws if id not found |
+| `generateManualStoneId(t, prefix?)` | Returns next `manual-N` id deterministically |
+| `createStoneAtPoint(options)` | Creates a Stone at given mm coordinates (does not add it) |
+| `applyTemplateEditOperation(t, op)` | Dispatches to add/remove |
+
+### Edited template metadata
+
+```typescript
+metadata: { edited: true, editMode: 'manual-stone-editor-v1', ... }
+```
+
+### Limitations (v1)
+- No drag/move
+- No multi-select
+- No saved editor sessions
+
+---
+
 ## Text Layout Module (Layout v2)
 
 ### Why dot matrix text remains deterministic

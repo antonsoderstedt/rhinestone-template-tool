@@ -164,3 +164,24 @@ export { checkExportReadiness } from './exportQa/exportReadiness';
 // Cricut Test Pack
 export type { CricutTestPackOptions, CricutTestPackItem, CricutTestPack } from './testPack/cricutTestPack';
 export { createCricutTestPack } from './testPack/cricutTestPack';
+
+// Manual Stone Editor
+export type {
+  TemplateEditOperationType,
+  TemplateEditOperation,
+  TemplateEditHistory,
+  TemplateEditorOptions,
+  CreateStoneAtPointOptions,
+} from './editor/templateEditor';
+export {
+  createEditHistory,
+  commitEditedTemplate,
+  undoEdit,
+  redoEdit,
+  findStoneById,
+  generateManualStoneId,
+  addStoneToTemplate,
+  removeStoneFromTemplate,
+  applyTemplateEditOperation,
+  createStoneAtPoint,
+} from './editor/templateEditor';

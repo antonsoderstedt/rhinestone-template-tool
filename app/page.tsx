@@ -5,6 +5,7 @@ import PolylineLogoGenerator from './components/PolylineLogoGenerator';
 import SvgUploadGenerator from './components/SvgUploadGenerator';
 import CricutTestPack from './components/CricutTestPack';
 import CalibrationWorkflow from './components/CalibrationWorkflow';
+import ManualStoneEditor from './components/ManualStoneEditor';
 
 export default function Home() {
   return (
@@ -74,6 +75,18 @@ export default function Home() {
             </p>
           </div>
           <SvgUploadGenerator />
+        </section>
+
+        {/* ── Manual Stone Editor ──────────────────────────────────────────── */}
+        <section className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-zinc-900">Manual Stone Editor</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Add and remove individual stones from a template. Undo/redo supported.
+              Drag, multi-select, and advanced editing will come later.
+            </p>
+          </div>
+          <ManualStoneEditor />
         </section>
 
         {/* ── Polyline Logo Generator ──────────────────────────────────────── */}

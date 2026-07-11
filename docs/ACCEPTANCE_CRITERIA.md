@@ -16,6 +16,24 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 13 — Manual Stone Editor v1 (Implemented)
+
+- [x] `addStoneToTemplate` adds stone, rejects duplicate ids, rejects invalid holes
+- [x] `removeStoneFromTemplate` removes stone, throws for missing id
+- [x] `generateManualStoneId` returns deterministic `manual-N` ids
+- [x] `createStoneAtPoint` uses recommended hole diameter
+- [x] `undoEdit`/`redoEdit` restore previous/next states immutably
+- [x] `commitEditedTemplate` pushes present to past, clears future
+- [x] Edited templates carry `edited: true` and `editMode` metadata
+- [x] Edited templates pass `validateRhinestoneTemplate` (when no collisions)
+- [x] Edited templates pass `checkExportReadiness` (when valid)
+- [x] Exported SVGs contain real `<circle>` elements, no `<image>`
+- [x] `ManualStoneEditor` component uses all engine editor functions
+- [x] All editor math in engine; React only manages state
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 12 — Text Layout v2 (Implemented)
 
 - [x] `calculateDotMatrixTextLayoutBounds` returns correct bounds for single and multiline text

@@ -37,6 +37,20 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 13 — Manual Stone Editor v1 (Implemented)
+- [x] `createEditHistory`, `commitEditedTemplate`, `undoEdit`, `redoEdit` — immutable undo/redo
+- [x] `addStoneToTemplate` — validated add with unique-id enforcement
+- [x] `removeStoneFromTemplate` — throws for missing id
+- [x] `generateManualStoneId` — deterministic manual-N ids
+- [x] `createStoneAtPoint` — creates a stone at given mm coordinates
+- [x] `applyTemplateEditOperation` — dispatches add/remove operations
+- [x] `ManualStoneEditor` React component — stone list, add form, undo/redo, reset
+- [x] All editor logic in the engine; React only manages state
+- [ ] Stone drag/move (deferred)
+- [ ] Multi-select (deferred)
+- [ ] Click-on-preview to add stone (deferred)
+- [ ] Saved editor sessions (deferred)
+
 ### Phase 12 — Text Layout v2 (Implemented)
 - [x] `textLayout.ts` — `calculateDotMatrixTextLayoutBounds`, `alignDotMatrixLine`, `computeTextScaleFactors`, `scaleDotMatrixTextPoints`
 - [x] `createDotMatrixTextTemplate` supports `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`, `align`, `letterSpacingColumns`

@@ -14,6 +14,16 @@ Cleanup happens **after** SVG parsing and **before** stone sampling. It does not
 
 **Cleanup does not replace manual design review.** For best results, flatten/simplify logos in a vector editor before upload.
 
+## Manually Edited Templates
+
+When a template is created through the Manual Stone Editor, it carries metadata `edited: true`. Edited templates go through the same export pipeline as generated templates:
+
+1. `validateRhinestoneTemplate` — checks for collisions, duplicate ids, etc.
+2. `checkExportReadiness` — checks physical size, calibration status, etc.
+3. `createBasicSvgExport` — generates the final Cricut-safe SVG.
+
+The download button is disabled until `readiness.ready === true`, exactly as with all other generators.
+
 ## Calibration Overrides and Export
 
 When `applyCalibrationOverridesToTemplate` is used before export:
