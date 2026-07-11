@@ -37,6 +37,17 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 10 — Calibration Workflow v1 (Implemented)
+- [x] `createCalibrationOverrideSet` — validates user-entered hole diameters
+- [x] `getCalibratedHoleDiameter` — returns override or falls back to recommended
+- [x] `applyCalibrationOverridesToTemplate` — returns new template with calibrated hole sizes
+- [x] `CalibrationWorkflow` React component — editable per-size inputs, comparison table, calibrated preview grid
+- [x] All calibration logic in the engine; React only renders
+- [x] Calibrated stones carry metadata (`calibrated`, `calibratedHoleDiameterMm`, `originalHoleDiameterMm`)
+- [x] In-memory only (no persistence yet)
+- [ ] Persistent saved calibration profiles (deferred to future sprint)
+- [ ] Per-profile calibration history (deferred)
+
 ### Phase 9 — Cricut Test Pack + Sprint Polish (Implemented)
 - [x] `createCricutTestPack(options?)` — four-template starter pack (grid, SMOOCH, calibration, diamond)
 - [x] `CricutTestPack` React component with stone size selector and per-item download/copy

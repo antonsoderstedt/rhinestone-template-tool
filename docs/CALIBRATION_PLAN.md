@@ -1,5 +1,23 @@
 # Calibration Plan — Rhinestone Template Tool
 
+## Calibration Workflow v1 (In-app)
+
+The **Calibration Workflow** section on the home page walks you through entering measured hole diameters and previewing a calibrated test grid:
+
+1. Cut the Calibration Sheet (download from the Cricut Test Pack or Calibration Sheet section).
+2. Place stones in each hole row. Note which hole diameter seats each stone size correctly.
+3. Open the **Calibration Workflow** section and enter those diameters.
+4. The app applies your values to a 5×3 SS10 test grid and shows the result.
+5. Download and cut the calibrated grid to verify before production.
+
+### Important limitations
+- Calibration values are **in-memory only** in this sprint. They reset on page reload.
+- Persistent saved material profiles with calibrated values are planned for a future sprint.
+- Calibration values affect hole diameters only — spacing and layout are not changed.
+- Actual optimal values depend on blade sharpness, mat tackiness, flock batch, and ambient conditions. Re-calibrate when any of these change.
+
+---
+
 ## Recommended First Physical Test Sequence
 
 **Before cutting any production design**, follow this sequence:

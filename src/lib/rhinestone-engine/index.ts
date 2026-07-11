@@ -56,6 +56,16 @@ export {
   createCalibrationSheet,
   createDefaultMagicFlockCalibrationSheet,
 } from './calibration/calibrationSheet';
+export type {
+  CalibratedHoleSizeOverride,
+  CalibrationOverrideSet,
+  CreateCalibrationOverrideSetInput,
+} from './calibration/calibrationOverrides';
+export {
+  createCalibrationOverrideSet,
+  getCalibratedHoleDiameter,
+  applyCalibrationOverridesToTemplate,
+} from './calibration/calibrationOverrides';
 
 // Template creation
 export type { CreateRhinestoneTemplateInput } from './template/createTemplate';

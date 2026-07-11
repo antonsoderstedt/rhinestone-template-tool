@@ -16,6 +16,21 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 10 — Calibration Workflow v1 (Implemented)
+
+- [x] `createCalibrationOverrideSet` validates holeDiameterMm > 0 and throws on invalid values
+- [x] `getCalibratedHoleDiameter` returns override when present, falls back when not
+- [x] `applyCalibrationOverridesToTemplate` updates matching stone sizes, leaves others unchanged
+- [x] Original template is never mutated
+- [x] Calibrated stones have `calibrated: true`, `calibratedHoleDiameterMm`, `originalHoleDiameterMm` in metadata
+- [x] Exported SVG uses calibrated hole radius (not default)
+- [x] Output is deterministic
+- [x] `CalibrationWorkflow` component shows per-size inputs, comparison table, calibrated preview
+- [x] All calibration math lives in the engine
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 9 — Cricut Test Pack (Implemented)
 
 - [x] `createCricutTestPack()` returns 4 templates: grid, SMOOCH text, calibration, diamond

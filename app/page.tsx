@@ -4,6 +4,7 @@ import TextMatrixGenerator from './components/TextMatrixGenerator';
 import PolylineLogoGenerator from './components/PolylineLogoGenerator';
 import SvgUploadGenerator from './components/SvgUploadGenerator';
 import CricutTestPack from './components/CricutTestPack';
+import CalibrationWorkflow from './components/CalibrationWorkflow';
 
 export default function Home() {
   return (
@@ -38,6 +39,18 @@ export default function Home() {
             </p>
           </div>
           <CricutTestPack />
+        </section>
+
+        {/* ── Calibration Workflow ────────────────────────────────────────── */}
+        <section className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-zinc-900">Calibration Workflow</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Record your measured hole diameters after cutting the calibration sheet.
+              Apply calibrated values to a test grid and download.
+            </p>
+          </div>
+          <CalibrationWorkflow />
         </section>
 
         {/* ── Text Matrix Generator ────────────────────────────────────────── */}

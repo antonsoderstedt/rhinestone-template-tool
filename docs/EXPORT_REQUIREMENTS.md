@@ -1,5 +1,15 @@
 # Export Requirements — Rhinestone Template Tool
 
+## Calibration Overrides and Export
+
+When `applyCalibrationOverridesToTemplate` is used before export:
+
+1. The template's `holeDiameterMm` per stone is replaced with the user's measured value.
+2. `createBasicSvgExport` uses the updated `holeDiameterMm` to compute the `<circle r="..." />` radius.
+3. The exported SVG accurately reflects the calibrated hole size, not the provisional default.
+
+This means: calibrated templates produce cut files that are sized for your actual machine and material, not a generic estimate.
+
 ## Cricut Test Pack — Recommended Export Workflow
 
 Before cutting any production design, users should export and cut the Cricut Test Pack:

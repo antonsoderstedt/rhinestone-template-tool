@@ -34,7 +34,30 @@ const MAGIC_FLOCK_PROFILE: MaterialProfile = {
 };
 ```
 
-### Why Calibration is Required
+### Calibration Override Support
+
+The engine now supports **calibration overrides** via `createCalibrationOverrideSet` and `applyCalibrationOverridesToTemplate`. After physically testing hole diameters with the calibration sheet, you can create an override set and apply it to any template before export:
+
+```typescript
+const overrides = createCalibrationOverrideSet({
+  id: 'my-setup',
+  name: 'My calibrated settings',
+  materialProfileId: 'magic-flock-cricut-maker',
+  overrides: [
+    { stoneSize: 'SS10', holeDiameterMm: 2.9 },  // measured, not provisional
+  ],
+});
+
+const calibrated = applyCalibrationOverridesToTemplate(template, overrides);
+```
+
+Calibrated stones receive metadata: `calibrated: true`, `calibratedHoleDiameterMm`, `originalHoleDiameterMm`.
+
+Overrides are in-memory only in the current sprint. Persistent saved profiles are planned.
+
+---
+
+## Why Calibration is Required
 
 Magic Flock reacts to the Cricut blade pressure and speed in ways that vary by:
 - Blade age
