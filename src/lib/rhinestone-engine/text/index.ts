@@ -7,3 +7,13 @@ export {
 
 export type { CreateDotMatrixTextTemplateOptions } from './textTemplate';
 export { createDotMatrixTextTemplate } from './textTemplate';
+
+export type { TextLayoutBounds, TextAlign } from './textLayout';
+export {
+  GLYPH_COLUMNS,
+  GLYPH_ROWS,
+  calculateDotMatrixTextLayoutBounds,
+  alignDotMatrixLine,
+  computeTextScaleFactors,
+  scaleDotMatrixTextPoints,
+} from './textLayout';

@@ -8,6 +8,7 @@ import {
   createBasicSvgExport,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
+  checkExportReadiness,
 } from '../src/lib/rhinestone-engine/index.js';
 
 // ─── Dot matrix font ──────────────────────────────────────────────────────────
@@ -268,5 +269,97 @@ describe('createDotMatrixTextTemplate — integration', () => {
     const svg = createBasicSvgExport(t);
     const circleCount = (svg.match(/<circle/g) ?? []).length;
     expect(circleCount).toBe(t.stones.length);
+  });
+});
+
+// ─── Text Layout v2 integration ───────────────────────────────────────────────
+
+describe('createDotMatrixTextTemplate — Text Layout v2', () => {
+  it('targetWidthMm scales layout — wider text has larger max x', () => {
+    const small = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10' });
+    const wide  = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', targetWidthMm: 200 });
+    const smallMaxX = Math.max(...small.stones.map(s => s.center.x));
+    const wideMaxX  = Math.max(...wide.stones.map(s => s.center.x));
+    expect(wideMaxX).toBeGreaterThan(smallMaxX);
+  });
+
+  it('targetHeightMm scales layout vertically', () => {
+    const small = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10' });
+    const tall  = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', targetHeightMm: 200 });
+    const smallMaxY = Math.max(...small.stones.map(s => s.center.y));
+    const tallMaxY  = Math.max(...tall.stones.map(s => s.center.y));
+    expect(tallMaxY).toBeGreaterThan(smallMaxY);
+  });
+
+  it('center alignment shifts shorter line to centre for multiline', () => {
+    // "A\nABC" — "A" is shorter, should have a non-zero x-start under center
+    const left   = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nABC', stoneSize:'SS10', align:'left'   });
+    const center = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nABC', stoneSize:'SS10', align:'center' });
+    // Line 0 in center should start with a larger x than left
+    const leftMinX   = Math.min(...left.stones.filter(s => s.id.includes('-line1-')).map(s => s.center.x));
+    const centerMinX = Math.min(...center.stones.filter(s => s.id.includes('-line1-')).map(s => s.center.x));
+    expect(centerMinX).toBeGreaterThan(leftMinX);
+  });
+
+  it('right alignment shifts shorter line to the right', () => {
+    const left  = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nABC', stoneSize:'SS10', align:'left'  });
+    const right = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nABC', stoneSize:'SS10', align:'right' });
+    const leftMinX  = Math.min(...left.stones.filter(s => s.id.includes('-line1-')).map(s => s.center.x));
+    const rightMinX = Math.min(...right.stones.filter(s => s.id.includes('-line1-')).map(s => s.center.x));
+    expect(rightMinX).toBeGreaterThan(leftMinX);
+  });
+
+  it('letterSpacingColumns > 1 spreads characters further apart', () => {
+    const tight = createDotMatrixTextTemplate({ id:'t', name:'T', text:'AB', stoneSize:'SS10', letterSpacingColumns: 1 });
+    const wide  = createDotMatrixTextTemplate({ id:'t', name:'T', text:'AB', stoneSize:'SS10', letterSpacingColumns: 3 });
+    const tightMaxX = Math.max(...tight.stones.map(s => s.center.x));
+    const wideMaxX  = Math.max(...wide.stones.map(s => s.center.x));
+    expect(wideMaxX).toBeGreaterThan(tightMaxX);
+  });
+
+  it('lineSpacingRows > 2 spreads lines further apart for multiline', () => {
+    const compact = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nB', stoneSize:'SS10', lineSpacingRows: 1 });
+    const spaced  = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A\nB', stoneSize:'SS10', lineSpacingRows: 4 });
+    const compactMaxY = Math.max(...compact.stones.map(s => s.center.y));
+    const spacedMaxY  = Math.max(...spaced.stones.map(s => s.center.y));
+    expect(spacedMaxY).toBeGreaterThan(compactMaxY);
+  });
+
+  it('metadata includes align, letterSpacingColumns, resolvedTextWidthMm', () => {
+    const t = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', align:'center', letterSpacingColumns: 2 });
+    expect(t.metadata?.align).toBe('center');
+    expect(t.metadata?.letterSpacingColumns).toBe(2);
+    expect(typeof t.metadata?.resolvedTextWidthMm).toBe('number');
+    expect(typeof t.metadata?.resolvedTextHeightMm).toBe('number');
+  });
+
+  it('scaled template passes validateRhinestoneTemplate', () => {
+    // Scale UP to avoid reducing inter-stone spacing below collision threshold
+    const t = createDotMatrixTextTemplate({ id:'t', name:'T', text:'HELLO', stoneSize:'SS10', targetWidthMm: 200 });
+    expect(validateRhinestoneTemplate(t).valid).toBe(true);
+  });
+
+  it('scaled template passes checkExportReadiness', () => {
+    const t = createDotMatrixTextTemplate({ id:'t', name:'T', text:'HI', stoneSize:'SS10', targetWidthMm: 50 });
+    expect(checkExportReadiness(t, { requireCalibration: false }).ready).toBe(true);
+  });
+
+  it('scaled template exports through createBasicSvgExport', () => {
+    const t = createDotMatrixTextTemplate({ id:'t', name:'T', text:'OK', stoneSize:'SS10', targetWidthMm: 60 });
+    const svg = createBasicSvgExport(t);
+    expect(svg).toContain('<circle');
+    expect(svg).not.toContain('<image');
+  });
+
+  it('invalid targetWidthMm throws', () => {
+    expect(() =>
+      createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', targetWidthMm: 0 }),
+    ).toThrow(/targetWidthMm/);
+  });
+
+  it('invalid targetHeightMm throws', () => {
+    expect(() =>
+      createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', targetHeightMm: -1 }),
+    ).toThrow(/targetHeightMm/);
   });
 });

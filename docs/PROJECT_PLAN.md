@@ -37,6 +37,16 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 12 — Text Layout v2 (Implemented)
+- [x] `textLayout.ts` — `calculateDotMatrixTextLayoutBounds`, `alignDotMatrixLine`, `computeTextScaleFactors`, `scaleDotMatrixTextPoints`
+- [x] `createDotMatrixTextTemplate` supports `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`, `align`, `letterSpacingColumns`
+- [x] Multiline left/center/right alignment
+- [x] Physical size scaling for text templates
+- [x] `TextMatrixGenerator` UI exposes all v2 controls (collapsible layout section)
+- [x] Text layout metadata included in template
+- [ ] Real font-outline text (deferred — requires path-fill algorithm)
+- [ ] Custom font upload (deferred)
+
 ### Phase 11 — SVG Cleanup + Logo Quality v1 (Implemented)
 - [x] `polylineCleanup.ts` — `cleanupPolylines`, `removeDuplicatePolylinePoints`, `removeShortPolylineSegments`, `simplifyPolyline`, `removeTinyPolylines`
 - [x] Cleanup integrated into `svgStringToPolylines` (enabled by default)

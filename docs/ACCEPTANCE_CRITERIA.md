@@ -16,6 +16,22 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 12 — Text Layout v2 (Implemented)
+
+- [x] `calculateDotMatrixTextLayoutBounds` returns correct bounds for single and multiline text
+- [x] `alignDotMatrixLine` returns 0 for left, correct offsets for center/right
+- [x] `computeTextScaleFactors` preserves aspect ratio and stretches independently
+- [x] `createDotMatrixTextTemplate` supports `targetWidthMm`, `targetHeightMm`, `align`, `letterSpacingColumns`, `lineSpacingRows`
+- [x] Invalid target dimensions throw with clear errors
+- [x] Scaled templates pass `validateRhinestoneTemplate` and `checkExportReadiness`
+- [x] Template metadata includes layout fields
+- [x] `TextMatrixGenerator` exposes layout controls (alignment, spacing, sizing)
+- [x] Physical text size shown in stats
+- [x] Text layout logic lives in the engine
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 11 — SVG Cleanup + Logo Quality v1 (Implemented)
 
 - [x] `removeDuplicatePolylinePoints` removes exact and near-duplicate consecutive points

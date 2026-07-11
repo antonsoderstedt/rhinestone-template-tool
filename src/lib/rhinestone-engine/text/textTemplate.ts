@@ -21,6 +21,12 @@ import { createRhinestoneTemplate } from '../template/createTemplate';
 import { getDotMatrixGlyph } from './dotMatrixFont';
 import type { DensityPreset, DensitySpacingResult } from '../spacing/density';
 import { getDensitySpacing } from '../spacing/density';
+import {
+  calculateDotMatrixTextLayoutBounds,
+  alignDotMatrixLine,
+  computeTextScaleFactors,
+} from './textLayout';
+import type { TextAlign } from './textLayout';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +74,20 @@ export interface CreateDotMatrixTextTemplateOptions {
   densityPreset?: DensityPreset;
   /** Required when densityPreset is "custom". Ignored for other presets. */
   customSpacingMm?: number;
+  // ── Text Layout v2 ────────────────────────────────────────────────────────
+  /** Scale text layout to this width (mm) before generating stones. */
+  targetWidthMm?: number;
+  /** Scale text layout to this height (mm) before generating stones. */
+  targetHeightMm?: number;
+  /** Preserve aspect ratio when both targets are set. Default: true. */
+  preserveAspectRatio?: boolean;
+  /** Horizontal alignment for multiline text. Default: 'left'. */
+  align?: TextAlign;
+  /**
+   * Empty dot columns between characters. Preferred over characterSpacingColumns.
+   * Default: 1.
+   */
+  letterSpacingColumns?: number;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -95,7 +115,14 @@ export function createDotMatrixTextTemplate(
     lineSpacingRows = 2,
     materialProfileId,
     uppercase = true,
+    align = 'left',
+    preserveAspectRatio = true,
+    targetWidthMm,
+    targetHeightMm,
   } = options;
+
+  // Prefer letterSpacingColumns over legacy characterSpacingColumns
+  const letterSpacing = options.letterSpacingColumns ?? characterSpacingColumns;
 
   // ── Guard ────────────────────────────────────────────────────────────────
   if (typeof id !== 'string' || id.trim().length === 0) {
@@ -106,6 +133,18 @@ export function createDotMatrixTextTemplate(
   }
   if (typeof inputText !== 'string' || inputText.trim().length === 0) {
     throw new Error('createDotMatrixTextTemplate: "text" must be a non-empty string.');
+  }
+  if (targetWidthMm !== undefined && targetWidthMm <= 0) {
+    throw new Error(`createDotMatrixTextTemplate: targetWidthMm must be > 0, got ${targetWidthMm}.`);
+  }
+  if (targetHeightMm !== undefined && targetHeightMm <= 0) {
+    throw new Error(`createDotMatrixTextTemplate: targetHeightMm must be > 0, got ${targetHeightMm}.`);
+  }
+  if (letterSpacing < 0) {
+    throw new Error(`createDotMatrixTextTemplate: letterSpacingColumns must be >= 0, got ${letterSpacing}.`);
+  }
+  if (lineSpacingRows < 0) {
+    throw new Error(`createDotMatrixTextTemplate: lineSpacingRows must be >= 0, got ${lineSpacingRows}.`);
   }
 
   // ── Spacing ──────────────────────────────────────────────────────────────
@@ -142,11 +181,27 @@ export function createDotMatrixTextTemplate(
   // ── Process text ─────────────────────────────────────────────────────────
   const processedText = uppercase ? inputText.toUpperCase() : inputText;
   const lines = processedText.split('\n');
+  const maxLineChars = Math.max(...lines.map((l) => l.length), 0);
+
+  // ── Compute layout bounds and scale factors ───────────────────────────────
+  const naturalBounds = calculateDotMatrixTextLayoutBounds(lines, spacingMm, letterSpacing, lineSpacingRows);
+  const { scaleX, scaleY } = computeTextScaleFactors(
+    naturalBounds.width,
+    naturalBounds.height,
+    targetWidthMm,
+    targetHeightMm,
+    preserveAspectRatio,
+  );
+  const resolvedTextWidthMm  = naturalBounds.width  * scaleX;
+  const resolvedTextHeightMm = naturalBounds.height * scaleY;
 
   // ── Place stones ─────────────────────────────────────────────────────────
   const stones: Stone[] = [];
 
   lines.forEach((line, li) => {
+    // Alignment offset (in column units) for this line
+    const alignOffsetCols = alignDotMatrixLine(line.length, maxLineChars, align, letterSpacing);
+
     [...line].forEach((char, ci) => {
       const glyph = getDotMatrixGlyph(char);
 
@@ -154,17 +209,14 @@ export function createDotMatrixTextTemplate(
         const row = glyph[ri];
         for (let col = 0; col < 5; col++) {
           if (row[col] === '1') {
-            const cx = roundMm(
-              startXmm + (ci * (5 + characterSpacingColumns) + col) * spacingMm,
-              dp,
-            );
-            const cy = roundMm(
-              startYmm + (li * (7 + lineSpacingRows) + ri) * spacingMm,
-              dp,
-            );
-            // IDs are deterministic: line/char/row/col are all 1-based
-            const stoneId = `${stoneSize.toLowerCase()}-line${li + 1}-char${ci + 1}-r${ri + 1}-c${col + 1}`;
+            // Raw unit position (in column/row units relative to text origin)
+            const unitX = alignOffsetCols + ci * (5 + letterSpacing) + col;
+            const unitY = li * (7 + lineSpacingRows) + ri;
 
+            const cx = roundMm(startXmm + unitX * spacingMm * scaleX, dp);
+            const cy = roundMm(startYmm + unitY * spacingMm * scaleY, dp);
+
+            const stoneId = `${stoneSize.toLowerCase()}-line${li + 1}-char${ci + 1}-r${ri + 1}-c${col + 1}`;
             stones.push({
               id: stoneId,
               center: { x: cx, y: cy },
@@ -189,6 +241,13 @@ export function createDotMatrixTextTemplate(
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
       fontMode: 'dot-matrix-5x7',
       spacingMm,
+      align,
+      letterSpacingColumns: letterSpacing,
+      lineSpacingRows,
+      resolvedTextWidthMm,
+      resolvedTextHeightMm,
+      ...(targetWidthMm  !== undefined && { targetWidthMm }),
+      ...(targetHeightMm !== undefined && { targetHeightMm }),
       ...(densityResult && {
         densityPreset: densityResult.preset,
         resolvedSpacingMm: densityResult.spacingMm,

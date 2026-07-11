@@ -202,6 +202,36 @@ Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radiu
 
 ---
 
+## Text Layout Module (Layout v2)
+
+### Why dot matrix text remains deterministic
+
+Dot-matrix text uses a fixed 5×7 bitmap glyph per character. Every stone position is deterministic given the same input parameters. This makes it safe to test, reproducible, and calibration-friendly. Real font-outline text (converting vector letterforms to stone fills) requires the path-fill algorithm and is deferred.
+
+### New layout options in v2
+
+| Option | Description | Default |
+|--------|-------------|-------|
+| `align` | `left` / `center` / `right` for multiline text | `left` |
+| `letterSpacingColumns` | Empty dot columns between characters | `1` |
+| `lineSpacingRows` | Empty dot rows between lines | `2` |
+| `targetWidthMm` | Scale text layout to this width | unset |
+| `targetHeightMm` | Scale text layout to this height | unset |
+| `preserveAspectRatio` | Fit inside box without distortion | `true` |
+
+### `textLayout.ts` functions
+
+- `calculateDotMatrixTextLayoutBounds` — returns natural bounding box (mm) of the text block
+- `alignDotMatrixLine` — returns x offset (column units) for a given line alignment
+- `computeTextScaleFactors` — returns `{scaleX, scaleY}` to fit text into a target box
+- `scaleDotMatrixTextPoints` — applies scale factors to 2D point arrays
+
+### Template metadata
+
+Templates now include: `align`, `letterSpacingColumns`, `lineSpacingRows`, `resolvedTextWidthMm`, `resolvedTextHeightMm`.
+
+---
+
 ## Polyline Cleanup Module
 
 ### Why cleanup improves rhinestone placement

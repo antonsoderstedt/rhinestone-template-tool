@@ -82,7 +82,7 @@ export type {
 } from './validation/templateValidation';
 export { validateRhinestoneTemplate } from './validation/templateValidation';
 
-// Text — dot matrix (Text v1)
+// Text — dot matrix (Text v1 + Layout v2)
 export type { DotMatrixGlyph } from './text/dotMatrixFont';
 export {
   DOT_MATRIX_5X7_FONT,
@@ -91,6 +91,15 @@ export {
 } from './text/dotMatrixFont';
 export type { CreateDotMatrixTextTemplateOptions } from './text/textTemplate';
 export { createDotMatrixTextTemplate } from './text/textTemplate';
+export type { TextLayoutBounds, TextAlign } from './text/textLayout';
+export {
+  GLYPH_COLUMNS,
+  GLYPH_ROWS,
+  calculateDotMatrixTextLayoutBounds,
+  alignDotMatrixLine,
+  computeTextScaleFactors,
+  scaleDotMatrixTextPoints,
+} from './text/textLayout';
 
 // Path / polyline (SVG/logo foundation v1)
 export type { PolylinePoint, Polyline } from './path/polyline';

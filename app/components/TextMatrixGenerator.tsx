@@ -7,8 +7,9 @@ import {
   createBasicSvgExport,
   getDensityPresetOptions,
   checkExportReadiness,
+  getTemplatePhysicalSize,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult, TextAlign } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
@@ -24,7 +25,11 @@ type GeneratorResult =
   | {
       ok: true;
       svgString: string;
-      stoneCount: number;      readiness: ExportReadinessResult;      validation: TemplateValidationResult;
+      stoneCount: number;
+      physicalWidthMm: number;
+      physicalHeightMm: number;
+      readiness: ExportReadinessResult;
+      validation: TemplateValidationResult;
     }
   | { ok: false; error: string };
 
@@ -38,6 +43,13 @@ export default function TextMatrixGenerator() {
   const [paddingMm, setPaddingMm] = useState(5);
   const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
   const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
+  // ── Layout v2 state ──────────────────────────────────────────────────────────
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>('');
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
+  const [align, setAlign] = useState<TextAlign>('left');
+  const [letterSpacing, setLetterSpacing] = useState(1);
+  const [lineSpacing, setLineSpacing] = useState(2);
 
   const result = useMemo<GeneratorResult>(() => {
     try {
@@ -48,10 +60,17 @@ export default function TextMatrixGenerator() {
         stoneSize,
         densityPreset,
         customSpacingMm: densityPreset === 'custom' && customSpacingMm !== '' ? customSpacingMm : undefined,
+        targetWidthMm:  targetWidthMm  !== '' ? targetWidthMm  : undefined,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : undefined,
+        preserveAspectRatio,
+        align,
+        letterSpacingColumns: letterSpacing,
+        lineSpacingRows: lineSpacing,
       });
 
       const validation = validateRhinestoneTemplate(template);
-      const readiness = checkExportReadiness(template);
+      const readiness  = checkExportReadiness(template);
+      const { widthMm, heightMm } = getTemplatePhysicalSize(template);
 
       const svgString = createBasicSvgExport(template, {
         includeGuideBox,
@@ -60,14 +79,15 @@ export default function TextMatrixGenerator() {
         decimalPlaces: 3,
       });
 
-      return { ok: true, svgString, stoneCount: template.stones.length, readiness, validation };
+      return { ok: true, svgString, stoneCount: template.stones.length,
+               physicalWidthMm: widthMm, physicalHeightMm: heightMm,
+               readiness, validation };
     } catch (err) {
-      return {
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      };
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
-  }, [text, stoneSize, includeGuideBox, includeLabels, paddingMm, densityPreset, customSpacingMm]);
+  }, [text, stoneSize, includeGuideBox, includeLabels, paddingMm,
+      densityPreset, customSpacingMm,
+      targetWidthMm, targetHeightMm, preserveAspectRatio, align, letterSpacing, lineSpacing]);
 
   const filename = `rhinestone-text-dot-matrix-${stoneSize.toLowerCase()}.svg`;
 
@@ -157,6 +177,52 @@ export default function TextMatrixGenerator() {
 
       </div>
 
+      {/* ── Layout v2 controls ───────────────────────────────────────────── */}
+      <details className="rounded border border-zinc-200 overflow-hidden">
+        <summary className="px-4 py-2.5 text-sm font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 select-none">
+          Layout settings (alignment, sizing, spacing)
+        </summary>
+        <div className="px-4 pb-4 pt-3 grid gap-3 sm:grid-cols-2 border-t border-zinc-100">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500">Alignment</span>
+            <select value={align} onChange={(e) => setAlign(e.target.value as TextAlign)}
+              className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500">Target width (mm)</span>
+            <input type="number" min={1} step={1} value={targetWidthMm} placeholder="auto"
+              onChange={(e) => setTargetWidthMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+              className="rounded border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500">Target height (mm)</span>
+            <input type="number" min={1} step={1} value={targetHeightMm} placeholder="auto"
+              onChange={(e) => setTargetHeightMm(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+              className="rounded border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400" />
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={preserveAspectRatio} onChange={(e) => setPreserveAspectRatio(e.target.checked)} className="h-4 w-4 rounded" />
+            <span className="text-sm text-zinc-700">Preserve aspect ratio</span>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500">Letter spacing (dot columns)</span>
+            <input type="number" min={0} step={1} value={letterSpacing}
+              onChange={(e) => setLetterSpacing(Math.max(0, Math.floor(Number(e.target.value))))}
+              className="rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500">Line spacing (dot rows)</span>
+            <input type="number" min={0} step={1} value={lineSpacing}
+              onChange={(e) => setLineSpacing(Math.max(0, Math.floor(Number(e.target.value))))}
+              className="rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+          </label>
+        </div>
+      </details>
+
       {/* ── Error state ──────────────────────────────────────────────────── */}
       {!result.ok && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
@@ -174,6 +240,8 @@ export default function TextMatrixGenerator() {
             extraStats={[
               { label: 'Text', value: text.replace(/\n/g, ' \u21b5 ') },
               { label: 'Font mode', value: 'Dot Matrix 5\u00d77' },
+              { label: 'Align', value: align },
+              { label: 'Est. width', value: `${result.physicalWidthMm.toFixed(1)} mm` },
               { label: 'Density', value: densityPreset },
             ]}
           />
