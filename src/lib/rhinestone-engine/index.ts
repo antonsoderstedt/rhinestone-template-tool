@@ -101,6 +101,15 @@ export {
 } from './path/polyline';
 export type { CreatePolylineRhinestoneTemplateOptions } from './path/pathTemplate';
 export { createPolylineRhinestoneTemplate } from './path/pathTemplate';
+export type { PolylineCleanupOptions } from './path/polylineCleanup';
+export {
+  cleanupPolyline,
+  cleanupPolylines,
+  removeDuplicatePolylinePoints,
+  removeShortPolylineSegments,
+  simplifyPolyline,
+  removeTinyPolylines,
+} from './path/polylineCleanup';
 
 // SVG upload (v2 — curves + transforms, no raw SVG rendering)
 export type { ParsedSvgElement, SvgSafetyResult } from './svg/svgParser';

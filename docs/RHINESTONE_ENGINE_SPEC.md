@@ -202,6 +202,40 @@ Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radiu
 
 ---
 
+## Polyline Cleanup Module
+
+### Why cleanup improves rhinestone placement
+
+SVG logos and paths converted to polylines often contain:
+- Duplicate or near-duplicate consecutive points (from rasterized paths or imprecise editors)
+- Very short segments (< 0.25 mm) from over-sampled curves
+- Tiny polylines (< 1 mm total length) from stray marks
+
+Without cleanup, these artifacts cause:
+- Multiple stones placed at the same position (collision errors)
+- Dense stone clusters at segment boundaries
+- Stray single-stone polylines that look like noise in the output
+
+### Functions
+
+| Function | Purpose |
+|---|---|
+| `removeDuplicatePolylinePoints(poly, tol)` | Removes consecutive points within `tol` mm |
+| `removeShortPolylineSegments(poly, min)` | Removes intermediate points creating segments < `min` mm |
+| `simplifyPolyline(poly, tol)` | Ramer-Douglas-Peucker simplification |
+| `removeTinyPolylines(polys, min)` | Removes polylines with arc length < `min` mm |
+| `cleanupPolylines(polys, options)` | Runs full pipeline; throws if all removed |
+
+### Defaults (when `cleanup: true` in `svgStringToPolylines`)
+- `removeDuplicatePoints: true`, tolerance 0.05 mm
+- `removeShortSegments: true`, min 0.25 mm
+- `simplify: false`
+- `removeTinyPolylines: true`, min 1 mm
+
+**Warning:** Cleanup does not replace manual design review. Complex logos should be simplified in a vector editor before upload. Cleanup is conservative by default.
+
+---
+
 ## SVG Parser Module (Upload v2)
 
 ### Security model

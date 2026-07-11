@@ -1,5 +1,19 @@
 # Export Requirements — Rhinestone Template Tool
 
+## SVG Cleanup Before Export
+
+Before SVG polylines reach the rhinestone engine, they are cleaned up by default:
+
+1. **Duplicate points** removed (< 0.05 mm apart) — prevents collision errors.
+2. **Short segments** removed (< 0.25 mm) — prevents stone clusters at noisy corners.
+3. **Tiny polylines** removed (< 1 mm total) — prevents stray stones from SVG artifacts.
+
+Optionally, **Ramer-Douglas-Peucker simplification** reduces the point count of over-sampled curves.
+
+Cleanup happens **after** SVG parsing and **before** stone sampling. It does not affect the final SVG output format — all holes are still `<circle>` elements with `width`/`height` in mm.
+
+**Cleanup does not replace manual design review.** For best results, flatten/simplify logos in a vector editor before upload.
+
 ## Calibration Overrides and Export
 
 When `applyCalibrationOverridesToTemplate` is used before export:

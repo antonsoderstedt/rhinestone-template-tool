@@ -10,7 +10,7 @@ import {
   getDensityPresetOptions,
   checkExportReadiness,
 } from '@/src/lib/rhinestone-engine/index';
-import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
+import type { StoneSizeId, TemplateValidationResult, DensityPreset, ExportReadinessResult, PolylineCleanupOptions } from '@/src/lib/rhinestone-engine/index';
 import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
@@ -50,6 +50,15 @@ export default function SvgUploadGenerator() {
   const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
   const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
 
+  // ── Cleanup state ───────────────────────────────────────────────────────────
+  const [cleanupEnabled, setCleanupEnabled] = useState(true);
+  const [cleanupSimplify, setCleanupSimplify] = useState(false);
+  const [cleanupSimplifyTol, setCleanupSimplifyTol] = useState(0.25);
+  const [cleanupRemoveTiny, setCleanupRemoveTiny] = useState(true);
+  const [cleanupMinLength, setCleanupMinLength] = useState(1);
+  const [cleanupRemoveDups, setCleanupRemoveDups] = useState(true);
+  const [cleanupDupTol, setCleanupDupTol] = useState(0.05);
+
   // ── File handler ────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -75,7 +84,19 @@ export default function SvgUploadGenerator() {
   const result = useMemo<GeneratorResult | null>(() => {
     if (!uploadedSvgText) return null;
     try {
-      const polylines = svgStringToPolylines(uploadedSvgText);
+      const cleanupOptions: PolylineCleanupOptions | undefined = cleanupEnabled ? {
+        removeDuplicatePoints: cleanupRemoveDups,
+        duplicatePointToleranceMm: cleanupDupTol,
+        removeTinyPolylines: cleanupRemoveTiny,
+        minPolylineLengthMm: cleanupMinLength,
+        simplify: cleanupSimplify,
+        simplifyToleranceMm: cleanupSimplifyTol,
+      } : undefined;
+
+      const polylines = svgStringToPolylines(uploadedSvgText, {
+        cleanup: cleanupEnabled,
+        cleanupOptions,
+      });
       const template = createPolylineRhinestoneTemplate({
         id: 'uploaded-svg',
         name: 'Uploaded SVG',
@@ -113,7 +134,10 @@ export default function SvgUploadGenerator() {
         error: err instanceof Error ? err.message : String(err),
       };
     }
-  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm]);
+  }, [uploadedSvgText, stoneSize, includeGuideBox, includeLabels, paddingMm,
+      targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm,
+      cleanupEnabled, cleanupRemoveDups, cleanupDupTol, cleanupRemoveTiny,
+      cleanupMinLength, cleanupSimplify, cleanupSimplifyTol]);
 
   const filename = `rhinestone-uploaded-svg-${stoneSize.toLowerCase()}.svg`;
 
@@ -123,10 +147,10 @@ export default function SvgUploadGenerator() {
       {/* ── Info banner ──────────────────────────────────────────────────── */}
       <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         <strong>SVG Upload v2 — curves + transforms supported.</strong>{' '}
-        Supported elements: line, polyline, polygon, rect, circle, ellipse, and
-        path (M/L/H/V/Z/C/S/Q/T). Arcs (A) may still need to be expanded before
-        upload. The app converts SVG geometry into internal stone positions and
-        exports a new clean SVG — the raw uploaded SVG is never rendered.
+        Supported: line, polyline, polygon, rect, circle, ellipse, and path (M/L/H/V/Z/C/S/Q/T).
+        Simple logos work best. Arcs (A) must be expanded before upload.
+        The app parses SVG geometry into stone positions and exports a new clean rhinestone SVG —
+        the raw uploaded file is never rendered.
       </div>
 
       {/* ── Controls ─────────────────────────────────────────────────────── */}
@@ -246,6 +270,66 @@ export default function SvgUploadGenerator() {
         )}
 
       </div>
+
+      {/* ── SVG cleanup settings ──────────────────────────────────────────── */}
+      <details className="rounded border border-zinc-200 overflow-hidden">
+        <summary className="px-4 py-2.5 text-sm font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 select-none">
+          SVG cleanup settings
+        </summary>
+        <div className="px-4 pb-4 pt-3 grid gap-3 sm:grid-cols-2 border-t border-zinc-100">
+          <label className="flex items-center gap-2 sm:col-span-2">
+            <input type="checkbox" checked={cleanupEnabled} onChange={(e) => setCleanupEnabled(e.target.checked)} className="h-4 w-4 rounded" />
+            <span className="text-sm font-medium text-zinc-700">Enable cleanup</span>
+            <span className="text-xs text-zinc-400">(removes noise from complex SVGs)</span>
+          </label>
+
+          {cleanupEnabled && (
+            <>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={cleanupRemoveDups} onChange={(e) => setCleanupRemoveDups(e.target.checked)} className="h-4 w-4 rounded" />
+                <span className="text-sm text-zinc-700">Remove duplicate points</span>
+              </label>
+
+              {cleanupRemoveDups && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-zinc-500">Duplicate tolerance (mm)</span>
+                  <input type="number" min={0.001} step={0.01} value={cleanupDupTol}
+                    onChange={(e) => setCleanupDupTol(Math.max(0.001, Number(e.target.value)))}
+                    className="rounded border border-zinc-300 px-2 py-1 text-sm" />
+                </label>
+              )}
+
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={cleanupRemoveTiny} onChange={(e) => setCleanupRemoveTiny(e.target.checked)} className="h-4 w-4 rounded" />
+                <span className="text-sm text-zinc-700">Remove tiny shapes</span>
+              </label>
+
+              {cleanupRemoveTiny && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-zinc-500">Min shape length (mm)</span>
+                  <input type="number" min={0.1} step={0.1} value={cleanupMinLength}
+                    onChange={(e) => setCleanupMinLength(Math.max(0.1, Number(e.target.value)))}
+                    className="rounded border border-zinc-300 px-2 py-1 text-sm" />
+                </label>
+              )}
+
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={cleanupSimplify} onChange={(e) => setCleanupSimplify(e.target.checked)} className="h-4 w-4 rounded" />
+                <span className="text-sm text-zinc-700">Simplify curves</span>
+              </label>
+
+              {cleanupSimplify && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-zinc-500">Simplify tolerance (mm)</span>
+                  <input type="number" min={0.01} step={0.05} value={cleanupSimplifyTol}
+                    onChange={(e) => setCleanupSimplifyTol(Math.max(0.01, Number(e.target.value)))}
+                    className="rounded border border-zinc-300 px-2 py-1 text-sm" />
+                </label>
+              )}
+            </>
+          )}
+        </div>
+      </details>
 
       {/* ── No file yet ───────────────────────────────────────────────────── */}
       {!uploadedSvgText && (

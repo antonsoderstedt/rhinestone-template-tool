@@ -20,6 +20,8 @@
 import type { Polyline, PolylinePoint } from '../path/polyline';
 import { roundMm } from '../geometry/rounding';
 import { validateSafeSvgInput, extractSvgElements } from './svgParser';
+import type { PolylineCleanupOptions } from '../path/polylineCleanup';
+import { cleanupPolylines } from '../path/polylineCleanup';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,14 @@ export interface SvgToPolylineOptions {
    * Higher values produce smoother curves. Default: 24.
    */
   curveSegments?: number;
+  /**
+   * Run the polyline cleanup pipeline after conversion.
+   * Removes duplicate points, short segments, and tiny shapes.
+   * Default: true.
+   */
+  cleanup?: boolean;
+  /** Options passed to the cleanup pipeline. */
+  cleanupOptions?: PolylineCleanupOptions;
 }
 
 // ─── Transform types ──────────────────────────────────────────────────────────
@@ -262,6 +272,11 @@ export function svgStringToPolylines(
         'and path (M/m/L/l/H/h/V/v/Z/z/C/c/S/s/Q/q/T/t). ' +
         'Arc commands (A/a) are not yet supported — expand them before uploading.',
     );
+  }
+
+  // Run cleanup pipeline (enabled by default)
+  if (options.cleanup !== false) {
+    return cleanupPolylines(valid, options.cleanupOptions ?? {});
   }
 
   return valid;

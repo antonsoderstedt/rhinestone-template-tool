@@ -37,6 +37,15 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 11 — SVG Cleanup + Logo Quality v1 (Implemented)
+- [x] `polylineCleanup.ts` — `cleanupPolylines`, `removeDuplicatePolylinePoints`, `removeShortPolylineSegments`, `simplifyPolyline`, `removeTinyPolylines`
+- [x] Cleanup integrated into `svgStringToPolylines` (enabled by default)
+- [x] `SvgUploadGenerator` exposes cleanup settings (duplicate points, tiny shapes, simplification)
+- [x] All cleanup logic in the engine; React only passes options
+- [x] Cleanup does not hide safety errors
+- [ ] Visual before/after cleanup preview (deferred)
+- [ ] Per-path shape preview (deferred)
+
 ### Phase 10 — Calibration Workflow v1 (Implemented)
 - [x] `createCalibrationOverrideSet` — validates user-entered hole diameters
 - [x] `getCalibratedHoleDiameter` — returns override or falls back to recommended

@@ -16,6 +16,24 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 11 — SVG Cleanup + Logo Quality v1 (Implemented)
+
+- [x] `removeDuplicatePolylinePoints` removes exact and near-duplicate consecutive points
+- [x] `removeShortPolylineSegments` removes intermediate points creating short segments
+- [x] `simplifyPolyline` (RDP) reduces collinear point count; preserves endpoints
+- [x] `removeTinyPolylines` removes polylines below minimum arc length
+- [x] `cleanupPolylines` throws if all polylines removed
+- [x] Cleanup does not mutate input
+- [x] `svgStringToPolylines` runs cleanup by default
+- [x] Cleanup can be disabled with `cleanup: false`
+- [x] Cleaned templates pass `validateRhinestoneTemplate` and `checkExportReadiness`
+- [x] Exported SVGs contain real `<circle>` elements, no `<image>`, no raw SVG content
+- [x] `SvgUploadGenerator` exposes cleanup controls
+- [x] All cleanup logic in the engine
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 10 — Calibration Workflow v1 (Implemented)
 
 - [x] `createCalibrationOverrideSet` validates holeDiameterMm > 0 and throws on invalid values

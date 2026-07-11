@@ -7,3 +7,13 @@ export {
 
 export type { CreatePolylineRhinestoneTemplateOptions } from './pathTemplate';
 export { createPolylineRhinestoneTemplate } from './pathTemplate';
+
+export type { PolylineCleanupOptions } from './polylineCleanup';
+export {
+  cleanupPolyline,
+  cleanupPolylines,
+  removeDuplicatePolylinePoints,
+  removeShortPolylineSegments,
+  simplifyPolyline,
+  removeTinyPolylines,
+} from './polylineCleanup';
