@@ -1,5 +1,25 @@
 # Calibration Plan — Rhinestone Template Tool
 
+## Recommended First Physical Test Sequence
+
+**Before cutting any production design**, follow this sequence:
+
+1. Download the **Cricut Test Pack** from the app home page.
+2. Import all four SVG files into Cricut Design Space.
+3. Cut the **Calibration Sheet** on a small scrap of Magic Flock. Place stones in each row and note which hole diameter seats correctly.
+4. Update `kerfCompensationMm` in `src/lib/rhinestone-engine/profiles/materialProfiles.ts` with the measured offset.
+5. Cut the **SS10 Grid** — verify stone spacing and seating.
+6. Cut **SMOOCH** — check that stones fill the design neatly.
+7. Cut the **Diamond** — verify path accuracy at corners.
+8. Only after all four pass should you proceed to custom production designs.
+
+**Skipping this sequence risks:**
+- Holes that are too large (stones fall out)
+- Holes that are too small (stones won’t seat, material tears)
+- Incorrect physical scale (wrong cut size)
+
+---
+
 ## Calibration UI
 
 The calibration sheet is accessible directly from the home page via the **Calibration Sheet** section (`app/components/CalibrationSheetGenerator.tsx`).

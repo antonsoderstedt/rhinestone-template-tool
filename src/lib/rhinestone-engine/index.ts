@@ -132,3 +132,7 @@ export type {
   ExportReadinessOptions,
 } from './exportQa/exportReadiness';
 export { checkExportReadiness } from './exportQa/exportReadiness';
+
+// Cricut Test Pack
+export type { CricutTestPackOptions, CricutTestPackItem, CricutTestPack } from './testPack/cricutTestPack';
+export { createCricutTestPack } from './testPack/cricutTestPack';

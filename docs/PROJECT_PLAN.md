@@ -37,6 +37,22 @@
 - [x] Template stats: stone size, count, columns, rows
 - [x] SVG preview inline
 
+### Phase 9 — Cricut Test Pack + Sprint Polish (Implemented)
+- [x] `createCricutTestPack(options?)` — four-template starter pack (grid, SMOOCH, calibration, diamond)
+- [x] `CricutTestPack` React component with stone size selector and per-item download/copy
+- [x] Home page restructured: Test Pack first, then generators
+- [x] Hero explains the recommended first-use workflow
+- [x] All test pack templates pass `checkExportReadiness` without blocking errors
+- [x] Test pack is deterministic and fully tested
+
+### Recommended first physical test sequence
+1. Download the Test Pack (SS10 or your target size)
+2. Cut the **Calibration Sheet** on a scrap of Magic Flock — find the right hole diameter
+3. Cut the **SS10 Grid** — verify stone seating and spacing
+4. Cut **SMOOCH** — check dot-matrix text density
+5. Cut the **Diamond** — verify outline path accuracy at sharp corners
+6. After all four pass physical validation, proceed to production designs
+
 ### Phase 8 — Export Readiness / Cricut QA v1 (Implemented)
 - [x] `checkExportReadiness(template, options?)` — single engine function for all export readiness checks
 - [x] Errors: invalid unit, no stones, stone count below minimum, duplicate IDs, collisions

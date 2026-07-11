@@ -16,6 +16,21 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Phase 9 — Cricut Test Pack (Implemented)
+
+- [x] `createCricutTestPack()` returns 4 templates: grid, SMOOCH text, calibration, diamond
+- [x] Every template has `unit: 'mm'` and at least one stone
+- [x] Every template passes `validateRhinestoneTemplate` and `checkExportReadiness` (no errors)
+- [x] Every `recommendedFilename` ends in `.svg`
+- [x] Exported SVGs contain `<circle>` elements, no `<image>`
+- [x] Pack is deterministic
+- [x] `CricutTestPack` component shows stone count, physical size, readiness status per item
+- [x] Download button gated by readiness
+- [x] Stone size selector changes grid, text, and diamond templates
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass
+
+---
+
 ## Phase 8 — Export Readiness / Cricut QA v1 (Implemented)
 
 - [x] `checkExportReadiness` returns `ready: false` for empty, non-mm, or colliding templates
