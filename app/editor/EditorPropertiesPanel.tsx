@@ -851,6 +851,8 @@ function getToolTitle(tool: EditorTool): string {
     case 'text': return 'Text Source';
     case 'svg': return 'SVG Source';
     case 'grid': return 'Grid Source';
+    case 'rhinestone-font': return 'Rhinestone Font';
+    case 'template-import': return 'Template Import';
     case 'manual': return 'Manual Source';
   }
 }

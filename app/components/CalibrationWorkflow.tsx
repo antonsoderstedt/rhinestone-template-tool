@@ -18,6 +18,7 @@ import SvgExportActions from './SvgExportActions';
 
 const PROFILE_ID = 'magic-flock-cricut-maker';
 
+// Only show standard sizes in calibration workflow, not rhinestone font sizes
 const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12'];
 
 /** Returns the recommended hole diameter for a stone size from the engine. */
@@ -40,6 +41,8 @@ function defaultHoleMap(): HoleMap {
     SS8:  recommended('SS8').toString(),
     SS10: recommended('SS10').toString(),
     SS12: recommended('SS12').toString(),
+    SS16: recommended('SS16').toString(),
+    SS20: recommended('SS20').toString(),
   };
 }
 
@@ -55,6 +58,8 @@ export default function CalibrationWorkflow() {
       SS8:  parseFloat(holeMap.SS8),
       SS10: parseFloat(holeMap.SS10),
       SS12: parseFloat(holeMap.SS12),
+      SS16: parseFloat(holeMap.SS16),
+      SS20: parseFloat(holeMap.SS20),
     }),
     [holeMap],
   );

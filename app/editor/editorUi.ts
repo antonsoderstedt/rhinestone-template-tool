@@ -1,7 +1,7 @@
 import type { GeneratorId } from '@/src/lib/rhinestone-engine/index';
 import type { EditorState, EditorTool } from './EditorState';
 
-export type SourcePanelTool = 'text' | 'svg' | 'grid' | 'manual';
+export type SourcePanelTool = 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'template-import' | 'manual';
 
 export interface StatusCopy {
   label: 'Generated' | 'Editable';
@@ -18,6 +18,10 @@ function mapGeneratorToTool(generatorId: GeneratorId | null): SourcePanelTool | 
       return 'svg';
     case 'manual-grid':
       return 'grid';
+    case 'rhinestone-font':
+      return 'rhinestone-font';
+    case 'template-import':
+      return 'template-import';
     case 'manual-editor':
       return 'manual';
     default:
@@ -40,7 +44,14 @@ function mapTemplateIdToTool(templateId: string | undefined): SourcePanelTool | 
 }
 
 export function getSourcePanelTool(state: EditorState): SourcePanelTool {
-  if (state.activeTool === 'text' || state.activeTool === 'svg' || state.activeTool === 'grid' || state.activeTool === 'manual') {
+  if (
+    state.activeTool === 'text' || 
+    state.activeTool === 'svg' || 
+    state.activeTool === 'grid' || 
+    state.activeTool === 'rhinestone-font' || 
+    state.activeTool === 'template-import' || 
+    state.activeTool === 'manual'
+  ) {
     return state.activeTool;
   }
 

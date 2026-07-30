@@ -98,6 +98,48 @@ const SS12_PROFILE: StoneSizeProfile = {
   requiresPhysicalValidation: true,
 };
 
+/**
+ * SS16 — TRW Clean Stone rhinestone font size.
+ *
+ * ⚠️  PROVISIONAL: These values are derived from TRW vendor specifications for
+ * rhinestone fonts. Hole diameter and center distance are estimated and have not
+ * been validated by physical cut test. See docs/CALIBRATION_PLAN.md.
+ */
+const SS16_PROFILE: StoneSizeProfile = {
+  id: 'SS16',
+  label: 'SS16 (4.394 mm)',
+  stoneDiameterMm: 4.394, // TRW Clean Stone calibration
+  // Provisional — must be validated by physical cut test
+  recommendedHoleDiameterMm: 4.6,
+  // Provisional — must be validated by physical cut test
+  minCenterDistanceMm: 5.0,
+  notes:
+    'TRW rhinestone font size. Based on vendor specifications. ' +
+    'All values are provisional and require physical calibration.',
+  requiresPhysicalValidation: true,
+};
+
+/**
+ * SS20 — TRW Clean Stone rhinestone font size (largest).
+ *
+ * ⚠️  PROVISIONAL: These values are derived from TRW vendor specifications for
+ * rhinestone fonts. Hole diameter and center distance are estimated and have not
+ * been validated by physical cut test. See docs/CALIBRATION_PLAN.md.
+ */
+const SS20_PROFILE: StoneSizeProfile = {
+  id: 'SS20',
+  label: 'SS20 (5.283 mm)',
+  stoneDiameterMm: 5.283, // TRW Clean Stone calibration
+  // Provisional — must be validated by physical cut test
+  recommendedHoleDiameterMm: 5.5,
+  // Provisional — must be validated by physical cut test
+  minCenterDistanceMm: 6.0,
+  notes:
+    'TRW rhinestone font size (largest). Based on vendor specifications. ' +
+    'All values are provisional and require physical calibration.',
+  requiresPhysicalValidation: true,
+};
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 /** Ordered map of all stone size profiles, indexed by StoneSizeId. */
@@ -106,6 +148,8 @@ export const STONE_SIZE_PROFILES: Readonly<Record<StoneSizeId, StoneSizeProfile>
   SS8: SS8_PROFILE,
   SS10: SS10_PROFILE,
   SS12: SS12_PROFILE,
+  SS16: SS16_PROFILE,
+  SS20: SS20_PROFILE,
 };
 
 // ─── Accessors ────────────────────────────────────────────────────────────────

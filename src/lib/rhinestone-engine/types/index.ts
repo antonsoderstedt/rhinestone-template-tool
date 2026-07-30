@@ -1,6 +1,6 @@
 // ─── Core scalars ─────────────────────────────────────────────────────────────
 
-export type StoneSizeId = 'SS6' | 'SS8' | 'SS10' | 'SS12';
+export type StoneSizeId = 'SS6' | 'SS8' | 'SS10' | 'SS12' | 'SS16' | 'SS20';
 
 export type Unit = 'mm' | 'in';
 

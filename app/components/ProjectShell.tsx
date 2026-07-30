@@ -12,6 +12,8 @@ import type {
   PolylineLogoProjectState,
   SvgUploadProjectState,
   ManualEditorProjectState,
+  RhinestoneFontProjectState,
+  TemplateImportProjectState,
 } from '@/src/lib/rhinestone-engine/index';
 import OutlineTextGenerator from './OutlineTextGenerator';
 import TextMatrixGenerator from './TextMatrixGenerator';
@@ -19,6 +21,8 @@ import SvgUploadGenerator from './SvgUploadGenerator';
 import ManualStoneEditor from './ManualStoneEditor';
 import PolylineLogoGenerator from './PolylineLogoGenerator';
 import ManualGridGenerator from './ManualGridGenerator';
+import RhinestoneFontGenerator from './RhinestoneFontGenerator';
+import TemplateImportGenerator from './TemplateImportGenerator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +36,8 @@ type LoadKeys = {
   'polyline-logo': number;
   'svg-upload': number;
   'manual-editor': number;
+  'rhinestone-font': number;
+  'template-import': number;
 };
 
 const DEFAULT_LOAD_KEYS: LoadKeys = {
@@ -41,25 +47,31 @@ const DEFAULT_LOAD_KEYS: LoadKeys = {
   'polyline-logo': 0,
   'svg-upload': 0,
   'manual-editor': 0,
+  'rhinestone-font': 0,
+  'template-import': 0,
 };
 
 // ─── Section IDs for scroll-to ────────────────────────────────────────────────
 
 const SECTION_ID: Record<string, string> = {
   'outline-text': 'section-outline-text',
+  'rhinestone-font': 'section-rhinestone-font',
   'dot-matrix-text': 'section-dot-matrix-text',
   'manual-grid': 'section-manual-grid',
   'polyline-logo': 'section-polyline-logo',
   'svg-upload': 'section-svg-upload',
+  'template-import': 'section-template-import',
   'manual-editor': 'section-manual-editor',
 };
 
 const GENERATOR_LABEL: Record<string, string> = {
   'outline-text': 'Outline Text Generator',
+  'rhinestone-font': 'Rhinestone Font',
   'dot-matrix-text': 'Dot Matrix Text',
   'manual-grid': 'Manual Grid Generator',
   'polyline-logo': 'Polyline Logo Generator',
-  'svg-upload': 'SVG Upload',
+  'svg-upload': 'SVG Upload — Convert Shape',
+  'template-import': 'SVG Upload — Import Template',
   'manual-editor': 'Manual Stone Editor',
 };
 
@@ -180,6 +192,26 @@ export default function ProjectShell() {
         />
       </section>
 
+      {/* ── Rhinestone Font ──────────────────────────────────────────────── */}
+      <section
+        id={SECTION_ID['rhinestone-font']}
+        className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm scroll-mt-6"
+      >
+        <div className="mb-5">
+          <h2 className="text-lg font-semibold text-zinc-900">
+            {GENERATOR_LABEL['rhinestone-font']}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Use fonts where glyphs contain pre-placed rhinestone shapes.
+            No outline generation or fill algorithms — stones are already positioned in the font file.
+          </p>
+        </div>
+        <RhinestoneFontGenerator
+          key={loadKeys['rhinestone-font']}
+          defaultState={loadedStates['rhinestone-font'] as RhinestoneFontProjectState | undefined}
+        />
+      </section>
+
       {/* ── Dot Matrix Text ──────────────────────────────────────────────── */}
       <section
         id={SECTION_ID['dot-matrix-text']}
@@ -217,6 +249,26 @@ export default function ProjectShell() {
         <SvgUploadGenerator
           key={loadKeys['svg-upload']}
           defaultState={loadedStates['svg-upload'] as SvgUploadProjectState | undefined}
+        />
+      </section>
+
+      {/* ── Template Import ──────────────────────────────────────────────── */}
+      <section
+        id={SECTION_ID['template-import']}
+        className="rounded-xl border border-zinc-200 bg-white p-7 shadow-sm scroll-mt-6"
+      >
+        <div className="mb-5">
+          <h2 className="text-lg font-semibold text-zinc-900">
+            {GENERATOR_LABEL['template-import']}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Import SVG files containing pre-placed rhinestone shapes. Extracts stone positions,
+            colors, and diameters directly from circles, ellipses, or circular paths.
+          </p>
+        </div>
+        <TemplateImportGenerator
+          key={loadKeys['template-import']}
+          defaultState={loadedStates['template-import'] as TemplateImportProjectState | undefined}
         />
       </section>
 

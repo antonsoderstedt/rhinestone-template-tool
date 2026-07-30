@@ -60,6 +60,8 @@ const STONE_SIZE_TOLERANCES: Array<{ id: StoneSizeId; diameterMm: number; tolera
   { id: 'SS8', diameterMm: 2.5, tolerance: 0.3 },
   { id: 'SS10', diameterMm: 2.8, tolerance: 0.3 },
   { id: 'SS12', diameterMm: 3.2, tolerance: 0.3 },
+  { id: 'SS16', diameterMm: 4.394, tolerance: 0.4 }, // TRW Clean Stone
+  { id: 'SS20', diameterMm: 5.283, tolerance: 0.4 }, // TRW Clean Stone
 ];
 
 export function estimateStoneSizeId(diameterMm: number): StoneSizeId | null {

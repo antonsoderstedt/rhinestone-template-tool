@@ -223,7 +223,7 @@ export interface RhinestoneProjectFile {
   /** Editable template state (present when user has made manual edits) */
   editableState?: EditableTemplateState;
   /** Active tool when saved (optional, defaults to generator's tool) */
-  activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'manual';
+  activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'template-import' | 'manual';
   /** Manual tool settings */
   manualToolState?: {
     snapToGrid: boolean;

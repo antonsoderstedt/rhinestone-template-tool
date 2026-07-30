@@ -12,8 +12,8 @@ import {
 // ─── Stone size profiles ──────────────────────────────────────────────────────
 
 describe('STONE_SIZE_PROFILES', () => {
-  it('has entries for all four stone sizes', () => {
-    expect(Object.keys(STONE_SIZE_PROFILES)).toEqual(['SS6', 'SS8', 'SS10', 'SS12']);
+  it('has entries for all six stone sizes', () => {
+    expect(Object.keys(STONE_SIZE_PROFILES)).toEqual(['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20']);
   });
 
   it('SS10 stoneDiameterMm is 2.8', () => {
@@ -26,6 +26,14 @@ describe('STONE_SIZE_PROFILES', () => {
 
   it('SS10 minCenterDistanceMm is 3.35', () => {
     expect(STONE_SIZE_PROFILES.SS10.minCenterDistanceMm).toBe(3.35);
+  });
+
+  it('SS16 stoneDiameterMm is 4.394 (TRW calibration)', () => {
+    expect(STONE_SIZE_PROFILES.SS16.stoneDiameterMm).toBe(4.394);
+  });
+
+  it('SS20 stoneDiameterMm is 5.283 (TRW calibration)', () => {
+    expect(STONE_SIZE_PROFILES.SS20.stoneDiameterMm).toBe(5.283);
   });
 
   it('every stone profile has requiresPhysicalValidation true', () => {
@@ -41,6 +49,8 @@ describe('getStoneSizeProfile', () => {
     expect(getStoneSizeProfile('SS8').id).toBe('SS8');
     expect(getStoneSizeProfile('SS10').id).toBe('SS10');
     expect(getStoneSizeProfile('SS12').id).toBe('SS12');
+    expect(getStoneSizeProfile('SS16').id).toBe('SS16');
+    expect(getStoneSizeProfile('SS20').id).toBe('SS20');
   });
 });
 

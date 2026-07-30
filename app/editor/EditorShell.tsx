@@ -19,6 +19,9 @@ import {
   serializeRhinestoneProject,
   createBasicSvgExport,
   LEGACY_OUTLINE_FONT_ID,
+  createRhinestoneFontTemplate,
+  createImportedTemplate,
+  TRW_STONE_SIZE_CALIBRATION,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
 } from '@/src/lib/rhinestone-engine/index';
@@ -199,6 +202,59 @@ export default function EditorShell() {
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
             break;
 
+          case 'rhinestone-font':
+            if (state.rhinestoneFontTool.text.trim()) {
+              // Get diameter for stone size - TRW calibration only supports SS6, SS10, SS16, SS20
+              let targetDiameterMm = 3.429; // Default SS10
+              const sizeId = state.rhinestoneFontTool.stoneSize;
+              if (sizeId in TRW_STONE_SIZE_CALIBRATION) {
+                targetDiameterMm = TRW_STONE_SIZE_CALIBRATION[sizeId as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm;
+              }
+              
+              const result = await createRhinestoneFontTemplate({
+                text: state.rhinestoneFontTool.text,
+                rhinestoneFontId: state.rhinestoneFontTool.rhinestoneFontId,
+                targetStoneSizeId: sizeId,
+                targetStoneSizeMm: targetDiameterMm,
+                letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : 1,
+                lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : 0,
+              });
+              template = result.template;
+              // Update unsupported characters and warnings in tool state
+              dispatch({
+                type: 'UPDATE_RHINESTONE_FONT_TOOL',
+                updates: {
+                  unsupportedCharacters: result.unsupportedCharacters,
+                  warnings: result.warnings,
+                },
+              });
+            }
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            break;
+
+          case 'template-import':
+            if (state.templateImportTool.uploadedSvgText) {
+              const importResult = createImportedTemplate({
+                svgText: state.templateImportTool.uploadedSvgText,
+                defaultStoneSizeId: state.templateImportTool.defaultStoneSize,
+                deduplicateTolerance: 0.01,
+              });
+              template = importResult.template;
+              // Update import summary in tool state
+              const summary = `Imported ${importResult.template.stones.length} stones. ` +
+                `Detected ${importResult.detectedDiameters.length} diameter(s), ${importResult.detectedColors.length} color(s).`;
+              dispatch({
+                type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+                updates: {
+                  detectedDiameters: importResult.detectedDiameters,
+                  detectedColors: importResult.detectedColors,
+                  importSummary: summary,
+                },
+              });
+            }
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            break;
+
           default:
             return;
         }
@@ -227,6 +283,8 @@ export default function EditorShell() {
     state.svgTool,
     state.svgTool.contourSettings,
     state.svgTool.radialSettings,
+    state.rhinestoneFontTool,
+    state.templateImportTool,
   ]);
 
   // ─── Export Readiness ──────────────────────────────────────────────────────

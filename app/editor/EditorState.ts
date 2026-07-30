@@ -28,6 +28,8 @@ export type EditorTool =
   | 'text'         // Text (outline or dot-matrix)
   | 'svg'          // SVG import
   | 'grid'         // Grid generator
+  | 'rhinestone-font'  // Rhinestone font text
+  | 'template-import'  // Import pre-placed stones from SVG
   | 'manual';      // Add individual stones
 
 // ─── Text Tool State ──────────────────────────────────────────────────────────
@@ -111,6 +113,29 @@ export interface ManualToolState {
   gridSnapSize: number; // mm
 }
 
+// ─── Rhinestone Font Tool State ───────────────────────────────────────────────
+
+export interface RhinestoneFontToolState {
+  text: string;
+  rhinestoneFontId: string;
+  stoneSize: StoneSizeId;
+  letterSpacingMm: number | '';
+  lineSpacingMm: number | '';
+  unsupportedCharacters: string[];
+  warnings: string[];
+}
+
+// ─── Template Import Tool State ───────────────────────────────────────────────
+
+export interface TemplateImportToolState {
+  uploadedSvgText: string | null;
+  svgFileName: string | null;
+  defaultStoneSize: StoneSizeId;
+  detectedDiameters: number[];
+  detectedColors: string[];
+  importSummary: string | null;
+}
+
 // ─── Editable Template State ──────────────────────────────────────────────────
 
 // EditableStone is the same as Stone - they're already editable by nature
@@ -160,6 +185,8 @@ export interface EditorState {
   svgTool: SvgToolState;
   gridTool: GridToolState;
   manualTool: ManualToolState;
+  rhinestoneFontTool: RhinestoneFontToolState;
+  templateImportTool: TemplateImportToolState;
   
   // Current template (result of active tool)
   template: RhinestoneTemplate | null;
@@ -267,6 +294,25 @@ export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
   gridSnapSize: 5, // 5mm grid
 };
 
+export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
+  text: 'Sulay',
+  rhinestoneFontId: 'TRW-Clean-Stone',
+  stoneSize: 'SS10',
+  letterSpacingMm: 1,
+  lineSpacingMm: 0,
+  unsupportedCharacters: [],
+  warnings: [],
+};
+
+export const DEFAULT_TEMPLATE_IMPORT_TOOL_STATE: TemplateImportToolState = {
+  uploadedSvgText: null,
+  svgFileName: null,
+  defaultStoneSize: 'SS10',
+  detectedDiameters: [],
+  detectedColors: [],
+  importSummary: null,
+};
+
 export const DEFAULT_EDITABLE_TEMPLATE_STATE: EditableTemplateState = {
   isEditable: false,
   stones: [],
@@ -300,6 +346,8 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   svgTool: { ...DEFAULT_SVG_TOOL_STATE },
   gridTool: { ...DEFAULT_GRID_TOOL_STATE },
   manualTool: { ...DEFAULT_MANUAL_TOOL_STATE },
+  rhinestoneFontTool: { ...DEFAULT_RHINESTONE_FONT_TOOL_STATE },
+  templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
   canvas: { ...DEFAULT_CANVAS_STATE },
@@ -319,6 +367,8 @@ export type EditorAction =
   | { type: 'UPDATE_SVG_TOOL'; updates: Partial<SvgToolState> }
   | { type: 'UPDATE_GRID_TOOL'; updates: Partial<GridToolState> }
   | { type: 'UPDATE_MANUAL_TOOL'; updates: Partial<ManualToolState> }
+  | { type: 'UPDATE_RHINESTONE_FONT_TOOL'; updates: Partial<RhinestoneFontToolState> }
+  | { type: 'UPDATE_TEMPLATE_IMPORT_TOOL'; updates: Partial<TemplateImportToolState> }
   | { type: 'SET_TEMPLATE'; template: RhinestoneTemplate | null }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
   | { type: 'UPDATE_EXPORT_SETTINGS'; updates: { includeGuideBox?: boolean; includeLabels?: boolean; paddingMm?: number } }
@@ -350,6 +400,10 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
       return state.textTool.mode === 'outline' ? 'outline-text' : 'dot-matrix-text';
     case 'svg':
       return 'svg-upload';
+    case 'rhinestone-font':
+      return 'rhinestone-font';
+    case 'template-import':
+      return 'template-import';
     case 'manual':
       return 'manual-editor';
     default:
@@ -376,6 +430,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     
     case 'UPDATE_MANUAL_TOOL':
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
+    
+    case 'UPDATE_RHINESTONE_FONT_TOOL':
+      return { ...state, rhinestoneFontTool: { ...state.rhinestoneFontTool, ...action.updates } };
+    
+    case 'UPDATE_TEMPLATE_IMPORT_TOOL':
+      return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
     
     case 'SET_TEMPLATE':
       return { ...state, template: action.template };

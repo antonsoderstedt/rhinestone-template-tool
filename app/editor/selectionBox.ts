@@ -1,4 +1,4 @@
-import type { EditableStone } from './EditorState';
+import type { EditableStone, EditorTool } from './EditorState';
 
 export const BOX_SELECTION_DRAG_THRESHOLD_PX = 4;
 
@@ -10,7 +10,7 @@ export interface SelectionBoxMm {
 }
 
 export function shouldStartBoxSelection(options: {
-  activeTool: 'select' | 'text' | 'svg' | 'grid' | 'manual';
+  activeTool: EditorTool;
   button: number;
   spacePressed: boolean;
   clickedStone: boolean;
