@@ -26,6 +26,8 @@ import EditorToolbar from './EditorToolbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
 import EditorStatusBar from './EditorStatusBar';
+import EditorDialog from './EditorDialog';
+import EditorToast from './EditorToast';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -40,7 +42,7 @@ export default function EditorShell() {
   const [state, dispatch] = useReducer(editorReducer, DEFAULT_EDITOR_STATE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
@@ -48,14 +50,16 @@ export default function EditorShell() {
         title: string;
         message: string;
         confirmLabel: string;
+        confirmTone?: 'default' | 'destructive';
+        icon?: 'sparkles' | 'warning' | 'info';
       }
   >(null);
 
   useEffect(() => {
-    if (!toastMessage) return;
-    const timeoutId = window.setTimeout(() => setToastMessage(null), 3500);
+    if (!toast) return;
+    const timeoutId = window.setTimeout(() => setToast(null), toast.tone === 'error' ? 5000 : 3200);
     return () => window.clearTimeout(timeoutId);
-  }, [toastMessage]);
+  }, [toast]);
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
@@ -207,7 +211,7 @@ export default function EditorShell() {
 
   const runExport = useCallback(() => {
     if (!effectiveTemplate) {
-      setToastMessage('No template to export');
+      setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
       return;
     }
 
@@ -228,16 +232,22 @@ export default function EditorShell() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      setToast({ message: 'SVG exported.', tone: 'success' });
     } catch (err) {
-      setToastMessage(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
+      setToast({ message: `Export failed: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
     }
   }, [effectiveTemplate, state.includeGuideBox, state.includeLabels, state.paddingMm, state.projectName]);
+
+  const notify = useCallback((message: string, tone: 'success' | 'warning' | 'error' | 'info') => {
+    setToast({ message, tone });
+  }, []);
 
   const handleDialogConfirm = useCallback(() => {
     if (!pendingDialog) return;
 
     if (pendingDialog.kind === 'new-project') {
       dispatch({ type: 'RESET_EDITOR' });
+      setToast({ message: 'Started a new project.', tone: 'info' });
     }
 
     if (pendingDialog.kind === 'export-warning') {
@@ -255,6 +265,7 @@ export default function EditorShell() {
       title: 'Start a new project?',
       message: 'Unsaved changes in the current editor session will be lost.',
       confirmLabel: 'Start new project',
+      icon: 'sparkles',
     });
   }, []);
 
@@ -387,7 +398,7 @@ export default function EditorShell() {
             break;
 
           default:
-            setToastMessage(`Project type "${project.generatorState.generatorId}" is not yet supported in this editor`);
+            setToast({ message: `Project type "${project.generatorState.generatorId}" is not yet supported in this editor.`, tone: 'error' });
             return;
         }
 
@@ -437,8 +448,9 @@ export default function EditorShell() {
         }
 
         // Success - template will auto-generate from state update
+        setToast({ message: 'Project opened.', tone: 'success' });
       } catch (err) {
-        setToastMessage(`Failed to open project: ${err instanceof Error ? err.message : String(err)}`);
+        setToast({ message: `Invalid project file: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
       }
     };
     reader.readAsText(file);
@@ -446,13 +458,13 @@ export default function EditorShell() {
 
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
-      setToastMessage('No template to save');
+      setToast({ message: 'Nothing to save yet. Create or open a design first.', tone: 'warning' });
       return;
     }
 
     const project = buildProjectFileFromEditorState(state);
     if (!project) {
-      setToastMessage('Unable to save project');
+      setToast({ message: 'Project save failed because the current editor state could not be serialized.', tone: 'error' });
       return;
     }
 
@@ -466,11 +478,12 @@ export default function EditorShell() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    setToast({ message: 'Project saved.', tone: 'success' });
   }, [effectiveTemplate, state]);
 
   const handleExport = useCallback(() => {
     if (!effectiveTemplate) {
-      setToastMessage('No template to export');
+      setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
       return;
     }
 
@@ -480,6 +493,8 @@ export default function EditorShell() {
         title: 'Export with warnings?',
         message: 'The current template has export warnings. Continue only if you want to export exactly what is on the canvas.',
         confirmLabel: 'Export anyway',
+        confirmTone: 'destructive',
+        icon: 'warning',
       });
       return;
     }
@@ -511,6 +526,7 @@ export default function EditorShell() {
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
         canRedo={state.history.future.length > 0}
+        canExport={Boolean(effectiveTemplate)}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
@@ -519,84 +535,60 @@ export default function EditorShell() {
         onOpenSetup={handleOpenSetup}
       />
 
-      {pendingGeneratorAction && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl">
-            <h2 className="text-sm font-semibold text-white">Editable design has diverged from generator settings</h2>
-            <p className="mt-2 text-sm text-zinc-300">
-              Changing generator settings will not overwrite your manual edits unless you explicitly regenerate.
-            </p>
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                onClick={() => applyPendingGeneratorAction('replace')}
-                className="rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-500"
-              >
-                Regenerate and replace edits
-              </button>
-              <button
-                onClick={() => applyPendingGeneratorAction('keep')}
-                className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-700"
-              >
-                Keep editable design
-              </button>
-              <button
-                onClick={() => applyPendingGeneratorAction('cancel')}
-                className="rounded-md border border-zinc-800 px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-              >
-                Cancel
-              </button>
+      <EditorDialog
+        open={Boolean(pendingGeneratorAction)}
+        title="Regenerate from source settings?"
+        description="The current design is editable. Regenerating will replace your manual stone edits with a new generated baseline from the source panel."
+        confirmLabel="Regenerate and replace edits"
+        onConfirm={() => applyPendingGeneratorAction('replace')}
+        onCancel={() => applyPendingGeneratorAction('cancel')}
+        tertiaryAction={{
+          label: 'Keep editable design',
+          onClick: () => applyPendingGeneratorAction('keep'),
+        }}
+        tone="destructive"
+        icon="warning"
+      />
+
+      <EditorDialog
+        open={Boolean(pendingDialog)}
+        title={pendingDialog?.title ?? ''}
+        description={pendingDialog?.message ?? ''}
+        confirmLabel={pendingDialog?.confirmLabel ?? 'Confirm'}
+        onConfirm={handleDialogConfirm}
+        onCancel={() => setPendingDialog(null)}
+        tone={pendingDialog?.confirmTone ?? 'default'}
+        icon={pendingDialog?.icon ?? 'info'}
+      />
+
+      {toast && (
+        <div className="absolute bottom-20 right-4 z-30">
+          <EditorToast message={toast.message} tone={toast.tone} onDismiss={() => setToast(null)} />
+        </div>
+      )}
+
+      <div className="flex min-h-0 flex-1 bg-zinc-950">
+        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" />
+
+        <main className="flex min-w-0 flex-1 flex-col bg-zinc-950">
+          <div className="border-b border-zinc-800 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-white">Canvas workspace</h2>
+                <p className="text-xs text-zinc-500">Select, add, pan, zoom, and fit the current design without leaving the editor.</p>
+              </div>
+              <EditorToolbar activeTool={state.activeTool} dispatch={editorDispatch} orientation="horizontal" />
             </div>
           </div>
-        </div>
-      )}
 
-      {pendingDialog && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl">
-            <h2 className="text-sm font-semibold text-white">{pendingDialog.title}</h2>
-            <p className="mt-2 text-sm text-zinc-300">{pendingDialog.message}</p>
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={handleDialogConfirm}
-                className="rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-500"
-              >
-                {pendingDialog.confirmLabel}
-              </button>
-              <button
-                onClick={() => setPendingDialog(null)}
-                className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <EditorCanvas
+            state={state}
+            dispatch={editorDispatch}
+            onNotify={notify}
+          />
+        </main>
 
-      {toastMessage && (
-        <div className="absolute right-4 top-16 z-30 max-w-sm rounded-lg border border-zinc-700 bg-zinc-900/95 px-4 py-3 text-sm text-zinc-100 shadow-2xl backdrop-blur-sm">
-          <div className="flex items-start justify-between gap-3">
-            <p>{toastMessage}</p>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="text-zinc-400 hover:text-white"
-              aria-label="Dismiss message"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 flex min-h-0">
-        <EditorToolbar activeTool={state.activeTool} dispatch={editorDispatch} />
-
-        <EditorCanvas
-          state={state}
-          dispatch={editorDispatch}
-        />
-
-        <EditorPropertiesPanel state={state} dispatch={editorDispatch} />
+        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" />
       </div>
 
       <EditorStatusBar

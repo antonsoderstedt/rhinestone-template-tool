@@ -12,6 +12,7 @@ interface NumericInputProps {
   step?: number;
   placeholder?: string;
   helpText?: string;
+  disabled?: boolean;
 }
 
 export default function NumericInput({
@@ -24,6 +25,7 @@ export default function NumericInput({
   step = 1,
   placeholder,
   helpText,
+  disabled = false,
 }: NumericInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -49,7 +51,8 @@ export default function NumericInput({
           max={max}
           step={step}
           placeholder={placeholder}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+          disabled={disabled}
+          className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-900 disabled:text-zinc-500"
         />
         {unit && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 pointer-events-none">

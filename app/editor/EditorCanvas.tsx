@@ -1,5 +1,6 @@
 'use client';
 
+import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone } from './EditorState';
@@ -17,9 +18,10 @@ import {
 interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
+  onNotify?: (message: string, tone: 'success' | 'warning' | 'error' | 'info') => void;
 }
 
-export default function EditorCanvas({ state, dispatch }: EditorCanvasProps) {
+export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const suppressNextClickRef = useRef(false);
@@ -271,7 +273,7 @@ export default function EditorCanvas({ state, dispatch }: EditorCanvasProps) {
       const collision = wouldCollide(x, y, radius, stones);
       if (collision.collides) {
         // Don't place stone - collision detected
-        console.warn('Cannot place stone: collision detected');
+        onNotify?.('Placement blocked by collision.', 'warning');
         return;
       }
       
@@ -288,6 +290,7 @@ export default function EditorCanvas({ state, dispatch }: EditorCanvasProps) {
       }
       
       dispatch({ type: 'ADD_STONES', stones: [newStone] });
+      onNotify?.('Stone added.', 'success');
     } else if (state.activeTool === 'select') {
       // Find stone near click
       const clickedStone = stones.find(stone => {
@@ -577,46 +580,51 @@ export default function EditorCanvas({ state, dispatch }: EditorCanvasProps) {
   return (
     <div ref={containerRef} className="flex-1 bg-zinc-800 relative overflow-hidden">
       {/* Canvas Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg p-2">
+      <div className="absolute right-4 top-4 z-10 flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/90 p-2 shadow-lg backdrop-blur-sm">
         <button
           onClick={handleZoomIn}
-          className="px-2 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white rounded transition"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
           title="Zoom in"
+          aria-label="Zoom in"
         >
-          +
+          <Plus className="h-4 w-4" />
         </button>
         <button
           onClick={handleZoomOut}
-          className="px-2 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white rounded transition"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
           title="Zoom out"
+          aria-label="Zoom out"
         >
-          −
+          <Minus className="h-4 w-4" />
         </button>
         <button
           onClick={handleZoomReset}
-          className="px-2 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white rounded transition"
-          title="Reset zoom"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+          title="Reset zoom to 100%"
+          aria-label="Reset zoom"
         >
-          1:1
+          <Scan className="h-4 w-4" />
         </button>
         <button
           onClick={handleFitToScreen}
-          className="px-2 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white rounded transition"
-          title="Fit to screen"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+          title="Fit the design to the current canvas view"
+          aria-label="Fit to screen"
         >
-          ⛶
+          <Expand className="h-4 w-4" />
         </button>
-        <div className="h-px bg-zinc-700 my-1" />
+        <div className="my-1 h-px bg-zinc-800" />
         <button
           onClick={toggleGrid}
-          className={`px-2 py-1 text-xs font-medium rounded transition ${
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-lg transition ${
             state.canvas.showGrid
               ? 'bg-purple-600 text-white'
-              : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+              : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
           }`}
-          title="Toggle grid"
+          title={state.canvas.showGrid ? 'Hide grid overlay' : 'Show grid overlay'}
+          aria-label="Toggle grid"
         >
-          ⊞
+          <Grid2X2 className="h-4 w-4" />
         </button>
       </div>
 

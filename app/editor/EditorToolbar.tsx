@@ -1,45 +1,63 @@
 'use client';
 
+import { Grid3X3, Hand, MousePointerClick, MousePointer2, Type, Upload } from 'lucide-react';
 import { EditorTool, EditorAction } from './EditorState';
+import { getToolShortcutLabel } from './editorUi';
 
 interface EditorToolbarProps {
   activeTool: EditorTool;
   dispatch: React.Dispatch<EditorAction>;
+  orientation?: 'horizontal' | 'vertical';
 }
 
-const TOOLS: Array<{ id: EditorTool; label: string; icon: string; tooltip: string }> = [
-  { id: 'select', label: 'Select', icon: '⌖', tooltip: 'Select and move stones' },
-  { id: 'text', label: 'Text', icon: 'T', tooltip: 'Add text (outline or dot-matrix)' },
-  { id: 'svg', label: 'SVG', icon: '⬡', tooltip: 'Import SVG file' },
-  { id: 'grid', label: 'Grid', icon: '⊞', tooltip: 'Create stone grid' },
-  { id: 'manual', label: 'Add', icon: '+', tooltip: 'Add individual stones' },
+const TOOLS: Array<{
+  id: EditorTool;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tooltip: string;
+}> = [
+  { id: 'select', label: 'Select', icon: MousePointer2, tooltip: 'Select, move, and box-select stones' },
+  { id: 'manual', label: 'Add', icon: MousePointerClick, tooltip: 'Add individual stones to the canvas' },
+  { id: 'text', label: 'Text', icon: Type, tooltip: 'Generate stones from outline or dot-matrix text' },
+  { id: 'svg', label: 'SVG', icon: Upload, tooltip: 'Generate a template from an uploaded SVG' },
+  { id: 'grid', label: 'Grid', icon: Grid3X3, tooltip: 'Generate an evenly spaced stone grid' },
 ];
 
-export default function EditorToolbar({ activeTool, dispatch }: EditorToolbarProps) {
+export default function EditorToolbar({ activeTool, dispatch, orientation = 'vertical' }: EditorToolbarProps) {
+  const isHorizontal = orientation === 'horizontal';
+
   return (
-    <aside className="w-16 border-r border-zinc-700 bg-zinc-900 flex flex-col items-center py-4 gap-2">
+    <aside
+      className={
+        isHorizontal
+          ? 'flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/90 px-2 py-2 shadow-sm backdrop-blur-sm'
+          : 'flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-2'
+      }
+      aria-label={isHorizontal ? 'Canvas and source tools' : 'Source tools'}
+    >
       {TOOLS.map((tool) => (
         <button
           key={tool.id}
           onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
-          className={`
-            w-12 h-12 rounded flex flex-col items-center justify-center text-xs font-medium transition
-            ${
-              activeTool === tool.id
-                ? 'bg-purple-600 text-white'
-                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-            }
-          `}
-          title={tool.tooltip}
+          aria-label={tool.label}
+          className={`group flex ${isHorizontal ? 'h-11 min-w-[72px] flex-col px-3' : 'h-14 w-full'} items-center justify-center rounded-lg text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+            activeTool === tool.id
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50'
+              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+          }`}
+          title={[tool.tooltip, getToolShortcutLabel(tool.id)].filter(Boolean).join(' • ')}
         >
-          <span className="text-lg">{tool.icon}</span>
-          <span className="text-[10px] mt-0.5">{tool.label}</span>
+          <tool.icon className="h-4 w-4" />
+          <span className="mt-1 text-[11px]">{tool.label}</span>
         </button>
       ))}
-      
-      <div className="flex-1" />
-      
-      {/* Future: Add more tools here */}
+
+      {isHorizontal && (
+        <div className="ml-2 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
+          <Hand className="h-3.5 w-3.5 text-zinc-500" />
+          <span>Pan with Space or middle mouse</span>
+        </div>
+      )}
     </aside>
   );
 }
