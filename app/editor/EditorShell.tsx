@@ -124,10 +124,14 @@ export default function EditorShell() {
                   targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
                   targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
                   preserveAspectRatio: state.textTool.preserveAspectRatio,
+                  coverageMode: state.textTool.coverageMode,
                   densityPreset: state.textTool.densityPreset,
                   customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
                   fillMode: state.textTool.fillMode,
                   fillPattern: state.textTool.fillPattern,
+                  placementPattern: state.textTool.placementPattern,
+                  contourSettings: state.textTool.contourSettings,
+                  radialSettings: state.textTool.radialSettings,
                 });
                 if (requestId !== generationRequestRef.current) return;
                 setOutlineFontStatus({ status: 'idle', message: null, fontId: state.textTool.fontId });
@@ -182,8 +186,12 @@ export default function EditorShell() {
                 name: state.svgTool.svgFileName || 'SVG Preview',
                 polylines: scaledPolylines,
                 stoneSize: state.svgTool.stoneSize,
+                coverageMode: state.svgTool.coverageMode,
                 fillMode: state.svgTool.fillMode,
                 fillPattern: state.svgTool.fillPattern,
+                placementPattern: state.svgTool.placementPattern,
+                contourSettings: state.svgTool.contourSettings,
+                radialSettings: state.svgTool.radialSettings,
                 densityPreset: state.svgTool.densityPreset,
                 customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
               });
@@ -214,7 +222,11 @@ export default function EditorShell() {
     sourceTool,
     state.gridTool,
     state.textTool,
+    state.textTool.contourSettings,
+    state.textTool.radialSettings,
     state.svgTool,
+    state.svgTool.contourSettings,
+    state.svgTool.radialSettings,
   ]);
 
   // ─── Export Readiness ──────────────────────────────────────────────────────
@@ -375,8 +387,12 @@ export default function EditorShell() {
                 align: project.generatorState.align,
                 letterSpacingMm: project.generatorState.letterSpacingMm,
                 lineSpacingMm: project.generatorState.lineSpacingMm,
+                coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
                 fillMode: project.generatorState.fillMode,
                 fillPattern: project.generatorState.fillPattern,
+                placementPattern: project.generatorState.placementPattern ?? 'default',
+                contourSettings: project.generatorState.contourSettings ?? state.textTool.contourSettings,
+                radialSettings: project.generatorState.radialSettings ?? state.textTool.radialSettings,
                 densityPreset: project.generatorState.densityPreset,
                 customSpacingMm: project.generatorState.customSpacingMm,
               },
@@ -413,8 +429,12 @@ export default function EditorShell() {
                 targetWidthMm: project.generatorState.targetWidthMm ?? '',
                 targetHeightMm: project.generatorState.targetHeightMm ?? '',
                 preserveAspectRatio: project.generatorState.preserveAspectRatio,
+                coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
                 fillMode: project.generatorState.fillMode,
                 fillPattern: project.generatorState.fillPattern,
+                placementPattern: project.generatorState.placementPattern ?? 'default',
+                contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
+                radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
                 densityPreset: project.generatorState.densityPreset,
                 customSpacingMm: project.generatorState.customSpacingMm,
                 cleanupEnabled: project.generatorState.cleanupEnabled,
@@ -490,7 +510,13 @@ export default function EditorShell() {
       }
     };
     reader.readAsText(file);
-  }, [editorDispatch]);
+  }, [
+    editorDispatch,
+    state.svgTool.contourSettings,
+    state.svgTool.radialSettings,
+    state.textTool.contourSettings,
+    state.textTool.radialSettings,
+  ]);
 
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {

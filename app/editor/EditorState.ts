@@ -10,7 +10,11 @@ import {
   StoneSizeId,
   DensityPreset,
   TemplateFillMode,
+  TemplateCoverageMode,
   FillPattern,
+  FillPlacementPattern,
+  RadialPlacementSettings,
+  ContourCoverageSettings,
   TextAlign as OutlineTextAlign,
   Stone,
   type GeneratorId,
@@ -50,8 +54,12 @@ export interface TextToolState {
   targetWidthMm: number | '';
   targetHeightMm: number | '';
   preserveAspectRatio: boolean;
+  coverageMode: TemplateCoverageMode;
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
+  placementPattern: FillPlacementPattern;
+  contourSettings: ContourCoverageSettings;
+  radialSettings: RadialPlacementSettings;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
 }
@@ -77,8 +85,12 @@ export interface SvgToolState {
   cleanupRemoveDups: boolean;
   cleanupDupTol: number;
   
+  coverageMode: TemplateCoverageMode;
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
+  placementPattern: FillPlacementPattern;
+  contourSettings: ContourCoverageSettings;
+  radialSettings: RadialPlacementSettings;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
@@ -189,8 +201,21 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   targetWidthMm: '',
   targetHeightMm: '',
   preserveAspectRatio: true,
+  coverageMode: 'outline',
   fillMode: 'outline',
   fillPattern: 'offset-grid',
+  placementPattern: 'default',
+  contourSettings: {
+    rowCount: 3,
+    rowSpacingMm: 4,
+    direction: 'inward',
+  },
+  radialSettings: {
+    ringSpacingMm: 4,
+    centerOffsetXmm: 0,
+    centerOffsetYmm: 0,
+    includeCenterStone: true,
+  },
   densityPreset: 'standard',
   customSpacingMm: 4.0,
 };
@@ -211,8 +236,21 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   cleanupMinLength: 1,
   cleanupRemoveDups: true,
   cleanupDupTol: 0.05,
+  coverageMode: 'outline',
   fillMode: 'outline',
   fillPattern: 'offset-grid',
+  placementPattern: 'default',
+  contourSettings: {
+    rowCount: 3,
+    rowSpacingMm: 4,
+    direction: 'inward',
+  },
+  radialSettings: {
+    ringSpacingMm: 4,
+    centerOffsetXmm: 0,
+    centerOffsetYmm: 0,
+    includeCenterStone: true,
+  },
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {

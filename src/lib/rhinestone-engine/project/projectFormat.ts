@@ -12,10 +12,11 @@
 import type { StoneSizeId } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { OutlineTextAlign } from '../textOutline/outlineTextTemplate';
-import type { TemplateFillMode } from '../fill/fillTemplate';
+import type { TemplateCoverageMode, TemplateFillMode, ContourCoverageSettings } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
 import type { TextAlign } from '../text/textLayout';
 import { LEGACY_OUTLINE_FONT_ID } from '../textOutline/fontRegistry';
+import type { FillPlacementPattern, RadialPlacementSettings } from '../fill/placementPatterns';
 
 // ─── Generator IDs ────────────────────────────────────────────────────────────
 
@@ -43,8 +44,12 @@ export interface OutlineTextProjectState {
   align: OutlineTextAlign;
   letterSpacingMm: number;
   lineSpacingMm: number;
+  coverageMode?: TemplateCoverageMode;
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
+  placementPattern?: FillPlacementPattern;
+  contourSettings?: ContourCoverageSettings;
+  radialSettings?: RadialPlacementSettings;
   densityPreset: DensityPreset;
   customSpacingMm: number;
   includeGuideBox: boolean;
@@ -111,6 +116,7 @@ export interface SvgUploadProjectState {
   targetWidthMm: number | null;
   targetHeightMm: number | null;
   preserveAspectRatio: boolean;
+  coverageMode?: TemplateCoverageMode;
   densityPreset: DensityPreset;
   customSpacingMm: number;
   cleanupEnabled: boolean;
@@ -122,6 +128,9 @@ export interface SvgUploadProjectState {
   cleanupDupTol: number;
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
+  placementPattern?: FillPlacementPattern;
+  contourSettings?: ContourCoverageSettings;
+  radialSettings?: RadialPlacementSettings;
 }
 
 export interface SavedStone {
@@ -192,7 +201,9 @@ export interface RhinestoneProjectFile {
 const VALID_STONE_SIZES = new Set(['SS6', 'SS8', 'SS10', 'SS12']);
 const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'custom']);
 const VALID_FILL_MODES = new Set(['outline', 'fill', 'outline-fill']);
+const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contour']);
 const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
+const VALID_PLACEMENT_PATTERNS = new Set(['default', 'hexagonal', 'radial']);
 const VALID_TEXT_ALIGNS = new Set(['left', 'center', 'right']);
 const VALID_DEMO_SHAPES = new Set(['diamond', 'triangle', 'rectangle', 'zigzag']);
 const VALID_GENERATOR_IDS = new Set([
@@ -261,6 +272,31 @@ function requireEnum<T extends string>(
   return v as T;
 }
 
+function parseContourSettings(value: unknown, ctx: string): ContourCoverageSettings | undefined {
+  if (value === undefined) return undefined;
+  const settings = asRecord(value, `${ctx}.contourSettings`);
+  const direction = settings['direction'];
+  if (direction !== 'inward' && direction !== 'outward' && direction !== 'centered') {
+    throw new Error(`[Project] ${ctx}.contourSettings.direction must be inward, outward, or centered.`);
+  }
+  return {
+    rowCount: requireFiniteNumber(settings, 'rowCount', `${ctx}.contourSettings`),
+    rowSpacingMm: requireFiniteNumber(settings, 'rowSpacingMm', `${ctx}.contourSettings`),
+    direction,
+  };
+}
+
+function parseRadialSettings(value: unknown, ctx: string): RadialPlacementSettings | undefined {
+  if (value === undefined) return undefined;
+  const settings = asRecord(value, `${ctx}.radialSettings`);
+  return {
+    ringSpacingMm: requireFiniteNumber(settings, 'ringSpacingMm', `${ctx}.radialSettings`),
+    centerOffsetXmm: requireFiniteNumber(settings, 'centerOffsetXmm', `${ctx}.radialSettings`),
+    centerOffsetYmm: requireFiniteNumber(settings, 'centerOffsetYmm', `${ctx}.radialSettings`),
+    includeCenterStone: requireBoolean(settings, 'includeCenterStone', `${ctx}.radialSettings`),
+  };
+}
+
 // ─── Per-generator validators ─────────────────────────────────────────────────
 
 function validateOutlineText(s: UnknownRecord): OutlineTextProjectState {
@@ -277,8 +313,12 @@ function validateOutlineText(s: UnknownRecord): OutlineTextProjectState {
     align: requireEnum<OutlineTextAlign>(s, 'align', ctx, VALID_TEXT_ALIGNS),
     letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
     lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    coverageMode: s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES),
     fillMode: requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES),
     fillPattern: requireEnum<FillPattern>(s, 'fillPattern', ctx, VALID_FILL_PATTERNS),
+    placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
+    contourSettings: parseContourSettings(s.contourSettings, ctx),
+    radialSettings: parseRadialSettings(s.radialSettings, ctx),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
@@ -357,6 +397,7 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
     targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),
     preserveAspectRatio: requireBoolean(s, 'preserveAspectRatio', ctx),
+    coverageMode: s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
     cleanupEnabled: requireBoolean(s, 'cleanupEnabled', ctx),
@@ -368,6 +409,9 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     cleanupDupTol: requireFiniteNumber(s, 'cleanupDupTol', ctx),
     fillMode: requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES),
     fillPattern: requireEnum<FillPattern>(s, 'fillPattern', ctx, VALID_FILL_PATTERNS),
+    placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
+    contourSettings: parseContourSettings(s.contourSettings, ctx),
+    radialSettings: parseRadialSettings(s.radialSettings, ctx),
   };
 }
 

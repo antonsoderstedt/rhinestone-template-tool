@@ -10,6 +10,7 @@ import NumericInput from './controls/NumericInput';
 import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
+import PlacementModeControl from './controls/PlacementModeControl';
 import { getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool, type SourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 
@@ -349,6 +350,18 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
 
       {/* Advanced */}
       <AdvancedSection>
+        <PlacementModeControl
+          coverageMode={textTool.coverageMode}
+          availableCoverageModes={textCapabilities.supportedCoverageModes}
+          placementPattern={textTool.placementPattern}
+          availablePlacementPatterns={textCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
+          contourSettings={textTool.contourSettings}
+          radialSettings={textTool.radialSettings}
+          onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { coverageMode } })}
+          onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { placementPattern } })}
+          onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { contourSettings } })}
+          onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { radialSettings } })}
+        />
         <FillModeControl
           fillMode={textTool.fillMode}
           fillPattern={textTool.fillPattern}
@@ -435,6 +448,19 @@ function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
             customSpacingMm={svgTool.customSpacingMm}
             onDensityChange={(preset) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { densityPreset: preset } })}
             onCustomSpacingChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: val } })}
+          />
+
+          <PlacementModeControl
+            coverageMode={svgTool.coverageMode}
+            availableCoverageModes={svgCapabilities.supportedCoverageModes}
+            placementPattern={svgTool.placementPattern}
+            availablePlacementPatterns={svgCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
+            contourSettings={svgTool.contourSettings}
+            radialSettings={svgTool.radialSettings}
+            onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode } })}
+            onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { placementPattern } })}
+            onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings } })}
+            onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { radialSettings } })}
           />
 
           {/* Advanced - Cleanup Options */}

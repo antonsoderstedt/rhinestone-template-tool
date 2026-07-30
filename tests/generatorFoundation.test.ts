@@ -11,7 +11,8 @@ import { buildProjectFileFromEditorState } from '../app/editor/projectPersistenc
 
 describe('generator capability foundation', () => {
   it('only exposes implemented coverage modes', () => {
-    expect(getGeneratorCapabilityProfile('outline-text').supportedCoverageModes).toEqual(['outline', 'fill', 'outline-fill']);
+    expect(getGeneratorCapabilityProfile('outline-text').supportedCoverageModes).toEqual(['outline', 'fill', 'outline-fill', 'contour']);
+    expect(getGeneratorCapabilityProfile('outline-text').supportedPlacementPatterns).toEqual(['default', 'hexagonal', 'radial']);
     expect(getGeneratorCapabilityProfile('dot-matrix-text').supportedCoverageModes).not.toContain('contour');
     expect(getGeneratorCapabilityProfile('manual').supportedPlacementPatterns).toEqual([]);
     expect(IMPLEMENTED_GENERATOR_CAPABILITIES.svg.supportedFillPatterns).toEqual(['grid', 'offset-grid']);

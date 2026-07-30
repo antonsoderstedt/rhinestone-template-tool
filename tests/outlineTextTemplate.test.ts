@@ -361,5 +361,54 @@ describe('createOutlineTextTemplate — fill mode integration', () => {
     expect(t.metadata?.['fillMode']).toBe('outline-fill');
     expect(t.metadata?.['fillPattern']).toBe('grid');
   });
+
+  it('legacy outline text respects advanced coverage and placement settings', () => {
+    const outline = createOutlineTextTemplate({
+      id: 'legacy-outline',
+      name: 'Legacy Outline',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      coverageMode: 'outline',
+      fillMode: 'outline',
+    });
+    const fillHex = createOutlineTextTemplate({
+      id: 'legacy-fill-hex',
+      name: 'Legacy Fill Hex',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      coverageMode: 'fill',
+      fillMode: 'fill',
+      placementPattern: 'hexagonal',
+    });
+    const fillRadial = createOutlineTextTemplate({
+      id: 'legacy-fill-radial',
+      name: 'Legacy Fill Radial',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      coverageMode: 'fill',
+      fillMode: 'fill',
+      placementPattern: 'radial',
+      radialSettings: { ringSpacingMm: 4, centerOffsetXmm: 0, centerOffsetYmm: 0, includeCenterStone: true },
+    });
+    const contour = createOutlineTextTemplate({
+      id: 'legacy-contour',
+      name: 'Legacy Contour',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      coverageMode: 'contour',
+      fillMode: 'outline',
+      contourSettings: { rowCount: 3, rowSpacingMm: 4, direction: 'inward' },
+    });
+
+    expect(fillHex.stones.length).toBeGreaterThan(0);
+    expect(fillRadial.stones.length).toBeGreaterThan(0);
+    expect(contour.stones.length).toBeGreaterThan(0);
+    expect(fillHex.stones.length).not.toBe(outline.stones.length);
+    expect(fillRadial.stones.length).not.toBe(outline.stones.length);
+    expect(contour.stones.length).not.toBe(outline.stones.length);
+    expect(fillHex.metadata?.['placementPattern']).toBe('hexagonal');
+    expect(fillRadial.metadata?.['placementPattern']).toBe('radial');
+    expect(contour.metadata?.['coverageMode']).toBe('contour');
+  });
 });
 

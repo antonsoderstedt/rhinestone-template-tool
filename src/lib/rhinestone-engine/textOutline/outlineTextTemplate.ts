@@ -20,17 +20,16 @@ import type { StoneSizeId, RhinestoneTemplate, Stone } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { Polyline } from '../path/polyline';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
-import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
 import { getVectorGlyph, BUILT_IN_VECTOR_FONT } from './vectorFont';
 import { createRhinestoneTemplate } from '../template/createTemplate';
-import { getRecommendedHoleDiameter, getRecommendedCenterDistance } from '../profiles/materialProfiles';
-import { getDensitySpacing } from '../spacing/density';
 import type { TemplateFillMode } from '../fill/fillTemplate';
-import type { FillPattern, PolygonFillOptions } from '../fill/polygonFill';
-import { generateFillPointsForClosedPolylines } from '../fill/polygonFill';
+import type { FillPattern } from '../fill/polygonFill';
 import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
 import { loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
+import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
+import { createPolylineFilledRhinestoneTemplate } from '../fill/fillTemplate';
+import type { FillPlacementPattern, RadialPlacementSettings } from '../fill/placementPatterns';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -80,6 +79,8 @@ export interface CreateOutlineTextTemplateOptions {
    */
   spacingMm?: number;
   materialProfileId?: string;
+  /** Coverage mode for the generated text. Defaults to outline. */
+  coverageMode?: TemplateCoverageMode;
   /**
    * Fill mode for closed glyph shapes (e.g. the oval in 'O').
    * Default: 'outline'.
@@ -87,6 +88,10 @@ export interface CreateOutlineTextTemplateOptions {
   fillMode?: TemplateFillMode;
   /** Fill grid pattern. Default: 'offset-grid'. */
   fillPattern?: FillPattern;
+  /** Fill placement pattern. Only relevant when coverage includes fill. */
+  placementPattern?: FillPlacementPattern;
+  contourSettings?: Partial<ContourCoverageSettings>;
+  radialSettings?: Partial<RadialPlacementSettings>;
 }
 
 interface NormalizedOutlineTextTemplateOptions extends CreateOutlineTextTemplateOptions {
@@ -234,8 +239,12 @@ function createOutlineTemplateFromPolylines(
     customSpacingMm,
     spacingMm,
     materialProfileId,
+    coverageMode,
     fillMode = 'outline',
     fillPattern = 'offset-grid',
+    placementPattern = 'default',
+    contourSettings,
+    radialSettings,
   } = options;
 
   if (validPolylines.length === 0) {
@@ -271,14 +280,22 @@ function createOutlineTemplateFromPolylines(
   if (targetHeightMm !== undefined) metadata['targetHeightMm'] = targetHeightMm;
   if (densityPreset !== undefined) metadata['densityPreset'] = densityPreset;
   if (customSpacingMm !== undefined) metadata['customSpacingMm'] = customSpacingMm;
+  metadata['coverageMode'] = coverageMode ?? fillMode;
   metadata['fillMode'] = fillMode;
   metadata['fillPattern'] = fillPattern;
+  metadata['placementPattern'] = placementPattern;
 
-  const rawTemplate = createPolylineRhinestoneTemplate({
+  const template = createPolylineFilledRhinestoneTemplate({
     id,
     name,
     polylines: finalPolylines,
     stoneSize,
+    coverageMode,
+    fillMode,
+    fillPattern,
+    placementPattern,
+    contourSettings,
+    radialSettings,
     spacingMm,
     densityPreset,
     customSpacingMm,
@@ -286,12 +303,14 @@ function createOutlineTemplateFromPolylines(
     metadata,
   });
 
-  const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
-  const minDist2 = holeDiameterMm * holeDiameterMm;
+  if (template.stones.length < 2) {
+    return template;
+  }
 
   const keptStones: Stone[] = [];
-  for (const stone of rawTemplate.stones) {
+  for (const stone of template.stones) {
     let tooClose = false;
+    const minDist2 = stone.holeDiameterMm * stone.holeDiameterMm;
     for (const prev of keptStones) {
       const dx = stone.center.x - prev.center.x;
       const dy = stone.center.y - prev.center.y;
@@ -303,64 +322,13 @@ function createOutlineTemplateFromPolylines(
     if (!tooClose) keptStones.push(stone);
   }
 
-  if (fillMode === 'outline') {
-    return createRhinestoneTemplate({ id, name, stones: keptStones, metadata });
-  }
-
-  const minSpacing = getRecommendedCenterDistance(stoneSize, materialProfileId);
-  let resolvedFillSpacingMm: number;
-  if (spacingMm !== undefined) {
-    resolvedFillSpacingMm = spacingMm;
-  } else if (densityPreset !== undefined) {
-    resolvedFillSpacingMm = getDensitySpacing({
-      stoneSize,
-      materialProfileId,
-      preset: densityPreset,
-      customSpacingMm,
-    }).spacingMm;
-  } else {
-    resolvedFillSpacingMm = minSpacing;
-  }
-
-  const fillOpts: PolygonFillOptions = {
-    spacingMm: resolvedFillSpacingMm,
-    pattern: fillPattern,
-    insetMm: 0,
-  };
-  const fillPoints = generateFillPointsForClosedPolylines(finalPolylines, fillOpts);
-  const fillStones: Stone[] = fillPoints.map((pt, i) => ({
-    id: `fill-f${i + 1}`,
-    center: pt,
-    stoneSize,
-    holeDiameterMm,
-  }));
-
-  const baseStones: Stone[] = fillMode === 'outline-fill' ? keptStones : [];
-  const combined: Stone[] = [...baseStones, ...fillStones];
-
-  if (combined.length === 0) {
-    return createRhinestoneTemplate({ id, name, stones: [], metadata });
-  }
-
-  const allKept: Stone[] = [];
-  for (const stone of combined) {
-    let tooClose = false;
-    for (const prev of allKept) {
-      const dx = stone.center.x - prev.center.x;
-      const dy = stone.center.y - prev.center.y;
-      if (dx * dx + dy * dy < minDist2) {
-        tooClose = true;
-        break;
-      }
-    }
-    if (!tooClose) allKept.push(stone);
-  }
-
   return createRhinestoneTemplate({
-    id,
-    name,
-    stones: allKept,
-    metadata,
+    id: template.id,
+    name: template.name,
+    stones: keptStones,
+    widthMm: template.widthMm,
+    heightMm: template.heightMm,
+    metadata: template.metadata,
   });
 }
 

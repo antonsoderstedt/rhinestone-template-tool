@@ -21,8 +21,11 @@ import { scalePolylinesToFit } from '../sizing/scalePolylines';
 import { getRecommendedHoleDiameter, getRecommendedCenterDistance } from '../profiles/materialProfiles';
 import { getDensitySpacing } from '../spacing/density';
 import { getStoneSizeProfile } from '../profiles/stoneSizes';
-import type { FillPattern, PolygonFillOptions } from './polygonFill';
-import { generateFillPointsForClosedPolylines } from './polygonFill';
+import type { FillPattern } from './polygonFill';
+import type { FillPlacementPattern, RadialPlacementSettings } from './placementPatterns';
+import { generatePlacedFillStones } from './placementPatterns';
+import type { ContourDirection } from './contourPlacement';
+import { createContourRhinestoneTemplate } from './contourPlacement';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +37,13 @@ import { generateFillPointsForClosedPolylines } from './polygonFill';
  * - `'outline-fill'`: Both outline and fill, with global collision deduplication.
  */
 export type TemplateFillMode = 'outline' | 'fill' | 'outline-fill';
+export type TemplateCoverageMode = TemplateFillMode | 'contour';
+
+export interface ContourCoverageSettings {
+  rowCount: number;
+  rowSpacingMm: number;
+  direction: ContourDirection;
+}
 
 export interface CreatePolylineFilledRhinestoneTemplateOptions {
   id: string;
@@ -44,12 +54,16 @@ export interface CreatePolylineFilledRhinestoneTemplateOptions {
    * Stone placement mode.
    * Default: `'outline'` (equivalent to `createPolylineRhinestoneTemplate`).
    */
+  coverageMode?: TemplateCoverageMode;
   fillMode?: TemplateFillMode;
   /**
    * Fill grid pattern. Only used when fillMode is `'fill'` or `'outline-fill'`.
    * Default: `'offset-grid'`.
    */
   fillPattern?: FillPattern;
+  placementPattern?: FillPlacementPattern;
+  contourSettings?: Partial<ContourCoverageSettings>;
+  radialSettings?: Partial<RadialPlacementSettings>;
   spacingMm?: number;
   densityPreset?: DensityPreset;
   customSpacingMm?: number;
@@ -61,6 +75,12 @@ export interface CreatePolylineFilledRhinestoneTemplateOptions {
   originYmm?: number;
   metadata?: Record<string, string | number | boolean>;
 }
+
+const DEFAULT_CONTOUR_SETTINGS: ContourCoverageSettings = {
+  rowCount: 3,
+  rowSpacingMm: 4,
+  direction: 'inward',
+};
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -83,8 +103,10 @@ export function createPolylineFilledRhinestoneTemplate(
     name,
     polylines,
     stoneSize,
+    coverageMode,
     fillMode = 'outline',
     fillPattern = 'offset-grid',
+    placementPattern = 'default',
     materialProfileId,
     targetWidthMm,
     targetHeightMm,
@@ -106,12 +128,16 @@ export function createPolylineFilledRhinestoneTemplate(
     );
   }
 
+  const resolvedCoverageMode = coverageMode ?? fillMode;
+
   // ── Outline-only mode — delegate fully ──────────────────────────────────
-  if (fillMode === 'outline') {
+  if (resolvedCoverageMode === 'outline') {
     const meta: Record<string, string | number | boolean> = {
       generatedBy: 'createPolylineFilledRhinestoneTemplate',
+      coverageMode: resolvedCoverageMode,
       fillMode,
       fillPattern,
+      placementPattern,
       stoneSize,
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
       preserveAspectRatio,
@@ -134,6 +160,41 @@ export function createPolylineFilledRhinestoneTemplate(
       originXmm,
       originYmm,
       metadata: meta,
+    });
+  }
+
+  if (resolvedCoverageMode === 'contour') {
+    const contourSettings = { ...DEFAULT_CONTOUR_SETTINGS, ...options.contourSettings };
+    const contourResult = createContourRhinestoneTemplate({
+      id,
+      name,
+      polylines,
+      stoneSize,
+      rowCount: contourSettings.rowCount,
+      rowSpacingMm: contourSettings.rowSpacingMm,
+      direction: contourSettings.direction,
+      spacingMm: options.spacingMm,
+      densityPreset: options.densityPreset,
+      customSpacingMm: options.customSpacingMm,
+      materialProfileId,
+      metadata: options.metadata,
+    });
+
+    return createRhinestoneTemplate({
+      id,
+      name,
+      stones: contourResult.stones,
+      metadata: {
+        generatedBy: 'createPolylineFilledRhinestoneTemplate',
+        coverageMode: 'contour',
+        contourRowCount: contourSettings.rowCount,
+        contourRowSpacingMm: contourSettings.rowSpacingMm,
+        contourDirection: contourSettings.direction,
+        contourSkippedRows: contourResult.skippedRows,
+        stoneSize,
+        materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
+        ...options.metadata,
+      },
     });
   }
 
@@ -181,8 +242,10 @@ export function createPolylineFilledRhinestoneTemplate(
   // ── Metadata ─────────────────────────────────────────────────────────────
   const metadata: Record<string, string | number | boolean> = {
     generatedBy: 'createPolylineFilledRhinestoneTemplate',
+    coverageMode: resolvedCoverageMode,
     fillMode,
     fillPattern,
+    placementPattern,
     resolvedSpacingMm,
     stoneSize,
     materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
@@ -194,7 +257,7 @@ export function createPolylineFilledRhinestoneTemplate(
 
   // ── Outline stones (for outline-fill mode) ────────────────────────────────
   let outlineStones: Stone[] = [];
-  if (fillMode === 'outline-fill') {
+  if (resolvedCoverageMode === 'outline-fill') {
     const outlineTemplate = createPolylineRhinestoneTemplate({
       id: `${id}-outline-pass`,
       name: `${name} outline pass`,
@@ -210,20 +273,18 @@ export function createPolylineFilledRhinestoneTemplate(
   }
 
   // ── Fill stones ───────────────────────────────────────────────────────────
-  const fillOpts: PolygonFillOptions = {
-    spacingMm: resolvedSpacingMm,
-    pattern: fillPattern,
-    insetMm: 0,
-  };
-
-  const fillPoints = generateFillPointsForClosedPolylines(workingPolylines, fillOpts);
-
-  const fillStones: Stone[] = fillPoints.map((pt, i) => ({
-    id: `${stoneSize.toLowerCase()}-fill-f${i + 1}`,
-    center: pt,
+  const fillStones = generatePlacedFillStones(workingPolylines, {
     stoneSize,
-    holeDiameterMm,
-  }));
+    spacingMm: options.spacingMm,
+    densityPreset: options.densityPreset,
+    customSpacingMm: options.customSpacingMm,
+    materialProfileId,
+    fillPattern,
+    placementPattern,
+    radialSettings: options.radialSettings,
+    existingStones: outlineStones,
+    idPrefix: `${stoneSize.toLowerCase()}-${placementPattern}-fill`,
+  });
 
   // ── Combine and deduplicate ───────────────────────────────────────────────
   // Outline stones come first so they take priority in the greedy filter.

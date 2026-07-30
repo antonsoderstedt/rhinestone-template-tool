@@ -28,8 +28,8 @@ export const IMPLEMENTED_GENERATOR_CAPABILITIES: Readonly<Record<DesignSource, G
   },
   'outline-text': {
     designSource: 'outline-text',
-    supportedCoverageModes: ['outline', 'fill', 'outline-fill'],
-    supportedPlacementPatterns: ['default'],
+    supportedCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
+    supportedPlacementPatterns: ['default', 'hexagonal', 'radial'],
     supportedStyleTreatments: ['single-color'],
     supportedFillPatterns: ['grid', 'offset-grid'],
     supportsGeneratorCoverage: true,
@@ -46,8 +46,8 @@ export const IMPLEMENTED_GENERATOR_CAPABILITIES: Readonly<Record<DesignSource, G
   },
   'svg': {
     designSource: 'svg',
-    supportedCoverageModes: ['outline', 'fill', 'outline-fill'],
-    supportedPlacementPatterns: ['default'],
+    supportedCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
+    supportedPlacementPatterns: ['default', 'hexagonal', 'radial'],
     supportedStyleTreatments: ['single-color'],
     supportedFillPatterns: ['grid', 'offset-grid'],
     supportsGeneratorCoverage: true,

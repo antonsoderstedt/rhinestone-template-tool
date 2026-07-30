@@ -221,8 +221,17 @@ export {
   generateFillPointsForClosedPolyline,
   generateFillPointsForClosedPolylines,
 } from './fill/polygonFill';
-export type { TemplateFillMode, CreatePolylineFilledRhinestoneTemplateOptions } from './fill/fillTemplate';
+export type {
+  TemplateFillMode,
+  TemplateCoverageMode,
+  ContourCoverageSettings,
+  CreatePolylineFilledRhinestoneTemplateOptions,
+} from './fill/fillTemplate';
 export { createPolylineFilledRhinestoneTemplate } from './fill/fillTemplate';
+export type { FillPlacementPattern, RadialPlacementSettings } from './fill/placementPatterns';
+export { generatePlacedFillStones } from './fill/placementPatterns';
+export type { ContourDirection, ContourCoverageOptions } from './fill/contourPlacement';
+export { createContourRhinestoneTemplate } from './fill/contourPlacement';
 
 // Manual Stone Editor
 export type {
