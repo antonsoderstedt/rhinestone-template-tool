@@ -7,6 +7,8 @@ import type { TemplateFillMode, FillPattern } from '@/src/lib/rhinestone-engine/
 interface FillModeControlProps {
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
+  availableModes?: readonly TemplateFillMode[];
+  availablePatterns?: readonly FillPattern[];
   onFillModeChange: (mode: TemplateFillMode) => void;
   onFillPatternChange: (pattern: FillPattern) => void;
 }
@@ -25,10 +27,14 @@ const FILL_PATTERNS: { value: FillPattern; label: string }[] = [
 export default function FillModeControl({
   fillMode,
   fillPattern,
+  availableModes = ['outline', 'fill', 'outline-fill'],
+  availablePatterns = ['grid', 'offset-grid'],
   onFillModeChange,
   onFillPatternChange,
 }: FillModeControlProps) {
   const showPatternControl = fillMode === 'fill' || fillMode === 'outline-fill';
+  const visibleModes = FILL_MODES.filter((mode) => availableModes.includes(mode.value));
+  const visiblePatterns = FILL_PATTERNS.filter((pattern) => availablePatterns.includes(pattern.value));
 
   return (
     <div className="space-y-3">
@@ -39,7 +45,7 @@ export default function FillModeControl({
           onChange={(e) => onFillModeChange(e.target.value as TemplateFillMode)}
           className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
         >
-          {FILL_MODES.map((mode) => (
+          {visibleModes.map((mode) => (
             <option key={mode.value} value={mode.value}>
               {mode.label}
             </option>
@@ -55,7 +61,7 @@ export default function FillModeControl({
             onChange={(e) => onFillPatternChange(e.target.value as FillPattern)}
             className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
           >
-            {FILL_PATTERNS.map((pattern) => (
+            {visiblePatterns.map((pattern) => (
               <option key={pattern.value} value={pattern.value}>
                 {pattern.label}
               </option>

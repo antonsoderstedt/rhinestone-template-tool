@@ -9,7 +9,7 @@ import {
 import type { EditableStone } from './EditorState';
 import {
   createStoneGridTemplate,
-  createOutlineTextTemplate,
+  createOutlineTextTemplateAsync,
   createDotMatrixTextTemplate,
   svgStringToPolylines,
   createPolylineFilledRhinestoneTemplate,
@@ -18,6 +18,7 @@ import {
   parseRhinestoneProject,
   serializeRhinestoneProject,
   createBasicSvgExport,
+  LEGACY_OUTLINE_FONT_ID,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
 } from '@/src/lib/rhinestone-engine/index';
@@ -32,6 +33,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
+import { getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -41,8 +43,18 @@ import {
 export default function EditorShell() {
   const [state, dispatch] = useReducer(editorReducer, DEFAULT_EDITOR_STATE);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generationRequestRef = useRef(0);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
+  const [outlineFontStatus, setOutlineFontStatus] = useState<{
+    status: 'idle' | 'loading' | 'error';
+    message: string | null;
+    fontId: string;
+  }>({
+    status: 'idle',
+    message: null,
+    fontId: LEGACY_OUTLINE_FONT_ID,
+  });
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
@@ -63,120 +75,143 @@ export default function EditorShell() {
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
+  const sourceTool = useMemo(() => getSourcePanelTool(state), [state]);
+
   /**
    * Generate template based on active tool and its state.
    * This runs whenever tool state changes.
    */
   useEffect(() => {
-    try {
-      let template = null;
+    const requestId = ++generationRequestRef.current;
 
-      switch (state.activeTool) {
-        case 'grid':
-          template = createStoneGridTemplate({
-            id: 'grid-preview',
-            name: 'Grid Preview',
-            stoneSize: state.gridTool.stoneSize,
-            columns: state.gridTool.columns,
-            rows: state.gridTool.rows,
-            densityPreset: state.gridTool.densityPreset,
-            customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : undefined,
-          });
-          break;
+    const generateTemplate = async () => {
+      try {
+        let template = null;
 
-        case 'text':
-          if (state.textTool.text.trim()) {
-            if (state.textTool.mode === 'outline') {
-              template = createOutlineTextTemplate({
-                id: 'text-outline-preview',
-                name: 'Text Outline Preview',
-                text: state.textTool.text,
-                stoneSize: state.textTool.stoneSize,
-                fontSizeMm: typeof state.textTool.fontSizeMm === 'number' ? state.textTool.fontSizeMm : 25,
-                align: state.textTool.align,
-                letterSpacingMm: typeof state.textTool.letterSpacingMm === 'number' ? state.textTool.letterSpacingMm : 0,
-                lineSpacingMm: typeof state.textTool.lineSpacingMm === 'number' ? state.textTool.lineSpacingMm : 10,
-                targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                preserveAspectRatio: state.textTool.preserveAspectRatio,
-                densityPreset: state.textTool.densityPreset,
-                customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
-                fillMode: state.textTool.fillMode,
-                fillPattern: state.textTool.fillPattern,
+        switch (sourceTool) {
+          case 'grid':
+            template = createStoneGridTemplate({
+              id: 'grid-preview',
+              name: 'Grid Preview',
+              stoneSize: state.gridTool.stoneSize,
+              columns: state.gridTool.columns,
+              rows: state.gridTool.rows,
+              densityPreset: state.gridTool.densityPreset,
+              customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : undefined,
+            });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            break;
+
+          case 'text':
+            if (state.textTool.text.trim()) {
+              if (state.textTool.mode === 'outline') {
+                const usesBundledFont = state.textTool.fontId !== LEGACY_OUTLINE_FONT_ID;
+                setOutlineFontStatus({
+                  status: usesBundledFont ? 'loading' : 'idle',
+                  message: usesBundledFont ? 'Loading font geometry…' : null,
+                  fontId: state.textTool.fontId,
+                });
+                template = await createOutlineTextTemplateAsync({
+                  id: 'text-outline-preview',
+                  name: 'Text Outline Preview',
+                  text: state.textTool.text,
+                  stoneSize: state.textTool.stoneSize,
+                  fontId: state.textTool.fontId,
+                  fontSizeMm: typeof state.textTool.fontSizeMm === 'number' ? state.textTool.fontSizeMm : 25,
+                  align: state.textTool.align,
+                  letterSpacingMm: typeof state.textTool.letterSpacingMm === 'number' ? state.textTool.letterSpacingMm : 0,
+                  lineSpacingMm: typeof state.textTool.lineSpacingMm === 'number' ? state.textTool.lineSpacingMm : 10,
+                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
+                  preserveAspectRatio: state.textTool.preserveAspectRatio,
+                  densityPreset: state.textTool.densityPreset,
+                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
+                  fillMode: state.textTool.fillMode,
+                  fillPattern: state.textTool.fillPattern,
+                });
+                if (requestId !== generationRequestRef.current) return;
+                setOutlineFontStatus({ status: 'idle', message: null, fontId: state.textTool.fontId });
+              } else {
+                template = createDotMatrixTextTemplate({
+                  id: 'text-dotmatrix-preview',
+                  name: 'Dot Matrix Text Preview',
+                  text: state.textTool.text,
+                  stoneSize: state.textTool.stoneSize,
+                  letterSpacingColumns: state.textTool.letterSpacingColumns,
+                  lineSpacingRows: state.textTool.lineSpacingRows,
+                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
+                  preserveAspectRatio: state.textTool.preserveAspectRatio,
+                  densityPreset: state.textTool.densityPreset,
+                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
+                });
+                setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+              }
+            }
+            break;
+
+          case 'svg':
+            if (state.svgTool.uploadedSvgText) {
+              const polylines = svgStringToPolylines(state.svgTool.uploadedSvgText, {
+                cleanupOptions: state.svgTool.cleanupEnabled
+                  ? {
+                      simplify: state.svgTool.cleanupSimplify,
+                      simplifyToleranceMm: state.svgTool.cleanupSimplifyTol,
+                      removeTinyPolylines: state.svgTool.cleanupRemoveTiny,
+                      minPolylineLengthMm: state.svgTool.cleanupMinLength,
+                      removeDuplicatePoints: state.svgTool.cleanupRemoveDups,
+                      duplicatePointToleranceMm: state.svgTool.cleanupDupTol,
+                    }
+                  : undefined,
               });
-            } else {
-              template = createDotMatrixTextTemplate({
-                id: 'text-dotmatrix-preview',
-                name: 'Dot Matrix Text Preview',
-                text: state.textTool.text,
-                stoneSize: state.textTool.stoneSize,
-                letterSpacingColumns: state.textTool.letterSpacingColumns,
-                lineSpacingRows: state.textTool.lineSpacingRows,
-                targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                preserveAspectRatio: state.textTool.preserveAspectRatio,
-                densityPreset: state.textTool.densityPreset,
-                customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
+
+              let scaledPolylines = polylines;
+              if (
+                (typeof state.svgTool.targetWidthMm === 'number' || typeof state.svgTool.targetHeightMm === 'number') &&
+                polylines.length > 0
+              ) {
+                scaledPolylines = scalePolylinesToFit(polylines, {
+                  targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
+                  preserveAspectRatio: state.svgTool.preserveAspectRatio,
+                });
+              }
+
+              template = createPolylineFilledRhinestoneTemplate({
+                id: 'svg-preview',
+                name: state.svgTool.svgFileName || 'SVG Preview',
+                polylines: scaledPolylines,
+                stoneSize: state.svgTool.stoneSize,
+                fillMode: state.svgTool.fillMode,
+                fillPattern: state.svgTool.fillPattern,
+                densityPreset: state.svgTool.densityPreset,
+                customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
               });
             }
-          }
-          break;
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            break;
 
-        case 'svg':
-          if (state.svgTool.uploadedSvgText) {
-            // Parse SVG to polylines
-            const polylines = svgStringToPolylines(state.svgTool.uploadedSvgText, {
-              cleanupOptions: state.svgTool.cleanupEnabled
-                ? {
-                    simplify: state.svgTool.cleanupSimplify,
-                    simplifyToleranceMm: state.svgTool.cleanupSimplifyTol,
-                    removeTinyPolylines: state.svgTool.cleanupRemoveTiny,
-                    minPolylineLengthMm: state.svgTool.cleanupMinLength,
-                    removeDuplicatePoints: state.svgTool.cleanupRemoveDups,
-                    duplicatePointToleranceMm: state.svgTool.cleanupDupTol,
-                  }
-                : undefined,
-            });
+          default:
+            return;
+        }
 
-            // Scale to target dimensions if specified
-            let scaledPolylines = polylines;
-            if (
-              (typeof state.svgTool.targetWidthMm === 'number' || typeof state.svgTool.targetHeightMm === 'number') &&
-              polylines.length > 0
-            ) {
-              scaledPolylines = scalePolylinesToFit(polylines, {
-                targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
-                targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
-                preserveAspectRatio: state.svgTool.preserveAspectRatio,
-              });
-            }
-
-            // Create template with fill mode
-            template = createPolylineFilledRhinestoneTemplate({
-              id: 'svg-preview',
-              name: state.svgTool.svgFileName || 'SVG Preview',
-              polylines: scaledPolylines,
-              stoneSize: state.svgTool.stoneSize,
-              fillMode: state.svgTool.fillMode,
-              fillPattern: state.svgTool.fillPattern,
-              densityPreset: state.svgTool.densityPreset,
-              customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
-            });
-          }
-          break;
-
-        // Other tools will be implemented incrementally
-        default:
-          return;
+        if (requestId !== generationRequestRef.current) return;
+        dispatch({ type: 'SET_TEMPLATE', template });
+      } catch (err) {
+        if (requestId !== generationRequestRef.current) return;
+        console.error('Template generation error:', err);
+        setOutlineFontStatus({
+          status: 'error',
+          message: err instanceof Error ? err.message : String(err),
+          fontId: state.textTool.fontId,
+        });
+        dispatch({ type: 'SET_TEMPLATE', template: null });
       }
+    };
 
-      dispatch({ type: 'SET_TEMPLATE', template });
-    } catch (err) {
-      console.error('Template generation error:', err);
-      dispatch({ type: 'SET_TEMPLATE', template: null });
-    }
+    void generateTemplate();
   }, [
-    state.activeTool,
+    sourceTool,
     state.gridTool,
     state.textTool,
     state.svgTool,
@@ -332,6 +367,7 @@ export default function EditorShell() {
                 mode: 'outline',
                 text: project.generatorState.text,
                 stoneSize: project.generatorState.stoneSize,
+                fontId: project.generatorState.fontId ?? LEGACY_OUTLINE_FONT_ID,
                 fontSizeMm: project.generatorState.fontSizeMm,
                 targetWidthMm: project.generatorState.targetWidthMm ?? '',
                 targetHeightMm: project.generatorState.targetHeightMm ?? '',
@@ -568,7 +604,7 @@ export default function EditorShell() {
       )}
 
       <div className="flex min-h-0 flex-1 bg-zinc-950">
-        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" />
+        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
 
         <main className="flex min-w-0 flex-1 flex-col bg-zinc-950">
           <div className="border-b border-zinc-800 px-4 py-3">
@@ -588,7 +624,7 @@ export default function EditorShell() {
           />
         </main>
 
-        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" />
+        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
       </div>
 
       <EditorStatusBar

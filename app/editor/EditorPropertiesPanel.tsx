@@ -9,12 +9,15 @@ import PhysicalDimensionsControl from './controls/PhysicalDimensionsControl';
 import NumericInput from './controls/NumericInput';
 import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
+import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import { getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool, type SourcePanelTool } from './editorUi';
+import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 
 interface EditorPropertiesPanelProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   mode?: 'combined' | 'source' | 'inspector';
+  outlineFontStatus?: OutlineFontStatus;
 }
 
 const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; description: string; icon: React.ComponentType<{ className?: string }> }> = [
@@ -60,7 +63,7 @@ function SourceSwitcher({ activeTool, dispatch }: { activeTool: SourcePanelTool;
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode = 'combined' }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode = 'combined', outlineFontStatus }: EditorPropertiesPanelProps) {
   const { activeTool } = state;
 
   if (mode === 'source') {
@@ -84,7 +87,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
           </PanelSection>
 
           <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
-            {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} />}
+            {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
             {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
@@ -196,8 +199,9 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
 
 // ─── Tool-Specific Property Panels ───────────────────────────────────────────
 
-function TextToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
+function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorPropertiesPanelProps) {
   const { textTool } = state;
+  const textCapabilities = getGeneratorCapabilityProfile('outline-text');
 
   return (
     <div className="space-y-4">
@@ -236,6 +240,15 @@ function TextToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
           className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
         />
       </label>
+
+      {textTool.mode === 'outline' && outlineFontStatus && (
+        <FontPicker
+          value={textTool.fontId}
+          previewText={textTool.text}
+          status={outlineFontStatus}
+          onChange={(fontId) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fontId } })}
+        />
+      )}
 
       {/* Stone Size */}
       <StoneProfileControl
@@ -339,6 +352,8 @@ function TextToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
         <FillModeControl
           fillMode={textTool.fillMode}
           fillPattern={textTool.fillPattern}
+          availableModes={textCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
+          availablePatterns={textCapabilities.supportedFillPatterns}
           onFillModeChange={(mode) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fillMode: mode } })}
           onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fillPattern: pattern } })}
         />
@@ -349,6 +364,7 @@ function TextToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
 
 function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const { svgTool } = state;
+  const svgCapabilities = getGeneratorCapabilityProfile('svg');
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -407,6 +423,8 @@ function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
           <FillModeControl
             fillMode={svgTool.fillMode}
             fillPattern={svgTool.fillPattern}
+            availableModes={svgCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
+            availablePatterns={svgCapabilities.supportedFillPatterns}
             onFillModeChange={(mode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillMode: mode } })}
             onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillPattern: pattern } })}
           />

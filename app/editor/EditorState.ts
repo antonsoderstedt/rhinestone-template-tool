@@ -34,6 +34,7 @@ export interface TextToolState {
   mode: TextMode;
   text: string;
   stoneSize: StoneSizeId;
+  fontId: string;
   
   // Outline-specific
   fontSizeMm: number | '';
@@ -178,6 +179,7 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   text: 'SMOOCH',
   stoneSize: 'SS10',
+  fontId: 'legacy-original',
   fontSizeMm: 25,
   align: 'left',
   letterSpacingMm: 2,

@@ -173,8 +173,45 @@ export {
   SUPPORTED_VECTOR_FONT_CHARACTERS,
   getVectorGlyph,
 } from './textOutline/vectorFont';
+export type { OutlineFontCategory, OutlineFontDefinition, OutlineFontId } from './textOutline/fontRegistry';
+export {
+  OUTLINE_FONT_REGISTRY,
+  DEFAULT_OUTLINE_FONT_ID,
+  LEGACY_OUTLINE_FONT_ID,
+  listOutlineFonts,
+  getOutlineFontDefinition,
+  isKnownOutlineFontId,
+  getOutlineFontFaceCss,
+} from './textOutline/fontRegistry';
+export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
 export type { OutlineTextAlign, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
-export { createOutlineTextTemplate } from './textOutline/outlineTextTemplate';
+export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
+
+// Generator capability foundation
+export type {
+  DesignSource,
+  CoverageMode,
+  PlacementPattern,
+  StyleTreatment,
+  GeneratorCapabilityProfile,
+} from './generator/capabilities';
+export {
+  IMPLEMENTED_GENERATOR_CAPABILITIES,
+  getGeneratorCapabilityProfile,
+  listImplementedCoverageModes,
+  listImplementedFillPatterns,
+} from './generator/capabilities';
+
+// Template library foundation
+export type {
+  TemplateLibraryCategory,
+  TemplateSnapshot,
+  TemplateLibraryEntry,
+  TemplateLibraryRecord,
+} from './templateLibrary/model';
+export { deepCloneProjectSnapshot, createTemplateLibraryEntry } from './templateLibrary/model';
+export type { TemplateLibraryRepository } from './templateLibrary/repository';
+export { InMemoryTemplateLibraryRepository } from './templateLibrary/repository';
 
 // Fill Mode v1 — outline, fill, outline-fill
 export type { FillPattern, PolygonFillOptions, PolygonBounds } from './fill/polygonFill';

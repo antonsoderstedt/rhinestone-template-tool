@@ -28,6 +28,9 @@ import { getDensitySpacing } from '../spacing/density';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern, PolygonFillOptions } from '../fill/polygonFill';
 import { generateFillPointsForClosedPolylines } from '../fill/polygonFill';
+import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
+import { loadOutlineFont } from './fontLoader';
+import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +42,8 @@ export interface CreateOutlineTextTemplateOptions {
   /** Text to render. Use '\n' for multiline. */
   text: string;
   stoneSize: StoneSizeId;
+  /** Defaults to the legacy built-in vector font for backward compatibility. */
+  fontId?: string;
   /**
    * Desired character height in mm.
    * Scales glyphs from font units: scale = fontSizeMm / unitsPerEm.
@@ -84,41 +89,31 @@ export interface CreateOutlineTextTemplateOptions {
   fillPattern?: FillPattern;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+interface NormalizedOutlineTextTemplateOptions extends CreateOutlineTextTemplateOptions {
+  fontId: string;
+}
 
-/**
- * Converts text to a rhinestone outline template using the built-in
- * vector font.
- *
- * @throws if id, name, or text is empty.
- * @throws if fontSizeMm, letterSpacingMm, lineSpacingMm, or target dimensions
- *   are invalid.
- * @throws if the text produces no drawable polylines (all whitespace).
- */
-export function createOutlineTextTemplate(
+function normalizeOutlineOptions(
   options: CreateOutlineTextTemplateOptions,
-): RhinestoneTemplate {
+): NormalizedOutlineTextTemplateOptions {
+  return {
+    ...options,
+    fontId: options.fontId ?? DEFAULT_OUTLINE_FONT_ID,
+  };
+}
+
+function validateOutlineOptions(options: NormalizedOutlineTextTemplateOptions) {
   const {
     id,
     name,
     text,
-    stoneSize,
     fontSizeMm = 25,
-    targetWidthMm,
-    targetHeightMm,
-    preserveAspectRatio = true,
-    align = 'left',
     letterSpacingMm = 2,
     lineSpacingMm = 8,
-    densityPreset,
-    customSpacingMm,
-    spacingMm,
-    materialProfileId,
-    fillMode = 'outline',
-    fillPattern = 'offset-grid',
+    targetWidthMm,
+    targetHeightMm,
   } = options;
 
-  // ── Guards ──────────────────────────────────────────────────────────────
   if (typeof id !== 'string' || id.trim().length === 0) {
     throw new Error('createOutlineTextTemplate: "id" must be a non-empty string.');
   }
@@ -129,48 +124,50 @@ export function createOutlineTextTemplate(
     throw new Error('createOutlineTextTemplate: "text" must be a non-empty string.');
   }
   if (!isFinite(fontSizeMm) || fontSizeMm <= 0) {
-    throw new Error(
-      `createOutlineTextTemplate: "fontSizeMm" must be a positive finite number, got ${fontSizeMm}.`,
-    );
+    throw new Error(`createOutlineTextTemplate: "fontSizeMm" must be a positive finite number, got ${fontSizeMm}.`);
   }
   if (!isFinite(letterSpacingMm) || letterSpacingMm < 0) {
-    throw new Error(
-      `createOutlineTextTemplate: "letterSpacingMm" must be >= 0, got ${letterSpacingMm}.`,
-    );
+    throw new Error(`createOutlineTextTemplate: "letterSpacingMm" must be >= 0, got ${letterSpacingMm}.`);
   }
   if (!isFinite(lineSpacingMm) || lineSpacingMm < 0) {
-    throw new Error(
-      `createOutlineTextTemplate: "lineSpacingMm" must be >= 0, got ${lineSpacingMm}.`,
-    );
+    throw new Error(`createOutlineTextTemplate: "lineSpacingMm" must be >= 0, got ${lineSpacingMm}.`);
   }
   if (targetWidthMm !== undefined && (!isFinite(targetWidthMm) || targetWidthMm <= 0)) {
-    throw new Error(
-      `createOutlineTextTemplate: "targetWidthMm" must be a positive finite number, got ${targetWidthMm}.`,
-    );
+    throw new Error(`createOutlineTextTemplate: "targetWidthMm" must be a positive finite number, got ${targetWidthMm}.`);
   }
   if (targetHeightMm !== undefined && (!isFinite(targetHeightMm) || targetHeightMm <= 0)) {
-    throw new Error(
-      `createOutlineTextTemplate: "targetHeightMm" must be a positive finite number, got ${targetHeightMm}.`,
-    );
+    throw new Error(`createOutlineTextTemplate: "targetHeightMm" must be a positive finite number, got ${targetHeightMm}.`);
   }
+  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isKnownOutlineFontId(options.fontId)) {
+    throw new Error(`Unknown outline fontId: ${options.fontId}`);
+  }
+}
 
-  // ── Layout ──────────────────────────────────────────────────────────────
+function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): Polyline[] {
+  const {
+    text,
+    fontSizeMm = 25,
+    align = 'left',
+    letterSpacingMm = 2,
+    lineSpacingMm = 8,
+  } = options;
+
   const font = BUILT_IN_VECTOR_FONT;
-  const scale = fontSizeMm / font.unitsPerEm; // mm per font unit
+  const scale = fontSizeMm / font.unitsPerEm;
   const lines = text.split('\n');
   const lineAdvanceMm = fontSizeMm + lineSpacingMm;
 
-  // First pass: collect line polylines (y = 0 relative) and line widths
   interface LineGroup {
     polylines: Polyline[];
     widthMm: number;
   }
+
   const lineGroups: LineGroup[] = [];
 
   for (const line of lines) {
     let curX = 0;
     const linePolylines: Polyline[] = [];
-    const chars = [...line]; // iterator handles multi-byte characters
+    const chars = [...line];
 
     for (let ci = 0; ci < chars.length; ci++) {
       const glyph = getVectorGlyph(chars[ci]);
@@ -179,14 +176,13 @@ export function createOutlineTextTemplate(
         linePolylines.push({
           points: pl.points.map((pt) => ({
             x: pt.x * scale + curX,
-            y: pt.y * scale, // vertical offset applied in second pass
+            y: pt.y * scale,
           })),
           closed: pl.closed,
         });
       }
 
       curX += glyph.advanceWidth * scale;
-      // Letter spacing between characters — not after the last one
       if (ci < chars.length - 1) {
         curX += letterSpacingMm;
       }
@@ -195,16 +191,12 @@ export function createOutlineTextTemplate(
     lineGroups.push({ polylines: linePolylines, widthMm: curX });
   }
 
-  // Max width across all lines (used for center/right alignment)
-  const maxWidthMm = Math.max(...lineGroups.map((g) => g.widthMm), 0);
-
-  // Second pass: apply alignment x-shift + per-line y-offset
+  const maxWidthMm = Math.max(...lineGroups.map((group) => group.widthMm), 0);
   const allPolylines: Polyline[] = [];
 
   for (let li = 0; li < lineGroups.length; li++) {
-    const group = lineGroups[li];
+    const group = lineGroups[li]!;
     const lineOffsetY = li * lineAdvanceMm;
-
     let offsetX = 0;
     if (align === 'center') {
       offsetX = (maxWidthMm - group.widthMm) / 2;
@@ -223,8 +215,28 @@ export function createOutlineTextTemplate(
     }
   }
 
-  // Discard degenerate polylines (< 2 points)
-  const validPolylines = allPolylines.filter((pl) => pl.points.length >= 2);
+  return allPolylines.filter((pl) => pl.points.length >= 2);
+}
+
+function createOutlineTemplateFromPolylines(
+  options: NormalizedOutlineTextTemplateOptions,
+  validPolylines: Polyline[],
+  metadataOverrides: Record<string, string | number | boolean>,
+): RhinestoneTemplate {
+  const {
+    id,
+    name,
+    stoneSize,
+    targetWidthMm,
+    targetHeightMm,
+    preserveAspectRatio = true,
+    densityPreset,
+    customSpacingMm,
+    spacingMm,
+    materialProfileId,
+    fillMode = 'outline',
+    fillPattern = 'offset-grid',
+  } = options;
 
   if (validPolylines.length === 0) {
     throw new Error(
@@ -233,7 +245,6 @@ export function createOutlineTextTemplate(
     );
   }
 
-  // Optionally scale to requested physical dimensions
   let finalPolylines = validPolylines;
   if (targetWidthMm !== undefined || targetHeightMm !== undefined) {
     finalPolylines = scalePolylinesToFit(validPolylines, {
@@ -245,16 +256,16 @@ export function createOutlineTextTemplate(
     });
   }
 
-  // ── Metadata ────────────────────────────────────────────────────────────
   const metadata: Record<string, string | number | boolean> = {
     generatedBy: 'createOutlineTextTemplate',
-    text,
-    fontMode: 'built-in-vector-outline-v1',
-    fontSizeMm,
+    text: options.text,
+    fontSizeMm: options.fontSizeMm ?? 25,
     preserveAspectRatio,
-    align,
-    letterSpacingMm,
-    lineSpacingMm,
+    align: options.align ?? 'left',
+    letterSpacingMm: options.letterSpacingMm ?? 2,
+    lineSpacingMm: options.lineSpacingMm ?? 8,
+    fontId: options.fontId,
+    ...metadataOverrides,
   };
   if (targetWidthMm !== undefined) metadata['targetWidthMm'] = targetWidthMm;
   if (targetHeightMm !== undefined) metadata['targetHeightMm'] = targetHeightMm;
@@ -263,7 +274,6 @@ export function createOutlineTextTemplate(
   metadata['fillMode'] = fillMode;
   metadata['fillPattern'] = fillPattern;
 
-  // ── Sample stones ────────────────────────────────────────────────────────
   const rawTemplate = createPolylineRhinestoneTemplate({
     id,
     name,
@@ -276,13 +286,6 @@ export function createOutlineTextTemplate(
     metadata,
   });
 
-  // ── Global cross-stroke collision filter ─────────────────────────────────
-  // Outline text places stones along multiple independent polylines (one per
-  // stroke per character). The per-polyline Euclidean filter in pathTemplate
-  // does not prevent collisions between strokes that share endpoints or run
-  // close together (e.g. H's spine/crossbar junction, M's zigzag peaks).
-  // Apply a global greedy pass: keep each stone only if it is at least
-  // holeDiameterMm away from every previously kept stone.
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
   const minDist2 = holeDiameterMm * holeDiameterMm;
 
@@ -300,19 +303,20 @@ export function createOutlineTextTemplate(
     if (!tooClose) keptStones.push(stone);
   }
 
-  // ── Fill mode ────────────────────────────────────────────────────────────
   if (fillMode === 'outline') {
     return createRhinestoneTemplate({ id, name, stones: keptStones, metadata });
   }
 
-  // Resolve spacing for fill generation
   const minSpacing = getRecommendedCenterDistance(stoneSize, materialProfileId);
   let resolvedFillSpacingMm: number;
   if (spacingMm !== undefined) {
     resolvedFillSpacingMm = spacingMm;
   } else if (densityPreset !== undefined) {
     resolvedFillSpacingMm = getDensitySpacing({
-      stoneSize, materialProfileId, preset: densityPreset, customSpacingMm,
+      stoneSize,
+      materialProfileId,
+      preset: densityPreset,
+      customSpacingMm,
     }).spacingMm;
   } else {
     resolvedFillSpacingMm = minSpacing;
@@ -331,7 +335,6 @@ export function createOutlineTextTemplate(
     holeDiameterMm,
   }));
 
-  // Combine outline stones (if outline-fill) with fill stones
   const baseStones: Stone[] = fillMode === 'outline-fill' ? keptStones : [];
   const combined: Stone[] = [...baseStones, ...fillStones];
 
@@ -339,14 +342,16 @@ export function createOutlineTextTemplate(
     return createRhinestoneTemplate({ id, name, stones: [], metadata });
   }
 
-  // Global greedy collision filter across outline + fill
   const allKept: Stone[] = [];
   for (const stone of combined) {
     let tooClose = false;
     for (const prev of allKept) {
       const dx = stone.center.x - prev.center.x;
       const dy = stone.center.y - prev.center.y;
-      if (dx * dx + dy * dy < minDist2) { tooClose = true; break; }
+      if (dx * dx + dy * dy < minDist2) {
+        tooClose = true;
+        break;
+      }
     }
     if (!tooClose) allKept.push(stone);
   }
@@ -356,5 +361,70 @@ export function createOutlineTextTemplate(
     name,
     stones: allKept,
     metadata,
+  });
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Converts text to a rhinestone outline template using the built-in
+ * vector font.
+ *
+ * @throws if id, name, or text is empty.
+ * @throws if fontSizeMm, letterSpacingMm, lineSpacingMm, or target dimensions
+ *   are invalid.
+ * @throws if the text produces no drawable polylines (all whitespace).
+ */
+export function createOutlineTextTemplate(
+  options: CreateOutlineTextTemplateOptions,
+): RhinestoneTemplate {
+  const normalized = normalizeOutlineOptions(options);
+  validateOutlineOptions(normalized);
+
+  const fontDefinition = getOutlineFontDefinition(normalized.fontId);
+  if (!fontDefinition.isLegacy) {
+    throw new Error(
+      `createOutlineTextTemplate: fontId "${normalized.fontId}" requires the async outline font pipeline. ` +
+        'Use createOutlineTextTemplateAsync for bundled OpenType fonts.',
+    );
+  }
+
+  return createOutlineTemplateFromPolylines(normalized, layoutLegacyVectorTextPolylines(normalized), {
+    fontMode: 'built-in-vector-outline-v1',
+    fontFamily: fontDefinition.fontFamily,
+    fontDisplayName: fontDefinition.displayName,
+  });
+}
+
+export async function createOutlineTextTemplateAsync(
+  options: CreateOutlineTextTemplateOptions,
+): Promise<RhinestoneTemplate> {
+  const normalized = normalizeOutlineOptions(options);
+  validateOutlineOptions(normalized);
+
+  const fontDefinition = getOutlineFontDefinition(normalized.fontId);
+  if (fontDefinition.isLegacy) {
+    return createOutlineTextTemplate(normalized);
+  }
+
+  const loadedFont = await loadOutlineFont(normalized.fontId);
+  if (!loadedFont.font) {
+    return createOutlineTextTemplate({ ...normalized, fontId: LEGACY_OUTLINE_FONT_ID });
+  }
+
+  const polylines = layoutTextToOpenTypePolylines({
+    text: normalized.text,
+    font: loadedFont.font,
+    fontSizeMm: normalized.fontSizeMm ?? 25,
+    align: normalized.align ?? 'left',
+    letterSpacingMm: normalized.letterSpacingMm ?? 2,
+    lineSpacingMm: normalized.lineSpacingMm ?? 8,
+  });
+
+  return createOutlineTemplateFromPolylines(normalized, polylines, {
+    fontMode: 'bundled-opentype-outline-v1',
+    fontFamily: fontDefinition.fontFamily,
+    fontDisplayName: fontDefinition.displayName,
+    fontLicense: fontDefinition.license,
   });
 }

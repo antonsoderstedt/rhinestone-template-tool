@@ -15,6 +15,7 @@ import type { OutlineTextAlign } from '../textOutline/outlineTextTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
 import type { TextAlign } from '../text/textLayout';
+import { LEGACY_OUTLINE_FONT_ID } from '../textOutline/fontRegistry';
 
 // ─── Generator IDs ────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ export interface OutlineTextProjectState {
   generatorId: 'outline-text';
   text: string;
   stoneSize: StoneSizeId;
+  fontId?: string;
   fontSizeMm: number;
   targetWidthMm: number | null;
   targetHeightMm: number | null;
@@ -267,6 +269,7 @@ function validateOutlineText(s: UnknownRecord): OutlineTextProjectState {
     generatorId: 'outline-text',
     text: requireString(s, 'text', ctx),
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    fontId: typeof s.fontId === 'string' ? s.fontId : LEGACY_OUTLINE_FONT_ID,
     fontSizeMm: requireFiniteNumber(s, 'fontSizeMm', ctx),
     targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
     targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),

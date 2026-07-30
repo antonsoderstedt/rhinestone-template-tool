@@ -80,6 +80,7 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         generatorId: 'outline-text',
         text: state.textTool.text,
         stoneSize: state.textTool.stoneSize,
+        fontId: state.textTool.fontId,
         fontSizeMm: typeof state.textTool.fontSizeMm === 'number' ? state.textTool.fontSizeMm : 25,
         targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : null,
         targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : null,

@@ -8,6 +8,7 @@ import {
   getDensityPresetOptions,
   checkExportReadiness,
   getTemplatePhysicalSize,
+  LEGACY_OUTLINE_FONT_ID,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
   StoneSizeId,
@@ -138,6 +139,7 @@ export default function OutlineTextGenerator({ defaultState }: { defaultState?: 
         generatorId: 'outline-text',
         text,
         stoneSize,
+        fontId: LEGACY_OUTLINE_FONT_ID,
         fontSizeMm: fontSizeMm !== '' ? fontSizeMm : 25,
         targetWidthMm: targetWidthMm !== '' ? targetWidthMm : null,
         targetHeightMm: targetHeightMm !== '' ? targetHeightMm : null,

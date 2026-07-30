@@ -5,6 +5,7 @@ import {
   createOutlineTextTemplate,
   createPolylineFilledRhinestoneTemplate,
   createStoneGridTemplate,
+  LEGACY_OUTLINE_FONT_ID,
   parseRhinestoneProject,
   scalePolylinesToFit,
   serializeRhinestoneProject,
@@ -80,6 +81,7 @@ function generateTemplateFromGeneratorState(generatorState: GeneratorProjectStat
         name: 'Outline Preview',
         text: generatorState.text,
         stoneSize: generatorState.stoneSize,
+        fontId: generatorState.fontId,
         fontSizeMm: generatorState.fontSizeMm,
         align: generatorState.align,
         letterSpacingMm: generatorState.letterSpacingMm,
@@ -185,6 +187,7 @@ function restoreStateFromProject(projectJson: string): EditorState {
         fillPattern: project.generatorState.fillPattern,
         densityPreset: project.generatorState.densityPreset,
         customSpacingMm: project.generatorState.customSpacingMm,
+        fontId: project.generatorState.fontId ?? LEGACY_OUTLINE_FONT_ID,
       };
       break;
     case 'dot-matrix-text':

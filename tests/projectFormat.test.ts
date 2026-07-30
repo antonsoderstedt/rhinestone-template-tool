@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  LEGACY_OUTLINE_FONT_ID,
   parseRhinestoneProject,
   serializeRhinestoneProject,
   type RhinestoneProjectFile,
@@ -15,6 +16,7 @@ describe('Project format — parseRhinestoneProject', () => {
         generatorId: 'outline-text',
         text: 'SMOOCH',
         stoneSize: 'SS10',
+        fontId: LEGACY_OUTLINE_FONT_ID,
         fontSizeMm: 25,
         targetWidthMm: 100,
         targetHeightMm: null,
@@ -34,6 +36,39 @@ describe('Project format — parseRhinestoneProject', () => {
     const json = serializeRhinestoneProject(project);
     const parsed = parseRhinestoneProject(json);
     expect(parsed).toEqual(project);
+  });
+
+  it('migrates legacy outline-text projects without fontId to the original vector font', () => {
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      savedAt: '2026-07-30T12:00:00.000Z',
+      projectName: 'Legacy Outline Text',
+      generatorState: {
+        generatorId: 'outline-text',
+        text: 'SMOOCH',
+        stoneSize: 'SS10',
+        fontSizeMm: 25,
+        targetWidthMm: null,
+        targetHeightMm: null,
+        preserveAspectRatio: true,
+        align: 'left',
+        letterSpacingMm: 2,
+        lineSpacingMm: 8,
+        fillMode: 'outline',
+        fillPattern: 'offset-grid',
+        densityPreset: 'standard',
+        customSpacingMm: 4,
+        includeGuideBox: true,
+        includeLabels: false,
+        paddingMm: 5,
+      },
+    });
+
+    const parsed = parseRhinestoneProject(json);
+    expect(parsed.generatorState.generatorId).toBe('outline-text');
+    if (parsed.generatorState.generatorId === 'outline-text') {
+      expect(parsed.generatorState.fontId).toBe(LEGACY_OUTLINE_FONT_ID);
+    }
   });
 
   it('parses a manual-editor project with stones', () => {
