@@ -26,7 +26,9 @@ export type GeneratorId =
   | 'manual-grid'
   | 'polyline-logo'
   | 'svg-upload'
-  | 'manual-editor';
+  | 'manual-editor'
+  | 'rhinestone-font'
+  | 'template-import';
 
 export type PolylineDemoShape = 'diamond' | 'triangle' | 'rectangle' | 'zigzag';
 
@@ -139,6 +141,10 @@ export interface SavedStone {
   y: number;
   stoneSize: StoneSizeId;
   holeDiameterMm: number;
+  /** Optional color (fill or stroke) for imported stones */
+  color?: string;
+  /** Optional group path for imported stones */
+  group?: string;
 }
 
 export interface EditableTemplateState {
@@ -158,6 +164,34 @@ export interface ManualEditorProjectState {
   paddingMm: number;
 }
 
+export interface RhinestoneFontProjectState {
+  generatorId: 'rhinestone-font';
+  text: string;
+  stoneSize: StoneSizeId;
+  rhinestoneFontId: string;
+  targetStoneSizeMm: number;
+  letterSpacingMm: number;
+  lineSpacingMm: number;
+  includeGuideBox: boolean;
+  includeLabels: boolean;
+  paddingMm: number;
+}
+
+export interface TemplateImportProjectState {
+  generatorId: 'template-import';
+  /** Raw uploaded SVG text for the imported template */
+  uploadedSvgText: string | null;
+  /** Original import metadata */
+  importMetadata?: {
+    detectedDiameters: number[];
+    detectedColors: string[];
+    ignoredElements: number;
+    originalStoneCount: number;
+  };
+  includeGuideBox: boolean;
+  paddingMm: number;
+}
+
 // ─── Discriminated union ──────────────────────────────────────────────────────
 
 export type GeneratorProjectState =
@@ -166,7 +200,9 @@ export type GeneratorProjectState =
   | ManualGridProjectState
   | PolylineLogoProjectState
   | SvgUploadProjectState
-  | ManualEditorProjectState;
+  | ManualEditorProjectState
+  | RhinestoneFontProjectState
+  | TemplateImportProjectState;
 
 // ─── Project file format ──────────────────────────────────────────────────────
 
@@ -213,6 +249,8 @@ const VALID_GENERATOR_IDS = new Set([
   'polyline-logo',
   'svg-upload',
   'manual-editor',
+  'rhinestone-font',
+  'template-import',
 ]);
 
 type UnknownRecord = Record<string, unknown>;

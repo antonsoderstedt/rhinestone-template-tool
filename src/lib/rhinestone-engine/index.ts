@@ -266,6 +266,8 @@ export type {
   SavedStone,
   EditableTemplateState,
   ManualEditorProjectState,
+  RhinestoneFontProjectState,
+  TemplateImportProjectState,
   GeneratorProjectState,
   RhinestoneProjectFile,
 } from './project/projectFormat';
@@ -273,3 +275,42 @@ export {
   parseRhinestoneProject,
   serializeRhinestoneProject,
 } from './project/projectFormat';
+
+// Rhinestone Font System
+export type { RhinestoneFontId, RhinestoneFontCategory, RhinestoneFontDefinition } from './rhinestoneFont/rhinestoneFontRegistry';
+export {
+  TRW_CLEAN_STONE_FONT_ID,
+  DEFAULT_RHINESTONE_FONT_ID,
+  RHINESTONE_FONT_REGISTRY,
+  getRhinestoneFontDefinition,
+  isKnownRhinestoneFontId,
+  listRhinestoneFonts,
+} from './rhinestoneFont/rhinestoneFontRegistry';
+export type { LoadedRhinestoneFont } from './rhinestoneFont/rhinestoneFontLoader';
+export {
+  loadRhinestoneFont,
+  clearRhinestoneFontCacheForTests,
+  listCachedRhinestoneFontIds,
+} from './rhinestoneFont/rhinestoneFontLoader';
+export type {
+  GlyphStone,
+  ExtractedGlyphStones,
+  RhinestoneFontTextLayout,
+  RhinestoneFontTextOptions,
+} from './rhinestoneFont/glyphExtraction';
+export {
+  TRW_STONE_SIZE_CALIBRATION,
+  extractStonesFromGlyph,
+  layoutRhinestoneFontText,
+} from './rhinestoneFont/glyphExtraction';
+export type {
+  CreateRhinestoneFontTemplateOptions,
+  RhinestoneFontTemplateResult,
+} from './rhinestoneFont/rhinestoneFontTemplate';
+export { createRhinestoneFontTemplate } from './rhinestoneFont/rhinestoneFontTemplate';
+
+// Template Import
+export type { ImportedStone, TemplateImportResult, TemplateImportOptions } from './templateImport/templateImport';
+export { estimateStoneSizeId, importRhinestoneTemplate } from './templateImport/templateImport';
+export type { CreateImportedTemplateOptions, ImportedTemplateResult } from './templateImport/importedTemplate';
+export { createImportedTemplate } from './templateImport/importedTemplate';

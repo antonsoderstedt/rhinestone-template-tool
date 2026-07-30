@@ -1,7 +1,7 @@
 import type { FillPattern } from '../fill/polygonFill';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 
-export type DesignSource = 'grid' | 'outline-text' | 'dot-matrix-text' | 'svg' | 'manual';
+export type DesignSource = 'grid' | 'outline-text' | 'dot-matrix-text' | 'svg' | 'manual' | 'rhinestone-font' | 'template-import';
 export type CoverageMode = TemplateFillMode | 'contour';
 export type PlacementPattern = 'default' | 'hexagonal' | 'radial' | 'scatter' | 'spray';
 export type StyleTreatment = 'single-color' | 'two-color' | 'color-gradient' | 'size-gradient' | 'density-gradient';
@@ -55,6 +55,24 @@ export const IMPLEMENTED_GENERATOR_CAPABILITIES: Readonly<Record<DesignSource, G
   },
   'manual': {
     designSource: 'manual',
+    supportedCoverageModes: [],
+    supportedPlacementPatterns: [],
+    supportedStyleTreatments: ['single-color'],
+    supportedFillPatterns: [],
+    supportsGeneratorCoverage: false,
+    supportsEditableSnapshot: true,
+  },
+  'rhinestone-font': {
+    designSource: 'rhinestone-font',
+    supportedCoverageModes: [],
+    supportedPlacementPatterns: [],
+    supportedStyleTreatments: ['single-color'],
+    supportedFillPatterns: [],
+    supportsGeneratorCoverage: false,
+    supportsEditableSnapshot: true,
+  },
+  'template-import': {
+    designSource: 'template-import',
     supportedCoverageModes: [],
     supportedPlacementPatterns: [],
     supportedStyleTreatments: ['single-color'],
