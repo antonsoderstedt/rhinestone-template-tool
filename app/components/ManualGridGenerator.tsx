@@ -13,6 +13,8 @@ import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
+import { downloadProject } from '@/app/lib/projectUtils';
+import type { ManualGridProjectState, RhinestoneProjectFile } from '@/src/lib/rhinestone-engine/index';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -30,16 +32,16 @@ type GeneratorResult =
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ManualGridGenerator() {
+export default function ManualGridGenerator({ defaultState }: { defaultState?: ManualGridProjectState } = {}) {
   // Form state
-  const [stoneSize, setStoneSize] = useState<StoneSizeId>('SS10');
-  const [columns, setColumns] = useState(5);
-  const [rows, setRows] = useState(3);
-  const [includeGuideBox, setIncludeGuideBox] = useState(true);
-  const [includeLabels, setIncludeLabels] = useState(true);
-  const [paddingMm, setPaddingMm] = useState(5);
-  const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
-  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
+  const [stoneSize, setStoneSize] = useState<StoneSizeId>(defaultState?.stoneSize ?? 'SS10');
+  const [columns, setColumns] = useState(defaultState?.columns ?? 5);
+  const [rows, setRows] = useState(defaultState?.rows ?? 3);
+  const [includeGuideBox, setIncludeGuideBox] = useState(defaultState?.includeGuideBox ?? true);
+  const [includeLabels, setIncludeLabels] = useState(defaultState?.includeLabels ?? true);
+  const [paddingMm, setPaddingMm] = useState(defaultState?.paddingMm ?? 5);
+  const [densityPreset, setDensityPreset] = useState<DensityPreset>(defaultState?.densityPreset ?? 'standard');
+  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(defaultState?.customSpacingMm ?? 4.0);
 
   // Derived: template + validation + SVG
   const result = useMemo<GeneratorResult>(() => {
@@ -74,6 +76,26 @@ export default function ManualGridGenerator() {
   }, [stoneSize, columns, rows, includeGuideBox, includeLabels, paddingMm, densityPreset, customSpacingMm]);
 
   const filename = `rhinestone-grid-${stoneSize.toLowerCase()}-${columns}x${rows}.svg`;
+
+  function handleSaveProject() {
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: new Date().toISOString(),
+      projectName: `Grid ${stoneSize} ${columns}×${rows}`,
+      generatorState: {
+        generatorId: 'manual-grid',
+        stoneSize,
+        columns,
+        rows,
+        includeGuideBox,
+        includeLabels,
+        paddingMm,
+        densityPreset,
+        customSpacingMm: customSpacingMm !== '' ? customSpacingMm : 4.0,
+      },
+    };
+    downloadProject(project);
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -202,6 +224,18 @@ export default function ManualGridGenerator() {
           <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
+
+      {/* ── Save project ──────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-100 pt-4">
+        <button
+          onClick={handleSaveProject}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        >
+          Save project (.json)
+        </button>
+        <p className="mt-1 text-xs text-zinc-400">Saves all settings to a file you can reload later.</p>
+      </div>
+
     </div>
   );
 }

@@ -14,6 +14,8 @@ import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
+import { downloadProject } from '@/app/lib/projectUtils';
+import type { DotMatrixTextProjectState, RhinestoneProjectFile } from '@/src/lib/rhinestone-engine/index';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,21 +37,21 @@ type GeneratorResult =
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TextMatrixGenerator() {
-  const [text, setText] = useState('SMOOCH');
-  const [stoneSize, setStoneSize] = useState<StoneSizeId>('SS10');
-  const [includeGuideBox, setIncludeGuideBox] = useState(true);
-  const [includeLabels, setIncludeLabels] = useState(false);
-  const [paddingMm, setPaddingMm] = useState(5);
-  const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
-  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
-  // ── Layout v2 state ──────────────────────────────────────────────────────────
-  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>('');
-  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
-  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
-  const [align, setAlign] = useState<TextAlign>('left');
-  const [letterSpacing, setLetterSpacing] = useState(1);
-  const [lineSpacing, setLineSpacing] = useState(2);
+export default function TextMatrixGenerator({ defaultState }: { defaultState?: DotMatrixTextProjectState } = {}) {
+  const [text, setText] = useState(defaultState?.text ?? 'SMOOCH');
+  const [stoneSize, setStoneSize] = useState<StoneSizeId>(defaultState?.stoneSize ?? 'SS10');
+  const [includeGuideBox, setIncludeGuideBox] = useState(defaultState?.includeGuideBox ?? true);
+  const [includeLabels, setIncludeLabels] = useState(defaultState?.includeLabels ?? false);
+  const [paddingMm, setPaddingMm] = useState(defaultState?.paddingMm ?? 5);
+  const [densityPreset, setDensityPreset] = useState<DensityPreset>(defaultState?.densityPreset ?? 'standard');
+  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(defaultState?.customSpacingMm ?? 4.0);
+  // ── Layout v2 state ────────────────────────────────────────────────
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(defaultState?.targetWidthMm ?? '');
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>(defaultState?.targetHeightMm ?? '');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(defaultState?.preserveAspectRatio ?? true);
+  const [align, setAlign] = useState<TextAlign>(defaultState?.align ?? 'left');
+  const [letterSpacing, setLetterSpacing] = useState(defaultState?.letterSpacingColumns ?? 1);
+  const [lineSpacing, setLineSpacing] = useState(defaultState?.lineSpacingRows ?? 2);
 
   const result = useMemo<GeneratorResult>(() => {
     try {
@@ -90,7 +92,30 @@ export default function TextMatrixGenerator() {
       targetWidthMm, targetHeightMm, preserveAspectRatio, align, letterSpacing, lineSpacing]);
 
   const filename = `rhinestone-text-dot-matrix-${stoneSize.toLowerCase()}.svg`;
-
+  function handleSaveProject() {
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: new Date().toISOString(),
+      projectName: `Dot Matrix — ${text.replace(/\n/g, ' ')} ${stoneSize}`,
+      generatorState: {
+        generatorId: 'dot-matrix-text',
+        text,
+        stoneSize,
+        includeGuideBox,
+        includeLabels,
+        paddingMm,
+        densityPreset,
+        customSpacingMm: customSpacingMm !== '' ? customSpacingMm : 4.0,
+        targetWidthMm: targetWidthMm !== '' ? targetWidthMm : null,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : null,
+        preserveAspectRatio,
+        align,
+        letterSpacingColumns: letterSpacing,
+        lineSpacingRows: lineSpacing,
+      },
+    };
+    downloadProject(project);
+  }
   return (
     <div className="flex flex-col gap-6">
 
@@ -251,6 +276,18 @@ export default function TextMatrixGenerator() {
           <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
+
+      {/* ── Save project ──────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-100 pt-4">
+        <button
+          onClick={handleSaveProject}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        >
+          Save project (.json)
+        </button>
+        <p className="mt-1 text-xs text-zinc-400">Saves all settings to a file you can reload later.</p>
+      </div>
+
     </div>
   );
 }

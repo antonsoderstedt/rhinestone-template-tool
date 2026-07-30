@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import {
   createStoneGridTemplate,
+  createRhinestoneTemplate,
   createEditHistory,
   addStoneToTemplate,
   removeStoneFromTemplate,
@@ -23,6 +24,8 @@ import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
+import { downloadProject } from '@/app/lib/projectUtils';
+import type { ManualEditorProjectState, RhinestoneProjectFile } from '@/src/lib/rhinestone-engine/index';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -46,17 +49,30 @@ function makeDefaultTemplate() {
  * Editor logic lives entirely in the engine. This component only manages
  * React state and renders results — it never duplicates stone math.
  */
-export default function ManualStoneEditor() {
-  const [history, setHistory] = useState<TemplateEditHistory>(() =>
-    createEditHistory(makeDefaultTemplate()),
-  );
+export default function ManualStoneEditor({ defaultState }: { defaultState?: ManualEditorProjectState } = {}) {
+  const [history, setHistory] = useState<TemplateEditHistory>(() => {
+    if (defaultState && defaultState.stones.length > 0) {
+      const restored = createRhinestoneTemplate({
+        id: 'manual-editor-restored',
+        name: 'Restored Manual Editor',
+        stones: defaultState.stones.map((s) => ({
+          id: s.id,
+          center: { x: s.x, y: s.y },
+          stoneSize: s.stoneSize,
+          holeDiameterMm: s.holeDiameterMm,
+        })),
+      });
+      return createEditHistory(restored);
+    }
+    return createEditHistory(makeDefaultTemplate());
+  });
   const [selectedStoneId, setSelectedStoneId] = useState<string | null>(null);
   const [addX, setAddX] = useState<number | ''>(20);
   const [addY, setAddY] = useState<number | ''>(20);
   const [addStoneSize, setAddStoneSize] = useState<StoneSizeId>('SS10');
   const [editError, setEditError] = useState<string | null>(null);
-  const [includeGuideBox, setIncludeGuideBox] = useState(true);
-  const [paddingMm, setPaddingMm] = useState(5);
+  const [includeGuideBox, setIncludeGuideBox] = useState(defaultState?.includeGuideBox ?? true);
+  const [paddingMm, setPaddingMm] = useState(defaultState?.paddingMm ?? 5);
 
   const template = history.present;
 
@@ -131,6 +147,27 @@ export default function ManualStoneEditor() {
   }
 
   const filename = `rhinestone-manual-editor-ss10.svg`;
+
+  function handleSaveProject() {
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: new Date().toISOString(),
+      projectName: `Manual Editor — ${template.stones.length} stones`,
+      generatorState: {
+        generatorId: 'manual-editor',
+        stones: template.stones.map((s) => ({
+          id: s.id,
+          x: s.center.x,
+          y: s.center.y,
+          stoneSize: s.stoneSize,
+          holeDiameterMm: s.holeDiameterMm,
+        })),
+        includeGuideBox,
+        paddingMm,
+      },
+    };
+    downloadProject(project);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -309,6 +346,18 @@ export default function ManualStoneEditor() {
         filename={filename}
         disabled={!exportState.readiness.ready}
       />
+
+      {/* ── Save project ──────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-100 pt-4">
+        <button
+          onClick={handleSaveProject}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        >
+          Save project (.json)
+        </button>
+        <p className="mt-1 text-xs text-zinc-400">Saves current stone positions. Undo history is not included.</p>
+      </div>
+
     </div>
   );
 }

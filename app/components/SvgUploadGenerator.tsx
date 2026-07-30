@@ -15,6 +15,8 @@ import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
+import { downloadProject } from '@/app/lib/projectUtils';
+import type { SvgUploadProjectState, RhinestoneProjectFile } from '@/src/lib/rhinestone-engine/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,38 +36,39 @@ type GeneratorResult =
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SvgUploadGenerator() {
+export default function SvgUploadGenerator({ defaultState }: { defaultState?: SvgUploadProjectState } = {}) {
   /**
    * Raw uploaded SVG text — used ONLY as input to svgStringToPolylines.
    * This value is NEVER passed to dangerouslySetInnerHTML or rendered directly.
    */
-  const [uploadedSvgText, setUploadedSvgText] = useState<string | null>(null);
-  const [stoneSize, setStoneSize] = useState<StoneSizeId>('SS10');
-  const [includeGuideBox, setIncludeGuideBox] = useState(true);
-  const [includeLabels, setIncludeLabels] = useState(false);
-  const [paddingMm, setPaddingMm] = useState(5);
-  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(100);
-  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
-  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
-  const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
-  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
+  const [uploadedSvgText, setUploadedSvgText] = useState<string | null>(defaultState?.uploadedSvgText ?? null);
+  const [svgFileName, setSvgFileName] = useState<string | null>(null);
+  const [stoneSize, setStoneSize] = useState<StoneSizeId>(defaultState?.stoneSize ?? 'SS10');
+  const [includeGuideBox, setIncludeGuideBox] = useState(defaultState?.includeGuideBox ?? true);
+  const [includeLabels, setIncludeLabels] = useState(defaultState?.includeLabels ?? false);
+  const [paddingMm, setPaddingMm] = useState(defaultState?.paddingMm ?? 5);
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(defaultState?.targetWidthMm ?? 100);
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>(defaultState?.targetHeightMm ?? '');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(defaultState?.preserveAspectRatio ?? true);
+  const [densityPreset, setDensityPreset] = useState<DensityPreset>(defaultState?.densityPreset ?? 'standard');
+  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(defaultState?.customSpacingMm ?? 4.0);
 
   // ── Cleanup state ───────────────────────────────────────────────────────────
-  const [cleanupEnabled, setCleanupEnabled] = useState(true);
-  const [cleanupSimplify, setCleanupSimplify] = useState(false);
-  const [cleanupSimplifyTol, setCleanupSimplifyTol] = useState(0.25);
-  const [cleanupRemoveTiny, setCleanupRemoveTiny] = useState(true);
-  const [cleanupMinLength, setCleanupMinLength] = useState(1);
-  const [cleanupRemoveDups, setCleanupRemoveDups] = useState(true);
-  const [cleanupDupTol, setCleanupDupTol] = useState(0.05);
-  const [fillMode, setFillMode] = useState<TemplateFillMode>('outline');
-  const [fillPattern, setFillPattern] = useState<FillPattern>('offset-grid');
+  const [cleanupEnabled, setCleanupEnabled] = useState(defaultState?.cleanupEnabled ?? true);
+  const [cleanupSimplify, setCleanupSimplify] = useState(defaultState?.cleanupSimplify ?? false);
+  const [cleanupSimplifyTol, setCleanupSimplifyTol] = useState(defaultState?.cleanupSimplifyTol ?? 0.25);
+  const [cleanupRemoveTiny, setCleanupRemoveTiny] = useState(defaultState?.cleanupRemoveTiny ?? true);
+  const [cleanupMinLength, setCleanupMinLength] = useState(defaultState?.cleanupMinLength ?? 1);
+  const [cleanupRemoveDups, setCleanupRemoveDups] = useState(defaultState?.cleanupRemoveDups ?? true);
+  const [cleanupDupTol, setCleanupDupTol] = useState(defaultState?.cleanupDupTol ?? 0.05);
+  const [fillMode, setFillMode] = useState<TemplateFillMode>(defaultState?.fillMode ?? 'outline');
+  const [fillPattern, setFillPattern] = useState<FillPattern>(defaultState?.fillPattern ?? 'offset-grid');
 
   // ── File handler ────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    setSvgFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = typeof ev.target?.result === 'string' ? ev.target.result : null;
@@ -146,6 +149,37 @@ export default function SvgUploadGenerator() {
 
   const filename = `rhinestone-uploaded-svg-${stoneSize.toLowerCase()}.svg`;
 
+  function handleSaveProject() {
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: new Date().toISOString(),
+      projectName: `SVG Upload — ${svgFileName ?? 'no file'} ${stoneSize}`,
+      generatorState: {
+        generatorId: 'svg-upload',
+        uploadedSvgText,
+        stoneSize,
+        includeGuideBox,
+        includeLabels,
+        paddingMm,
+        targetWidthMm: targetWidthMm !== '' ? targetWidthMm : null,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : null,
+        preserveAspectRatio,
+        densityPreset,
+        customSpacingMm: customSpacingMm !== '' ? customSpacingMm : 4.0,
+        cleanupEnabled,
+        cleanupSimplify,
+        cleanupSimplifyTol,
+        cleanupRemoveTiny,
+        cleanupMinLength,
+        cleanupRemoveDups,
+        cleanupDupTol,
+        fillMode,
+        fillPattern,
+      },
+    };
+    downloadProject(project);
+  }
+
   return (
     <div className="flex flex-col gap-6">
 
@@ -169,6 +203,11 @@ export default function SvgUploadGenerator() {
             onChange={handleFileChange}
             className="rounded border border-zinc-300 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-zinc-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-zinc-700 hover:file:bg-zinc-200"
           />
+          {svgFileName && (
+            <span className="text-xs text-zinc-500">
+              Loaded: <span className="font-mono">{svgFileName}</span>
+            </span>
+          )}
           <span className="text-xs text-zinc-400">
             Only the parsed rhinestone template is previewed — the raw SVG is never rendered.
           </span>
@@ -398,6 +437,20 @@ export default function SvgUploadGenerator() {
           <SvgExportActions svg={result.exportedSvg} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
+
+      {/* ── Save project ──────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-100 pt-4">
+        <button
+          onClick={handleSaveProject}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        >
+          Save project (.json)
+        </button>
+        <p className="mt-1 text-xs text-zinc-400">
+          Includes SVG content and all settings. Reload with &ldquo;Open project&rdquo; on the main page.
+        </p>
+      </div>
+
     </div>
   );
 }

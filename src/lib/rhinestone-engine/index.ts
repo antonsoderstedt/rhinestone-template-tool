@@ -207,3 +207,23 @@ export {
   applyTemplateEditOperation,
   createStoneAtPoint,
 } from './editor/templateEditor';
+
+// Project save / load (schema v1)
+export type {
+  GeneratorId,
+  PolylineDemoShape,
+  OutlineTextProjectState,
+  DotMatrixTextProjectState,
+  ManualGridProjectState,
+  PolylineLogoProjectState,
+  SvgUploadProjectState,
+  SavedStone,
+  EditableTemplateState,
+  ManualEditorProjectState,
+  GeneratorProjectState,
+  RhinestoneProjectFile,
+} from './project/projectFormat';
+export {
+  parseRhinestoneProject,
+  serializeRhinestoneProject,
+} from './project/projectFormat';

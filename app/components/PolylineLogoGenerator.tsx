@@ -22,6 +22,8 @@ import SvgPreview from './SvgPreview';
 import SvgExportActions from './SvgExportActions';
 import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
+import { downloadProject } from '@/app/lib/projectUtils';
+import type { PolylineLogoProjectState, RhinestoneProjectFile } from '@/src/lib/rhinestone-engine/index';
 
 // ─── Demo shapes ──────────────────────────────────────────────────────────────
 
@@ -110,19 +112,19 @@ type GeneratorResult =
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function PolylineLogoGenerator() {
-  const [shape, setShape] = useState<DemoShape>('diamond');
-  const [stoneSize, setStoneSize] = useState<StoneSizeId>('SS10');
-  const [includeGuideBox, setIncludeGuideBox] = useState(true);
-  const [includeLabels, setIncludeLabels] = useState(false);
-  const [paddingMm, setPaddingMm] = useState(5);
-  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(80);
-  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>('');
-  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true);
-  const [densityPreset, setDensityPreset] = useState<DensityPreset>('standard');
-  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(4.0);
-  const [fillMode, setFillMode] = useState<TemplateFillMode>('outline-fill');
-  const [fillPattern, setFillPattern] = useState<FillPattern>('offset-grid');
+export default function PolylineLogoGenerator({ defaultState }: { defaultState?: PolylineLogoProjectState } = {}) {
+  const [shape, setShape] = useState<DemoShape>(defaultState?.shape ?? 'diamond');
+  const [stoneSize, setStoneSize] = useState<StoneSizeId>(defaultState?.stoneSize ?? 'SS10');
+  const [includeGuideBox, setIncludeGuideBox] = useState(defaultState?.includeGuideBox ?? true);
+  const [includeLabels, setIncludeLabels] = useState(defaultState?.includeLabels ?? false);
+  const [paddingMm, setPaddingMm] = useState(defaultState?.paddingMm ?? 5);
+  const [targetWidthMm, setTargetWidthMm] = useState<number | ''>(defaultState?.targetWidthMm ?? 80);
+  const [targetHeightMm, setTargetHeightMm] = useState<number | ''>(defaultState?.targetHeightMm ?? '');
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(defaultState?.preserveAspectRatio ?? true);
+  const [densityPreset, setDensityPreset] = useState<DensityPreset>(defaultState?.densityPreset ?? 'standard');
+  const [customSpacingMm, setCustomSpacingMm] = useState<number | ''>(defaultState?.customSpacingMm ?? 4.0);
+  const [fillMode, setFillMode] = useState<TemplateFillMode>(defaultState?.fillMode ?? 'outline-fill');
+  const [fillPattern, setFillPattern] = useState<FillPattern>(defaultState?.fillPattern ?? 'offset-grid');
 
   const result = useMemo<GeneratorResult>(() => {
     try {
@@ -162,6 +164,30 @@ export default function PolylineLogoGenerator() {
   }, [shape, stoneSize, includeGuideBox, includeLabels, paddingMm, targetWidthMm, targetHeightMm, preserveAspectRatio, densityPreset, customSpacingMm, fillMode, fillPattern]);
 
   const filename = `rhinestone-polyline-logo-${stoneSize.toLowerCase()}.svg`;
+
+  function handleSaveProject() {
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: new Date().toISOString(),
+      projectName: `Polyline Logo — ${shape} ${stoneSize}`,
+      generatorState: {
+        generatorId: 'polyline-logo',
+        shape,
+        stoneSize,
+        targetWidthMm: targetWidthMm !== '' ? targetWidthMm : null,
+        targetHeightMm: targetHeightMm !== '' ? targetHeightMm : null,
+        preserveAspectRatio,
+        densityPreset,
+        customSpacingMm: customSpacingMm !== '' ? customSpacingMm : 4.0,
+        fillMode,
+        fillPattern,
+        includeGuideBox,
+        includeLabels,
+        paddingMm,
+      },
+    };
+    downloadProject(project);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -311,6 +337,18 @@ export default function PolylineLogoGenerator() {
           <SvgExportActions svg={result.svgString} filename={filename} disabled={!result.readiness.ready} />
         </>
       )}
+
+      {/* ── Save project ──────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-100 pt-4">
+        <button
+          onClick={handleSaveProject}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        >
+          Save project (.json)
+        </button>
+        <p className="mt-1 text-xs text-zinc-400">Saves all settings to a file you can reload later.</p>
+      </div>
+
     </div>
   );
 }
