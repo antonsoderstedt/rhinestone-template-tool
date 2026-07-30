@@ -203,7 +203,10 @@ export default function EditorShell() {
             break;
 
           case 'rhinestone-font':
-            if (state.rhinestoneFontTool.text.trim()) {
+            if (!state.rhinestoneFontTool.text.trim()) {
+              return;
+            }
+            {
               // Get diameter for stone size - TRW calibration only supports SS6, SS10, SS16, SS20
               let targetDiameterMm = 3.429; // Default SS10
               const sizeId = state.rhinestoneFontTool.stoneSize;
@@ -221,13 +224,18 @@ export default function EditorShell() {
               });
               template = result.template;
               // Update unsupported characters and warnings in tool state
-              dispatch({
-                type: 'UPDATE_RHINESTONE_FONT_TOOL',
-                updates: {
-                  unsupportedCharacters: result.unsupportedCharacters,
-                  warnings: result.warnings,
-                },
-              });
+              if (
+                JSON.stringify(state.rhinestoneFontTool.unsupportedCharacters) !== JSON.stringify(result.unsupportedCharacters) ||
+                JSON.stringify(state.rhinestoneFontTool.warnings) !== JSON.stringify(result.warnings)
+              ) {
+                dispatch({
+                  type: 'UPDATE_RHINESTONE_FONT_TOOL',
+                  updates: {
+                    unsupportedCharacters: result.unsupportedCharacters,
+                    warnings: result.warnings,
+                  },
+                });
+              }
             }
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
             break;
@@ -243,14 +251,22 @@ export default function EditorShell() {
               // Update import summary in tool state
               const summary = `Imported ${importResult.template.stones.length} stones. ` +
                 `Detected ${importResult.detectedDiameters.length} diameter(s), ${importResult.detectedColors.length} color(s).`;
-              dispatch({
-                type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
-                updates: {
-                  detectedDiameters: importResult.detectedDiameters,
-                  detectedColors: importResult.detectedColors,
-                  importSummary: summary,
-                },
-              });
+              if (
+                state.templateImportTool.importSummary !== summary ||
+                state.templateImportTool.ignoredElements !== importResult.ignoredElements ||
+                JSON.stringify(state.templateImportTool.warnings) !== JSON.stringify(importResult.warnings)
+              ) {
+                dispatch({
+                  type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+                  updates: {
+                    detectedDiameters: importResult.detectedDiameters,
+                    detectedColors: importResult.detectedColors,
+                    ignoredElements: importResult.ignoredElements,
+                    warnings: importResult.warnings,
+                    importSummary: summary,
+                  },
+                });
+              }
             }
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
             break;
@@ -269,7 +285,9 @@ export default function EditorShell() {
           message: err instanceof Error ? err.message : String(err),
           fontId: state.textTool.fontId,
         });
-        dispatch({ type: 'SET_TEMPLATE', template: null });
+        if (sourceTool !== 'rhinestone-font' && sourceTool !== 'template-import') {
+          dispatch({ type: 'SET_TEMPLATE', template: null });
+        }
       }
     };
 
@@ -283,8 +301,18 @@ export default function EditorShell() {
     state.svgTool,
     state.svgTool.contourSettings,
     state.svgTool.radialSettings,
-    state.rhinestoneFontTool,
-    state.templateImportTool,
+    state.rhinestoneFontTool.text,
+    state.rhinestoneFontTool.rhinestoneFontId,
+    state.rhinestoneFontTool.stoneSize,
+    state.rhinestoneFontTool.letterSpacingMm,
+    state.rhinestoneFontTool.lineSpacingMm,
+    state.rhinestoneFontTool.unsupportedCharacters,
+    state.rhinestoneFontTool.warnings,
+    state.templateImportTool.uploadedSvgText,
+    state.templateImportTool.defaultStoneSize,
+    state.templateImportTool.ignoredElements,
+    state.templateImportTool.importSummary,
+    state.templateImportTool.warnings,
   ]);
 
   // ─── Export Readiness ──────────────────────────────────────────────────────
@@ -506,6 +534,44 @@ export default function EditorShell() {
             });
             break;
 
+          case 'rhinestone-font':
+            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'rhinestone-font' });
+            dispatch({
+              type: 'UPDATE_RHINESTONE_FONT_TOOL',
+              updates: {
+                text: project.generatorState.text,
+                rhinestoneFontId: project.generatorState.rhinestoneFontId,
+                stoneSize: project.generatorState.stoneSize,
+                letterSpacingMm: project.generatorState.letterSpacingMm,
+                lineSpacingMm: project.generatorState.lineSpacingMm,
+                unsupportedCharacters: [],
+                warnings: [],
+              },
+            });
+            break;
+
+          case 'template-import':
+            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'template-import' });
+            dispatch({
+              type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+              updates: {
+                uploadedSvgText: project.generatorState.uploadedSvgText,
+                svgFileName: project.generatorState.svgFileName,
+                pendingSvgText: null,
+                pendingFileName: null,
+                defaultStoneSize: project.generatorState.defaultStoneSize,
+                detectedDiameters: project.generatorState.importMetadata?.detectedDiameters ?? [],
+                detectedColors: project.generatorState.importMetadata?.detectedColors ?? [],
+                ignoredElements: project.generatorState.importMetadata?.ignoredElements ?? 0,
+                warnings: [],
+                importSummary: project.generatorState.importMetadata
+                  ? `Imported ${project.generatorState.importMetadata.originalStoneCount} stones.`
+                  : null,
+                importError: null,
+              },
+            });
+            break;
+
           case 'manual-editor':
             dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'manual' });
             dispatch({ type: 'SET_TEMPLATE', template: null });
@@ -537,12 +603,7 @@ export default function EditorShell() {
         if (project.editableState) {
           // Use setTimeout to allow template generation to complete
           setTimeout(() => {
-            const editableStones: EditableStone[] = project.editableState!.stones.map(s => ({
-              id: s.id,
-              center: { x: s.x, y: s.y },
-              holeDiameterMm: s.holeDiameterMm,
-              stoneSize: s.stoneSize,
-            }));
+            const editableStones: EditableStone[] = project.editableState!.stones.map(savedStoneToEditableStone);
 
             dispatch({
               type: 'RESTORE_EDITABLE',

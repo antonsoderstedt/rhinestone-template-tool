@@ -9,7 +9,6 @@ import type { RhinestoneTemplate, Stone, StoneSizeId } from '../types/index';
 import { loadRhinestoneFont } from './rhinestoneFontLoader';
 import { layoutRhinestoneFontText } from './glyphExtraction';
 import { createRhinestoneTemplate } from '../template/createTemplate';
-import { assertStoneSizeProfile } from '../profiles/stoneSizes';
 
 export interface CreateRhinestoneFontTemplateOptions {
   text: string;
@@ -44,15 +43,14 @@ export async function createRhinestoneFontTemplate(
     lineSpacingMm,
   });
 
-  // Get hole diameter for stone size
-  const profile = assertStoneSizeProfile(targetStoneSizeId);
-
   // Convert to stones
   const stones: Stone[] = layout.stones.map((stone, index) => ({
     id: `rf-${index}`,
     center: { x: stone.x, y: stone.y },
     stoneSize: targetStoneSizeId,
-    holeDiameterMm: profile.recommendedHoleDiameterMm,
+    // The TRW physical diameter is authoritative for this source. Generic
+    // cutting-profile allowances belong to calibration, not font geometry.
+    holeDiameterMm: targetStoneSizeMm,
     metadata: {
       character: stone.character,
       glyphIndex: stone.glyphIndex,
@@ -61,7 +59,7 @@ export async function createRhinestoneFontTemplate(
   }));
 
   const template = createRhinestoneTemplate({
-    id: `rhinestone-font-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    id: 'rhinestone-font-preview',
     name: `Rhinestone Font: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`,
     stones,
     widthMm: layout.widthMm,

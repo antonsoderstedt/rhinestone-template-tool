@@ -5,20 +5,32 @@ import type {
   ManualGridProjectState,
   ManualEditorProjectState,
   OutlineTextProjectState,
+  RhinestoneFontProjectState,
   RhinestoneProjectFile,
   SvgUploadProjectState,
+  TemplateImportProjectState,
 } from '@/src/lib/rhinestone-engine/index';
+import { TRW_STONE_SIZE_CALIBRATION } from '@/src/lib/rhinestone-engine/index';
 import type { RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 import type { EditableStone, EditorState } from './EditorState';
 
 function toSavedStones(stones: readonly EditableStone[]) {
-  return stones.map((stone) => ({
-    id: stone.id,
-    x: stone.center.x,
-    y: stone.center.y,
-    stoneSize: stone.stoneSize,
-    holeDiameterMm: stone.holeDiameterMm,
-  }));
+  return stones.map((stone) => {
+    const saved = {
+      id: stone.id,
+      x: stone.center.x,
+      y: stone.center.y,
+      stoneSize: stone.stoneSize,
+      holeDiameterMm: stone.holeDiameterMm,
+      color: typeof stone.metadata?.fill === 'string'
+        ? stone.metadata.fill
+        : typeof stone.metadata?.stroke === 'string'
+          ? stone.metadata.stroke
+          : undefined,
+      group: typeof stone.metadata?.group === 'string' ? stone.metadata.group : undefined,
+    };
+    return saved;
+  });
 }
 
 export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
@@ -52,6 +64,10 @@ export function getEditableSourceGenerator(state: Pick<EditorState, 'activeTool'
       return state.textTool.mode === 'outline' ? 'outline-text' : 'dot-matrix-text';
     case 'svg':
       return 'svg-upload';
+    case 'rhinestone-font':
+      return 'rhinestone-font';
+    case 'template-import':
+      return 'template-import';
     case 'manual':
       return 'manual-editor';
     default:
@@ -147,6 +163,41 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
       } satisfies SvgUploadProjectState;
+    case 'rhinestone-font': {
+      const calibration = TRW_STONE_SIZE_CALIBRATION[
+        state.rhinestoneFontTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+      ];
+      if (!calibration) return null;
+      return {
+        generatorId: 'rhinestone-font',
+        text: state.rhinestoneFontTool.text,
+        stoneSize: state.rhinestoneFontTool.stoneSize,
+        rhinestoneFontId: state.rhinestoneFontTool.rhinestoneFontId,
+        targetStoneSizeMm: calibration.diameterMm,
+        letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : 0,
+        lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : 0,
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      } satisfies RhinestoneFontProjectState;
+    }
+    case 'template-import':
+      if (!state.templateImportTool.uploadedSvgText) return null;
+      return {
+        generatorId: 'template-import',
+        uploadedSvgText: state.templateImportTool.uploadedSvgText,
+        svgFileName: state.templateImportTool.svgFileName,
+        defaultStoneSize: state.templateImportTool.defaultStoneSize,
+        importMetadata: {
+          detectedDiameters: [...state.templateImportTool.detectedDiameters],
+          detectedColors: [...state.templateImportTool.detectedColors],
+          ignoredElements: state.templateImportTool.ignoredElements,
+          originalStoneCount: state.template?.stones.length ?? state.editableTemplate.stones.length,
+        },
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      } satisfies TemplateImportProjectState;
     case 'manual-editor':
       return {
         generatorId: 'manual-editor',
@@ -191,11 +242,15 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
   };
 }
 
-export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number }): EditableStone {
+export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number; color?: string; group?: string }): EditableStone {
+  const metadata: NonNullable<EditableStone['metadata']> = {};
+  if (stone.color) metadata.fill = stone.color;
+  if (stone.group) metadata.group = stone.group;
   return {
     id: stone.id,
     center: { x: stone.x, y: stone.y },
     stoneSize: stone.stoneSize,
     holeDiameterMm: stone.holeDiameterMm,
+    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

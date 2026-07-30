@@ -714,7 +714,13 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                   cy={displayY}
                   r={r}
                   fill="none"
-                  stroke="#9333ea"
+                  stroke={
+                    typeof stone.metadata?.fill === 'string'
+                      ? stone.metadata.fill
+                      : typeof stone.metadata?.stroke === 'string'
+                        ? stone.metadata.stroke
+                        : '#9333ea'
+                  }
                   strokeWidth="0.3"
                   className={state.activeTool === 'select' ? 'cursor-pointer hover:fill-purple-100 transition' : ''}
                   onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}

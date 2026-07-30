@@ -181,6 +181,8 @@ export interface TemplateImportProjectState {
   generatorId: 'template-import';
   /** Raw uploaded SVG text for the imported template */
   uploadedSvgText: string | null;
+  svgFileName: string | null;
+  defaultStoneSize: StoneSizeId;
   /** Original import metadata */
   importMetadata?: {
     detectedDiameters: number[];
@@ -189,6 +191,7 @@ export interface TemplateImportProjectState {
     originalStoneCount: number;
   };
   includeGuideBox: boolean;
+  includeLabels: boolean;
   paddingMm: number;
 }
 
@@ -234,7 +237,7 @@ export interface RhinestoneProjectFile {
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
-const VALID_STONE_SIZES = new Set(['SS6', 'SS8', 'SS10', 'SS12']);
+const VALID_STONE_SIZES = new Set(['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20']);
 const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'custom']);
 const VALID_FILL_MODES = new Set(['outline', 'fill', 'outline-fill']);
 const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contour']);
@@ -456,13 +459,16 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
 function validateSavedStone(v: unknown, idx: number): SavedStone {
   const ctx = `generatorState.stones[${idx}]`;
   const s = asRecord(v, ctx);
-  return {
+  const result: SavedStone = {
     id: requireString(s, 'id', ctx),
     x: requireFiniteNumber(s, 'x', ctx),
     y: requireFiniteNumber(s, 'y', ctx),
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     holeDiameterMm: requireFiniteNumber(s, 'holeDiameterMm', ctx),
   };
+  if (typeof s.color === 'string') result.color = s.color;
+  if (typeof s.group === 'string') result.group = s.group;
+  return result;
 }
 
 function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
@@ -475,6 +481,62 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
     generatorId: 'manual-editor',
     stones: stonesRaw.map((item, i) => validateSavedStone(item, i)),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateRhinestoneFont(s: UnknownRecord): RhinestoneFontProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'rhinestone-font',
+    text: requireString(s, 'text', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
+    targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
+    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
+    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateTemplateImport(s: UnknownRecord): TemplateImportProjectState {
+  const ctx = 'generatorState';
+  if (s.uploadedSvgText !== null && typeof s.uploadedSvgText !== 'string') {
+    throw new Error('[Project] generatorState.uploadedSvgText must be a string or null');
+  }
+  if (s.svgFileName !== null && typeof s.svgFileName !== 'string') {
+    throw new Error('[Project] generatorState.svgFileName must be a string or null');
+  }
+
+  let importMetadata: TemplateImportProjectState['importMetadata'];
+  if (s.importMetadata !== undefined) {
+    const metadata = asRecord(s.importMetadata, `${ctx}.importMetadata`);
+    const diameters = metadata.detectedDiameters;
+    const colors = metadata.detectedColors;
+    if (!Array.isArray(diameters) || !diameters.every((value) => typeof value === 'number' && Number.isFinite(value))) {
+      throw new Error('[Project] generatorState.importMetadata.detectedDiameters must be a finite number array');
+    }
+    if (!Array.isArray(colors) || !colors.every((value) => typeof value === 'string')) {
+      throw new Error('[Project] generatorState.importMetadata.detectedColors must be a string array');
+    }
+    importMetadata = {
+      detectedDiameters: diameters as number[],
+      detectedColors: colors as string[],
+      ignoredElements: requireFiniteNumber(metadata, 'ignoredElements', `${ctx}.importMetadata`),
+      originalStoneCount: requireFiniteNumber(metadata, 'originalStoneCount', `${ctx}.importMetadata`),
+    };
+  }
+
+  return {
+    generatorId: 'template-import',
+    uploadedSvgText: s.uploadedSvgText as string | null,
+    svgFileName: s.svgFileName as string | null,
+    defaultStoneSize: requireEnum<StoneSizeId>(s, 'defaultStoneSize', ctx, VALID_STONE_SIZES),
+    importMetadata,
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
   };
 }
@@ -500,6 +562,10 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateSvgUpload(s);
     case 'manual-editor':
       return validateManualEditor(s);
+    case 'rhinestone-font':
+      return validateRhinestoneFont(s);
+    case 'template-import':
+      return validateTemplateImport(s);
     default:
       throw new Error(`[Project] Unknown generatorId: ${String(gid)}`);
   }
@@ -553,16 +619,7 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
       throw new Error('[Project] editableState.stones must be an array');
     }
     
-    const stones: SavedStone[] = es.stones.map((s: unknown, i: number) => {
-      const stone = asRecord(s, `editableState.stones[${i}]`);
-      return {
-        id: requireString(stone, 'id', `editableState.stones[${i}]`),
-        x: requireFiniteNumber(stone, 'x', `editableState.stones[${i}]`),
-        y: requireFiniteNumber(stone, 'y', `editableState.stones[${i}]`),
-        stoneSize: requireEnum<StoneSizeId>(stone, 'stoneSize', `editableState.stones[${i}]`, VALID_STONE_SIZES),
-        holeDiameterMm: requireFiniteNumber(stone, 'holeDiameterMm', `editableState.stones[${i}]`),
-      };
-    });
+    const stones: SavedStone[] = es.stones.map((stone: unknown, i: number) => validateSavedStone(stone, i));
     
     let originalGeneratorState: GeneratorProjectState | null = null;
     if (es.originalGeneratorState !== null && es.originalGeneratorState !== undefined) {
@@ -577,11 +634,11 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
   }
   
   // Optional active tool
-  let activeTool: 'select' | 'text' | 'svg' | 'grid' | 'manual' | undefined = undefined;
+  let activeTool: RhinestoneProjectFile['activeTool'] = undefined;
   if (typeof obj.activeTool === 'string') {
-    const validTools = new Set(['select', 'text', 'svg', 'grid', 'manual']);
+    const validTools = new Set(['select', 'text', 'svg', 'grid', 'rhinestone-font', 'template-import', 'manual']);
     if (validTools.has(obj.activeTool)) {
-      activeTool = obj.activeTool as 'select' | 'text' | 'svg' | 'grid' | 'manual';
+      activeTool = obj.activeTool as RhinestoneProjectFile['activeTool'];
     }
   }
   

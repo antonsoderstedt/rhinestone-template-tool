@@ -114,6 +114,8 @@ export default function TemplateImportGenerator({ defaultState }: { defaultState
       generatorState: {
         generatorId: 'template-import',
         uploadedSvgText,
+        svgFileName,
+        defaultStoneSize,
         importMetadata: result?.ok ? {
           detectedDiameters: result.templateResult.detectedDiameters,
           detectedColors: result.templateResult.detectedColors,
@@ -121,6 +123,7 @@ export default function TemplateImportGenerator({ defaultState }: { defaultState
           originalStoneCount: result.stoneCount,
         } : undefined,
         includeGuideBox,
+        includeLabels,
         paddingMm,
       },
     };

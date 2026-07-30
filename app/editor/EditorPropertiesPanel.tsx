@@ -1,7 +1,12 @@
 'use client';
 
 import { CopyPlus, DiamondMinus, Hand, Layers3, MoveHorizontal, MoveVertical, PenLine, Plus, ScanSearch, Sparkles, Type, Upload } from 'lucide-react';
-import { getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
+import {
+  createImportedTemplate,
+  getStoneSizeProfile,
+  TRW_CLEAN_STONE_FONT_ID,
+  TRW_STONE_SIZE_CALIBRATION,
+} from '@/src/lib/rhinestone-engine/index';
 import { EditorTool, EditorState, EditorAction } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
 import DensityControl from './controls/DensityControl';
@@ -23,7 +28,9 @@ interface EditorPropertiesPanelProps {
 
 const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; description: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
+  { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
   { id: 'svg', label: 'SVG', description: 'Upload vector artwork', icon: Upload },
+  { id: 'template-import', label: 'Import Template', description: 'Keep stones from an existing SVG template', icon: Upload },
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Layers3 },
   { id: 'manual', label: 'Manual', description: 'Place stones directly', icon: Plus },
 ];
@@ -89,7 +96,9 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
 
           <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
             {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
+            {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
+            {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
           </PanelSection>
@@ -150,7 +159,9 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
         </h2>
 
         {activeTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} />}
+        {activeTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
+        {activeTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'select' && <SelectToolProperties state={state} dispatch={dispatch} />}
@@ -371,6 +382,244 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
           onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fillPattern: pattern } })}
         />
       </AdvancedSection>
+    </div>
+  );
+}
+
+const TRW_STONE_SIZES = ['SS6', 'SS10', 'SS16', 'SS20'] as const;
+
+function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
+  const { rhinestoneFontTool } = state;
+  const calibration = TRW_STONE_SIZE_CALIBRATION[
+    rhinestoneFontTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
+        Uses the stones already placed inside TRW Clean Stone. It does not trace
+        letter outlines.
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Rhinestone font</span>
+        <select
+          aria-label="Rhinestone font"
+          value={rhinestoneFontTool.rhinestoneFontId}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_RHINESTONE_FONT_TOOL',
+            updates: { rhinestoneFontId: e.target.value },
+          })}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          <option value={TRW_CLEAN_STONE_FONT_ID}>TRW Clean Stone</option>
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Text</span>
+        <textarea
+          aria-label="Rhinestone font text"
+          value={rhinestoneFontTool.text}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_RHINESTONE_FONT_TOOL',
+            updates: { text: e.target.value },
+          })}
+          rows={3}
+          placeholder="Sulay"
+          className="resize-y rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">TRW stone size</span>
+        <select
+          aria-label="TRW stone size"
+          value={rhinestoneFontTool.stoneSize}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_RHINESTONE_FONT_TOOL',
+            updates: { stoneSize: e.target.value as typeof rhinestoneFontTool.stoneSize },
+          })}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          {TRW_STONE_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {size} — {TRW_STONE_SIZE_CALIBRATION[size].diameterMm} mm
+            </option>
+          ))}
+        </select>
+        {calibration && (
+          <span className="text-[11px] text-zinc-500">
+            Authoritative hole diameter: {calibration.diameterMm} mm
+          </span>
+        )}
+      </label>
+
+      <NumericInput
+        label="Letter spacing"
+        value={rhinestoneFontTool.letterSpacingMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_RHINESTONE_FONT_TOOL',
+          updates: { letterSpacingMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={50}
+        step={0.25}
+      />
+
+      <NumericInput
+        label="Line spacing"
+        value={rhinestoneFontTool.lineSpacingMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_RHINESTONE_FONT_TOOL',
+          updates: { lineSpacingMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={100}
+        step={0.5}
+      />
+
+      {rhinestoneFontTool.unsupportedCharacters.length > 0 && (
+        <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+          Unsupported characters: {rhinestoneFontTool.unsupportedCharacters.join(', ')}.
+          They remain in the saved original text but do not generate stones.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TemplateImportToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
+  const { templateImportTool } = state;
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const svgText = typeof reader.result === 'string' ? reader.result : '';
+      try {
+        const result = createImportedTemplate({
+          svgText,
+          defaultStoneSizeId: templateImportTool.defaultStoneSize,
+          deduplicateTolerance: 0.01,
+        });
+        if (result.template.stones.length === 0) {
+          dispatch({
+            type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+            updates: {
+              pendingSvgText: null,
+              pendingFileName: file.name,
+              importError: 'No identifiable stones found. Use SVG Convert Shape if this file contains artwork rather than a rhinestone template.',
+              importSummary: null,
+            },
+          });
+          return;
+        }
+
+        dispatch({
+          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+          updates: {
+            pendingSvgText: svgText,
+            pendingFileName: file.name,
+            detectedDiameters: result.detectedDiameters,
+            detectedColors: result.detectedColors,
+            ignoredElements: result.ignoredElements,
+            warnings: result.warnings,
+            importSummary: `${result.template.stones.length} stones ready to import`,
+            importError: null,
+          },
+        });
+      } catch (error) {
+        dispatch({
+          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+          updates: {
+            pendingSvgText: null,
+            pendingFileName: file.name,
+            importSummary: null,
+            importError: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const confirmImport = () => {
+    if (!templateImportTool.pendingSvgText) return;
+    dispatch({
+      type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+      updates: {
+        uploadedSvgText: templateImportTool.pendingSvgText,
+        svgFileName: templateImportTool.pendingFileName,
+        pendingSvgText: null,
+        pendingFileName: null,
+        importError: null,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-3 text-xs text-blue-100">
+        Imports circles already positioned as stones. For a logo or ordinary
+        vector shape, choose SVG Convert Shape instead.
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Existing rhinestone template</span>
+        <input
+          aria-label="Existing rhinestone template"
+          type="file"
+          accept=".svg,image/svg+xml"
+          onChange={handleFileSelect}
+          className="text-xs text-zinc-300 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-purple-700"
+        />
+      </label>
+
+      <StoneProfileControl
+        value={templateImportTool.defaultStoneSize}
+        onChange={(defaultStoneSize) => dispatch({
+          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+          updates: { defaultStoneSize },
+        })}
+      />
+      <p className="-mt-2 text-[11px] text-zinc-500">
+        Fallback label only. Imported circle diameter remains unchanged.
+      </p>
+
+      {templateImportTool.importError && (
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-3 text-xs text-red-100">
+          {templateImportTool.importError}
+        </div>
+      )}
+
+      {templateImportTool.pendingSvgText && (
+        <div className="space-y-3 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-xs text-zinc-300">
+          <p className="font-medium text-white">{templateImportTool.importSummary}</p>
+          <p>Diameters: {templateImportTool.detectedDiameters.join(', ')} mm</p>
+          <p>Colors: {templateImportTool.detectedColors.join(', ') || 'none'}</p>
+          <p>Ignored decorative elements: {templateImportTool.ignoredElements}</p>
+          {templateImportTool.warnings.map((warning) => <p key={warning} className="text-amber-200">{warning}</p>)}
+          <button
+            type="button"
+            onClick={confirmImport}
+            className="w-full rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-500"
+          >
+            Import stones to canvas
+          </button>
+        </div>
+      )}
+
+      {templateImportTool.uploadedSvgText && (
+        <p className="text-xs text-emerald-300">
+          Imported: {templateImportTool.svgFileName ?? 'template.svg'}
+        </p>
+      )}
     </div>
   );
 }

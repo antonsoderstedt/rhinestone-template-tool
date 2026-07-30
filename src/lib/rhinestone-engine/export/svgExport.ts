@@ -63,6 +63,13 @@ function renderStoneCircle(stone: Stone, dp: number): string {
   const safeId = escapeXml(stone.id);
   const safeSize = escapeXml(stone.stoneSize);
   const holeDiameter = formatNumber(stone.holeDiameterMm, dp);
+  const importedColor =
+    typeof stone.metadata?.fill === 'string'
+      ? stone.metadata.fill
+      : typeof stone.metadata?.stroke === 'string'
+        ? stone.metadata.stroke
+        : '#000000';
+  const safeStroke = escapeXml(importedColor);
 
   return (
     `    <circle` +
@@ -71,7 +78,7 @@ function renderStoneCircle(stone: Stone, dp: number): string {
     ` cy="${cy}"` +
     ` r="${r}"` +
     ` fill="none"` +
-    ` stroke="#000000"` +
+    ` stroke="${safeStroke}"` +
     ` stroke-width="0.05"` +
     ` data-stone-id="${safeId}"` +
     ` data-stone-size="${safeSize}"` +

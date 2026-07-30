@@ -40,6 +40,12 @@ function mapTemplateIdToTool(templateId: string | undefined): SourcePanelTool | 
   if (templateId.startsWith('grid-')) {
     return 'grid';
   }
+  if (templateId.startsWith('rhinestone-font-')) {
+    return 'rhinestone-font';
+  }
+  if (templateId.startsWith('imported-template')) {
+    return 'template-import';
+  }
   return null;
 }
 

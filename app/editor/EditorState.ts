@@ -130,10 +130,15 @@ export interface RhinestoneFontToolState {
 export interface TemplateImportToolState {
   uploadedSvgText: string | null;
   svgFileName: string | null;
+  pendingSvgText: string | null;
+  pendingFileName: string | null;
   defaultStoneSize: StoneSizeId;
   detectedDiameters: number[];
   detectedColors: string[];
+  ignoredElements: number;
+  warnings: string[];
   importSummary: string | null;
+  importError: string | null;
 }
 
 // ─── Editable Template State ──────────────────────────────────────────────────
@@ -296,7 +301,7 @@ export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
 
 export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
   text: 'Sulay',
-  rhinestoneFontId: 'TRW-Clean-Stone',
+  rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
   letterSpacingMm: 1,
   lineSpacingMm: 0,
@@ -307,10 +312,15 @@ export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
 export const DEFAULT_TEMPLATE_IMPORT_TOOL_STATE: TemplateImportToolState = {
   uploadedSvgText: null,
   svgFileName: null,
+  pendingSvgText: null,
+  pendingFileName: null,
   defaultStoneSize: 'SS10',
   detectedDiameters: [],
   detectedColors: [],
+  ignoredElements: 0,
+  warnings: [],
   importSummary: null,
+  importError: null,
 };
 
 export const DEFAULT_EDITABLE_TEMPLATE_STATE: EditableTemplateState = {
