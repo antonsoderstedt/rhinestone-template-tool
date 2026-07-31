@@ -1,5 +1,5 @@
 /**
- * Stone size profiles for SS6, SS8, SS10, and SS12 rhinestones.
+ * Stone size profiles for SS6, SS8, SS10, SS12, SS16, and SS20 rhinestones.
  *
  * ⚠️  PROVISIONAL VALUES — ALL VALUES MUST BE PHYSICALLY VALIDATED.
  *
@@ -155,11 +155,11 @@ export const STONE_SIZE_PROFILES: Readonly<Record<StoneSizeId, StoneSizeProfile>
 // ─── Accessors ────────────────────────────────────────────────────────────────
 
 /**
- * Returns the profile for the given stone size, or `undefined` if the id is
- * not recognised.
+ * Returns the profile for the given stone size, or throws if the id is not
+ * in the registry.
  */
 export function getStoneSizeProfile(id: StoneSizeId): StoneSizeProfile {
-  return STONE_SIZE_PROFILES[id];
+  return assertStoneSizeProfile(id);
 }
 
 /**
