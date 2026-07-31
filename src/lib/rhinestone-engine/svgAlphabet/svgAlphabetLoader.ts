@@ -9,32 +9,34 @@
 
 import type { SvgAlphabetGlyphLoader } from './svgAlphabetTemplate';
 import type { SvgAlphabetId } from './svgAlphabetRegistry';
+import type { StoneSizeId } from '../types/index';
 
 const glyphCache = new Map<string, Promise<string | null>>();
 
-async function loadGlyphSvgOnce(alphabetId: SvgAlphabetId, character: string): Promise<string | null> {
+async function loadGlyphSvgOnce(alphabetId: SvgAlphabetId, character: string, targetStoneSizeId?: StoneSizeId): Promise<string | null> {
   if (typeof window === 'undefined') {
     const { getSvgAlphabetDefinition } = await import('./svgAlphabetRegistry');
     const { resolveSvgAlphabetGlyphPath } = await import('./svgAlphabetPath');
     const { readFile } = await import('node:fs/promises');
     const definition = getSvgAlphabetDefinition(alphabetId);
-    const path = resolveSvgAlphabetGlyphPath(definition, character);
+    const path = resolveSvgAlphabetGlyphPath(definition, character, targetStoneSizeId);
     if (!path) return null;
     return await readFile(path, 'utf-8');
   }
 
-  const url = `/api/svg-alphabets/${encodeURIComponent(alphabetId)}/${encodeURIComponent(character)}`;
+  const query = targetStoneSizeId ? `?size=${encodeURIComponent(targetStoneSizeId)}` : '';
+  const url = `/api/svg-alphabets/${encodeURIComponent(alphabetId)}/${encodeURIComponent(character)}${query}`;
   const response = await fetch(url);
   if (!response.ok) return null;
   return await response.text();
 }
 
 export const defaultSvgAlphabetGlyphLoader: SvgAlphabetGlyphLoader = {
-  async loadGlyphSvg(alphabetId, character) {
-    const cacheKey = `${alphabetId}::${character}`;
+  async loadGlyphSvg(alphabetId, character, targetStoneSizeId) {
+    const cacheKey = `${alphabetId}::${targetStoneSizeId ?? 'default'}::${character}`;
     const existing = glyphCache.get(cacheKey);
     if (existing) return existing;
-    const promise = loadGlyphSvgOnce(alphabetId, character);
+    const promise = loadGlyphSvgOnce(alphabetId, character, targetStoneSizeId);
     glyphCache.set(cacheKey, promise);
     return promise;
   },

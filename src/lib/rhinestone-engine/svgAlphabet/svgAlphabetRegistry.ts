@@ -12,7 +12,12 @@
 
 import type { StoneSizeId } from '../types/index';
 
-export type SvgAlphabetId = 'scoreboard-block';
+export type SvgAlphabetId =
+  | 'scoreboard-block'
+  | 'toys-bubble'
+  | 'birthday-script'
+  | 'retro-wide'
+  | 'varsity-collage-a';
 
 export type SvgAlphabetCategory = 'Library';
 export type SvgAlphabetStyle = 'Block' | 'Varsity' | 'Bubble' | 'Script' | 'Line' | 'Digits' | 'Retro' | 'Gothic';
@@ -25,6 +30,8 @@ export interface SvgAlphabetDefinition {
   suggestedText: string;
   /** Directory containing per-letter SVG files, relative to a library root. */
   libraryRelativeDir: string;
+  /** Optional per-size directory overrides (used when the package ships SS6 and SS10 in separate folders). */
+  libraryRelativeDirBySize?: Partial<Record<StoneSizeId, string>>;
   /** File extension for each glyph SVG (usually '.svg'). */
   glyphExtension: string;
   /** Native stone size the alphabet was authored for. */
@@ -65,6 +72,94 @@ export const SVG_ALPHABET_REGISTRY: readonly SvgAlphabetDefinition[] = [
       swedish: false,
     },
     limitations: ['Uppercase and digits only', 'Sized for SS10 package'],
+  },
+  {
+    alphabetId: 'toys-bubble',
+    displayName: 'Toys',
+    category: 'Library',
+    style: 'Bubble',
+    suggestedText: 'TOYS',
+    libraryRelativeDir: 'TEXT FONT TEMPLATE/F17-TOYS-ALPHABET/F17-TOYS-UNPACKED-SS10',
+    libraryRelativeDirBySize: {
+      SS6: 'TEXT FONT TEMPLATE/F17-TOYS-ALPHABET/F17-TOYS-UNPACKED-SS6',
+      SS10: 'TEXT FONT TEMPLATE/F17-TOYS-ALPHABET/F17-TOYS-UNPACKED-SS10',
+    },
+    glyphExtension: '.svg',
+    authoredStoneSizeId: 'SS10',
+    supportedTargetStoneSizeIds: ['SS10', 'SS6'],
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library (F17 Toys package)',
+    isPrivate: true,
+    characterCoverage: {
+      uppercase: true,
+      lowercase: false,
+      digits: false,
+      swedish: false,
+    },
+    limitations: ['Uppercase only', 'Sized for SS6/SS10 packages'],
+  },
+  {
+    alphabetId: 'birthday-script',
+    displayName: 'Birthday',
+    category: 'Library',
+    style: 'Script',
+    suggestedText: 'HAPPY',
+    libraryRelativeDir: 'TEXT FONT TEMPLATE/F19-BIRTHDAY-ALPHABET/F19-BIRTHDAY-UNPACKED',
+    glyphExtension: '.svg',
+    authoredStoneSizeId: 'SS10',
+    supportedTargetStoneSizeIds: ['SS10'],
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library (F19 Birthday package)',
+    isPrivate: true,
+    characterCoverage: {
+      uppercase: true,
+      lowercase: false,
+      digits: false,
+      swedish: false,
+    },
+    limitations: ['Uppercase only', 'Sized for SS10 package'],
+  },
+  {
+    alphabetId: 'retro-wide',
+    displayName: 'Retro Wide',
+    category: 'Library',
+    style: 'Retro',
+    suggestedText: 'RETRO 76',
+    libraryRelativeDir: 'TEXT FONT TEMPLATE/F24-RETRO-WIDE-A-ALPHABET/F24-RETRO-UNPACKED',
+    glyphExtension: '.svg',
+    authoredStoneSizeId: 'SS10',
+    supportedTargetStoneSizeIds: ['SS10'],
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library (F24 Retro Wide A package)',
+    isPrivate: true,
+    characterCoverage: {
+      uppercase: true,
+      lowercase: false,
+      digits: true,
+      swedish: false,
+    },
+    limitations: ['Uppercase and digits only', 'Sized for SS10 package'],
+  },
+  {
+    alphabetId: 'varsity-collage-a',
+    displayName: 'Varsity Collage A',
+    category: 'Library',
+    style: 'Varsity',
+    suggestedText: 'CHEER',
+    libraryRelativeDir: 'TEXT FONT TEMPLATE/F31-VARSITY-FONT-3COLOR-A/F31-VARSITY-A-UNPACKED',
+    glyphExtension: '.svg',
+    authoredStoneSizeId: 'SS10',
+    supportedTargetStoneSizeIds: ['SS10'],
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library (F31 Varsity 3-Color A package)',
+    isPrivate: true,
+    characterCoverage: {
+      uppercase: true,
+      lowercase: false,
+      digits: false,
+      swedish: false,
+    },
+    limitations: ['Uppercase only', 'Sized for SS10 package', '3-color source flattened to single-color output'],
   },
 ];
 

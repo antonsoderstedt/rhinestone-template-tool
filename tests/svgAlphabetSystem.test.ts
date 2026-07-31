@@ -45,6 +45,26 @@ describe('SVG Alphabet System', () => {
     expect(isKnownSvgAlphabetId(DEFAULT_SVG_ALPHABET_ID)).toBe(true);
   });
 
+  it('ships the curated library alphabets with unique IDs', () => {
+    const alphabets = listSvgAlphabets();
+    const ids = alphabets.map((a) => a.alphabetId);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toContain('scoreboard-block');
+    expect(ids).toContain('toys-bubble');
+    expect(ids).toContain('birthday-script');
+    expect(ids).toContain('retro-wide');
+    expect(ids).toContain('varsity-collage-a');
+  });
+
+  it('offers SS6 and SS10 for size-variant alphabets via libraryRelativeDirBySize', () => {
+    const toys = getSvgAlphabetDefinition('toys-bubble');
+    expect(toys.supportedTargetStoneSizeIds).toContain('SS6');
+    expect(toys.supportedTargetStoneSizeIds).toContain('SS10');
+    expect(toys.libraryRelativeDirBySize?.SS6).toBeDefined();
+    expect(toys.libraryRelativeDirBySize?.SS10).toBeDefined();
+    expect(toys.libraryRelativeDirBySize?.SS6).not.toBe(toys.libraryRelativeDirBySize?.SS10);
+  });
+
   it('rejects unknown alphabet IDs', () => {
     expect(() => getSvgAlphabetDefinition('does-not-exist' as SvgAlphabetId)).toThrow();
     expect(isKnownSvgAlphabetId('does-not-exist')).toBe(false);

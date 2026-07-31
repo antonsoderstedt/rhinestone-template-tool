@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { SvgAlphabetDefinition } from './svgAlphabetRegistry';
+import type { StoneSizeId } from '../types/index';
 
 function getLibraryRoots(): string[] {
   const roots = [
@@ -22,17 +23,24 @@ function getLibraryRoots(): string[] {
 
 /**
  * Resolve the absolute filesystem path of a single glyph SVG in an alphabet.
- * The character is used as the file basename (e.g. 'A' → 'A.svg').
+ * The character is used as the file basename (e.g. 'A' → 'A.svg'). When the
+ * alphabet ships size-specific glyph folders, the requested targetStoneSizeId
+ * picks the matching subfolder; otherwise the default libraryRelativeDir is
+ * used.
  */
 export function resolveSvgAlphabetGlyphPath(
   definition: SvgAlphabetDefinition,
   character: string,
+  targetStoneSizeId?: StoneSizeId,
 ): string | null {
   if (!character || character.length !== 1) return null;
   const filename = `${character}${definition.glyphExtension}`;
 
+  const sizedDir = targetStoneSizeId ? definition.libraryRelativeDirBySize?.[targetStoneSizeId] : undefined;
+  const dir = sizedDir ?? definition.libraryRelativeDir;
+
   for (const root of getLibraryRoots()) {
-    const candidate = join(root, definition.libraryRelativeDir, filename);
+    const candidate = join(root, dir, filename);
     if (existsSync(candidate)) {
       return candidate;
     }

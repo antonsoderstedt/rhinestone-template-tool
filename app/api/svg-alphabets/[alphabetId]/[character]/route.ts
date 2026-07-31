@@ -10,9 +10,17 @@ import { NextResponse } from 'next/server';
 import { readFile } from 'node:fs/promises';
 import { SVG_ALPHABET_REGISTRY } from '../../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetRegistry';
 import { resolveSvgAlphabetGlyphPath } from '../../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetPath';
+import type { StoneSizeId } from '../../../../../src/lib/rhinestone-engine/types/index';
+
+const KNOWN_STONE_SIZES: readonly StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
+
+function parseStoneSize(raw: string | null): StoneSizeId | undefined {
+  if (!raw) return undefined;
+  return KNOWN_STONE_SIZES.find((size) => size === raw);
+}
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ alphabetId: string; character: string }> },
 ) {
   const { alphabetId, character } = await params;
@@ -29,7 +37,10 @@ export async function GET(
     return new NextResponse('Unsupported character path', { status: 400 });
   }
 
-  const resolvedPath = resolveSvgAlphabetGlyphPath(definition, decoded);
+  const url = new URL(request.url);
+  const requestedSize = parseStoneSize(url.searchParams.get('size'));
+
+  const resolvedPath = resolveSvgAlphabetGlyphPath(definition, decoded, requestedSize);
   if (!resolvedPath) {
     return new NextResponse(`Glyph "${decoded}" not found for ${definition.displayName}`, { status: 404 });
   }

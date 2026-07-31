@@ -25,7 +25,7 @@ import {
 
 export interface SvgAlphabetGlyphLoader {
   /** Return the raw SVG text for one character, or null if unsupported. */
-  loadGlyphSvg(alphabetId: SvgAlphabetId, character: string): Promise<string | null>;
+  loadGlyphSvg(alphabetId: SvgAlphabetId, character: string, targetStoneSizeId?: StoneSizeId): Promise<string | null>;
 }
 
 export interface CreateSvgAlphabetTemplateOptions {
@@ -123,7 +123,7 @@ export async function createSvgAlphabetTemplate(
   const allDiameters: number[] = [];
 
   for (const ch of uniqueChars) {
-    const svg = await glyphLoader.loadGlyphSvg(resolvedAlphabetId, ch);
+    const svg = await glyphLoader.loadGlyphSvg(resolvedAlphabetId, ch, targetStoneSizeId);
     if (!svg) {
       unsupportedCharacters.push(ch);
       continue;
