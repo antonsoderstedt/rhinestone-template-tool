@@ -14,7 +14,6 @@ import {
   type RhinestoneFontDefinition,
   type RhinestoneFontId,
 } from './rhinestoneFontRegistry';
-import { resolveRhinestoneFontFilePath } from './fontLibraryPath';
 
 export interface LoadedRhinestoneFont {
   definition: RhinestoneFontDefinition;
@@ -36,6 +35,7 @@ async function readFontArrayBuffer(definition: RhinestoneFontDefinition): Promis
 
   if (typeof window === 'undefined') {
     const { readFile } = await import('node:fs/promises');
+    const { resolveRhinestoneFontFilePath } = await import('./fontLibraryPath');
     const resolvedPath = resolveRhinestoneFontFilePath(definition);
 
     if (!resolvedPath) {
