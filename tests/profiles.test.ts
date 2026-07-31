@@ -52,6 +52,10 @@ describe('getStoneSizeProfile', () => {
     expect(getStoneSizeProfile('SS16').id).toBe('SS16');
     expect(getStoneSizeProfile('SS20').id).toBe('SS20');
   });
+
+  it('throws for unknown ids at runtime', () => {
+    expect(() => getStoneSizeProfile('SS99' as Parameters<typeof getStoneSizeProfile>[0])).toThrow(/Unknown stone size id/);
+  });
 });
 
 // ─── Material profiles ────────────────────────────────────────────────────────
