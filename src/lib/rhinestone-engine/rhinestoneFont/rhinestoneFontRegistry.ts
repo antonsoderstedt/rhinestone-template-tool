@@ -19,7 +19,9 @@ export type RhinestoneFontId =
   | 'old-english-ss10'
   | 'outline-ss10'
   | 'small-line-ss10'
-  | 'huge-numbers-ss10';
+  | 'huge-numbers-ss10'
+  | 'forever-script'
+  | 'atletico-varsity';
 
 export type RhinestoneFontCategory = 'Private' | 'Fixture' | 'Library';
 export type RhinestoneFontStyle = 'Script' | 'Block' | 'Outline' | 'Line' | 'Digits' | 'Gothic';
@@ -279,6 +281,44 @@ export const RHINESTONE_FONT_REGISTRY: readonly RhinestoneFontDefinition[] = [
       digits: true,
       swedish: false,
     },
+  },
+  {
+    fontId: 'forever-script',
+    displayName: 'Forever',
+    category: 'Library',
+    style: 'Script',
+    suggestedText: 'Forever',
+    fontFamily: 'Rhinestone Forever',
+    previewFontFamily: 'system-ui',
+    fontWeight: 400,
+    fontStyle: 'normal',
+    assetUrl: localRhinestoneFontAssetUrl('forever-script'),
+    nodeFilePath: null,
+    libraryRelativePath: 'FONT GENERATED CHATGPT/F1-Forever-ALPHABET/F1-Rhinestone-Forever-SS06-SS10/Forever.otf',
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library',
+    isPrivate: true,
+    supportedTargetStoneSizeIds: ['SS10', 'SS6'],
+    limitations: ['Single OTF sized for SS6/SS10 targets', 'Auto-scaled per requested stone size'],
+  },
+  {
+    fontId: 'atletico-varsity',
+    displayName: 'Atletico Bold',
+    category: 'Library',
+    style: 'Block',
+    suggestedText: 'CHEER',
+    fontFamily: 'RS02 AW Atletico Bold',
+    previewFontFamily: 'system-ui',
+    fontWeight: 700,
+    fontStyle: 'normal',
+    assetUrl: localRhinestoneFontAssetUrl('atletico-varsity'),
+    nodeFilePath: null,
+    libraryRelativePath: 'FONT GENERATED CHATGPT/F2-Cheer-ALPHABET/CHEER-SS6-SS10-C/Font/RS02 AW Atletico Bold.otf',
+    license: 'User-provided local asset',
+    licenseSource: 'Attached LETTER UTVALDA library (F2 Cheer + F4 Real packages)',
+    isPrivate: true,
+    supportedTargetStoneSizeIds: ['SS10', 'SS6'],
+    limitations: ['Single OTF used across multiple F-packages', 'Auto-scaled per requested stone size'],
   },
 ];
 
