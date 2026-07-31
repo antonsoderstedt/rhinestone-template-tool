@@ -37,6 +37,7 @@ export type EditorTool =
   | 'grid'         // Grid generator
   | 'rhinestone-font'  // Rhinestone font text
   | 'svg-alphabet'     // SVG alphabet text (per-letter curated glyphs)
+  | 'letter-stencil'   // Reusable per-letter stencil cards
   | 'template-import'  // Import pre-placed stones from SVG
   | 'manual';      // Add individual stones
 
@@ -148,6 +149,21 @@ export interface SvgAlphabetToolState {
   warnings: string[];
 }
 
+// ─── Letter Stencil Tool State ────────────────────────────────────────────────
+
+export interface LetterStencilToolState {
+  text: string;
+  svgAlphabetId: string;
+  stoneSize: StoneSizeId;
+  cardPaddingMm: number | '';
+  cardCornerRadiusMm: number | '';
+  minCardWidthMm: number | '';
+  layoutMode: 'preview' | 'cut-sheet';
+  cutSheetGapMm: number | '';
+  unsupportedCharacters: string[];
+  warnings: string[];
+}
+
 // ─── Template Import Tool State ───────────────────────────────────────────────
 
 export interface TemplateImportToolState {
@@ -215,6 +231,7 @@ export interface EditorState {
   manualTool: ManualToolState;
   rhinestoneFontTool: RhinestoneFontToolState;
   svgAlphabetTool: SvgAlphabetToolState;
+  letterStencilTool: LetterStencilToolState;
   templateImportTool: TemplateImportToolState;
   
   // Current template (result of active tool)
@@ -473,6 +490,19 @@ export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
   warnings: [],
 };
 
+export const DEFAULT_LETTER_STENCIL_TOOL_STATE: LetterStencilToolState = {
+  text: 'NAME',
+  svgAlphabetId: 'scoreboard-block',
+  stoneSize: 'SS10',
+  cardPaddingMm: 3,
+  cardCornerRadiusMm: 2,
+  minCardWidthMm: 12,
+  layoutMode: 'preview',
+  cutSheetGapMm: 3,
+  unsupportedCharacters: [],
+  warnings: [],
+};
+
 export const DEFAULT_TEMPLATE_IMPORT_TOOL_STATE: TemplateImportToolState = {
   uploadedSvgText: null,
   svgFileName: null,
@@ -522,6 +552,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   manualTool: { ...DEFAULT_MANUAL_TOOL_STATE },
   rhinestoneFontTool: { ...DEFAULT_RHINESTONE_FONT_TOOL_STATE },
   svgAlphabetTool: { ...DEFAULT_SVG_ALPHABET_TOOL_STATE },
+  letterStencilTool: { ...DEFAULT_LETTER_STENCIL_TOOL_STATE },
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
@@ -544,6 +575,7 @@ export type EditorAction =
   | { type: 'UPDATE_MANUAL_TOOL'; updates: Partial<ManualToolState> }
   | { type: 'UPDATE_RHINESTONE_FONT_TOOL'; updates: Partial<RhinestoneFontToolState> }
   | { type: 'UPDATE_SVG_ALPHABET_TOOL'; updates: Partial<SvgAlphabetToolState> }
+  | { type: 'UPDATE_LETTER_STENCIL_TOOL'; updates: Partial<LetterStencilToolState> }
   | { type: 'UPDATE_TEMPLATE_IMPORT_TOOL'; updates: Partial<TemplateImportToolState> }
   | { type: 'SET_TEMPLATE'; template: RhinestoneTemplate | null }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
@@ -584,6 +616,8 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
           : 'rhinestone-font';
     case 'svg-alphabet':
       return 'svg-alphabet';
+    case 'letter-stencil':
+      return 'letter-stencil';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -618,6 +652,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };
+    
+    case 'UPDATE_LETTER_STENCIL_TOOL':
+      return { ...state, letterStencilTool: { ...state.letterStencilTool, ...action.updates } };
     
     case 'UPDATE_TEMPLATE_IMPORT_TOOL':
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };

@@ -21,6 +21,7 @@ import {
   LEGACY_OUTLINE_FONT_ID,
   createRhinestoneFontTemplate,
   createSvgAlphabetTemplate,
+  createLetterStencilTemplate,
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
   TRW_STONE_SIZE_CALIBRATION,
@@ -280,6 +281,44 @@ export default function EditorShell() {
             }
             break;
 
+          case 'letter-stencil':
+            if (!state.letterStencilTool.text.trim()) {
+              return;
+            }
+            {
+              let targetDiameterMm = 3.429;
+              const sizeId = state.letterStencilTool.stoneSize;
+              if (sizeId in TRW_STONE_SIZE_CALIBRATION) {
+                targetDiameterMm = TRW_STONE_SIZE_CALIBRATION[sizeId as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm;
+              }
+              const result = await createLetterStencilTemplate({
+                text: state.letterStencilTool.text,
+                alphabetId: state.letterStencilTool.svgAlphabetId,
+                targetStoneSizeId: sizeId,
+                targetStoneSizeMm: targetDiameterMm,
+                glyphLoader: defaultSvgAlphabetGlyphLoader,
+                cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 3,
+                cardCornerRadiusMm: typeof state.letterStencilTool.cardCornerRadiusMm === 'number' ? state.letterStencilTool.cardCornerRadiusMm : 2,
+                minCardWidthMm: typeof state.letterStencilTool.minCardWidthMm === 'number' ? state.letterStencilTool.minCardWidthMm : 12,
+                layoutMode: state.letterStencilTool.layoutMode,
+                cutSheetGapMm: typeof state.letterStencilTool.cutSheetGapMm === 'number' ? state.letterStencilTool.cutSheetGapMm : 3,
+              });
+              template = result.template;
+              if (
+                JSON.stringify(state.letterStencilTool.unsupportedCharacters) !== JSON.stringify(result.unsupportedCharacters) ||
+                JSON.stringify(state.letterStencilTool.warnings) !== JSON.stringify(result.warnings)
+              ) {
+                dispatch({
+                  type: 'UPDATE_LETTER_STENCIL_TOOL',
+                  updates: {
+                    unsupportedCharacters: result.unsupportedCharacters,
+                    warnings: result.warnings,
+                  },
+                });
+              }
+            }
+            break;
+
           case 'template-import':
             if (state.templateImportTool.uploadedSvgText) {
               const importResult = createImportedTemplate({
@@ -356,6 +395,16 @@ export default function EditorShell() {
     state.svgAlphabetTool.lineSpacingMm,
     state.svgAlphabetTool.unsupportedCharacters,
     state.svgAlphabetTool.warnings,
+    state.letterStencilTool.text,
+    state.letterStencilTool.svgAlphabetId,
+    state.letterStencilTool.stoneSize,
+    state.letterStencilTool.cardPaddingMm,
+    state.letterStencilTool.cardCornerRadiusMm,
+    state.letterStencilTool.minCardWidthMm,
+    state.letterStencilTool.layoutMode,
+    state.letterStencilTool.cutSheetGapMm,
+    state.letterStencilTool.unsupportedCharacters,
+    state.letterStencilTool.warnings,
     state.templateImportTool.uploadedSvgText,
     state.templateImportTool.defaultStoneSize,
     state.templateImportTool.ignoredElements,

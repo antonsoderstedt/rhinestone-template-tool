@@ -21,6 +21,7 @@ const TOOLS: Array<{
   { id: 'text', label: 'Text', icon: Type, tooltip: 'Generate stones from outline or dot-matrix text' },
   { id: 'rhinestone-font', label: 'Stone Font', icon: Type, tooltip: 'Use a font that contains pre-placed rhinestones' },
   { id: 'svg-alphabet', label: 'Alphabet', icon: Type, tooltip: 'Compose text from a per-letter SVG alphabet library' },
+  { id: 'letter-stencil', label: 'Stencils', icon: Type, tooltip: 'Generate reusable per-letter stencil cards you can arrange to spell words' },
   { id: 'svg', label: 'SVG', icon: Upload, tooltip: 'Generate a template from an uploaded SVG' },
   { id: 'template-import', label: 'Import', icon: Upload, tooltip: 'Import an existing SVG rhinestone template' },
   { id: 'grid', label: 'Grid', icon: Grid3X3, tooltip: 'Generate an evenly spaced stone grid' },

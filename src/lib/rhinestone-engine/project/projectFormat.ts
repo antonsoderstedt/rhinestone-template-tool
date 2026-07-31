@@ -31,6 +31,7 @@ export type GeneratorId =
   | 'rhinestone-font-line'
   | 'rhinestone-font-digits'
   | 'svg-alphabet'
+  | 'letter-stencil'
   | 'template-import';
 
 export type PolylineDemoShape = 'diamond' | 'triangle' | 'rectangle' | 'zigzag';
@@ -213,6 +214,22 @@ export interface SvgAlphabetProjectState {
   paddingMm: number;
 }
 
+export interface LetterStencilProjectState {
+  generatorId: 'letter-stencil';
+  text: string;
+  svgAlphabetId: string;
+  stoneSize: StoneSizeId;
+  targetStoneSizeMm: number;
+  cardPaddingMm: number;
+  cardCornerRadiusMm: number;
+  minCardWidthMm: number;
+  layoutMode: 'preview' | 'cut-sheet';
+  cutSheetGapMm: number;
+  includeGuideBox: boolean;
+  includeLabels: boolean;
+  paddingMm: number;
+}
+
 // ─── Discriminated union ──────────────────────────────────────────────────────
 
 export type GeneratorProjectState =
@@ -224,6 +241,7 @@ export type GeneratorProjectState =
   | ManualEditorProjectState
   | RhinestoneFontProjectState
   | SvgAlphabetProjectState
+  | LetterStencilProjectState
   | TemplateImportProjectState;
 
 // ─── Project file format ──────────────────────────────────────────────────────
@@ -245,7 +263,7 @@ export interface RhinestoneProjectFile {
   /** Editable template state (present when user has made manual edits) */
   editableState?: EditableTemplateState;
   /** Active tool when saved (optional, defaults to generator's tool) */
-  activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'template-import' | 'manual';
+  activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'letter-stencil' | 'template-import' | 'manual';
   /** Manual tool settings */
   manualToolState?: {
     snapToGrid: boolean;
@@ -275,6 +293,7 @@ const VALID_GENERATOR_IDS = new Set([
   'rhinestone-font-line',
   'rhinestone-font-digits',
   'svg-alphabet',
+  'letter-stencil',
   'template-import',
 ]);
 

@@ -37,6 +37,7 @@ const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; descriptio
   { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
   { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
   { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
+  { id: 'letter-stencil', label: 'Stencils', description: 'Reusable per-letter stencil cards to spell words', icon: Type },
   { id: 'svg', label: 'SVG', description: 'Upload vector artwork', icon: Upload },
   { id: 'template-import', label: 'Import Template', description: 'Keep stones from an existing SVG template', icon: Upload },
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Layers3 },
@@ -106,6 +107,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
             {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
             {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
+            {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
@@ -170,6 +172,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
         {activeTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
+        {activeTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
@@ -756,6 +759,191 @@ function SvgAlphabetToolProperties({ state, dispatch }: EditorPropertiesPanelPro
       {svgAlphabetTool.unsupportedCharacters.length > 0 && (
         <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
           Unsupported characters: {svgAlphabetTool.unsupportedCharacters.join(', ')}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
+  const { letterStencilTool } = state;
+  const availableAlphabets = listSvgAlphabets();
+  const selectedAlphabet = getSvgAlphabetDefinition(letterStencilTool.svgAlphabetId as never);
+  const supportedStoneSizes = selectedAlphabet.supportedTargetStoneSizeIds;
+  const calibration = TRW_STONE_SIZE_CALIBRATION[
+    letterStencilTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+  ];
+  const cardCount = letterStencilTool.text.replace(/[\s\n]/g, '').length;
+  const modeCopy = letterStencilTool.layoutMode === 'preview'
+    ? 'Preview mode places cards edge-to-edge so you can read the assembled word. Card frames stay visible so you see letter boundaries.'
+    : 'Cut-sheet mode wraps cards onto a 12" (305 mm) mat with a small gap between them — the layout you actually send to Cricut for cutting.';
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
+        Generates a reusable stencil card per letter (typographically sized — I is narrow, W is wide, all cards share the same height). Arrange the cut cards on a metal tray to spell any word.
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Alphabet</span>
+        <select
+          aria-label="Stencil alphabet"
+          value={letterStencilTool.svgAlphabetId}
+          onChange={(e) => {
+            const next = getSvgAlphabetDefinition(e.target.value as never);
+            dispatch({
+              type: 'UPDATE_LETTER_STENCIL_TOOL',
+              updates: {
+                svgAlphabetId: next.alphabetId,
+                stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
+              },
+            });
+          }}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          {availableAlphabets.map((alphabet) => (
+            <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
+              {alphabet.displayName} — {alphabet.style}
+            </option>
+          ))}
+        </select>
+        <span className="text-[11px] text-zinc-500">
+          {selectedAlphabet.category} · {selectedAlphabet.style} · supports {supportedStoneSizes.join(', ')}
+        </span>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Text</span>
+        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <span>{cardCount} card{cardCount === 1 ? '' : 's'} · Suggested: {selectedAlphabet.suggestedText}</span>
+          <button
+            type="button"
+            onClick={() => dispatch({
+              type: 'UPDATE_LETTER_STENCIL_TOOL',
+              updates: { text: selectedAlphabet.suggestedText },
+            })}
+            className="rounded-full border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800"
+          >
+            Use sample
+          </button>
+        </div>
+        <textarea
+          aria-label="Stencil text"
+          value={letterStencilTool.text}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_LETTER_STENCIL_TOOL',
+            updates: { text: e.target.value },
+          })}
+          rows={3}
+          placeholder={selectedAlphabet.suggestedText}
+          className="resize-y rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Stone size</span>
+        <select
+          aria-label="Stencil stone size"
+          value={letterStencilTool.stoneSize}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_LETTER_STENCIL_TOOL',
+            updates: { stoneSize: e.target.value as typeof letterStencilTool.stoneSize },
+          })}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          {supportedStoneSizes.map((size) => (
+            <option key={size} value={size}>
+              {size}{size in TRW_STONE_SIZE_CALIBRATION ? ` — ${TRW_STONE_SIZE_CALIBRATION[size as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm} mm` : ''}
+            </option>
+          ))}
+        </select>
+        {calibration && (
+          <span className="text-[11px] text-zinc-500">
+            Authoritative hole diameter: {calibration.diameterMm} mm
+          </span>
+        )}
+      </label>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Layout mode</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_LETTER_STENCIL_TOOL', updates: { layoutMode: 'preview' } })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.layoutMode === 'preview' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">Preview</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Cards edge-to-edge, see the assembled word</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_LETTER_STENCIL_TOOL', updates: { layoutMode: 'cut-sheet' } })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.layoutMode === 'cut-sheet' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">Cut sheet</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Wrapped on 12&quot; mat, ready to cut</div>
+          </button>
+        </div>
+        <span className="text-[11px] text-zinc-500">{modeCopy}</span>
+      </div>
+
+      <NumericInput
+        label="Card padding"
+        value={letterStencilTool.cardPaddingMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_LETTER_STENCIL_TOOL',
+          updates: { cardPaddingMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={20}
+        step={0.5}
+      />
+
+      <NumericInput
+        label="Card corner radius"
+        value={letterStencilTool.cardCornerRadiusMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_LETTER_STENCIL_TOOL',
+          updates: { cardCornerRadiusMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={15}
+        step={0.5}
+      />
+
+      <NumericInput
+        label="Minimum card width"
+        value={letterStencilTool.minCardWidthMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_LETTER_STENCIL_TOOL',
+          updates: { minCardWidthMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={50}
+        step={1}
+      />
+
+      {letterStencilTool.layoutMode === 'cut-sheet' && (
+        <NumericInput
+          label="Gap between cards"
+          value={letterStencilTool.cutSheetGapMm}
+          onChange={(value) => dispatch({
+            type: 'UPDATE_LETTER_STENCIL_TOOL',
+            updates: { cutSheetGapMm: value },
+          })}
+          unit="mm"
+          min={0}
+          max={20}
+          step={0.5}
+        />
+      )}
+
+      {letterStencilTool.unsupportedCharacters.length > 0 && (
+        <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+          Unsupported characters: {letterStencilTool.unsupportedCharacters.join(', ')}
         </div>
       )}
     </div>
@@ -1373,6 +1561,7 @@ function getToolTitle(tool: EditorTool): string {
     case 'grid': return 'Grid Source';
     case 'rhinestone-font': return 'Rhinestone Font';
     case 'svg-alphabet': return 'SVG Alphabet';
+    case 'letter-stencil': return 'Letter Stencils';
     case 'template-import': return 'Template Import';
     case 'manual': return 'Manual Source';
   }

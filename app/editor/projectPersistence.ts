@@ -8,6 +8,7 @@ import type {
   RhinestoneFontProjectState,
   RhinestoneProjectFile,
   SvgAlphabetProjectState,
+  LetterStencilProjectState,
   SvgUploadProjectState,
   TemplateImportProjectState,
 } from '@/src/lib/rhinestone-engine/index';
@@ -71,6 +72,8 @@ export function getEditableSourceGenerator(state: Pick<EditorState, 'activeTool'
         : 'rhinestone-font';
     case 'svg-alphabet':
       return 'svg-alphabet';
+    case 'letter-stencil':
+      return 'letter-stencil';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -226,6 +229,27 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
       } satisfies SvgAlphabetProjectState;
+    }
+    case 'letter-stencil': {
+      const calibration = TRW_STONE_SIZE_CALIBRATION[
+        state.letterStencilTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+      ];
+      if (!calibration) return null;
+      return {
+        generatorId: 'letter-stencil',
+        text: state.letterStencilTool.text,
+        svgAlphabetId: state.letterStencilTool.svgAlphabetId,
+        stoneSize: state.letterStencilTool.stoneSize,
+        targetStoneSizeMm: calibration.diameterMm,
+        cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 3,
+        cardCornerRadiusMm: typeof state.letterStencilTool.cardCornerRadiusMm === 'number' ? state.letterStencilTool.cardCornerRadiusMm : 2,
+        minCardWidthMm: typeof state.letterStencilTool.minCardWidthMm === 'number' ? state.letterStencilTool.minCardWidthMm : 12,
+        layoutMode: state.letterStencilTool.layoutMode,
+        cutSheetGapMm: typeof state.letterStencilTool.cutSheetGapMm === 'number' ? state.letterStencilTool.cutSheetGapMm : 3,
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      } satisfies LetterStencilProjectState;
     }
     case 'manual-editor':
       return {
