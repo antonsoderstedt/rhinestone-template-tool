@@ -11,6 +11,8 @@ import {
   listRhinestoneFonts,
   getRhinestoneFontDefinition,
   getSupportedRhinestoneFontStoneSizes,
+  listSvgAlphabets,
+  getSvgAlphabetDefinition,
 } from '@/src/lib/rhinestone-engine/index';
 import { EditorTool, EditorState, EditorAction } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
@@ -34,6 +36,7 @@ interface EditorPropertiesPanelProps {
 const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; description: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
   { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
+  { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
   { id: 'svg', label: 'SVG', description: 'Upload vector artwork', icon: Upload },
   { id: 'template-import', label: 'Import Template', description: 'Keep stones from an existing SVG template', icon: Upload },
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Layers3 },
@@ -102,6 +105,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
           <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
             {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
             {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
+            {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
             {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
@@ -165,6 +169,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
 
         {activeTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
+        {activeTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
         {activeTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
@@ -616,6 +621,141 @@ function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanel
       {rhinestoneFontTool.presentationMode === 'digits' && /[A-Za-z]/.test(rhinestoneFontTool.text) && (
         <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
           This font is optimized for digits. Letter input may be unsupported or incomplete.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SvgAlphabetToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
+  const { svgAlphabetTool } = state;
+  const availableAlphabets = listSvgAlphabets();
+  const selectedAlphabet = getSvgAlphabetDefinition(svgAlphabetTool.svgAlphabetId as never);
+  const supportedStoneSizes = selectedAlphabet.supportedTargetStoneSizeIds;
+  const calibration = TRW_STONE_SIZE_CALIBRATION[
+    svgAlphabetTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
+        Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. The engine reuses the letters as-is — no fill or outline pass runs.
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Alphabet</span>
+        <select
+          aria-label="SVG alphabet"
+          value={svgAlphabetTool.svgAlphabetId}
+          onChange={(e) => {
+            const next = getSvgAlphabetDefinition(e.target.value as never);
+            dispatch({
+              type: 'UPDATE_SVG_ALPHABET_TOOL',
+              updates: {
+                svgAlphabetId: next.alphabetId,
+                stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
+              },
+            });
+          }}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          {availableAlphabets.map((alphabet) => (
+            <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
+              {alphabet.displayName} — {alphabet.style}
+            </option>
+          ))}
+        </select>
+        <span className="text-[11px] text-zinc-500">
+          {selectedAlphabet.category} · {selectedAlphabet.style} · supports {supportedStoneSizes.join(', ')}
+        </span>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Text</span>
+        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <span>Suggested sample: {selectedAlphabet.suggestedText}</span>
+          <button
+            type="button"
+            onClick={() => dispatch({
+              type: 'UPDATE_SVG_ALPHABET_TOOL',
+              updates: { text: selectedAlphabet.suggestedText },
+            })}
+            className="rounded-full border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800"
+          >
+            Use sample
+          </button>
+        </div>
+        <textarea
+          aria-label="SVG alphabet text"
+          value={svgAlphabetTool.text}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_SVG_ALPHABET_TOOL',
+            updates: { text: e.target.value },
+          })}
+          rows={3}
+          placeholder={selectedAlphabet.suggestedText}
+          className="resize-y rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Stone size</span>
+        <select
+          aria-label="SVG alphabet stone size"
+          value={svgAlphabetTool.stoneSize}
+          onChange={(e) => dispatch({
+            type: 'UPDATE_SVG_ALPHABET_TOOL',
+            updates: { stoneSize: e.target.value as typeof svgAlphabetTool.stoneSize },
+          })}
+          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+        >
+          {supportedStoneSizes.map((size) => (
+            <option key={size} value={size}>
+              {size}{size in TRW_STONE_SIZE_CALIBRATION ? ` — ${TRW_STONE_SIZE_CALIBRATION[size as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm} mm` : ''}
+            </option>
+          ))}
+        </select>
+        {calibration && (
+          <span className="text-[11px] text-zinc-500">
+            Authoritative hole diameter: {calibration.diameterMm} mm
+          </span>
+        )}
+        {selectedAlphabet.limitations && selectedAlphabet.limitations.length > 0 && (
+          <span className="text-[11px] text-zinc-500">
+            {selectedAlphabet.limitations.join(' · ')}
+          </span>
+        )}
+      </label>
+
+      <NumericInput
+        label="Letter spacing"
+        value={svgAlphabetTool.letterSpacingMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_SVG_ALPHABET_TOOL',
+          updates: { letterSpacingMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={50}
+        step={0.25}
+      />
+
+      <NumericInput
+        label="Line spacing"
+        value={svgAlphabetTool.lineSpacingMm}
+        onChange={(value) => dispatch({
+          type: 'UPDATE_SVG_ALPHABET_TOOL',
+          updates: { lineSpacingMm: value },
+        })}
+        unit="mm"
+        min={0}
+        max={100}
+        step={0.5}
+      />
+
+      {svgAlphabetTool.unsupportedCharacters.length > 0 && (
+        <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+          Unsupported characters: {svgAlphabetTool.unsupportedCharacters.join(', ')}
         </div>
       )}
     </div>
@@ -1232,6 +1372,7 @@ function getToolTitle(tool: EditorTool): string {
     case 'svg': return 'SVG Source';
     case 'grid': return 'Grid Source';
     case 'rhinestone-font': return 'Rhinestone Font';
+    case 'svg-alphabet': return 'SVG Alphabet';
     case 'template-import': return 'Template Import';
     case 'manual': return 'Manual Source';
   }

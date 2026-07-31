@@ -7,6 +7,7 @@ import type {
   OutlineTextProjectState,
   RhinestoneFontProjectState,
   RhinestoneProjectFile,
+  SvgAlphabetProjectState,
   SvgUploadProjectState,
   TemplateImportProjectState,
 } from '@/src/lib/rhinestone-engine/index';
@@ -68,6 +69,8 @@ export function getEditableSourceGenerator(state: Pick<EditorState, 'activeTool'
       return state.editableTemplate.isEditable && state.editableTemplate.sourceGenerator
         ? state.editableTemplate.sourceGenerator
         : 'rhinestone-font';
+    case 'svg-alphabet':
+      return 'svg-alphabet';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -206,6 +209,24 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
       } satisfies TemplateImportProjectState;
+    case 'svg-alphabet': {
+      const calibration = TRW_STONE_SIZE_CALIBRATION[
+        state.svgAlphabetTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
+      ];
+      if (!calibration) return null;
+      return {
+        generatorId: 'svg-alphabet',
+        text: state.svgAlphabetTool.text,
+        svgAlphabetId: state.svgAlphabetTool.svgAlphabetId,
+        stoneSize: state.svgAlphabetTool.stoneSize,
+        targetStoneSizeMm: calibration.diameterMm,
+        letterSpacingMm: typeof state.svgAlphabetTool.letterSpacingMm === 'number' ? state.svgAlphabetTool.letterSpacingMm : 2,
+        lineSpacingMm: typeof state.svgAlphabetTool.lineSpacingMm === 'number' ? state.svgAlphabetTool.lineSpacingMm : 0,
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      } satisfies SvgAlphabetProjectState;
+    }
     case 'manual-editor':
       return {
         generatorId: 'manual-editor',

@@ -20,6 +20,8 @@ import {
   createBasicSvgExport,
   LEGACY_OUTLINE_FONT_ID,
   createRhinestoneFontTemplate,
+  createSvgAlphabetTemplate,
+  defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
   TRW_STONE_SIZE_CALIBRATION,
 } from '@/src/lib/rhinestone-engine/index';
@@ -243,6 +245,41 @@ export default function EditorShell() {
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
             break;
 
+          case 'svg-alphabet':
+            if (!state.svgAlphabetTool.text.trim()) {
+              return;
+            }
+            {
+              let targetDiameterMm = 3.429;
+              const sizeId = state.svgAlphabetTool.stoneSize;
+              if (sizeId in TRW_STONE_SIZE_CALIBRATION) {
+                targetDiameterMm = TRW_STONE_SIZE_CALIBRATION[sizeId as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm;
+              }
+              const result = await createSvgAlphabetTemplate({
+                text: state.svgAlphabetTool.text,
+                alphabetId: state.svgAlphabetTool.svgAlphabetId,
+                targetStoneSizeId: sizeId,
+                targetStoneSizeMm: targetDiameterMm,
+                letterSpacingMm: typeof state.svgAlphabetTool.letterSpacingMm === 'number' ? state.svgAlphabetTool.letterSpacingMm : 2,
+                lineSpacingMm: typeof state.svgAlphabetTool.lineSpacingMm === 'number' ? state.svgAlphabetTool.lineSpacingMm : 0,
+                glyphLoader: defaultSvgAlphabetGlyphLoader,
+              });
+              template = result.template;
+              if (
+                JSON.stringify(state.svgAlphabetTool.unsupportedCharacters) !== JSON.stringify(result.unsupportedCharacters) ||
+                JSON.stringify(state.svgAlphabetTool.warnings) !== JSON.stringify(result.warnings)
+              ) {
+                dispatch({
+                  type: 'UPDATE_SVG_ALPHABET_TOOL',
+                  updates: {
+                    unsupportedCharacters: result.unsupportedCharacters,
+                    warnings: result.warnings,
+                  },
+                });
+              }
+            }
+            break;
+
           case 'template-import':
             if (state.templateImportTool.uploadedSvgText) {
               const importResult = createImportedTemplate({
@@ -312,6 +349,13 @@ export default function EditorShell() {
     state.rhinestoneFontTool.lineSpacingMm,
     state.rhinestoneFontTool.unsupportedCharacters,
     state.rhinestoneFontTool.warnings,
+    state.svgAlphabetTool.text,
+    state.svgAlphabetTool.svgAlphabetId,
+    state.svgAlphabetTool.stoneSize,
+    state.svgAlphabetTool.letterSpacingMm,
+    state.svgAlphabetTool.lineSpacingMm,
+    state.svgAlphabetTool.unsupportedCharacters,
+    state.svgAlphabetTool.warnings,
     state.templateImportTool.uploadedSvgText,
     state.templateImportTool.defaultStoneSize,
     state.templateImportTool.ignoredElements,

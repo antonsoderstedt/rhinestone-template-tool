@@ -269,6 +269,7 @@ export type {
   EditableTemplateState,
   ManualEditorProjectState,
   RhinestoneFontProjectState,
+  SvgAlphabetProjectState,
   TemplateImportProjectState,
   GeneratorProjectState,
   RhinestoneProjectFile,

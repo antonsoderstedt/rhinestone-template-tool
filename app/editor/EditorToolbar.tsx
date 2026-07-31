@@ -20,6 +20,7 @@ const TOOLS: Array<{
   { id: 'manual', label: 'Add', icon: MousePointerClick, tooltip: 'Add individual stones to the canvas' },
   { id: 'text', label: 'Text', icon: Type, tooltip: 'Generate stones from outline or dot-matrix text' },
   { id: 'rhinestone-font', label: 'Stone Font', icon: Type, tooltip: 'Use a font that contains pre-placed rhinestones' },
+  { id: 'svg-alphabet', label: 'Alphabet', icon: Type, tooltip: 'Compose text from a per-letter SVG alphabet library' },
   { id: 'svg', label: 'SVG', icon: Upload, tooltip: 'Generate a template from an uploaded SVG' },
   { id: 'template-import', label: 'Import', icon: Upload, tooltip: 'Import an existing SVG rhinestone template' },
   { id: 'grid', label: 'Grid', icon: Grid3X3, tooltip: 'Generate an evenly spaced stone grid' },

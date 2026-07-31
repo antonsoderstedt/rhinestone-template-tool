@@ -36,6 +36,7 @@ export type EditorTool =
   | 'svg'          // SVG import
   | 'grid'         // Grid generator
   | 'rhinestone-font'  // Rhinestone font text
+  | 'svg-alphabet'     // SVG alphabet text (per-letter curated glyphs)
   | 'template-import'  // Import pre-placed stones from SVG
   | 'manual';      // Add individual stones
 
@@ -135,6 +136,18 @@ export interface RhinestoneFontToolState {
   warnings: string[];
 }
 
+// ─── SVG Alphabet Tool State ──────────────────────────────────────────────────
+
+export interface SvgAlphabetToolState {
+  text: string;
+  svgAlphabetId: string;
+  stoneSize: StoneSizeId;
+  letterSpacingMm: number | '';
+  lineSpacingMm: number | '';
+  unsupportedCharacters: string[];
+  warnings: string[];
+}
+
 // ─── Template Import Tool State ───────────────────────────────────────────────
 
 export interface TemplateImportToolState {
@@ -201,6 +214,7 @@ export interface EditorState {
   gridTool: GridToolState;
   manualTool: ManualToolState;
   rhinestoneFontTool: RhinestoneFontToolState;
+  svgAlphabetTool: SvgAlphabetToolState;
   templateImportTool: TemplateImportToolState;
   
   // Current template (result of active tool)
@@ -449,6 +463,16 @@ export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
   warnings: [],
 };
 
+export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
+  text: 'SCORE 2026',
+  svgAlphabetId: 'scoreboard-block',
+  stoneSize: 'SS10',
+  letterSpacingMm: 2,
+  lineSpacingMm: 0,
+  unsupportedCharacters: [],
+  warnings: [],
+};
+
 export const DEFAULT_TEMPLATE_IMPORT_TOOL_STATE: TemplateImportToolState = {
   uploadedSvgText: null,
   svgFileName: null,
@@ -497,6 +521,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   gridTool: { ...DEFAULT_GRID_TOOL_STATE },
   manualTool: { ...DEFAULT_MANUAL_TOOL_STATE },
   rhinestoneFontTool: { ...DEFAULT_RHINESTONE_FONT_TOOL_STATE },
+  svgAlphabetTool: { ...DEFAULT_SVG_ALPHABET_TOOL_STATE },
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
@@ -518,6 +543,7 @@ export type EditorAction =
   | { type: 'UPDATE_GRID_TOOL'; updates: Partial<GridToolState> }
   | { type: 'UPDATE_MANUAL_TOOL'; updates: Partial<ManualToolState> }
   | { type: 'UPDATE_RHINESTONE_FONT_TOOL'; updates: Partial<RhinestoneFontToolState> }
+  | { type: 'UPDATE_SVG_ALPHABET_TOOL'; updates: Partial<SvgAlphabetToolState> }
   | { type: 'UPDATE_TEMPLATE_IMPORT_TOOL'; updates: Partial<TemplateImportToolState> }
   | { type: 'SET_TEMPLATE'; template: RhinestoneTemplate | null }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
@@ -556,6 +582,8 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
         : state.rhinestoneFontTool.presentationMode === 'digits'
           ? 'rhinestone-font-digits'
           : 'rhinestone-font';
+    case 'svg-alphabet':
+      return 'svg-alphabet';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -587,6 +615,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
       return { ...state, rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates) };
+    
+    case 'UPDATE_SVG_ALPHABET_TOOL':
+      return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };
     
     case 'UPDATE_TEMPLATE_IMPORT_TOOL':
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
