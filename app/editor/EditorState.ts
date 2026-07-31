@@ -18,6 +18,7 @@ import {
   TextAlign as OutlineTextAlign,
   Stone,
   type GeneratorId,
+  LEGACY_OUTLINE_FONT_ID,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
@@ -223,7 +224,7 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   text: 'SMOOCH',
   stoneSize: 'SS10',
-  fontId: 'legacy-original',
+  fontId: LEGACY_OUTLINE_FONT_ID,
   fontSizeMm: 25,
   align: 'left',
   letterSpacingMm: 2,
@@ -251,6 +252,42 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   densityPreset: 'standard',
   customSpacingMm: 4.0,
 };
+
+function preferredTextCoverageForFont(fontId: string): TemplateFillMode {
+  return fontId === LEGACY_OUTLINE_FONT_ID ? 'outline' : 'fill';
+}
+
+function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextToolState>): TextToolState {
+  const next: TextToolState = { ...current, ...updates };
+  const changesFontOnly =
+    updates.fontId !== undefined &&
+    updates.coverageMode === undefined &&
+    updates.fillMode === undefined;
+
+  if (changesFontOnly) {
+    const preferredMode = preferredTextCoverageForFont(next.fontId);
+    next.coverageMode = preferredMode;
+    next.fillMode = preferredMode;
+  } else if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
+    next.fillMode = updates.coverageMode;
+  } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {
+    next.coverageMode = updates.fillMode;
+  }
+
+  return next;
+}
+
+function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolState>): SvgToolState {
+  const next: SvgToolState = { ...current, ...updates };
+
+  if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
+    next.fillMode = updates.coverageMode;
+  } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {
+    next.coverageMode = updates.fillMode;
+  }
+
+  return next;
+}
 
 export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   uploadedSvgText: null,
@@ -430,10 +467,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, projectName: action.name };
     
     case 'UPDATE_TEXT_TOOL':
-      return { ...state, textTool: { ...state.textTool, ...action.updates } };
+      return { ...state, textTool: normalizeTextToolUpdate(state.textTool, action.updates) };
     
     case 'UPDATE_SVG_TOOL':
-      return { ...state, svgTool: { ...state.svgTool, ...action.updates } };
+      return { ...state, svgTool: normalizeSvgToolUpdate(state.svgTool, action.updates) };
     
     case 'UPDATE_GRID_TOOL':
       return { ...state, gridTool: { ...state.gridTool, ...action.updates } };

@@ -33,6 +33,7 @@ export interface FillPlacementStrategyOptions {
   customSpacingMm?: number;
   fillPattern?: FillPattern;
   placementPattern?: FillPlacementPattern;
+  fillEdgeInsetMm?: number;
   radialSettings?: Partial<RadialPlacementSettings>;
   existingStones?: readonly Stone[];
   idPrefix?: string;
@@ -68,7 +69,7 @@ function dedupeAndFilterFillPoints(
   options: FillPlacementStrategyOptions,
 ): Stone[] {
   const holeDiameterMm = getRecommendedHoleDiameter(options.stoneSize, options.materialProfileId);
-  const insetMm = holeDiameterMm / 2;
+  const insetMm = options.fillEdgeInsetMm ?? holeDiameterMm / 2;
   const existingCircles = (options.existingStones ?? []).map((stone) => ({
     center: stone.center,
     radiusMm: stone.holeDiameterMm / 2,

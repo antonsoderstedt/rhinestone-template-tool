@@ -62,6 +62,12 @@ export interface CreatePolylineFilledRhinestoneTemplateOptions {
    */
   fillPattern?: FillPattern;
   placementPattern?: FillPlacementPattern;
+  /**
+   * Minimum clearance from filled shape edges before a fill stone is placed.
+   * Defaults to half the hole diameter so generic SVG fills stay fully inside
+   * source shapes. Text generation may lower this to preserve narrow strokes.
+   */
+  fillEdgeInsetMm?: number;
   contourSettings?: Partial<ContourCoverageSettings>;
   radialSettings?: Partial<RadialPlacementSettings>;
   spacingMm?: number;
@@ -125,6 +131,11 @@ export function createPolylineFilledRhinestoneTemplate(
   if (!Array.isArray(polylines) || polylines.length === 0) {
     throw new Error(
       'createPolylineFilledRhinestoneTemplate: "polylines" must be a non-empty array.',
+    );
+  }
+  if (options.fillEdgeInsetMm !== undefined && (!isFinite(options.fillEdgeInsetMm) || options.fillEdgeInsetMm < 0)) {
+    throw new Error(
+      `createPolylineFilledRhinestoneTemplate: "fillEdgeInsetMm" must be a non-negative finite number, got ${options.fillEdgeInsetMm}.`,
     );
   }
 
@@ -226,6 +237,7 @@ export function createPolylineFilledRhinestoneTemplate(
   }
 
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
+  const fillEdgeInsetMm = options.fillEdgeInsetMm ?? holeDiameterMm / 2;
 
   // ── Scale polylines to physical dimensions ───────────────────────────────
   const workingPolylines =
@@ -246,6 +258,7 @@ export function createPolylineFilledRhinestoneTemplate(
     fillMode,
     fillPattern,
     placementPattern,
+    fillEdgeInsetMm,
     resolvedSpacingMm,
     stoneSize,
     materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
@@ -281,6 +294,7 @@ export function createPolylineFilledRhinestoneTemplate(
     materialProfileId,
     fillPattern,
     placementPattern,
+    fillEdgeInsetMm,
     radialSettings: options.radialSettings,
     existingStones: outlineStones,
     idPrefix: `${stoneSize.toLowerCase()}-${placementPattern}-fill`,

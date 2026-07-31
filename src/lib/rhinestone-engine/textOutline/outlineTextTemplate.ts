@@ -3,8 +3,8 @@
  *
  * Converts text → vector glyph polylines → rhinestone template.
  *
- * Font Outline Foundation v1 — all glyph outlines come from the built-in
- * vector font. Real TTF/OTF parsing is deferred to a future phase.
+ * Font Outline Foundation v1 — legacy glyph outlines come from the built-in
+ * vector font, while bundled OpenType fonts use parsed font outlines.
  *
  * Pipeline:
  *   text input
@@ -79,17 +79,22 @@ export interface CreateOutlineTextTemplateOptions {
    */
   spacingMm?: number;
   materialProfileId?: string;
-  /** Coverage mode for the generated text. Defaults to outline. */
+  /** Coverage mode for the generated text. Defaults to outline for legacy and fill for bundled fonts. */
   coverageMode?: TemplateCoverageMode;
   /**
    * Fill mode for closed glyph shapes (e.g. the oval in 'O').
-   * Default: 'outline'.
+   * Defaults to outline for legacy and fill for bundled fonts.
    */
   fillMode?: TemplateFillMode;
   /** Fill grid pattern. Default: 'offset-grid'. */
   fillPattern?: FillPattern;
   /** Fill placement pattern. Only relevant when coverage includes fill. */
   placementPattern?: FillPlacementPattern;
+  /**
+   * Minimum edge clearance for fill stones. Bundled text fonts default to
+   * centre-inside placement so narrow strokes still receive stones.
+   */
+  fillEdgeInsetMm?: number;
   contourSettings?: Partial<ContourCoverageSettings>;
   radialSettings?: Partial<RadialPlacementSettings>;
 }
@@ -143,9 +148,45 @@ function validateOutlineOptions(options: NormalizedOutlineTextTemplateOptions) {
   if (targetHeightMm !== undefined && (!isFinite(targetHeightMm) || targetHeightMm <= 0)) {
     throw new Error(`createOutlineTextTemplate: "targetHeightMm" must be a positive finite number, got ${targetHeightMm}.`);
   }
+  if (options.fillEdgeInsetMm !== undefined && (!isFinite(options.fillEdgeInsetMm) || options.fillEdgeInsetMm < 0)) {
+    throw new Error(`createOutlineTextTemplate: "fillEdgeInsetMm" must be a non-negative finite number, got ${options.fillEdgeInsetMm}.`);
+  }
   if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isKnownOutlineFontId(options.fontId)) {
     throw new Error(`Unknown outline fontId: ${options.fontId}`);
   }
+}
+
+function defaultFillModeForOutlineFont(fontId: string): TemplateFillMode {
+  return fontId === LEGACY_OUTLINE_FONT_ID ? 'outline' : 'fill';
+}
+
+function resolveTextCoverageModes(
+  options: NormalizedOutlineTextTemplateOptions,
+): { coverageMode: TemplateCoverageMode; fillMode: TemplateFillMode } {
+  if (options.coverageMode !== undefined) {
+    return {
+      coverageMode: options.coverageMode,
+      fillMode: options.coverageMode === 'contour'
+        ? options.fillMode ?? defaultFillModeForOutlineFont(options.fontId)
+        : options.coverageMode,
+    };
+  }
+
+  const fillMode = options.fillMode ?? defaultFillModeForOutlineFont(options.fontId);
+  return {
+    coverageMode: fillMode,
+    fillMode,
+  };
+}
+
+function resolveTextFillEdgeInsetMm(
+  options: NormalizedOutlineTextTemplateOptions,
+  coverageMode: TemplateCoverageMode,
+): number | undefined {
+  if (options.fillEdgeInsetMm !== undefined) return options.fillEdgeInsetMm;
+  if (coverageMode !== 'fill' && coverageMode !== 'outline-fill') return undefined;
+  if (options.fontId === LEGACY_OUTLINE_FONT_ID) return undefined;
+  return 0;
 }
 
 function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): Polyline[] {
@@ -239,13 +280,19 @@ function createOutlineTemplateFromPolylines(
     customSpacingMm,
     spacingMm,
     materialProfileId,
-    coverageMode,
-    fillMode = 'outline',
+    coverageMode: requestedCoverageMode,
+    fillMode: requestedFillMode,
     fillPattern = 'offset-grid',
     placementPattern = 'default',
     contourSettings,
     radialSettings,
   } = options;
+  const { coverageMode, fillMode } = resolveTextCoverageModes({
+    ...options,
+    coverageMode: requestedCoverageMode,
+    fillMode: requestedFillMode,
+  });
+  const fillEdgeInsetMm = resolveTextFillEdgeInsetMm(options, coverageMode);
 
   if (validPolylines.length === 0) {
     throw new Error(
@@ -284,6 +331,7 @@ function createOutlineTemplateFromPolylines(
   metadata['fillMode'] = fillMode;
   metadata['fillPattern'] = fillPattern;
   metadata['placementPattern'] = placementPattern;
+  if (fillEdgeInsetMm !== undefined) metadata['fillEdgeInsetMm'] = fillEdgeInsetMm;
 
   const template = createPolylineFilledRhinestoneTemplate({
     id,
@@ -294,6 +342,7 @@ function createOutlineTemplateFromPolylines(
     fillMode,
     fillPattern,
     placementPattern,
+    fillEdgeInsetMm,
     contourSettings,
     radialSettings,
     spacingMm,

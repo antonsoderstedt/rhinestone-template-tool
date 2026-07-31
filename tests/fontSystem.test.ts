@@ -95,6 +95,21 @@ describe('font system', () => {
     expect(BUILT_IN_VECTOR_FONT.id).toBe('built-in-vector-outline-v1');
   });
 
+  it('defaults bundled outline fonts to filled text placement', async () => {
+    const template = await createOutlineTextTemplateAsync({
+      id: 'bundled-default-fill',
+      name: 'Bundled Default Fill',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      fontId: 'archivo-black',
+      fontSizeMm: 25,
+    });
+    expect(template.metadata?.['coverageMode']).toBe('fill');
+    expect(template.metadata?.['fillMode']).toBe('fill');
+    expect(template.metadata?.['fillEdgeInsetMm']).toBe(0);
+    expect(template.stones.length).toBeGreaterThan(50);
+  });
+
   it('supports outline, fill, and outline + fill for bundled fonts', async () => {
     const outline = await createOutlineTextTemplateAsync({
       id: 'outline',
@@ -127,6 +142,21 @@ describe('font system', () => {
     expect(fill.metadata?.['fillMode']).toBe('fill');
     expect(fill.stones.length).toBeGreaterThanOrEqual(0);
     expect(combo.stones.length).toBeGreaterThanOrEqual(outline.stones.length);
+  });
+
+  it('uses text-friendly fill inset for bundled font fill mode', async () => {
+    const filled = await createOutlineTextTemplateAsync({
+      id: 'bitter-filled',
+      name: 'Bitter Filled',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      fontId: 'bitter-slab',
+      fontSizeMm: 25,
+      coverageMode: 'fill',
+      fillMode: 'fill',
+    });
+    expect(filled.metadata?.['fillEdgeInsetMm']).toBe(0);
+    expect(filled.stones.length).toBeGreaterThan(40);
   });
 
   it('handles spaces and kerning-sensitive pairs', async () => {

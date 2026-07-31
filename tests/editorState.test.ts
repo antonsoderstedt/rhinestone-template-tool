@@ -32,6 +32,56 @@ function makeEditableState(initialStones: EditableStone[] = [stone('a', 10, 10),
 }
 
 describe('editorReducer', () => {
+  it('uses filled placement when switching to a bundled outline font', () => {
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { fontId: 'archivo-black' },
+    });
+    expect(state.textTool.coverageMode).toBe('fill');
+    expect(state.textTool.fillMode).toBe('fill');
+  });
+
+  it('keeps legacy outline font on outline placement', () => {
+    const bundled = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { fontId: 'archivo-black' },
+    });
+    const legacy = editorReducer(bundled, {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { fontId: 'legacy-original' },
+    });
+    expect(legacy.textTool.coverageMode).toBe('outline');
+    expect(legacy.textTool.fillMode).toBe('outline');
+  });
+
+  it('syncs text coverage and fill mode controls', () => {
+    const filled = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { fillMode: 'outline-fill' },
+    });
+    expect(filled.textTool.coverageMode).toBe('outline-fill');
+
+    const outline = editorReducer(filled, {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { coverageMode: 'outline' },
+    });
+    expect(outline.textTool.fillMode).toBe('outline');
+  });
+
+  it('syncs SVG coverage and fill mode controls', () => {
+    const filled = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { fillMode: 'fill' },
+    });
+    expect(filled.svgTool.coverageMode).toBe('fill');
+
+    const outlineFill = editorReducer(filled, {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { coverageMode: 'outline-fill' },
+    });
+    expect(outlineFill.svgTool.fillMode).toBe('outline-fill');
+  });
+
   it('supports Make Editable and undo', () => {
     let state = structuredClone(DEFAULT_EDITOR_STATE);
     state = editorReducer(state, { type: 'SET_TEMPLATE', template: makeTemplate([stone('a', 10, 10)]) });
