@@ -319,3 +319,19 @@ export type { ImportedStone, TemplateImportResult, TemplateImportOptions } from 
 export { estimateStoneSizeId, importRhinestoneTemplate } from './templateImport/templateImport';
 export type { CreateImportedTemplateOptions, ImportedTemplateResult } from './templateImport/importedTemplate';
 export { createImportedTemplate } from './templateImport/importedTemplate';
+
+// SVG Alphabet System
+export type { SvgAlphabetId, SvgAlphabetCategory, SvgAlphabetStyle, SvgAlphabetDefinition } from './svgAlphabet/svgAlphabetRegistry';
+export {
+  DEFAULT_SVG_ALPHABET_ID,
+  SVG_ALPHABET_REGISTRY,
+  getSvgAlphabetDefinition,
+  isKnownSvgAlphabetId,
+  listSvgAlphabets,
+} from './svgAlphabet/svgAlphabetRegistry';
+export type {
+  SvgAlphabetGlyphLoader,
+  CreateSvgAlphabetTemplateOptions,
+  SvgAlphabetTemplateResult,
+} from './svgAlphabet/svgAlphabetTemplate';
+export { createSvgAlphabetTemplate } from './svgAlphabet/svgAlphabetTemplate';
