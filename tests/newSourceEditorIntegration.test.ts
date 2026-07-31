@@ -67,8 +67,8 @@ describe('main editor integration — rhinestone font', () => {
     );
     expect(html).toContain('Rhinestone font text');
     expect(html).toContain('TRW Clean Stone');
-    expect(html).toContain('Blessed SS10');
-    expect(html).toContain('Old English SS10');
+    expect(html).toContain('Blessed');
+    expect(html).toContain('Old English');
     expect(html).toContain('Script');
     expect(html).toContain('Gothic');
     expect(html).toContain('mode stones');

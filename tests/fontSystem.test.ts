@@ -297,7 +297,7 @@ describe('font system', () => {
     expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-numbers-ss10')?.style).toBe('Digits');
     expect(listRhinestoneFonts().find((font) => font.fontId === 'small-line-ss10')?.suggestedText).toBe('CHEER');
     expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-numbers-ss10')?.suggestedText).toBe('2026');
-    expect(getSupportedRhinestoneFontStoneSizes('old-english-ss10')).toEqual(['SS10']);
+    expect(getSupportedRhinestoneFontStoneSizes('old-english-ss10')).toEqual(['SS10', 'SS6']);
     expect(getPreferredRhinestoneFontStoneSize('bride-ss10')).toBe('SS10');
   });
 });

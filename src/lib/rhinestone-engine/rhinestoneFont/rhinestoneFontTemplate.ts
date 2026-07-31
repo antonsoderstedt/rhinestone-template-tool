@@ -31,8 +31,8 @@ export async function createRhinestoneFontTemplate(
 ): Promise<RhinestoneFontTemplateResult> {
   const { text, rhinestoneFontId, targetStoneSizeId, targetStoneSizeMm, letterSpacingMm, lineSpacingMm } = options;
 
-  // Load font
-  const loaded = await loadRhinestoneFont(rhinestoneFontId);
+  // Load font (per-size variant when the font ships multiple size packages)
+  const loaded = await loadRhinestoneFont(rhinestoneFontId, targetStoneSizeId);
 
   if (!loaded.definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
     throw new Error(

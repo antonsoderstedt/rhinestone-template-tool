@@ -13,10 +13,12 @@ import {
   type RhinestoneFontDefinition,
   type RhinestoneFontId,
 } from './rhinestoneFontRegistry';
+import type { StoneSizeId } from '../types/index';
 
 export interface LoadedRhinestoneFont {
   definition: RhinestoneFontDefinition;
   font: opentype.Font;
+  loadedStoneSizeId?: StoneSizeId;
 }
 
 const parsedFontCache = new Map<string, Promise<LoadedRhinestoneFont>>();
@@ -27,7 +29,10 @@ function bufferToArrayBuffer(buffer: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
-async function readFontArrayBuffer(definition: RhinestoneFontDefinition): Promise<ArrayBuffer> {
+async function readFontArrayBuffer(
+  definition: RhinestoneFontDefinition,
+  targetStoneSizeId?: StoneSizeId,
+): Promise<ArrayBuffer> {
   if (!definition.assetUrl && !definition.nodeFilePath) {
     throw new Error(`Rhinestone font "${definition.displayName}" has no loadable asset.`);
   }
@@ -35,12 +40,13 @@ async function readFontArrayBuffer(definition: RhinestoneFontDefinition): Promis
   if (typeof window === 'undefined') {
     const { readFile } = await import('node:fs/promises');
     const { resolveRhinestoneFontFilePath } = await import('./fontLibraryPath');
-    const resolvedPath = resolveRhinestoneFontFilePath(definition);
+    const resolvedPath = resolveRhinestoneFontFilePath(definition, targetStoneSizeId);
 
     if (!resolvedPath) {
       throw new Error(
         `Rhinestone font file not found for: ${definition.displayName}\n` +
         `Font: ${definition.displayName} (${definition.fontId})\n` +
+        `Requested size: ${targetStoneSizeId ?? '(any)'}\n` +
         `Expected node path: ${definition.nodeFilePath ?? '(none)'}\n` +
         `Expected library-relative path: ${definition.libraryRelativePath ?? '(none)'}\n` +
         `This font must be available in RHINESTONE_FONT_LIBRARY_DIR, ~/Desktop/LETTER UTVALDA, or the repo font library.`
@@ -55,27 +61,37 @@ async function readFontArrayBuffer(definition: RhinestoneFontDefinition): Promis
     throw new Error(`Rhinestone font "${definition.displayName}" has no browser asset URL.`);
   }
 
-  const response = await fetch(definition.assetUrl);
+  const url = targetStoneSizeId ? `${definition.assetUrl}?size=${targetStoneSizeId}` : definition.assetUrl;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load rhinestone font asset for ${definition.displayName}: ${response.status}`);
   }
   return await response.arrayBuffer();
 }
 
-export async function loadRhinestoneFont(fontId: string | undefined | null): Promise<LoadedRhinestoneFont> {
+export async function loadRhinestoneFont(
+  fontId: string | undefined | null,
+  targetStoneSizeId?: StoneSizeId,
+): Promise<LoadedRhinestoneFont> {
   const resolvedId = isKnownRhinestoneFontId(fontId) ? fontId : DEFAULT_RHINESTONE_FONT_ID;
   const definition = getRhinestoneFontDefinition(resolvedId);
 
-  const existing = parsedFontCache.get(definition.fontId);
+  const hasSizedVariant = targetStoneSizeId !== undefined
+    && definition.libraryRelativePathBySize?.[targetStoneSizeId] !== undefined;
+  const cacheKey = hasSizedVariant
+    ? `${definition.fontId}::${targetStoneSizeId}`
+    : definition.fontId;
+
+  const existing = parsedFontCache.get(cacheKey);
   if (existing) return existing;
 
   const promise = (async () => {
-    const arrayBuffer = await readFontArrayBuffer(definition);
+    const arrayBuffer = await readFontArrayBuffer(definition, hasSizedVariant ? targetStoneSizeId : undefined);
     const font = opentype.parse(arrayBuffer);
-    return { definition, font };
+    return { definition, font, loadedStoneSizeId: hasSizedVariant ? targetStoneSizeId : undefined };
   })();
 
-  parsedFontCache.set(definition.fontId, promise);
+  parsedFontCache.set(cacheKey, promise);
   return promise;
 }
 
@@ -84,7 +100,10 @@ export function clearRhinestoneFontCacheForTests() {
 }
 
 export function listCachedRhinestoneFontIds(): RhinestoneFontId[] {
-  return Array.from(parsedFontCache.keys()).filter((fontId): fontId is RhinestoneFontId =>
-    isKnownRhinestoneFontId(fontId)
-  );
+  const ids = new Set<RhinestoneFontId>();
+  for (const key of parsedFontCache.keys()) {
+    const [fontId] = key.split('::');
+    if (isKnownRhinestoneFontId(fontId)) ids.add(fontId);
+  }
+  return Array.from(ids);
 }

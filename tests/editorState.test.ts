@@ -135,7 +135,7 @@ describe('editorReducer', () => {
   it('clamps rhinestone font stone size to the selected font support', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'old-english-ss10', stoneSize: 'SS6' },
+      updates: { rhinestoneFontId: 'test-fixture', stoneSize: 'SS6' },
     });
     expect(state.rhinestoneFontTool.stoneSize).toBe('SS10');
   });
