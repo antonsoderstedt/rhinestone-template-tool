@@ -31,8 +31,10 @@ describe('font system', () => {
   });
 
   it('declares conservative text coverage policies for bundled fonts', () => {
-    expect(getPreferredTextCoverageMode('archivo-black')).toBe('outline-fill');
+    expect(getPreferredTextCoverageMode('archivo-black')).toBe('outline');
     expect(getSupportedTextCoverageModes('archivo-black')).toContain('fill');
+    expect(getPreferredTextCoverageMode('oswald-condensed')).toBe('outline-fill');
+    expect(getSupportedTextCoverageModes('oswald-condensed')).toContain('fill');
     expect(getPreferredTextCoverageMode('pacifico-script')).toBe('outline');
     expect(getSupportedTextCoverageModes('pacifico-script')).toEqual(['outline']);
   });
@@ -107,20 +109,35 @@ describe('font system', () => {
     expect(BUILT_IN_VECTOR_FONT.id).toBe('built-in-vector-outline-v1');
   });
 
-  it('defaults bundled outline fonts to contour-preserving filled typography', async () => {
+  it('defaults bold bundled fonts to readable outline placement', async () => {
     const template = await createOutlineTextTemplateAsync({
-      id: 'bundled-default-fill',
-      name: 'Bundled Default Fill',
+      id: 'bundled-default-outline',
+      name: 'Bundled Default Outline',
       text: 'SMOOCH',
       stoneSize: 'SS10',
       fontId: 'archivo-black',
       fontSizeMm: 25,
     });
+    expect(template.metadata?.['coverageMode']).toBe('outline');
+    expect(template.metadata?.['fillMode']).toBe('outline');
+    expect(template.stones.length).toBeGreaterThan(120);
+    expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
+  });
+
+  it('still offers filled typography as opt-in for bold bundled fonts', async () => {
+    const template = await createOutlineTextTemplateAsync({
+      id: 'bundled-optin-fill',
+      name: 'Bundled Opt-in Fill',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      fontId: 'archivo-black',
+      fontSizeMm: 25,
+      outlineTextStyle: 'filled-typography',
+    });
     expect(template.metadata?.['coverageMode']).toBe('outline-fill');
     expect(template.metadata?.['fillMode']).toBe('outline-fill');
     expect(template.metadata?.['fillEdgeInsetMm']).toBe(0);
     expect(template.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-outline-fill-v1');
-    expect(template.stones.length).toBeGreaterThan(120);
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
     expect(template.metadata?.['outlineStoneCount']).toBe(template.stones.filter((stone) => stone.metadata?.collisionSource === 'outline').length);

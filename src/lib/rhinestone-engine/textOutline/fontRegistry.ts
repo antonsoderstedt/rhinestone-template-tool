@@ -84,7 +84,7 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/archivo-black / Google Fonts',
     packageName: '@fontsource/archivo-black',
     isLegacy: false,
-    preferredTextCoverageMode: 'outline-fill',
+    preferredTextCoverageMode: 'outline',
     supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
@@ -118,7 +118,7 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/black-ops-one / Google Fonts',
     packageName: '@fontsource/black-ops-one',
     isLegacy: false,
-    preferredTextCoverageMode: 'outline-fill',
+    preferredTextCoverageMode: 'outline',
     supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
@@ -135,7 +135,7 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/lilita-one / Google Fonts',
     packageName: '@fontsource/lilita-one',
     isLegacy: false,
-    preferredTextCoverageMode: 'outline-fill',
+    preferredTextCoverageMode: 'outline',
     supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
@@ -152,7 +152,7 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/bitter / Google Fonts',
     packageName: '@fontsource/bitter',
     isLegacy: false,
-    preferredTextCoverageMode: 'outline-fill',
+    preferredTextCoverageMode: 'outline',
     supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {

@@ -32,10 +32,20 @@ function makeEditableState(initialStones: EditableStone[] = [stone('a', 10, 10),
 }
 
 describe('editorReducer', () => {
-  it('uses filled placement when switching to a block-friendly bundled outline font', () => {
+  it('uses outline placement by default when switching to a bold bundled outline font', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_TEXT_TOOL',
       updates: { fontId: 'archivo-black' },
+    });
+    expect(state.textTool.coverageMode).toBe('outline');
+    expect(state.textTool.fillMode).toBe('outline');
+    expect(state.textTool.outlineTextStyle).toBe('outline');
+  });
+
+  it('uses filled placement when switching to a medium-weight bundled outline font', () => {
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { fontId: 'oswald-condensed' },
     });
     expect(state.textTool.coverageMode).toBe('outline-fill');
     expect(state.textTool.fillMode).toBe('outline-fill');
