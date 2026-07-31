@@ -335,3 +335,7 @@ export type {
   SvgAlphabetTemplateResult,
 } from './svgAlphabet/svgAlphabetTemplate';
 export { createSvgAlphabetTemplate } from './svgAlphabet/svgAlphabetTemplate';
+export {
+  defaultSvgAlphabetGlyphLoader,
+  clearSvgAlphabetGlyphCacheForTests,
+} from './svgAlphabet/svgAlphabetLoader';
