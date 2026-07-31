@@ -9,7 +9,7 @@
  * - Output is deterministic: same template + options → byte-identical SVG.
  */
 
-import type { RhinestoneTemplate, ExportOptions, Stone } from '../types/index';
+import type { RhinestoneTemplate, ExportOptions, Stone, CutShape } from '../types/index';
 import { circleToStoneCircle } from '../geometry/circle';
 import { calculateBounds, expandBounds } from '../geometry/bounds';
 import { roundMm } from '../geometry/rounding';
@@ -105,6 +105,43 @@ function renderStoneLabel(stone: Stone, dp: number): string {
   );
 }
 
+// ─── Cut-shape rendering ──────────────────────────────────────────────────────
+
+function renderCutShape(shape: CutShape, dp: number): string {
+  const x = formatNumber(shape.x, dp);
+  const y = formatNumber(shape.y, dp);
+  const width = formatNumber(shape.widthMm, dp);
+  const height = formatNumber(shape.heightMm, dp);
+  const safeId = shape.id ? escapeXml(shape.id) : `cut-${x}-${y}`;
+  const cornerAttr = (shape.cornerRadiusMm && shape.cornerRadiusMm > 0)
+    ? ` rx="${formatNumber(shape.cornerRadiusMm, dp)}" ry="${formatNumber(shape.cornerRadiusMm, dp)}"`
+    : '';
+
+  return (
+    `    <rect` +
+    ` id="cut-${safeId}"` +
+    ` x="${x}"` +
+    ` y="${y}"` +
+    ` width="${width}"` +
+    ` height="${height}"` +
+    cornerAttr +
+    ` fill="none"` +
+    ` stroke="#000000"` +
+    ` stroke-width="0.1"` +
+    ` data-cut-shape="${escapeXml(shape.type)}"` +
+    ` />`
+  );
+}
+
+function cutShapeBounds(shape: CutShape): { minX: number; minY: number; maxX: number; maxY: number } {
+  return {
+    minX: shape.x,
+    minY: shape.y,
+    maxX: shape.x + shape.widthMm,
+    maxY: shape.y + shape.heightMm,
+  };
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -138,16 +175,35 @@ export function createBasicSvgExport(
   let canvasWidth: number;
   let canvasHeight: number;
 
-  if (template.stones.length === 0) {
-    // No stones — use declared dimensions if available, otherwise 0×0
+  const cutShapes = template.cutShapes ?? [];
+
+  if (template.stones.length === 0 && cutShapes.length === 0) {
+    // Empty template — use declared dimensions if available, otherwise 0×0
     minX = 0;
     minY = 0;
     canvasWidth = template.widthMm ?? 0;
     canvasHeight = template.heightMm ?? 0;
   } else {
     const stoneCircles = template.stones.map(circleToStoneCircle);
-    const rawBounds = calculateBounds(stoneCircles);
-    const padded = expandBounds(rawBounds, opts.paddingMm);
+    const stoneBounds = template.stones.length > 0 ? calculateBounds(stoneCircles) : null;
+
+    // Include cut shapes in the bounds so the viewBox covers frames too.
+    let rawMinX = stoneBounds ? stoneBounds.minX : Infinity;
+    let rawMinY = stoneBounds ? stoneBounds.minY : Infinity;
+    let rawMaxX = stoneBounds ? stoneBounds.maxX : -Infinity;
+    let rawMaxY = stoneBounds ? stoneBounds.maxY : -Infinity;
+    for (const shape of cutShapes) {
+      const b = cutShapeBounds(shape);
+      rawMinX = Math.min(rawMinX, b.minX);
+      rawMinY = Math.min(rawMinY, b.minY);
+      rawMaxX = Math.max(rawMaxX, b.maxX);
+      rawMaxY = Math.max(rawMaxY, b.maxY);
+    }
+
+    const padded = expandBounds(
+      { minX: rawMinX, minY: rawMinY, maxX: rawMaxX, maxY: rawMaxY, width: rawMaxX - rawMinX, height: rawMaxY - rawMinY },
+      opts.paddingMm,
+    );
     minX = padded.minX;
     minY = padded.minY;
     canvasWidth = padded.width;
@@ -182,6 +238,17 @@ export function createBasicSvgExport(
     lines.push(`  </g>`);
   } else {
     lines.push(`  <g id="guide" />`);
+  }
+
+  // Cut-shapes layer (stencil-card frames, etc.)
+  if (cutShapes.length > 0) {
+    lines.push(`  <g id="cuts">`);
+    for (const shape of cutShapes) {
+      lines.push(renderCutShape(shape, dp));
+    }
+    lines.push(`  </g>`);
+  } else {
+    lines.push(`  <g id="cuts" />`);
   }
 
   // Stones layer

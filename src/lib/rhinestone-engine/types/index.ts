@@ -106,6 +106,28 @@ export interface MaterialProfile {
 
 // ─── Template (engine output) ─────────────────────────────────────────────────
 
+/**
+ * A shape the cutter should cut as an outer path — e.g. a stencil-card frame
+ * around a group of stones. Cricut renders these as native cut-lines rather
+ * than as rhinestone holes.
+ *
+ * Currently only rounded rectangles are supported. Corner radius is optional.
+ * Coordinates are in the same mm space as the template's stones.
+ */
+export interface CutRectShape {
+  type: 'rect';
+  x: number;
+  y: number;
+  widthMm: number;
+  heightMm: number;
+  /** Corner radius in mm. 0 or undefined means square corners. */
+  cornerRadiusMm?: number;
+  /** Optional identifier for grouping / labelling (e.g. per-letter card id). */
+  id?: string;
+}
+
+export type CutShape = CutRectShape;
+
 /** The result produced by the rhinestone engine for a single design. */
 export interface RhinestoneTemplate {
   id: string;
@@ -113,6 +135,11 @@ export interface RhinestoneTemplate {
   /** Internal unit — always "mm". */
   unit: 'mm';
   stones: Stone[];
+  /**
+   * Optional additional shapes the cutter should cut as outer paths (e.g.
+   * reusable stencil-card frames). Renders alongside stones in SVG export.
+   */
+  cutShapes?: CutShape[];
   widthMm?: number;
   heightMm?: number;
   metadata?: Record<string, string | number | boolean>;

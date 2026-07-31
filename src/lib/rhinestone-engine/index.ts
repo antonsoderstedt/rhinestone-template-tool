@@ -340,3 +340,12 @@ export {
   defaultSvgAlphabetGlyphLoader,
   clearSvgAlphabetGlyphCacheForTests,
 } from './svgAlphabet/svgAlphabetLoader';
+
+// Letter Stencil System
+export type {
+  StencilLayoutMode,
+  CreateLetterStencilOptions,
+  LetterStencilCardMetadata,
+  LetterStencilResult,
+} from './letterStencil/letterStencilTemplate';
+export { createLetterStencilTemplate } from './letterStencil/letterStencilTemplate';
