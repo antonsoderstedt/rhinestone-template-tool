@@ -51,6 +51,7 @@ describe('font project round-trip', () => {
       throw new Error('Expected outline-text project state');
     }
     expect(parsed.generatorState.fontId).toBe('archivo-black');
+    expect(parsed.generatorState.outlineTextStyle).toBe('outline');
 
     const regenerated = await createOutlineTextTemplateAsync({
       id: 'text-outline-preview',

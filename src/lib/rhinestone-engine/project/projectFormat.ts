@@ -38,6 +38,7 @@ export interface OutlineTextProjectState {
   generatorId: 'outline-text';
   text: string;
   stoneSize: StoneSizeId;
+  outlineTextStyle?: 'outline' | 'filled-typography';
   fontId?: string;
   fontSizeMm: number;
   targetWidthMm: number | null;
@@ -342,10 +343,18 @@ function parseRadialSettings(value: unknown, ctx: string): RadialPlacementSettin
 
 function validateOutlineText(s: UnknownRecord): OutlineTextProjectState {
   const ctx = 'generatorState';
+  const coverageMode = s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES);
+  const fillMode = requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES);
+  const outlineTextStyle = s.outlineTextStyle === 'filled-typography'
+    ? 'filled-typography'
+    : (coverageMode === 'fill' || coverageMode === 'outline-fill' || fillMode === 'fill' || fillMode === 'outline-fill'
+        ? 'filled-typography'
+        : 'outline');
   return {
     generatorId: 'outline-text',
     text: requireString(s, 'text', ctx),
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    outlineTextStyle,
     fontId: typeof s.fontId === 'string' ? s.fontId : LEGACY_OUTLINE_FONT_ID,
     fontSizeMm: requireFiniteNumber(s, 'fontSizeMm', ctx),
     targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
@@ -354,8 +363,8 @@ function validateOutlineText(s: UnknownRecord): OutlineTextProjectState {
     align: requireEnum<OutlineTextAlign>(s, 'align', ctx, VALID_TEXT_ALIGNS),
     letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
     lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
-    coverageMode: s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES),
-    fillMode: requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES),
+    coverageMode,
+    fillMode,
     fillPattern: requireEnum<FillPattern>(s, 'fillPattern', ctx, VALID_FILL_PATTERNS),
     placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
     contourSettings: parseContourSettings(s.contourSettings, ctx),

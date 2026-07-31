@@ -27,6 +27,55 @@ import { generatePlacedFillStones } from './placementPatterns';
 import type { ContourDirection } from './contourPlacement';
 import { createContourRhinestoneTemplate } from './contourPlacement';
 
+const OUTLINE_COLLISION_PRIORITY = 2;
+const FILL_COLLISION_PRIORITY = 1;
+
+function sortStonesByGeometry(stones: readonly Stone[]): Stone[] {
+  return [...stones].sort((left, right) => {
+    const yDelta = left.center.y - right.center.y;
+    if (Math.abs(yDelta) > 0.0001) return yDelta;
+    const xDelta = left.center.x - right.center.x;
+    if (Math.abs(xDelta) > 0.0001) return xDelta;
+    return left.id.localeCompare(right.id);
+  });
+}
+
+function getCollisionPriority(stone: Stone): number {
+  const value = stone.metadata?.collisionPriority;
+  return typeof value === 'number' ? value : 0;
+}
+
+function sortStonesForCollisionResolution(stones: readonly Stone[]): Stone[] {
+  return [...stones].sort((left, right) => {
+    const priorityDelta = getCollisionPriority(right) - getCollisionPriority(left);
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const yDelta = left.center.y - right.center.y;
+    if (Math.abs(yDelta) > 0.0001) return yDelta;
+    const xDelta = left.center.x - right.center.x;
+    if (Math.abs(xDelta) > 0.0001) return xDelta;
+    return left.id.localeCompare(right.id);
+  });
+}
+
+function withCollisionMetadata(
+  stones: readonly Stone[],
+  collisionSource: 'outline' | 'fill',
+  collisionPriority: number,
+): Stone[] {
+  return stones.map((stone) => ({
+    ...stone,
+    metadata: {
+      ...stone.metadata,
+      collisionSource: stone.metadata?.collisionSource ?? collisionSource,
+      collisionPriority: Math.max(
+        typeof stone.metadata?.collisionPriority === 'number' ? stone.metadata.collisionPriority : 0,
+        collisionPriority,
+      ),
+    },
+  }));
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
@@ -282,11 +331,15 @@ export function createPolylineFilledRhinestoneTemplate(
       materialProfileId,
       // workingPolylines already scaled — no target dimensions here
     });
-    outlineStones = outlineTemplate.stones;
+    outlineStones = withCollisionMetadata(
+      outlineTemplate.stones,
+      'outline',
+      OUTLINE_COLLISION_PRIORITY,
+    );
   }
 
   // ── Fill stones ───────────────────────────────────────────────────────────
-  const fillStones = generatePlacedFillStones(workingPolylines, {
+  const fillStones = withCollisionMetadata(generatePlacedFillStones(workingPolylines, {
     stoneSize,
     spacingMm: options.spacingMm,
     densityPreset: options.densityPreset,
@@ -298,11 +351,10 @@ export function createPolylineFilledRhinestoneTemplate(
     radialSettings: options.radialSettings,
     existingStones: outlineStones,
     idPrefix: `${stoneSize.toLowerCase()}-${placementPattern}-fill`,
-  });
+  }), 'fill', FILL_COLLISION_PRIORITY);
 
   // ── Combine and deduplicate ───────────────────────────────────────────────
-  // Outline stones come first so they take priority in the greedy filter.
-  const combinedStones: Stone[] = [...outlineStones, ...fillStones];
+  const combinedStones = sortStonesForCollisionResolution([...outlineStones, ...fillStones]);
 
   if (combinedStones.length === 0) {
     // No closed shapes produced fill points and no outline was requested.
@@ -328,5 +380,5 @@ export function createPolylineFilledRhinestoneTemplate(
     if (!tooClose) keptStones.push(stone);
   }
 
-  return createRhinestoneTemplate({ id, name, stones: keptStones, metadata });
+  return createRhinestoneTemplate({ id, name, stones: sortStonesByGeometry(keptStones), metadata });
 }

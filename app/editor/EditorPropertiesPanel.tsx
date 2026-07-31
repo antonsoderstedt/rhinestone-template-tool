@@ -3,6 +3,8 @@
 import { CopyPlus, DiamondMinus, Hand, Layers3, MoveHorizontal, MoveVertical, PenLine, Plus, ScanSearch, Sparkles, Type, Upload } from 'lucide-react';
 import {
   createImportedTemplate,
+  getOutlineFontDefinition,
+  getSupportedTextCoverageModes,
   getStoneSizeProfile,
   TRW_CLEAN_STONE_FONT_ID,
   TRW_STONE_SIZE_CALIBRATION,
@@ -214,6 +216,40 @@ export default function EditorPropertiesPanel({ state, dispatch, mode = 'combine
 function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorPropertiesPanelProps) {
   const { textTool } = state;
   const textCapabilities = getGeneratorCapabilityProfile('outline-text');
+  const selectedFontDefinition = getOutlineFontDefinition(textTool.fontId);
+  const supportedCoverageModes = textTool.mode === 'outline'
+    ? getSupportedTextCoverageModes(textTool.fontId)
+    : ['outline'];
+  const visibleCoverageModes = (() => {
+    const modes: Array<'outline' | 'fill' | 'outline-fill' | 'contour'> = [];
+    if (textTool.mode !== 'outline') {
+      modes.push('outline');
+      return modes;
+    }
+
+    for (const mode of supportedCoverageModes) {
+      if (mode === 'contour') {
+        modes.push(mode);
+        continue;
+      }
+      if (textTool.outlineTextStyle === 'outline' && mode === 'outline') {
+        modes.push(mode);
+        continue;
+      }
+      if (textTool.outlineTextStyle === 'filled-typography' && (mode === 'fill' || mode === 'outline-fill')) {
+        modes.push(mode);
+      }
+    }
+
+    return modes;
+  })();
+  const fillModes = supportedCoverageModes.filter(
+    (mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour',
+  );
+  const visibleFillModes = fillModes.filter((mode) => {
+    if (textTool.outlineTextStyle === 'outline') return mode === 'outline';
+    return mode === 'fill' || mode === 'outline-fill';
+  });
 
   return (
     <div className="space-y-4">
@@ -260,6 +296,45 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
           status={outlineFontStatus}
           onChange={(fontId) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fontId } })}
         />
+      )}
+
+      {textTool.mode === 'outline' && (
+        <div className="space-y-2">
+          <span className="text-xs font-medium text-zinc-400">Text style</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { outlineTextStyle: 'outline' } })}
+              className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                textTool.outlineTextStyle === 'outline'
+                  ? 'border-purple-500/50 bg-purple-500/15 text-white'
+                  : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
+              }`}
+            >
+              <div className="text-sm font-medium">Outline text</div>
+              <p className="mt-1 text-[11px] text-zinc-500">Follow the letter contours only.</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { outlineTextStyle: 'filled-typography' } })}
+              disabled={!fillModes.includes('fill')}
+              className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                textTool.outlineTextStyle === 'filled-typography'
+                  ? 'border-purple-500/50 bg-purple-500/15 text-white'
+                  : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
+              } ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-zinc-800 hover:bg-zinc-950' : ''}`}
+            >
+              <div className="text-sm font-medium">Filled typography</div>
+              <p className="mt-1 text-[11px] text-zinc-500">Fill thicker letters with a stone pattern.</p>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {textTool.mode === 'outline' && selectedFontDefinition.supportedTextCoverageModes.length === 1 && !selectedFontDefinition.isLegacy && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+          {selectedFontDefinition.displayName} is currently limited to outline placement to avoid poor filled text results.
+        </div>
       )}
 
       {/* Stone Size */}
@@ -363,7 +438,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
       <AdvancedSection>
         <PlacementModeControl
           coverageMode={textTool.coverageMode}
-          availableCoverageModes={textCapabilities.supportedCoverageModes}
+          availableCoverageModes={visibleCoverageModes}
           placementPattern={textTool.placementPattern}
           availablePlacementPatterns={textCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
           contourSettings={textTool.contourSettings}
@@ -376,7 +451,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
         <FillModeControl
           fillMode={textTool.fillMode}
           fillPattern={textTool.fillPattern}
-          availableModes={textCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
+          availableModes={visibleFillModes}
           availablePatterns={textCapabilities.supportedFillPatterns}
           onFillModeChange={(mode) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fillMode: mode } })}
           onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fillPattern: pattern } })}

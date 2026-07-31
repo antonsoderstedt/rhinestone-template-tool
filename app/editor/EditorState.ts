@@ -19,6 +19,8 @@ import {
   Stone,
   type GeneratorId,
   LEGACY_OUTLINE_FONT_ID,
+  getPreferredTextCoverageMode,
+  getSupportedTextCoverageModes,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
@@ -36,9 +38,11 @@ export type EditorTool =
 // ─── Text Tool State ──────────────────────────────────────────────────────────
 
 export type TextMode = 'outline' | 'dot-matrix';
+export type OutlineTextStyle = 'outline' | 'filled-typography';
 
 export interface TextToolState {
   mode: TextMode;
+  outlineTextStyle: OutlineTextStyle;
   text: string;
   stoneSize: StoneSizeId;
   fontId: string;
@@ -222,6 +226,7 @@ export interface EditorState {
 
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
+  outlineTextStyle: 'outline',
   text: 'SMOOCH',
   stoneSize: 'SS10',
   fontId: LEGACY_OUTLINE_FONT_ID,
@@ -254,15 +259,49 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
 };
 
 function preferredTextCoverageForFont(fontId: string): TemplateFillMode {
-  return fontId === LEGACY_OUTLINE_FONT_ID ? 'outline' : 'fill';
+  return getPreferredTextCoverageMode(fontId);
+}
+
+function inferOutlineTextStyle(coverageMode: TemplateCoverageMode, fillMode: TemplateFillMode): OutlineTextStyle {
+  if (coverageMode === 'fill' || coverageMode === 'outline-fill' || fillMode === 'fill' || fillMode === 'outline-fill') {
+    return 'filled-typography';
+  }
+  return 'outline';
+}
+
+function clampTextCoverageForFont(next: TextToolState): void {
+  const supportedCoverageModes = getSupportedTextCoverageModes(next.fontId);
+  const preferredMode = preferredTextCoverageForFont(next.fontId);
+
+  if (!supportedCoverageModes.includes(next.coverageMode)) {
+    next.coverageMode = preferredMode;
+  }
+
+  if (next.coverageMode === 'contour') {
+    if (!supportedCoverageModes.includes(next.fillMode)) {
+      next.fillMode = preferredMode;
+    }
+    return;
+  }
+
+  next.fillMode = next.coverageMode;
+  next.outlineTextStyle = inferOutlineTextStyle(next.coverageMode, next.fillMode);
 }
 
 function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextToolState>): TextToolState {
   const next: TextToolState = { ...current, ...updates };
+  const styleChanged = updates.outlineTextStyle !== undefined;
   const changesFontOnly =
     updates.fontId !== undefined &&
+    updates.outlineTextStyle === undefined &&
     updates.coverageMode === undefined &&
     updates.fillMode === undefined;
+
+  if (styleChanged && next.mode === 'outline') {
+    const desiredMode = next.outlineTextStyle === 'filled-typography' ? 'outline-fill' : 'outline';
+    next.coverageMode = desiredMode;
+    next.fillMode = desiredMode;
+  }
 
   if (changesFontOnly) {
     const preferredMode = preferredTextCoverageForFont(next.fontId);
@@ -273,6 +312,8 @@ function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextTo
   } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {
     next.coverageMode = updates.fillMode;
   }
+
+  clampTextCoverageForFont(next);
 
   return next;
 }

@@ -242,6 +242,34 @@ describe('createPolylineFilledRhinestoneTemplate — outline-fill mode', () => {
     expect(t1.stones.length).toBe(t2.stones.length);
   });
 
+  it('annotates outline-fill stones with collision source metadata', () => {
+    const template = createPolylineFilledRhinestoneTemplate({
+      ...BASE_OPTS,
+      polylines: [CLOSED_RECT],
+      fillMode: 'outline-fill',
+    });
+    const sources = new Set(template.stones.map((stone) => stone.metadata?.collisionSource));
+    expect(sources.has('outline') || sources.has('fill')).toBe(true);
+  });
+
+  it('outline-fill returns stones in stable geometric order (y then x)', () => {
+    const template = createPolylineFilledRhinestoneTemplate({
+      ...BASE_OPTS,
+      polylines: [CLOSED_RECT],
+      fillMode: 'outline-fill',
+    });
+    for (let i = 1; i < template.stones.length; i++) {
+      const previous = template.stones[i - 1]!;
+      const current = template.stones[i]!;
+      const sameRow = Math.abs(previous.center.y - current.center.y) <= 0.0001;
+      if (sameRow) {
+        expect(previous.center.x).toBeLessThanOrEqual(current.center.x);
+      } else {
+        expect(previous.center.y).toBeLessThanOrEqual(current.center.y);
+      }
+    }
+  });
+
   it('grid pattern works for outline-fill', () => {
     const t = createPolylineFilledRhinestoneTemplate({
       ...BASE_OPTS,

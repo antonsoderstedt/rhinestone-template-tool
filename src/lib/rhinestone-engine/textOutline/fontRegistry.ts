@@ -10,6 +10,8 @@ export type OutlineFontCategory =
   | 'Handwritten'
   | 'Display';
 
+import type { TemplateCoverageMode, TemplateFillMode } from '../fill/fillTemplate';
+
 export type OutlineFontId =
   | 'legacy-original'
   | 'archivo-black'
@@ -37,6 +39,8 @@ export interface OutlineFontDefinition {
   licenseSource: string;
   packageName: string | null;
   isLegacy: boolean;
+  preferredTextCoverageMode: TemplateFillMode;
+  supportedTextCoverageModes: readonly TemplateCoverageMode[];
   limitations?: string[];
 }
 
@@ -62,6 +66,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: 'Embedded in src/lib/rhinestone-engine/textOutline/vectorFont.ts',
     packageName: null,
     isLegacy: true,
+    preferredTextCoverageMode: 'outline',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
     limitations: ['Uppercase vector stroke font', 'Lowercase maps to uppercase glyphs'],
   },
   {
@@ -78,6 +84,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/archivo-black / Google Fonts',
     packageName: '@fontsource/archivo-black',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'oswald-condensed',
@@ -93,6 +101,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/oswald / Google Fonts',
     packageName: '@fontsource/oswald',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'black-ops-varsity',
@@ -108,6 +118,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/black-ops-one / Google Fonts',
     packageName: '@fontsource/black-ops-one',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'lilita-bubble',
@@ -123,6 +135,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/lilita-one / Google Fonts',
     packageName: '@fontsource/lilita-one',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'bitter-slab',
@@ -138,6 +152,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/bitter / Google Fonts',
     packageName: '@fontsource/bitter',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'pirata-gothic',
@@ -153,6 +169,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/pirata-one / Google Fonts',
     packageName: '@fontsource/pirata-one',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline',
+    supportedTextCoverageModes: ['outline'],
   },
   {
     fontId: 'pacifico-script',
@@ -168,6 +186,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/pacifico / Google Fonts',
     packageName: '@fontsource/pacifico',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline',
+    supportedTextCoverageModes: ['outline'],
   },
   {
     fontId: 'caveat-handwritten',
@@ -183,6 +203,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/caveat / Google Fonts',
     packageName: '@fontsource/caveat',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline',
+    supportedTextCoverageModes: ['outline'],
   },
   {
     fontId: 'audiowide-y2k',
@@ -198,6 +220,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/audiowide / Google Fonts',
     packageName: '@fontsource/audiowide',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
   {
     fontId: 'comfortaa-rounded',
@@ -213,6 +237,8 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     licenseSource: '@fontsource/comfortaa / Google Fonts',
     packageName: '@fontsource/comfortaa',
     isLegacy: false,
+    preferredTextCoverageMode: 'outline-fill',
+    supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
   },
 ] as const;
 
@@ -227,6 +253,14 @@ export function getOutlineFontDefinition(fontId: string | undefined | null): Out
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
   return FONT_MAP.get(fontId as OutlineFontId) ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
+}
+
+export function getPreferredTextCoverageMode(fontId: string | undefined | null): TemplateFillMode {
+  return getOutlineFontDefinition(fontId).preferredTextCoverageMode;
+}
+
+export function getSupportedTextCoverageModes(fontId: string | undefined | null): readonly TemplateCoverageMode[] {
+  return getOutlineFontDefinition(fontId).supportedTextCoverageModes;
 }
 
 export function isKnownOutlineFontId(fontId: string | undefined | null): fontId is OutlineFontId {

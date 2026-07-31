@@ -20,6 +20,83 @@ import { samplePolylineBySpacing, normalizePolylineInput } from './polyline';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
 import type { DensityPreset, DensitySpacingResult } from '../spacing/density';
 import { getDensitySpacing } from '../spacing/density';
+import { distanceBetweenPoints } from '../geometry/distance';
+
+const OUTLINE_SAMPLE_COLLISION_PRIORITY = 2;
+const OUTLINE_VERTEX_COLLISION_PRIORITY = 3;
+const OUTLINE_ENDPOINT_COLLISION_PRIORITY = 4;
+const ANCHOR_TOLERANCE_MM = 0.001;
+
+function canonicalizeClosedPolylinePoints(points: readonly { x: number; y: number }[]): Array<{ x: number; y: number }> {
+  if (points.length < 3) return points.map((point) => ({ ...point }));
+
+  let startIndex = 0;
+  for (let index = 1; index < points.length; index++) {
+    const candidate = points[index]!;
+    const current = points[startIndex]!;
+    if (candidate.y < current.y || (candidate.y === current.y && candidate.x < current.x)) {
+      startIndex = index;
+    }
+  }
+
+  const rotated = (startIndex === 0 ? [...points] : [...points.slice(startIndex), ...points.slice(0, startIndex)]).map((point) => ({ ...point }));
+  const nextPoint = rotated[1]!;
+  const previousPoint = rotated[rotated.length - 1]!;
+  const shouldReverse =
+    previousPoint.y < nextPoint.y ||
+    (previousPoint.y === nextPoint.y && previousPoint.x < nextPoint.x);
+
+  if (!shouldReverse) return rotated;
+
+  return [rotated[0]!, ...rotated.slice(1).reverse()];
+}
+
+function canonicalizeOpenPolylinePoints(points: readonly { x: number; y: number }[]): Array<{ x: number; y: number }> {
+  if (points.length < 2) return points.map((point) => ({ ...point }));
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  const shouldReverse =
+    last.y < first.y ||
+    (last.y === first.y && last.x < first.x);
+
+  return shouldReverse
+    ? [...points].reverse().map((point) => ({ ...point }))
+    : points.map((point) => ({ ...point }));
+}
+
+function distanceToNearestVertex(
+  point: { x: number; y: number },
+  vertices: readonly { x: number; y: number }[],
+): number {
+  let nearestDistance = Infinity;
+  for (const vertex of vertices) {
+    nearestDistance = Math.min(nearestDistance, distanceBetweenPoints(point, vertex));
+  }
+  return nearestDistance;
+}
+
+function getOutlineSampleMetadata(
+  point: { x: number; y: number },
+  polyline: Polyline,
+): Record<string, string | number | boolean> {
+  const nearestVertexDistance = distanceToNearestVertex(point, polyline.points);
+  const isVertexAnchor = nearestVertexDistance <= ANCHOR_TOLERANCE_MM;
+  const isEndpointAnchor = !polyline.closed && (
+    distanceBetweenPoints(point, polyline.points[0]!) <= ANCHOR_TOLERANCE_MM ||
+    distanceBetweenPoints(point, polyline.points[polyline.points.length - 1]!) <= ANCHOR_TOLERANCE_MM
+  );
+
+  return {
+    collisionSource: 'outline',
+    collisionPriority: isEndpointAnchor
+      ? OUTLINE_ENDPOINT_COLLISION_PRIORITY
+      : isVertexAnchor
+        ? OUTLINE_VERTEX_COLLISION_PRIORITY
+        : OUTLINE_SAMPLE_COLLISION_PRIORITY,
+    isVertexAnchor,
+    isEndpointAnchor,
+  };
+}
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -141,7 +218,9 @@ export function createPolylineRhinestoneTemplate(
     // Validate and clone points before sampling
     const validatedPoints = normalizePolylineInput(polyline.points);
     const normalizedPolyline: Polyline = {
-      points: validatedPoints,
+      points: polyline.closed
+        ? canonicalizeClosedPolylinePoints(validatedPoints)
+        : canonicalizeOpenPolylinePoints(validatedPoints),
       closed: polyline.closed,
     };
 
@@ -162,8 +241,15 @@ export function createPolylineRhinestoneTemplate(
       const prev = safePoints[safePoints.length - 1]!;
       if (Math.hypot(pt.x - prev.x, pt.y - prev.y) >= holeDiameterMm) {
         safePoints.push(pt);
+        continue;
       }
-      // else: skip — Euclidean distance too small due to sharp corner
+
+      const previousVertexDistance = distanceToNearestVertex(prev, normalizedPolyline.points);
+      const currentVertexDistance = distanceToNearestVertex(pt, normalizedPolyline.points);
+      if (currentVertexDistance + 0.0001 < previousVertexDistance) {
+        safePoints[safePoints.length - 1] = pt;
+      }
+      // else: keep the existing point — it is at least as close to a real corner
     }
     // For closed polylines also verify last stone is not too close to first.
     if (normalizedPolyline.closed && safePoints.length > 1) {
@@ -181,6 +267,7 @@ export function createPolylineRhinestoneTemplate(
         center: { x: pt.x, y: pt.y },
         stoneSize,
         holeDiameterMm,
+        metadata: getOutlineSampleMetadata(pt, normalizedPolyline),
       });
     });
   });

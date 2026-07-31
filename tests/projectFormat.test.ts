@@ -20,6 +20,7 @@ describe('Project format — parseRhinestoneProject', () => {
         generatorId: 'outline-text',
         text: 'SMOOCH',
         stoneSize: 'SS10',
+        outlineTextStyle: 'outline',
         fontId: LEGACY_OUTLINE_FONT_ID,
         fontSizeMm: 25,
         targetWidthMm: 100,
@@ -76,6 +77,42 @@ describe('Project format — parseRhinestoneProject', () => {
     expect(parsed.generatorState.generatorId).toBe('outline-text');
     if (parsed.generatorState.generatorId === 'outline-text') {
       expect(parsed.generatorState.fontId).toBe(LEGACY_OUTLINE_FONT_ID);
+      expect(parsed.generatorState.outlineTextStyle).toBe('outline');
+    }
+  });
+
+  it('infers filled typography for legacy outline-text projects with fill placement', () => {
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      savedAt: '2026-07-30T12:00:00.000Z',
+      projectName: 'Legacy Filled Outline Text',
+      generatorState: {
+        generatorId: 'outline-text',
+        text: 'SMOOCH',
+        stoneSize: 'SS10',
+        fontId: 'archivo-black',
+        fontSizeMm: 25,
+        targetWidthMm: null,
+        targetHeightMm: null,
+        preserveAspectRatio: true,
+        align: 'left',
+        letterSpacingMm: 2,
+        lineSpacingMm: 8,
+        coverageMode: 'fill',
+        fillMode: 'fill',
+        fillPattern: 'offset-grid',
+        densityPreset: 'standard',
+        customSpacingMm: 4,
+        includeGuideBox: true,
+        includeLabels: false,
+        paddingMm: 5,
+      },
+    });
+
+    const parsed = parseRhinestoneProject(json);
+    expect(parsed.generatorState.generatorId).toBe('outline-text');
+    if (parsed.generatorState.generatorId === 'outline-text') {
+      expect(parsed.generatorState.outlineTextStyle).toBe('filled-typography');
     }
   });
 

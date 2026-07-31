@@ -9,6 +9,8 @@ import {
   clearOutlineFontCacheForTests,
   createOutlineTextTemplate,
   createOutlineTextTemplateAsync,
+  getPreferredTextCoverageMode,
+  getSupportedTextCoverageModes,
   listCachedFontIds,
   listOutlineFonts,
   loadOutlineFont,
@@ -23,6 +25,13 @@ describe('font system', () => {
     const ids = listOutlineFonts().map((font) => font.fontId);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe(LEGACY_OUTLINE_FONT_ID);
+  });
+
+  it('declares conservative text coverage policies for bundled fonts', () => {
+    expect(getPreferredTextCoverageMode('archivo-black')).toBe('outline-fill');
+    expect(getSupportedTextCoverageModes('archivo-black')).toContain('fill');
+    expect(getPreferredTextCoverageMode('pacifico-script')).toBe('outline');
+    expect(getSupportedTextCoverageModes('pacifico-script')).toEqual(['outline']);
   });
 
   it('loads all bundled font resources', async () => {
@@ -95,7 +104,7 @@ describe('font system', () => {
     expect(BUILT_IN_VECTOR_FONT.id).toBe('built-in-vector-outline-v1');
   });
 
-  it('defaults bundled outline fonts to filled text placement', async () => {
+  it('defaults bundled outline fonts to contour-preserving filled typography', async () => {
     const template = await createOutlineTextTemplateAsync({
       id: 'bundled-default-fill',
       name: 'Bundled Default Fill',
@@ -104,10 +113,30 @@ describe('font system', () => {
       fontId: 'archivo-black',
       fontSizeMm: 25,
     });
-    expect(template.metadata?.['coverageMode']).toBe('fill');
-    expect(template.metadata?.['fillMode']).toBe('fill');
+    expect(template.metadata?.['coverageMode']).toBe('outline-fill');
+    expect(template.metadata?.['fillMode']).toBe('outline-fill');
     expect(template.metadata?.['fillEdgeInsetMm']).toBe(0);
-    expect(template.stones.length).toBeGreaterThan(50);
+    expect(template.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-outline-fill-v1');
+    expect(template.stones.length).toBeGreaterThan(120);
+    expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
+    expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
+    expect(template.metadata?.['outlineStoneCount']).toBe(template.stones.filter((stone) => stone.metadata?.collisionSource === 'outline').length);
+    expect(template.metadata?.['fillStoneCount']).toBe(template.stones.filter((stone) => stone.metadata?.collisionSource === 'fill').length);
+  });
+
+  it('accepts outlineTextStyle as a higher-level API hint for bundled fonts', async () => {
+    const template = await createOutlineTextTemplateAsync({
+      id: 'bundled-style-fill',
+      name: 'Bundled Style Fill',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+      fontId: 'archivo-black',
+      fontSizeMm: 25,
+      outlineTextStyle: 'filled-typography',
+    });
+    expect(template.metadata?.['outlineTextStyle']).toBe('filled-typography');
+    expect(template.metadata?.['coverageMode']).toBe('outline-fill');
+    expect(template.metadata?.['fillMode']).toBe('outline-fill');
   });
 
   it('supports outline, fill, and outline + fill for bundled fonts', async () => {
@@ -156,7 +185,26 @@ describe('font system', () => {
       fillMode: 'fill',
     });
     expect(filled.metadata?.['fillEdgeInsetMm']).toBe(0);
-    expect(filled.stones.length).toBeGreaterThan(40);
+    expect(filled.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-fill-v1');
+    expect(filled.stones.length).toBeGreaterThan(60);
+    expect(filled.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
+    expect(filled.stones.some((stone) => stone.metadata?.edgeBand === 'edge')).toBe(true);
+  });
+
+  it('clamps outline-only bundled fonts back to outline placement even when fill is requested', async () => {
+    const template = await createOutlineTextTemplateAsync({
+      id: 'script-forced-fill',
+      name: 'Script Forced Fill',
+      text: 'Sulay',
+      stoneSize: 'SS10',
+      fontId: 'pacifico-script',
+      fontSizeMm: 32,
+      coverageMode: 'fill',
+      fillMode: 'fill',
+    });
+    expect(template.metadata?.['coverageMode']).toBe('outline');
+    expect(template.metadata?.['fillMode']).toBe('outline');
+    expect(template.metadata?.['textPlacementStrategy']).not.toBe('glyph-scanline-fill-v1');
   });
 
   it('handles spaces and kerning-sensitive pairs', async () => {
@@ -207,5 +255,17 @@ describe('font system', () => {
     expect(html).toContain('aria-haspopup="listbox"');
     expect(html).toContain('Choose outline font');
     expect(html).toContain('Archivo Black');
+    expect(html).toContain('Filled typography');
+  });
+
+  it('renders outline-only policy for script fonts in the picker', () => {
+    const html = renderToStaticMarkup(createElement(FontPicker, {
+      value: 'pacifico-script',
+      previewText: 'Sulay',
+      status: { status: 'idle', message: null, fontId: 'pacifico-script' },
+      onChange: () => undefined,
+    }));
+    expect(html).toContain('Pacifico');
+    expect(html).toContain('Outline only');
   });
 });

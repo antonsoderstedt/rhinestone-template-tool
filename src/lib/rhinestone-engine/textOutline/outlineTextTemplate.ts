@@ -19,21 +19,24 @@
 import type { StoneSizeId, RhinestoneTemplate, Stone } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { Polyline } from '../path/polyline';
+import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
 import { getVectorGlyph, BUILT_IN_VECTOR_FONT } from './vectorFont';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
-import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
+import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
 import { loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
 import { createPolylineFilledRhinestoneTemplate } from '../fill/fillTemplate';
 import type { FillPlacementPattern, RadialPlacementSettings } from '../fill/placementPatterns';
+import { createGlyphScanlineFillTemplate } from './glyphScanlineFill';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
 export type OutlineTextAlign = 'left' | 'center' | 'right';
+export type OutlineTextStyle = 'outline' | 'filled-typography';
 
 export interface CreateOutlineTextTemplateOptions {
   id: string;
@@ -41,6 +44,8 @@ export interface CreateOutlineTextTemplateOptions {
   /** Text to render. Use '\n' for multiline. */
   text: string;
   stoneSize: StoneSizeId;
+  /** High-level text intent used when low-level coverage settings are omitted. */
+  outlineTextStyle?: OutlineTextStyle;
   /** Defaults to the legacy built-in vector font for backward compatibility. */
   fontId?: string;
   /**
@@ -157,22 +162,53 @@ function validateOutlineOptions(options: NormalizedOutlineTextTemplateOptions) {
 }
 
 function defaultFillModeForOutlineFont(fontId: string): TemplateFillMode {
-  return fontId === LEGACY_OUTLINE_FONT_ID ? 'outline' : 'fill';
+  return getOutlineFontDefinition(fontId).preferredTextCoverageMode;
+}
+
+function coverageModeFromOutlineTextStyle(style: OutlineTextStyle | undefined): TemplateFillMode | undefined {
+  if (style === 'outline') return 'outline';
+  if (style === 'filled-typography') return 'outline-fill';
+  return undefined;
+}
+
+function inferOutlineTextStyle(
+  coverageMode: TemplateCoverageMode,
+  fillMode: TemplateFillMode,
+): OutlineTextStyle {
+  if (coverageMode === 'fill' || coverageMode === 'outline-fill' || fillMode === 'fill' || fillMode === 'outline-fill') {
+    return 'filled-typography';
+  }
+  return 'outline';
 }
 
 function resolveTextCoverageModes(
   options: NormalizedOutlineTextTemplateOptions,
 ): { coverageMode: TemplateCoverageMode; fillMode: TemplateFillMode } {
+  const supportedCoverageModes = getSupportedTextCoverageModes(options.fontId);
+  const preferredFillMode = defaultFillModeForOutlineFont(options.fontId);
+  const requestedStyleMode = coverageModeFromOutlineTextStyle(options.outlineTextStyle);
+
   if (options.coverageMode !== undefined) {
+    const coverageMode = supportedCoverageModes.includes(options.coverageMode)
+      ? options.coverageMode
+      : preferredFillMode;
+    const requestedFillMode = coverageMode === 'contour'
+      ? options.fillMode ?? preferredFillMode
+      : coverageMode;
+    const fillMode = coverageMode === 'contour'
+      ? (supportedCoverageModes.includes(requestedFillMode) ? requestedFillMode : preferredFillMode)
+      : requestedFillMode;
+
     return {
-      coverageMode: options.coverageMode,
-      fillMode: options.coverageMode === 'contour'
-        ? options.fillMode ?? defaultFillModeForOutlineFont(options.fontId)
-        : options.coverageMode,
+      coverageMode,
+      fillMode,
     };
   }
 
-  const fillMode = options.fillMode ?? defaultFillModeForOutlineFont(options.fontId);
+  const requestedFillMode = options.fillMode ?? requestedStyleMode ?? preferredFillMode;
+  const fillMode = supportedCoverageModes.includes(requestedFillMode)
+    ? requestedFillMode
+    : preferredFillMode;
   return {
     coverageMode: fillMode,
     fillMode,
@@ -315,6 +351,7 @@ function createOutlineTemplateFromPolylines(
   const metadata: Record<string, string | number | boolean> = {
     generatedBy: 'createOutlineTextTemplate',
     text: options.text,
+    outlineTextStyle: inferOutlineTextStyle(coverageMode, fillMode),
     fontSizeMm: options.fontSizeMm ?? 25,
     preserveAspectRatio,
     align: options.align ?? 'left',
@@ -332,6 +369,126 @@ function createOutlineTemplateFromPolylines(
   metadata['fillPattern'] = fillPattern;
   metadata['placementPattern'] = placementPattern;
   if (fillEdgeInsetMm !== undefined) metadata['fillEdgeInsetMm'] = fillEdgeInsetMm;
+
+  const sortStonesForCollisionResolution = (stones: readonly Stone[]): Stone[] => [...stones].sort((left, right) => {
+    const leftPriority = typeof left.metadata?.collisionPriority === 'number' ? left.metadata.collisionPriority : 0;
+    const rightPriority = typeof right.metadata?.collisionPriority === 'number' ? right.metadata.collisionPriority : 0;
+    const priorityDelta = rightPriority - leftPriority;
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const yDelta = left.center.y - right.center.y;
+    if (Math.abs(yDelta) > 0.0001) return yDelta;
+    const xDelta = left.center.x - right.center.x;
+    if (Math.abs(xDelta) > 0.0001) return xDelta;
+    return left.id.localeCompare(right.id);
+  });
+
+  const sortStonesByGeometry = (stones: readonly Stone[]): Stone[] => [...stones].sort((left, right) => {
+    const yDelta = left.center.y - right.center.y;
+    if (Math.abs(yDelta) > 0.0001) return yDelta;
+    const xDelta = left.center.x - right.center.x;
+    if (Math.abs(xDelta) > 0.0001) return xDelta;
+    return left.id.localeCompare(right.id);
+  });
+
+  const dedupeTemplateStones = (templateStones: readonly Stone[], templateMetadata: Record<string, string | number | boolean>): RhinestoneTemplate => {
+    const sortedTemplateStones = sortStonesForCollisionResolution(templateStones);
+
+    const withSourceCounts = (stones: readonly Stone[]) => {
+      const outlineStoneCount = stones.filter((stone) => stone.metadata?.collisionSource === 'outline').length;
+      const fillStoneCount = stones.filter((stone) => stone.metadata?.collisionSource === 'fill').length;
+      return {
+        ...templateMetadata,
+        ...(outlineStoneCount > 0 && { outlineStoneCount }),
+        ...(fillStoneCount > 0 && { fillStoneCount }),
+      };
+    };
+
+    if (sortedTemplateStones.length < 2) {
+      return createRhinestoneTemplate({
+        id,
+        name,
+        stones: sortStonesByGeometry(sortedTemplateStones),
+        metadata: withSourceCounts(sortStonesByGeometry(sortedTemplateStones)),
+      });
+    }
+
+    const keptStones: Stone[] = [];
+    for (const stone of sortedTemplateStones) {
+      let tooClose = false;
+      const minDist2 = stone.holeDiameterMm * stone.holeDiameterMm;
+      for (const prev of keptStones) {
+        const dx = stone.center.x - prev.center.x;
+        const dy = stone.center.y - prev.center.y;
+        if (dx * dx + dy * dy < minDist2) {
+          tooClose = true;
+          break;
+        }
+      }
+      if (!tooClose) keptStones.push(stone);
+    }
+
+    return createRhinestoneTemplate({
+      id,
+      name,
+      stones: sortStonesByGeometry(keptStones),
+      metadata: withSourceCounts(sortStonesByGeometry(keptStones)),
+    });
+  };
+
+  if (
+    options.fontId !== LEGACY_OUTLINE_FONT_ID &&
+    coverageMode === 'fill' &&
+    placementPattern === 'default' &&
+    fillPattern === 'offset-grid'
+  ) {
+    return createGlyphScanlineFillTemplate({
+      id,
+      name,
+      polylines: finalPolylines,
+      stoneSize,
+      spacingMm,
+      densityPreset,
+      customSpacingMm,
+      materialProfileId,
+      metadata,
+    });
+  }
+
+  if (
+    options.fontId !== LEGACY_OUTLINE_FONT_ID &&
+    coverageMode === 'outline-fill' &&
+    placementPattern === 'default' &&
+    fillPattern === 'offset-grid'
+  ) {
+    const outlineTemplate = createPolylineRhinestoneTemplate({
+      id: `${id}-outline-pass`,
+      name: `${name} outline pass`,
+      polylines: finalPolylines,
+      stoneSize,
+      spacingMm,
+      densityPreset,
+      customSpacingMm,
+      materialProfileId,
+    });
+    const fillTemplate = createGlyphScanlineFillTemplate({
+      id: `${id}-fill-pass`,
+      name: `${name} fill pass`,
+      polylines: finalPolylines,
+      stoneSize,
+      spacingMm,
+      densityPreset,
+      customSpacingMm,
+      materialProfileId,
+      existingStones: outlineTemplate.stones,
+      metadata,
+    });
+    const combinedMetadata = {
+      ...metadata,
+      textPlacementStrategy: 'glyph-scanline-outline-fill-v1',
+    };
+    return dedupeTemplateStones([...outlineTemplate.stones, ...fillTemplate.stones], combinedMetadata);
+  }
 
   const template = createPolylineFilledRhinestoneTemplate({
     id,
@@ -352,33 +509,7 @@ function createOutlineTemplateFromPolylines(
     metadata,
   });
 
-  if (template.stones.length < 2) {
-    return template;
-  }
-
-  const keptStones: Stone[] = [];
-  for (const stone of template.stones) {
-    let tooClose = false;
-    const minDist2 = stone.holeDiameterMm * stone.holeDiameterMm;
-    for (const prev of keptStones) {
-      const dx = stone.center.x - prev.center.x;
-      const dy = stone.center.y - prev.center.y;
-      if (dx * dx + dy * dy < minDist2) {
-        tooClose = true;
-        break;
-      }
-    }
-    if (!tooClose) keptStones.push(stone);
-  }
-
-  return createRhinestoneTemplate({
-    id: template.id,
-    name: template.name,
-    stones: keptStones,
-    widthMm: template.widthMm,
-    heightMm: template.heightMm,
-    metadata: template.metadata,
-  });
+  return dedupeTemplateStones(template.stones, template.metadata ?? metadata);
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

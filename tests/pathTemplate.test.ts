@@ -177,6 +177,86 @@ describe('createPolylineRhinestoneTemplate — basic creation', () => {
     expect(closed.stones.length).toBeGreaterThan(open.stones.length);
   });
 
+  it('is invariant to the starting vertex for equivalent closed polylines', () => {
+    const a: Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }],
+      closed: true,
+    };
+    const b: Polyline = {
+      points: [{ x: 10, y: 10 }, { x: 0, y: 10 }, { x: 0, y: 0 }, { x: 10, y: 0 }],
+      closed: true,
+    };
+    const templateA = createPolylineRhinestoneTemplate({
+      id: 'closed-a',
+      name: 'Closed A',
+      polylines: [a],
+      stoneSize: 'SS10',
+    });
+    const templateB = createPolylineRhinestoneTemplate({
+      id: 'closed-b',
+      name: 'Closed B',
+      polylines: [b],
+      stoneSize: 'SS10',
+    });
+
+    expect(templateA.stones.map((stone) => stone.center)).toEqual(
+      templateB.stones.map((stone) => stone.center),
+    );
+  });
+
+  it('is invariant to traversal direction for equivalent closed polylines', () => {
+    const clockwise: Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }],
+      closed: true,
+    };
+    const counterClockwise: Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }, { x: 10, y: 0 }],
+      closed: true,
+    };
+    const clockwiseTemplate = createPolylineRhinestoneTemplate({
+      id: 'clockwise',
+      name: 'Clockwise',
+      polylines: [clockwise],
+      stoneSize: 'SS10',
+    });
+    const counterClockwiseTemplate = createPolylineRhinestoneTemplate({
+      id: 'counter-clockwise',
+      name: 'Counter Clockwise',
+      polylines: [counterClockwise],
+      stoneSize: 'SS10',
+    });
+
+    expect(clockwiseTemplate.stones.map((stone) => stone.center)).toEqual(
+      counterClockwiseTemplate.stones.map((stone) => stone.center),
+    );
+  });
+
+  it('is stable for reversed acute open polylines', () => {
+    const acute: Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 4, y: 18 }, { x: 8, y: 0 }],
+    };
+    const reversed: Polyline = {
+      points: [...acute.points].reverse(),
+    };
+
+    const forward = createPolylineRhinestoneTemplate({
+      id: 'acute-forward',
+      name: 'Acute Forward',
+      polylines: [acute],
+      stoneSize: 'SS6',
+    });
+    const backward = createPolylineRhinestoneTemplate({
+      id: 'acute-backward',
+      name: 'Acute Backward',
+      polylines: [reversed],
+      stoneSize: 'SS6',
+    });
+
+    expect(forward.stones.map((stone) => stone.center)).toEqual(
+      backward.stones.map((stone) => stone.center),
+    );
+  });
+
   it('creates stones from multiple polylines', () => {
     // Two parallel lines 20mm apart — no collision
     const line1: Polyline = { points: [{ x: 0, y: 0 }, { x: 20, y: 0 }] };
@@ -244,6 +324,30 @@ describe('createPolylineRhinestoneTemplate — basic creation', () => {
     expect(t.metadata?.stoneSize).toBe('SS10');
     expect(t.metadata?.pathCount).toBe(1);
     expect(typeof t.metadata?.spacingMm).toBe('number');
+  });
+
+  it('marks endpoint anchors with stronger collision priority on open polylines', () => {
+    const template = createPolylineRhinestoneTemplate({
+      id: 'anchors',
+      name: 'Anchors',
+      polylines: [LINE_30],
+      stoneSize: 'SS10',
+    });
+    expect(template.stones[0]?.metadata?.isEndpointAnchor).toBe(true);
+    expect(template.stones[0]?.metadata?.collisionPriority).toBe(4);
+    expect(template.stones[0]?.metadata?.collisionSource).toBe('outline');
+  });
+
+  it('marks vertex anchors on closed polylines', () => {
+    const template = createPolylineRhinestoneTemplate({
+      id: 'closed-anchors',
+      name: 'Closed Anchors',
+      polylines: [{ ...SQUARE_10, closed: true }],
+      stoneSize: 'SS10',
+      spacingMm: 5,
+    });
+    expect(template.stones.some((stone) => stone.metadata?.isVertexAnchor === true)).toBe(true);
+    expect(template.stones.every((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
   });
 });
 

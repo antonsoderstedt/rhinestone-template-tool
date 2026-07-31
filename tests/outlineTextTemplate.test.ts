@@ -304,6 +304,25 @@ describe('createOutlineTextTemplate', () => {
       expect(t1.stones[i]!.center.y).toBe(t2.stones[i]!.center.y);
     }
   });
+
+  it('returns stones in stable geometric order (y then x)', () => {
+    const template = createOutlineTextTemplate({
+      id: 'sorted',
+      name: 'Sorted',
+      text: 'SMOOCH',
+      stoneSize: 'SS10',
+    });
+    for (let i = 1; i < template.stones.length; i++) {
+      const previous = template.stones[i - 1]!;
+      const current = template.stones[i]!;
+      const sameRow = Math.abs(previous.center.y - current.center.y) <= 0.0001;
+      if (sameRow) {
+        expect(previous.center.x).toBeLessThanOrEqual(current.center.x);
+      } else {
+        expect(previous.center.y).toBeLessThanOrEqual(current.center.y);
+      }
+    }
+  });
 });
 
 // ─── Fill mode integration ────────────────────────────────────────────────────
@@ -360,6 +379,18 @@ describe('createOutlineTextTemplate — fill mode integration', () => {
     });
     expect(t.metadata?.['fillMode']).toBe('outline-fill');
     expect(t.metadata?.['fillPattern']).toBe('grid');
+  });
+
+  it('outline-fill text keeps collision metadata on surviving stones', () => {
+    const template = createOutlineTextTemplate({
+      id: 'source-meta',
+      name: 'Source Meta',
+      text: 'O',
+      stoneSize: 'SS10',
+      fillMode: 'outline-fill',
+    });
+    const sources = new Set(template.stones.map((stone) => stone.metadata?.collisionSource));
+    expect(sources.has('outline') || sources.has('fill')).toBe(true);
   });
 
   it('legacy outline text respects advanced coverage and placement settings', () => {

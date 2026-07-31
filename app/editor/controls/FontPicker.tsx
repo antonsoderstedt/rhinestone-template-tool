@@ -22,6 +22,13 @@ interface FontPickerProps {
   status: OutlineFontStatus;
 }
 
+function getFontPolicyLabel(fontId: OutlineFontId): string {
+  const font = getOutlineFontDefinition(fontId);
+  return font.supportedTextCoverageModes.includes('fill')
+    ? 'Filled typography'
+    : 'Outline only';
+}
+
 export default function FontPicker({ value, previewText, onChange, status }: FontPickerProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -85,7 +92,12 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
       <style dangerouslySetInnerHTML={{ __html: getOutlineFontFaceCss() }} />
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-zinc-400">Font</span>
-        <span className="text-[11px] text-zinc-500">{selectedFont.category}</span>
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+          <span>{selectedFont.category}</span>
+          <span className="rounded-full border border-zinc-800 px-2 py-0.5 uppercase tracking-wide">
+            {getFontPolicyLabel(selectedFont.fontId)}
+          </span>
+        </div>
       </div>
       <div className="relative">
         <button
@@ -130,6 +142,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{font.displayName}</span>
                         <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">{font.category}</span>
+                        <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">{getFontPolicyLabel(font.fontId)}</span>
                       </div>
                       <p className="mt-2 truncate text-lg leading-tight" style={{ fontFamily: font.previewFontFamily }}>
                         {safePreviewText}

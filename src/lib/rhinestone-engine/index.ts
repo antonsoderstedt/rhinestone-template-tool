@@ -180,11 +180,13 @@ export {
   LEGACY_OUTLINE_FONT_ID,
   listOutlineFonts,
   getOutlineFontDefinition,
+  getPreferredTextCoverageMode,
+  getSupportedTextCoverageModes,
   isKnownOutlineFontId,
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
-export type { OutlineTextAlign, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
+export type { OutlineTextAlign, OutlineTextStyle, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
 
 // Generator capability foundation
