@@ -122,6 +122,64 @@ describe('editorReducer', () => {
     expect(outlineFill.svgTool.fillMode).toBe('outline-fill');
   });
 
+  it('clamps rhinestone font stone size to the selected font support', () => {
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'old-english-ss10', stoneSize: 'SS6' },
+    });
+    expect(state.rhinestoneFontTool.stoneSize).toBe('SS10');
+  });
+
+  it('derives rhinestone font presentation mode from font style', () => {
+    const line = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'small-line-ss10' },
+    });
+    expect(line.rhinestoneFontTool.presentationMode).toBe('line');
+    expect(line.rhinestoneFontTool.letterSpacingMm).toBe(0);
+
+    const digits = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'huge-numbers-ss10' },
+    });
+    expect(digits.rhinestoneFontTool.presentationMode).toBe('digits');
+    expect(digits.rhinestoneFontTool.letterSpacingMm).toBe(0);
+  });
+
+  it('updates rhinestone font sample text when switching fonts from an untouched sample', () => {
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'small-line-ss10' },
+    });
+    expect(state.rhinestoneFontTool.text).toBe('CHEER');
+  });
+
+  it('preserves custom rhinestone font text when switching fonts', () => {
+    const custom = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { text: 'Custom Name' },
+    });
+    const switched = editorReducer(custom, {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'huge-numbers-ss10' },
+    });
+    expect(switched.rhinestoneFontTool.text).toBe('Custom Name');
+  });
+
+  it('preserves custom rhinestone font spacing when switching fonts', () => {
+    const custom = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { letterSpacingMm: 2.5, lineSpacingMm: 1.5 },
+    });
+    const switched = editorReducer(custom, {
+      type: 'UPDATE_RHINESTONE_FONT_TOOL',
+      updates: { rhinestoneFontId: 'small-line-ss10' },
+    });
+    expect(switched.rhinestoneFontTool.presentationMode).toBe('line');
+    expect(switched.rhinestoneFontTool.letterSpacingMm).toBe(2.5);
+    expect(switched.rhinestoneFontTool.lineSpacingMm).toBe(1.5);
+  });
+
   it('supports Make Editable and undo', () => {
     let state = structuredClone(DEFAULT_EDITOR_STATE);
     state = editorReducer(state, { type: 'SET_TEMPLATE', template: makeTemplate([stone('a', 10, 10)]) });

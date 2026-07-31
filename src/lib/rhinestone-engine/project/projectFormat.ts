@@ -28,6 +28,8 @@ export type GeneratorId =
   | 'svg-upload'
   | 'manual-editor'
   | 'rhinestone-font'
+  | 'rhinestone-font-line'
+  | 'rhinestone-font-digits'
   | 'template-import';
 
 export type PolylineDemoShape = 'diamond' | 'triangle' | 'rectangle' | 'zigzag';
@@ -166,7 +168,8 @@ export interface ManualEditorProjectState {
 }
 
 export interface RhinestoneFontProjectState {
-  generatorId: 'rhinestone-font';
+  generatorId: 'rhinestone-font' | 'rhinestone-font-line' | 'rhinestone-font-digits';
+  presentationMode?: 'stones' | 'line' | 'digits';
   text: string;
   stoneSize: StoneSizeId;
   rhinestoneFontId: string;
@@ -254,6 +257,8 @@ const VALID_GENERATOR_IDS = new Set([
   'svg-upload',
   'manual-editor',
   'rhinestone-font',
+  'rhinestone-font-line',
+  'rhinestone-font-digits',
   'template-import',
 ]);
 
@@ -497,7 +502,19 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
 function validateRhinestoneFont(s: UnknownRecord): RhinestoneFontProjectState {
   const ctx = 'generatorState';
   return {
-    generatorId: 'rhinestone-font',
+    generatorId: s.generatorId === 'rhinestone-font-line'
+      ? 'rhinestone-font-line'
+      : s.generatorId === 'rhinestone-font-digits'
+        ? 'rhinestone-font-digits'
+        : 'rhinestone-font',
+    presentationMode:
+      s.presentationMode === 'line' || s.presentationMode === 'digits'
+        ? s.presentationMode
+        : s.generatorId === 'rhinestone-font-line'
+          ? 'line'
+          : s.generatorId === 'rhinestone-font-digits'
+            ? 'digits'
+            : 'stones',
     text: requireString(s, 'text', ctx),
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
@@ -572,6 +589,8 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
     case 'manual-editor':
       return validateManualEditor(s);
     case 'rhinestone-font':
+    case 'rhinestone-font-line':
+    case 'rhinestone-font-digits':
       return validateRhinestoneFont(s);
     case 'template-import':
       return validateTemplateImport(s);

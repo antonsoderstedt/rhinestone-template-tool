@@ -4,10 +4,13 @@ import { CopyPlus, DiamondMinus, Hand, Layers3, MoveHorizontal, MoveVertical, Pe
 import {
   createImportedTemplate,
   getOutlineFontDefinition,
+  getPreferredRhinestoneFontStoneSize,
   getSupportedTextCoverageModes,
   getStoneSizeProfile,
-  TRW_CLEAN_STONE_FONT_ID,
   TRW_STONE_SIZE_CALIBRATION,
+  listRhinestoneFonts,
+  getRhinestoneFontDefinition,
+  getSupportedRhinestoneFontStoneSizes,
 } from '@/src/lib/rhinestone-engine/index';
 import { EditorTool, EditorState, EditorAction } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
@@ -461,19 +464,29 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: EditorProper
   );
 }
 
-const TRW_STONE_SIZES = ['SS6', 'SS10', 'SS16', 'SS20'] as const;
-
 function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const { rhinestoneFontTool } = state;
+  const availableFonts = listRhinestoneFonts();
+  const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
+  const supportedStoneSizes = getSupportedRhinestoneFontStoneSizes(rhinestoneFontTool.rhinestoneFontId);
+  const getStoneDiameterLabel = (size: typeof rhinestoneFontTool.stoneSize) => {
+    return size in TRW_STONE_SIZE_CALIBRATION
+      ? TRW_STONE_SIZE_CALIBRATION[size as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm
+      : null;
+  };
   const calibration = TRW_STONE_SIZE_CALIBRATION[
     rhinestoneFontTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
   ];
+  const modeCopy = rhinestoneFontTool.presentationMode === 'line'
+    ? 'Line-style rhinestone font using pre-placed stones. This is the bridge to a future centerline workflow.'
+    : rhinestoneFontTool.presentationMode === 'digits'
+      ? 'Digits-focused rhinestone font using pre-placed stones. Best for numbers and scoreboards.'
+      : 'Uses the stones already placed inside the selected rhinestone font. It does not trace letter outlines or generate a new grid.';
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
-        Uses the stones already placed inside TRW Clean Stone. It does not trace
-        letter outlines.
+        {modeCopy}
       </div>
 
       <label className="flex flex-col gap-1.5">
@@ -483,16 +496,39 @@ function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanel
           value={rhinestoneFontTool.rhinestoneFontId}
           onChange={(e) => dispatch({
             type: 'UPDATE_RHINESTONE_FONT_TOOL',
-            updates: { rhinestoneFontId: e.target.value },
+            updates: {
+              rhinestoneFontId: e.target.value,
+              stoneSize: getPreferredRhinestoneFontStoneSize(e.target.value),
+            },
           })}
           className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
         >
-          <option value={TRW_CLEAN_STONE_FONT_ID}>TRW Clean Stone</option>
+          {availableFonts.map((font) => (
+            <option key={font.fontId} value={font.fontId}>
+              {font.displayName} — {font.style}
+            </option>
+          ))}
         </select>
+        <span className="text-[11px] text-zinc-500">
+          {selectedFontDefinition.category} · {selectedFontDefinition.style} · mode {rhinestoneFontTool.presentationMode} · supports {supportedStoneSizes.join(', ')}
+        </span>
       </label>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-zinc-400">Text</span>
+        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <span>Suggested sample: {selectedFontDefinition.suggestedText}</span>
+          <button
+            type="button"
+            onClick={() => dispatch({
+              type: 'UPDATE_RHINESTONE_FONT_TOOL',
+              updates: { text: selectedFontDefinition.suggestedText },
+            })}
+            className="rounded-full border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800"
+          >
+            Use sample
+          </button>
+        </div>
         <textarea
           aria-label="Rhinestone font text"
           value={rhinestoneFontTool.text}
@@ -501,15 +537,15 @@ function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanel
             updates: { text: e.target.value },
           })}
           rows={3}
-          placeholder="Sulay"
+          placeholder={selectedFontDefinition.suggestedText}
           className="resize-y rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">TRW stone size</span>
+        <span className="text-xs font-medium text-zinc-400">Stone size</span>
         <select
-          aria-label="TRW stone size"
+          aria-label="Rhinestone font stone size"
           value={rhinestoneFontTool.stoneSize}
           onChange={(e) => dispatch({
             type: 'UPDATE_RHINESTONE_FONT_TOOL',
@@ -517,15 +553,30 @@ function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanel
           })}
           className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
         >
-          {TRW_STONE_SIZES.map((size) => (
+          {supportedStoneSizes.map((size) => (
             <option key={size} value={size}>
-              {size} — {TRW_STONE_SIZE_CALIBRATION[size].diameterMm} mm
+              {size}{getStoneDiameterLabel(size) !== null ? ` — ${getStoneDiameterLabel(size)} mm` : ''}
             </option>
           ))}
         </select>
         {calibration && (
           <span className="text-[11px] text-zinc-500">
             Authoritative hole diameter: {calibration.diameterMm} mm
+          </span>
+        )}
+        {selectedFontDefinition.limitations && selectedFontDefinition.limitations.length > 0 && (
+          <span className="text-[11px] text-zinc-500">
+            {selectedFontDefinition.limitations.join(' · ')}
+          </span>
+        )}
+        {selectedFontDefinition.style === 'Digits' && (
+          <span className="text-[11px] text-zinc-500">
+            Best for numeric-only designs.
+          </span>
+        )}
+        {selectedFontDefinition.style === 'Line' && (
+          <span className="text-[11px] text-zinc-500">
+            Line-style rhinestone font. Candidate for a future centerline workflow.
           </span>
         )}
       </label>
@@ -560,6 +611,11 @@ function RhinestoneFontToolProperties({ state, dispatch }: EditorPropertiesPanel
         <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
           Unsupported characters: {rhinestoneFontTool.unsupportedCharacters.join(', ')}.
           They remain in the saved original text but do not generate stones.
+        </div>
+      )}
+      {rhinestoneFontTool.presentationMode === 'digits' && /[A-Za-z]/.test(rhinestoneFontTool.text) && (
+        <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+          This font is optimized for digits. Letter input may be unsupported or incomplete.
         </div>
       )}
     </div>

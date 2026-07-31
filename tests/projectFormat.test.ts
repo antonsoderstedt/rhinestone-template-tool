@@ -295,4 +295,30 @@ describe('Project format — serializeRhinestoneProject', () => {
     const parsed = parseRhinestoneProject(json);
     expect(parsed).toEqual(project);
   });
+
+  it('parses rhinestone-font projects with presentation mode', () => {
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      savedAt: '2026-07-30T12:00:00.000Z',
+      projectName: 'Rhinestone Font Mode',
+      generatorState: {
+        generatorId: 'rhinestone-font-line',
+        presentationMode: 'line',
+        text: 'CHEER',
+        stoneSize: 'SS10',
+        rhinestoneFontId: 'small-line-ss10',
+        targetStoneSizeMm: 3.429,
+        letterSpacingMm: 0,
+        lineSpacingMm: 0,
+        includeGuideBox: true,
+        includeLabels: false,
+        paddingMm: 5,
+      },
+    });
+    const parsed = parseRhinestoneProject(json);
+    expect(parsed.generatorState.generatorId).toBe('rhinestone-font-line');
+    if (parsed.generatorState.generatorId === 'rhinestone-font-line') {
+      expect(parsed.generatorState.presentationMode).toBe('line');
+    }
+  });
 });

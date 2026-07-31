@@ -67,9 +67,53 @@ describe('main editor integration — rhinestone font', () => {
     );
     expect(html).toContain('Rhinestone font text');
     expect(html).toContain('TRW Clean Stone');
-    for (const size of ['SS6', 'SS10', 'SS16', 'SS20']) expect(html).toContain(size);
+    expect(html).toContain('Blessed SS10');
+    expect(html).toContain('Old English SS10');
+    expect(html).toContain('Script');
+    expect(html).toContain('Gothic');
+    expect(html).toContain('mode stones');
+    expect(html).toContain('Suggested sample: Sulay');
+    expect(html).toContain('Use sample');
+    expect(html).toContain('SS10');
     expect(html).toContain('Letter spacing');
     expect(html).toContain('Line spacing');
+  });
+
+  it('renders line-style rhinestone fonts as a distinct workflow mode', () => {
+    const state = stateWith({
+      activeTool: 'rhinestone-font',
+      rhinestoneFontTool: {
+        ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
+        presentationMode: 'line',
+        rhinestoneFontId: 'small-line-ss10',
+        stoneSize: 'SS10',
+      },
+    });
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
+    );
+    expect(html).toContain('mode line');
+    expect(html).toContain('Suggested sample: CHEER');
+    expect(html).toContain('future centerline workflow');
+  });
+
+  it('renders digits-style rhinestone fonts as numeric-focused', () => {
+    const state = stateWith({
+      activeTool: 'rhinestone-font',
+      rhinestoneFontTool: {
+        ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
+        presentationMode: 'digits',
+        rhinestoneFontId: 'huge-numbers-ss10',
+        stoneSize: 'SS10',
+        text: 'ABC123',
+      },
+    });
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
+    );
+    expect(html).toContain('mode digits');
+    expect(html).toContain('Suggested sample: 2026');
+    expect(html).toContain('optimized for digits');
   });
 
   it('uses the authoritative TRW diameter in generated templates and SVG circles', async () => {
@@ -109,7 +153,22 @@ describe('main editor integration — rhinestone font', () => {
       rhinestoneFontTool: { ...DEFAULT_EDITOR_STATE.rhinestoneFontTool, text },
     });
     const project = buildProjectFileFromEditorState(state);
-    expect(project?.generatorState).toMatchObject({ generatorId: 'rhinestone-font', text });
+    expect(project?.generatorState).toMatchObject({ generatorId: 'rhinestone-font', text, presentationMode: 'stones' });
+  });
+
+  it('persists line-style rhinestone fonts as a distinct workflow identity', () => {
+    const state = stateWith({
+      activeTool: 'rhinestone-font',
+      rhinestoneFontTool: {
+        ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
+        presentationMode: 'line',
+        rhinestoneFontId: 'small-line-ss10',
+        stoneSize: 'SS10',
+        text: 'CHEER',
+      },
+    });
+    const project = buildProjectFileFromEditorState(state);
+    expect(project?.generatorState).toMatchObject({ generatorId: 'rhinestone-font-line', presentationMode: 'line' });
   });
 
   it('makes a font result editable and supports move undo/redo through shared history', async () => {

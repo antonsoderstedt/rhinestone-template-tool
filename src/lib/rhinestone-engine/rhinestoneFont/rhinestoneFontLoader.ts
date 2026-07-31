@@ -8,11 +8,13 @@
 import * as opentype from 'opentype.js';
 import {
   getRhinestoneFontDefinition,
+  getPreferredRhinestoneFontStoneSize,
   isKnownRhinestoneFontId,
   DEFAULT_RHINESTONE_FONT_ID,
   type RhinestoneFontDefinition,
   type RhinestoneFontId,
 } from './rhinestoneFontRegistry';
+import { resolveRhinestoneFontFilePath } from './fontLibraryPath';
 
 export interface LoadedRhinestoneFont {
   definition: RhinestoneFontDefinition;
@@ -33,21 +35,20 @@ async function readFontArrayBuffer(definition: RhinestoneFontDefinition): Promis
   }
 
   if (typeof window === 'undefined') {
-    if (!definition.nodeFilePath) {
-      throw new Error(`Rhinestone font "${definition.displayName}" has no node file path.`);
-    }
     const { readFile } = await import('node:fs/promises');
-    const { existsSync } = await import('node:fs');
-    
-    if (!existsSync(definition.nodeFilePath)) {
+    const resolvedPath = resolveRhinestoneFontFilePath(definition);
+
+    if (!resolvedPath) {
       throw new Error(
-        `Rhinestone font file not found: ${definition.nodeFilePath}\n` +
+        `Rhinestone font file not found for: ${definition.displayName}\n` +
         `Font: ${definition.displayName} (${definition.fontId})\n` +
-        `This font must be manually placed at the expected location.`
+        `Expected node path: ${definition.nodeFilePath ?? '(none)'}\n` +
+        `Expected library-relative path: ${definition.libraryRelativePath ?? '(none)'}\n` +
+        `This font must be available in RHINESTONE_FONT_LIBRARY_DIR, ~/Desktop/LETTER UTVALDA, or the repo font library.`
       );
     }
-    
-    const fileBuffer = await readFile(definition.nodeFilePath);
+
+    const fileBuffer = await readFile(resolvedPath);
     return bufferToArrayBuffer(fileBuffer);
   }
 

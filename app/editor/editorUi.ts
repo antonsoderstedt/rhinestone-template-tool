@@ -19,6 +19,8 @@ function mapGeneratorToTool(generatorId: GeneratorId | null): SourcePanelTool | 
     case 'manual-grid':
       return 'grid';
     case 'rhinestone-font':
+    case 'rhinestone-font-line':
+    case 'rhinestone-font-digits':
       return 'rhinestone-font';
     case 'template-import':
       return 'template-import';

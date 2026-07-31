@@ -65,7 +65,9 @@ export function getEditableSourceGenerator(state: Pick<EditorState, 'activeTool'
     case 'svg':
       return 'svg-upload';
     case 'rhinestone-font':
-      return 'rhinestone-font';
+      return state.editableTemplate.isEditable && state.editableTemplate.sourceGenerator
+        ? state.editableTemplate.sourceGenerator
+        : 'rhinestone-font';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -170,7 +172,12 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
       ];
       if (!calibration) return null;
       return {
-        generatorId: 'rhinestone-font',
+        generatorId: state.rhinestoneFontTool.presentationMode === 'line'
+          ? 'rhinestone-font-line'
+          : state.rhinestoneFontTool.presentationMode === 'digits'
+            ? 'rhinestone-font-digits'
+            : 'rhinestone-font',
+        presentationMode: state.rhinestoneFontTool.presentationMode,
         text: state.rhinestoneFontTool.text,
         stoneSize: state.rhinestoneFontTool.stoneSize,
         rhinestoneFontId: state.rhinestoneFontTool.rhinestoneFontId,

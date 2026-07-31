@@ -9,6 +9,7 @@ import type { RhinestoneTemplate, Stone, StoneSizeId } from '../types/index';
 import { loadRhinestoneFont } from './rhinestoneFontLoader';
 import { layoutRhinestoneFontText } from './glyphExtraction';
 import { createRhinestoneTemplate } from '../template/createTemplate';
+import { getPreferredRhinestoneFontStoneSize } from './rhinestoneFontRegistry';
 
 export interface CreateRhinestoneFontTemplateOptions {
   text: string;
@@ -33,6 +34,13 @@ export async function createRhinestoneFontTemplate(
   // Load font
   const loaded = await loadRhinestoneFont(rhinestoneFontId);
 
+  if (!loaded.definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
+    throw new Error(
+      `Rhinestone font ${loaded.definition.displayName} supports ${loaded.definition.supportedTargetStoneSizeIds.join(', ')}. ` +
+      `Requested: ${targetStoneSizeId}. Preferred: ${getPreferredRhinestoneFontStoneSize(loaded.definition.fontId)}.`
+    );
+  }
+
   // Layout text
   const layout = layoutRhinestoneFontText({
     text,
@@ -55,6 +63,11 @@ export async function createRhinestoneFontTemplate(
       character: stone.character,
       glyphIndex: stone.glyphIndex,
       stoneIndex: stone.stoneIndex,
+      presentationMode: loaded.definition.style === 'Line'
+        ? 'line'
+        : loaded.definition.style === 'Digits'
+          ? 'digits'
+          : 'stones',
     },
   }));
 
@@ -64,6 +77,16 @@ export async function createRhinestoneFontTemplate(
     stones,
     widthMm: layout.widthMm,
     heightMm: layout.heightMm,
+    metadata: {
+      rhinestoneFontId: loaded.definition.fontId,
+      rhinestoneFontStyle: loaded.definition.style,
+      presentationMode: loaded.definition.style === 'Line'
+        ? 'line'
+        : loaded.definition.style === 'Digits'
+          ? 'digits'
+          : 'stones',
+      supportedTargetStoneSizeIds: loaded.definition.supportedTargetStoneSizeIds.join(','),
+    },
   });
 
   const warnings: string[] = [];
@@ -71,6 +94,18 @@ export async function createRhinestoneFontTemplate(
     warnings.push(
       `The following characters are not supported by ${loaded.definition.displayName}: ${layout.unsupportedCharacters.join(', ')}`
     );
+  }
+
+  if (loaded.definition.style === 'Digits') {
+    warnings.push(`${loaded.definition.displayName} is a digits-focused rhinestone font. Use it primarily for numeric designs.`);
+  }
+
+  if (loaded.definition.style === 'Line') {
+    warnings.push(`${loaded.definition.displayName} is a line-style rhinestone font. It works as a pre-placed font here, and is a candidate for a future centerline workflow.`);
+  }
+
+  if (loaded.definition.characterCoverage?.digits === false && /\d/.test(text)) {
+    warnings.push(`${loaded.definition.displayName} does not include digit coverage.`);
   }
 
   return {

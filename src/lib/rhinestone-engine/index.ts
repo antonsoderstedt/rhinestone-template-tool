@@ -279,12 +279,15 @@ export {
 } from './project/projectFormat';
 
 // Rhinestone Font System
-export type { RhinestoneFontId, RhinestoneFontCategory, RhinestoneFontDefinition } from './rhinestoneFont/rhinestoneFontRegistry';
+export type { RhinestoneFontId, RhinestoneFontCategory, RhinestoneFontStyle, RhinestoneFontDefinition } from './rhinestoneFont/rhinestoneFontRegistry';
 export {
   TRW_CLEAN_STONE_FONT_ID,
   DEFAULT_RHINESTONE_FONT_ID,
   RHINESTONE_FONT_REGISTRY,
   getRhinestoneFontDefinition,
+  getRhinestoneFontStyle,
+  getSupportedRhinestoneFontStoneSizes,
+  getPreferredRhinestoneFontStoneSize,
   isKnownRhinestoneFontId,
   listRhinestoneFonts,
 } from './rhinestoneFont/rhinestoneFontRegistry';

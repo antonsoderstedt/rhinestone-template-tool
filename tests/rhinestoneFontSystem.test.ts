@@ -230,6 +230,7 @@ describe('Rhinestone Font System', () => {
       expect(result.template.heightMm).toBeGreaterThan(0);
       expect(result.unsupportedCharacters.length).toBe(0);
       expect(result.warnings.length).toBe(0);
+      expect(result.template.metadata?.presentationMode).toBe('stones');
 
       // Verify stones have correct properties
       for (const stone of result.template.stones) {
@@ -293,6 +294,45 @@ describe('Rhinestone Font System', () => {
         expect(s1.stoneSize).toBe(s2.stoneSize);
       }
     });
+
+    it('should reject unsupported target stone sizes for size-specific fonts', async () => {
+      await expect(createRhinestoneFontTemplate({
+        text: 'ABS',
+        rhinestoneFontId: 'trw-clean-stone',
+        targetStoneSizeId: 'SS12',
+        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm * 1.5,
+        letterSpacingMm: 0,
+        lineSpacingMm: 0,
+      })).rejects.toThrow(/supports SS6, SS10, SS16, SS20/i);
+    });
+
+    it('should add usage warnings for line-style rhinestone fonts', async () => {
+      const result = await createRhinestoneFontTemplate({
+        text: 'AB',
+        rhinestoneFontId: 'small-line-ss10',
+        targetStoneSizeId: 'SS10',
+        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
+        letterSpacingMm: 0,
+        lineSpacingMm: 0,
+      });
+
+      expect(result.warnings.some((warning) => warning.includes('line-style'))).toBe(true);
+      expect(result.template.metadata?.presentationMode).toBe('line');
+    });
+
+    it('should add usage warnings for digits-focused rhinestone fonts', async () => {
+      const result = await createRhinestoneFontTemplate({
+        text: '1234',
+        rhinestoneFontId: 'huge-numbers-ss10',
+        targetStoneSizeId: 'SS10',
+        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
+        letterSpacingMm: 0,
+        lineSpacingMm: 0,
+      });
+
+      expect(result.warnings.some((warning) => warning.includes('digits-focused'))).toBe(true);
+      expect(result.template.metadata?.presentationMode).toBe('digits');
+    });
   });
 
   describe('Stone Size Calibration', () => {
@@ -313,23 +353,23 @@ describe('Rhinestone Font System', () => {
         lineSpacingMm: 0,
       });
 
-      const ss12Result = await createRhinestoneFontTemplate({
+      const ss16Result = await createRhinestoneFontTemplate({
         text: 'A',
         rhinestoneFontId: 'trw-clean-stone',
-        targetStoneSizeId: 'SS12',
-        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm * 1.5, // SS12 is larger
+        targetStoneSizeId: 'SS16',
+        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS16.diameterMm,
         letterSpacingMm: 0,
         lineSpacingMm: 0,
       });
 
-      // SS12 should be larger than SS6
-      expect(ss12Result.template.widthMm).toBeDefined();
+      // SS16 should be larger than SS6
+      expect(ss16Result.template.widthMm).toBeDefined();
       expect(ss6Result.template.widthMm).toBeDefined();
-      expect(ss12Result.template.widthMm!).toBeGreaterThan(ss6Result.template.widthMm!);
-      expect(ss12Result.template.heightMm!).toBeGreaterThan(ss6Result.template.heightMm!);
+      expect(ss16Result.template.widthMm!).toBeGreaterThan(ss6Result.template.widthMm!);
+      expect(ss16Result.template.heightMm!).toBeGreaterThan(ss6Result.template.heightMm!);
 
       // Stone count should be the same
-      expect(ss12Result.template.stones.length).toBe(ss6Result.template.stones.length);
+      expect(ss16Result.template.stones.length).toBe(ss6Result.template.stones.length);
     });
   });
 });

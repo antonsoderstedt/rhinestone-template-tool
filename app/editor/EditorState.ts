@@ -19,6 +19,10 @@ import {
   Stone,
   type GeneratorId,
   LEGACY_OUTLINE_FONT_ID,
+  getRhinestoneFontDefinition,
+  getRhinestoneFontStyle,
+  getPreferredRhinestoneFontStoneSize,
+  getSupportedRhinestoneFontStoneSizes,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
 } from '@/src/lib/rhinestone-engine/index';
@@ -121,6 +125,7 @@ export interface ManualToolState {
 // ─── Rhinestone Font Tool State ───────────────────────────────────────────────
 
 export interface RhinestoneFontToolState {
+  presentationMode: 'stones' | 'line' | 'digits';
   text: string;
   rhinestoneFontId: string;
   stoneSize: StoneSizeId;
@@ -330,6 +335,62 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
   return next;
 }
 
+function getDefaultRhinestoneFontSpacing(presentationMode: RhinestoneFontToolState['presentationMode']): {
+  letterSpacingMm: number;
+  lineSpacingMm: number;
+} {
+  if (presentationMode === 'line' || presentationMode === 'digits') {
+    return { letterSpacingMm: 0, lineSpacingMm: 0 };
+  }
+
+  return { letterSpacingMm: 1, lineSpacingMm: 0 };
+}
+
+function normalizeRhinestoneFontToolUpdate(
+  current: RhinestoneFontToolState,
+  updates: Partial<RhinestoneFontToolState>,
+): RhinestoneFontToolState {
+  const next: RhinestoneFontToolState = { ...current, ...updates };
+  const fontChanged = updates.rhinestoneFontId !== undefined && updates.rhinestoneFontId !== current.rhinestoneFontId;
+
+  if (fontChanged && updates.text === undefined) {
+    const previousDefinition = getRhinestoneFontDefinition(current.rhinestoneFontId as never);
+    const nextDefinition = getRhinestoneFontDefinition(next.rhinestoneFontId as never);
+    const currentText = current.text.trim();
+    if (currentText.length === 0 || current.text === previousDefinition.suggestedText) {
+      next.text = nextDefinition.suggestedText;
+    }
+  }
+
+  const supportedSizes = getSupportedRhinestoneFontStoneSizes(next.rhinestoneFontId);
+  if (!supportedSizes.includes(next.stoneSize)) {
+    next.stoneSize = getPreferredRhinestoneFontStoneSize(next.rhinestoneFontId);
+  }
+  const fontStyle = getRhinestoneFontStyle(next.rhinestoneFontId);
+  next.presentationMode = fontStyle === 'Line'
+    ? 'line'
+    : fontStyle === 'Digits'
+      ? 'digits'
+      : 'stones';
+
+  if (fontChanged && updates.letterSpacingMm === undefined && updates.lineSpacingMm === undefined) {
+    const previousDefaults = getDefaultRhinestoneFontSpacing(current.presentationMode);
+    const currentLetterSpacing = typeof current.letterSpacingMm === 'number' ? current.letterSpacingMm : previousDefaults.letterSpacingMm;
+    const currentLineSpacing = typeof current.lineSpacingMm === 'number' ? current.lineSpacingMm : previousDefaults.lineSpacingMm;
+
+    if (
+      currentLetterSpacing === previousDefaults.letterSpacingMm &&
+      currentLineSpacing === previousDefaults.lineSpacingMm
+    ) {
+      const nextDefaults = getDefaultRhinestoneFontSpacing(next.presentationMode);
+      next.letterSpacingMm = nextDefaults.letterSpacingMm;
+      next.lineSpacingMm = nextDefaults.lineSpacingMm;
+    }
+  }
+
+  return next;
+}
+
 export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   uploadedSvgText: null,
   svgFileName: null,
@@ -378,6 +439,7 @@ export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
 };
 
 export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
+  presentationMode: 'stones',
   text: 'Sulay',
   rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
@@ -489,7 +551,11 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
     case 'svg':
       return 'svg-upload';
     case 'rhinestone-font':
-      return 'rhinestone-font';
+      return state.rhinestoneFontTool.presentationMode === 'line'
+        ? 'rhinestone-font-line'
+        : state.rhinestoneFontTool.presentationMode === 'digits'
+          ? 'rhinestone-font-digits'
+          : 'rhinestone-font';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -520,7 +586,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
-      return { ...state, rhinestoneFontTool: { ...state.rhinestoneFontTool, ...action.updates } };
+      return { ...state, rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates) };
     
     case 'UPDATE_TEMPLATE_IMPORT_TOOL':
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };

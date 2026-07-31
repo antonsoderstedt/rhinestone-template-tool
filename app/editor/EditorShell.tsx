@@ -208,6 +208,8 @@ export default function EditorShell() {
               return;
             }
             {
+              const defaultLetterSpacingMm = state.rhinestoneFontTool.presentationMode === 'stones' ? 1 : 0;
+              const defaultLineSpacingMm = 0;
               // Get diameter for stone size - TRW calibration only supports SS6, SS10, SS16, SS20
               let targetDiameterMm = 3.429; // Default SS10
               const sizeId = state.rhinestoneFontTool.stoneSize;
@@ -220,8 +222,8 @@ export default function EditorShell() {
                 rhinestoneFontId: state.rhinestoneFontTool.rhinestoneFontId,
                 targetStoneSizeId: sizeId,
                 targetStoneSizeMm: targetDiameterMm,
-                letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : 1,
-                lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : 0,
+                letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : defaultLetterSpacingMm,
+                lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : defaultLineSpacingMm,
               });
               template = result.template;
               // Update unsupported characters and warnings in tool state
@@ -537,10 +539,18 @@ export default function EditorShell() {
             break;
 
           case 'rhinestone-font':
+          case 'rhinestone-font-line':
+          case 'rhinestone-font-digits':
             dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'rhinestone-font' });
             dispatch({
               type: 'UPDATE_RHINESTONE_FONT_TOOL',
               updates: {
+                presentationMode: project.generatorState.presentationMode
+                  ?? (project.generatorState.generatorId === 'rhinestone-font-line'
+                    ? 'line'
+                    : project.generatorState.generatorId === 'rhinestone-font-digits'
+                      ? 'digits'
+                      : 'stones'),
                 text: project.generatorState.text,
                 rhinestoneFontId: project.generatorState.rhinestoneFontId,
                 stoneSize: project.generatorState.stoneSize,
