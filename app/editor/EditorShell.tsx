@@ -306,6 +306,7 @@ export default function EditorShell() {
     state.svgTool.radialSettings,
     state.rhinestoneFontTool.text,
     state.rhinestoneFontTool.rhinestoneFontId,
+    state.rhinestoneFontTool.presentationMode,
     state.rhinestoneFontTool.stoneSize,
     state.rhinestoneFontTool.letterSpacingMm,
     state.rhinestoneFontTool.lineSpacingMm,

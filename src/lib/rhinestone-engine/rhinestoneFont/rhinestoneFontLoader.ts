@@ -8,7 +8,6 @@
 import * as opentype from 'opentype.js';
 import {
   getRhinestoneFontDefinition,
-  getPreferredRhinestoneFontStoneSize,
   isKnownRhinestoneFontId,
   DEFAULT_RHINESTONE_FONT_ID,
   type RhinestoneFontDefinition,
