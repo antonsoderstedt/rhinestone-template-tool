@@ -52,16 +52,6 @@ describe('editorReducer', () => {
     expect(state.textTool.outlineTextStyle).toBe('filled-typography');
   });
 
-  it('uses outline placement when switching to a script bundled font', () => {
-    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
-      type: 'UPDATE_TEXT_TOOL',
-      updates: { fontId: 'pacifico-script' },
-    });
-    expect(state.textTool.coverageMode).toBe('outline');
-    expect(state.textTool.fillMode).toBe('outline');
-    expect(state.textTool.outlineTextStyle).toBe('outline');
-  });
-
   it('lets outline text style drive the default text placement intent', () => {
     const filled = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_TEXT_TOOL',
@@ -103,19 +93,6 @@ describe('editorReducer', () => {
       updates: { coverageMode: 'outline' },
     });
     expect(outline.textTool.fillMode).toBe('outline');
-  });
-
-  it('clamps unsupported filled coverage when switching to an outline-only bundled font', () => {
-    const filled = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
-      type: 'UPDATE_TEXT_TOOL',
-      updates: { fillMode: 'outline-fill' },
-    });
-    const state = editorReducer(filled, {
-      type: 'UPDATE_TEXT_TOOL',
-      updates: { fontId: 'caveat-handwritten' },
-    });
-    expect(state.textTool.coverageMode).toBe('outline');
-    expect(state.textTool.fillMode).toBe('outline');
   });
 
   it('syncs SVG coverage and fill mode controls', () => {

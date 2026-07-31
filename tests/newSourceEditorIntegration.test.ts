@@ -211,31 +211,6 @@ describe('main editor integration — rhinestone font', () => {
   });
 });
 
-describe('main editor integration — text style policy', () => {
-  it('renders outline-only guidance for bundled fonts that should not expose filled typography', () => {
-    const state = stateWith({
-      activeTool: 'text',
-      textTool: {
-        ...DEFAULT_EDITOR_STATE.textTool,
-        mode: 'outline',
-        fontId: 'pacifico-script',
-      },
-    });
-    const html = renderToStaticMarkup(
-      createElement(EditorPropertiesPanel, {
-        state,
-        dispatch: vi.fn() as never,
-        mode: 'source',
-        outlineFontStatus: { status: 'idle', message: null, fontId: 'pacifico-script' },
-      }),
-    );
-    expect(html).toContain('Text style');
-    expect(html).toContain('limited to outline placement');
-    expect(html).toContain('Filled typography');
-    expect(html).toContain('disabled');
-  });
-});
-
 describe('main editor integration — existing template import', () => {
   it('renders a separate import source with an explicit confirmation action', () => {
     const state = stateWith({

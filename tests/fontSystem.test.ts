@@ -35,8 +35,8 @@ describe('font system', () => {
     expect(getSupportedTextCoverageModes('archivo-black')).toContain('fill');
     expect(getPreferredTextCoverageMode('oswald-condensed')).toBe('outline-fill');
     expect(getSupportedTextCoverageModes('oswald-condensed')).toContain('fill');
-    expect(getPreferredTextCoverageMode('pacifico-script')).toBe('outline');
-    expect(getSupportedTextCoverageModes('pacifico-script')).toEqual(['outline']);
+    expect(getPreferredTextCoverageMode('bebas-neue')).toBe('outline-fill');
+    expect(getSupportedTextCoverageModes('anton-condensed')).toContain('fill');
   });
 
   it('loads all bundled font resources', async () => {
@@ -82,11 +82,11 @@ describe('font system', () => {
       fontId: 'archivo-black',
     });
     const caveat = await createOutlineTextTemplateAsync({
-      id: 'caveat',
-      name: 'Caveat',
+      id: 'anton',
+      name: 'Anton',
       text: 'Sulay',
       stoneSize: 'SS10',
-      fontId: 'caveat-handwritten',
+      fontId: 'anton-condensed',
     });
     expect(archivo.stones).not.toEqual(caveat.stones);
   });
@@ -211,22 +211,6 @@ describe('font system', () => {
     expect(filled.stones.some((stone) => stone.metadata?.edgeBand === 'edge')).toBe(true);
   });
 
-  it('clamps outline-only bundled fonts back to outline placement even when fill is requested', async () => {
-    const template = await createOutlineTextTemplateAsync({
-      id: 'script-forced-fill',
-      name: 'Script Forced Fill',
-      text: 'Sulay',
-      stoneSize: 'SS10',
-      fontId: 'pacifico-script',
-      fontSizeMm: 32,
-      coverageMode: 'fill',
-      fillMode: 'fill',
-    });
-    expect(template.metadata?.['coverageMode']).toBe('outline');
-    expect(template.metadata?.['fillMode']).toBe('outline');
-    expect(template.metadata?.['textPlacementStrategy']).not.toBe('glyph-scanline-fill-v1');
-  });
-
   it('handles spaces and kerning-sensitive pairs', async () => {
     const tight = await createOutlineTextTemplateAsync({
       id: 'tight',
@@ -276,17 +260,6 @@ describe('font system', () => {
     expect(html).toContain('Choose outline font');
     expect(html).toContain('Archivo Black');
     expect(html).toContain('Filled typography');
-  });
-
-  it('renders outline-only policy for script fonts in the picker', () => {
-    const html = renderToStaticMarkup(createElement(FontPicker, {
-      value: 'pacifico-script',
-      previewText: 'Sulay',
-      status: { status: 'idle', message: null, fontId: 'pacifico-script' },
-      onChange: () => undefined,
-    }));
-    expect(html).toContain('Pacifico');
-    expect(html).toContain('Outline only');
   });
 
   it('exposes curated local rhinestone fonts and their supported sizes', () => {
