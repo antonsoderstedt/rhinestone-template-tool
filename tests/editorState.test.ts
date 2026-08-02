@@ -31,6 +31,8 @@ function makeEditableState(initialStones: EditableStone[] = [stone('a', 10, 10),
   return state;
 }
 
+const filledSvg = '<svg xmlns="http://www.w3.org/2000/svg"><defs><style>.cls-1{fill:#ff7bb2;}</style></defs><path class="cls-1" d="M 0 0 L 100 0 L 100 40 L 0 40 Z" /></svg>';
+
 describe('editorReducer', () => {
   it('uses outline placement by default when switching to a bold bundled outline font', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
@@ -107,6 +109,16 @@ describe('editorReducer', () => {
       updates: { coverageMode: 'outline-fill' },
     });
     expect(outlineFill.svgTool.fillMode).toBe('outline-fill');
+  });
+
+  it('defaults filled uploaded SVG artwork to outline-fill and a larger width', () => {
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { uploadedSvgText: filledSvg },
+    });
+    expect(state.svgTool.coverageMode).toBe('outline-fill');
+    expect(state.svgTool.fillMode).toBe('outline-fill');
+    expect(state.svgTool.targetWidthMm).toBe(200);
   });
 
   it('clamps rhinestone font stone size to the selected font support', () => {

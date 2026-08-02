@@ -364,6 +364,11 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     const suggestedMode = suggestSvgUploadMode(updates.uploadedSvgText);
     next.coverageMode = suggestedMode;
     next.fillMode = suggestedMode;
+
+    const usingDefaultSize = current.targetWidthMm === 100 && current.targetHeightMm === '';
+    if (suggestedMode === 'outline-fill' && updates.targetWidthMm === undefined && usingDefaultSize) {
+      next.targetWidthMm = 200;
+    }
   }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
