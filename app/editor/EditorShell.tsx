@@ -201,6 +201,7 @@ export default function EditorShell() {
                 radialSettings: state.svgTool.radialSettings,
                 densityPreset: state.svgTool.densityPreset,
                 customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
+                fillEdgeInsetMm: state.svgTool.renderMode === 'artwork-dots' ? 0 : undefined,
               });
             }
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });

@@ -371,6 +371,7 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
       next.coverageMode = 'fill';
       next.fillMode = 'fill';
       next.placementPattern = 'hexagonal';
+      next.densityPreset = 'dense';
       if (updates.targetWidthMm === undefined && usingDefaultSize) {
         next.targetWidthMm = 280;
       }
@@ -386,6 +387,9 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     if (updates.coverageMode === undefined) next.coverageMode = 'fill';
     if (updates.fillMode === undefined) next.fillMode = 'fill';
     if (updates.placementPattern === undefined) next.placementPattern = 'hexagonal';
+    if (updates.densityPreset === undefined && current.densityPreset === 'standard') {
+      next.densityPreset = 'dense';
+    }
     if (updates.targetWidthMm === undefined && usingDefaultSize) {
       next.targetWidthMm = 280;
     }

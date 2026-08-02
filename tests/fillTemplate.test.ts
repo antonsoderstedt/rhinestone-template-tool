@@ -110,6 +110,26 @@ describe('createPolylineFilledRhinestoneTemplate — fill mode', () => {
     expect(dense.stones.length).toBeGreaterThanOrEqual(loose.stones.length);
   });
 
+  it('fill mode supports zero edge inset for artwork-like coverage', () => {
+    const defaultInset = createPolylineFilledRhinestoneTemplate({
+      ...BASE_OPTS,
+      polylines: [CLOSED_RECT],
+      fillMode: 'fill',
+      placementPattern: 'hexagonal',
+      densityPreset: 'dense',
+    });
+    const zeroInset = createPolylineFilledRhinestoneTemplate({
+      ...BASE_OPTS,
+      polylines: [CLOSED_RECT],
+      fillMode: 'fill',
+      placementPattern: 'hexagonal',
+      densityPreset: 'dense',
+      fillEdgeInsetMm: 0,
+    });
+    expect(zeroInset.stones.length).toBeGreaterThanOrEqual(defaultInset.stones.length);
+    expect(zeroInset.metadata?.['fillEdgeInsetMm']).toBe(0);
+  });
+
   it('fill mode supports targetWidthMm', () => {
     const t = createPolylineFilledRhinestoneTemplate({
       ...BASE_OPTS,
