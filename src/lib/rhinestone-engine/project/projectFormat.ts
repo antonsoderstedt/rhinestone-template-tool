@@ -116,6 +116,7 @@ export interface SvgUploadProjectState {
    * null if no SVG was uploaded when the project was saved.
    */
   uploadedSvgText: string | null;
+  renderMode?: 'vector-layout' | 'artwork-dots';
   stoneSize: StoneSizeId;
   includeGuideBox: boolean;
   includeLabels: boolean;
@@ -479,9 +480,15 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
   if (svgText !== null && typeof svgText !== 'string') {
     throw new Error('[Project] generatorState.uploadedSvgText must be a string or null');
   }
+  const renderMode = s.renderMode === 'artwork-dots'
+    ? 'artwork-dots'
+    : s.renderMode === 'vector-layout'
+      ? 'vector-layout'
+      : undefined;
   return {
     generatorId: 'svg-upload',
     uploadedSvgText: svgText as string | null,
+    renderMode,
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
     includeLabels: requireBoolean(s, 'includeLabels', ctx),
@@ -564,6 +571,43 @@ function validateRhinestoneFont(s: UnknownRecord): RhinestoneFontProjectState {
   };
 }
 
+function validateSvgAlphabet(s: UnknownRecord): SvgAlphabetProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'svg-alphabet',
+    text: requireString(s, 'text', ctx),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
+    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
+    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateLetterStencil(s: UnknownRecord): LetterStencilProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'letter-stencil',
+    sourceType: requireEnum<'svg-alphabet' | 'rhinestone-font'>(s, 'sourceType', ctx, new Set(['svg-alphabet', 'rhinestone-font'])),
+    text: requireString(s, 'text', ctx),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
+    cardPaddingMm: requireFiniteNumber(s, 'cardPaddingMm', ctx),
+    cardCornerRadiusMm: requireFiniteNumber(s, 'cardCornerRadiusMm', ctx),
+    minCardWidthMm: requireFiniteNumber(s, 'minCardWidthMm', ctx),
+    layoutMode: requireEnum<'preview' | 'cut-sheet'>(s, 'layoutMode', ctx, new Set(['preview', 'cut-sheet'])),
+    cutSheetGapMm: requireFiniteNumber(s, 'cutSheetGapMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
 function validateTemplateImport(s: UnknownRecord): TemplateImportProjectState {
   const ctx = 'generatorState';
   if (s.uploadedSvgText !== null && typeof s.uploadedSvgText !== 'string') {
@@ -629,6 +673,10 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
     case 'rhinestone-font-line':
     case 'rhinestone-font-digits':
       return validateRhinestoneFont(s);
+    case 'svg-alphabet':
+      return validateSvgAlphabet(s);
+    case 'letter-stencil':
+      return validateLetterStencil(s);
     case 'template-import':
       return validateTemplateImport(s);
     default:
@@ -701,7 +749,7 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
   // Optional active tool
   let activeTool: RhinestoneProjectFile['activeTool'] = undefined;
   if (typeof obj.activeTool === 'string') {
-    const validTools = new Set(['select', 'text', 'svg', 'grid', 'rhinestone-font', 'template-import', 'manual']);
+    const validTools = new Set(['select', 'text', 'svg', 'grid', 'rhinestone-font', 'svg-alphabet', 'letter-stencil', 'template-import', 'manual']);
     if (validTools.has(obj.activeTool)) {
       activeTool = obj.activeTool as RhinestoneProjectFile['activeTool'];
     }

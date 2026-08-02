@@ -149,6 +149,7 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
       return {
         generatorId: 'svg-upload',
         uploadedSvgText: state.svgTool.uploadedSvgText,
+        renderMode: state.svgTool.renderMode,
         stoneSize: state.svgTool.stoneSize,
         targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : null,
         targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : null,

@@ -619,6 +619,10 @@ export default function EditorShell() {
               updates: {
                 uploadedSvgText: project.generatorState.uploadedSvgText,
                 svgFileName: 'loaded.svg',
+                renderMode: project.generatorState.renderMode
+                  ?? ((project.generatorState.fillMode === 'fill' && (project.generatorState.placementPattern ?? 'default') === 'hexagonal')
+                    ? 'artwork-dots'
+                    : 'vector-layout'),
                 stoneSize: project.generatorState.stoneSize,
                 targetWidthMm: project.generatorState.targetWidthMm ?? '',
                 targetHeightMm: project.generatorState.targetHeightMm ?? '',

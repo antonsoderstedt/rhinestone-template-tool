@@ -1205,6 +1205,33 @@ function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
 
       {svgTool.uploadedSvgText && (
         <>
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-zinc-400">SVG mode</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'vector-layout' } })}
+                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${svgTool.renderMode === 'vector-layout' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+              >
+                <div className="font-medium">Vector layout</div>
+                <div className="mt-1 text-[10px] text-zinc-500">Contour-aware placement from SVG paths</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'artwork-dots' } })}
+                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${svgTool.renderMode === 'artwork-dots' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+              >
+                <div className="font-medium">Artwork dots</div>
+                <div className="mt-1 text-[10px] text-zinc-500">Dense fill-first sampling for logos and badges</div>
+              </button>
+            </div>
+            <p className="text-[11px] text-zinc-500">
+              {svgTool.renderMode === 'artwork-dots'
+                ? 'Artwork dots uses fill-only hexagonal sampling and is intended to mimic image-to-dot style rhinestone layouts.'
+                : 'Vector layout keeps the SVG as vector artwork and is better for cleaner outline-driven results.'}
+            </p>
+          </div>
+
           {/* Stone Size */}
           <StoneProfileControl
             value={svgTool.stoneSize}
@@ -1221,15 +1248,16 @@ function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
             onPreserveAspectRatioChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: val } })}
           />
 
-          {/* Fill Mode */}
-          <FillModeControl
-            fillMode={svgTool.fillMode}
-            fillPattern={svgTool.fillPattern}
-            availableModes={svgCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
-            availablePatterns={svgCapabilities.supportedFillPatterns}
-            onFillModeChange={(mode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillMode: mode } })}
-            onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillPattern: pattern } })}
-          />
+          {svgTool.renderMode === 'vector-layout' && (
+            <FillModeControl
+              fillMode={svgTool.fillMode}
+              fillPattern={svgTool.fillPattern}
+              availableModes={svgCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
+              availablePatterns={svgCapabilities.supportedFillPatterns}
+              onFillModeChange={(mode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillMode: mode } })}
+              onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillPattern: pattern } })}
+            />
+          )}
 
           {/* Density */}
           <DensityControl
@@ -1239,18 +1267,24 @@ function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
             onCustomSpacingChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: val } })}
           />
 
-          <PlacementModeControl
-            coverageMode={svgTool.coverageMode}
-            availableCoverageModes={svgCapabilities.supportedCoverageModes}
-            placementPattern={svgTool.placementPattern}
-            availablePlacementPatterns={svgCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
-            contourSettings={svgTool.contourSettings}
-            radialSettings={svgTool.radialSettings}
-            onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode } })}
-            onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { placementPattern } })}
-            onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings } })}
-            onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { radialSettings } })}
-          />
+          {svgTool.renderMode === 'vector-layout' ? (
+            <PlacementModeControl
+              coverageMode={svgTool.coverageMode}
+              availableCoverageModes={svgCapabilities.supportedCoverageModes}
+              placementPattern={svgTool.placementPattern}
+              availablePlacementPatterns={svgCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
+              contourSettings={svgTool.contourSettings}
+              radialSettings={svgTool.radialSettings}
+              onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode } })}
+              onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { placementPattern } })}
+              onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings } })}
+              onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { radialSettings } })}
+            />
+          ) : (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs text-zinc-400">
+              Artwork dots currently uses fill-only coverage with a hexagonal placement pattern.
+            </div>
+          )}
 
           {/* Advanced - Cleanup Options */}
           <AdvancedSection title="Cleanup Options">

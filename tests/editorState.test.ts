@@ -116,9 +116,29 @@ describe('editorReducer', () => {
       type: 'UPDATE_SVG_TOOL',
       updates: { uploadedSvgText: filledSvg },
     });
-    expect(state.svgTool.coverageMode).toBe('outline-fill');
-    expect(state.svgTool.fillMode).toBe('outline-fill');
-    expect(state.svgTool.targetWidthMm).toBe(200);
+    expect(state.svgTool.renderMode).toBe('artwork-dots');
+    expect(state.svgTool.coverageMode).toBe('fill');
+    expect(state.svgTool.fillMode).toBe('fill');
+    expect(state.svgTool.placementPattern).toBe('hexagonal');
+    expect(state.svgTool.targetWidthMm).toBe(280);
+  });
+
+  it('switches SVG render mode presets cleanly', () => {
+    const artwork = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { renderMode: 'artwork-dots' },
+    });
+    expect(artwork.svgTool.coverageMode).toBe('fill');
+    expect(artwork.svgTool.fillMode).toBe('fill');
+    expect(artwork.svgTool.placementPattern).toBe('hexagonal');
+
+    const vector = editorReducer(artwork, {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { renderMode: 'vector-layout' },
+    });
+    expect(vector.svgTool.coverageMode).toBe('outline-fill');
+    expect(vector.svgTool.fillMode).toBe('outline-fill');
+    expect(vector.svgTool.placementPattern).toBe('default');
   });
 
   it('clamps rhinestone font stone size to the selected font support', () => {

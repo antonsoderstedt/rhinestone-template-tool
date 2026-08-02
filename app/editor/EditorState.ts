@@ -80,9 +80,12 @@ export interface TextToolState {
 
 // ─── SVG Tool State ───────────────────────────────────────────────────────────
 
+export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
+
 export interface SvgToolState {
   uploadedSvgText: string | null;
   svgFileName: string | null;
+  renderMode: SvgRenderMode;
   stoneSize: StoneSizeId;
   targetWidthMm: number | '';
   targetHeightMm: number | '';
@@ -359,16 +362,39 @@ function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextTo
 
 function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolState>): SvgToolState {
   const next: SvgToolState = { ...current, ...updates };
+  const usingDefaultSize = current.targetWidthMm === 100 && current.targetHeightMm === '';
 
   if (typeof updates.uploadedSvgText === 'string' && updates.coverageMode === undefined && updates.fillMode === undefined) {
     const suggestedMode = suggestSvgUploadMode(updates.uploadedSvgText);
-    next.coverageMode = suggestedMode;
-    next.fillMode = suggestedMode;
-
-    const usingDefaultSize = current.targetWidthMm === 100 && current.targetHeightMm === '';
-    if (suggestedMode === 'outline-fill' && updates.targetWidthMm === undefined && usingDefaultSize) {
-      next.targetWidthMm = 200;
+    if (suggestedMode === 'outline-fill') {
+      next.renderMode = 'artwork-dots';
+      next.coverageMode = 'fill';
+      next.fillMode = 'fill';
+      next.placementPattern = 'hexagonal';
+      if (updates.targetWidthMm === undefined && usingDefaultSize) {
+        next.targetWidthMm = 280;
+      }
+    } else {
+      next.renderMode = 'vector-layout';
+      next.coverageMode = 'outline';
+      next.fillMode = 'outline';
+      next.placementPattern = 'default';
     }
+  }
+
+  if (updates.renderMode === 'artwork-dots') {
+    if (updates.coverageMode === undefined) next.coverageMode = 'fill';
+    if (updates.fillMode === undefined) next.fillMode = 'fill';
+    if (updates.placementPattern === undefined) next.placementPattern = 'hexagonal';
+    if (updates.targetWidthMm === undefined && usingDefaultSize) {
+      next.targetWidthMm = 280;
+    }
+  } else if (updates.renderMode === 'vector-layout') {
+    if (updates.coverageMode === undefined && updates.fillMode === undefined) {
+      next.coverageMode = 'outline-fill';
+      next.fillMode = 'outline-fill';
+    }
+    if (updates.placementPattern === undefined) next.placementPattern = 'default';
   }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
@@ -439,6 +465,7 @@ function normalizeRhinestoneFontToolUpdate(
 export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   uploadedSvgText: null,
   svgFileName: null,
+  renderMode: 'vector-layout',
   stoneSize: 'SS10',
   targetWidthMm: 100,
   targetHeightMm: '',
