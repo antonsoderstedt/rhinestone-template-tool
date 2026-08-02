@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="152.539mm"
+  height="34.984mm"
+  viewBox="-5.614 4.291 152.539 34.984"
+  data-template-id="qa-pacifico-script"
+  data-template-name="Pacifico"
+  data-unit="mm"
+>
+  <title>Pacifico</title>
+  <desc>Rhinestone template — Pacifico — 180 stone(s)</desc>
+  <g id="guide">
+    <rect x="-5.614" y="4.291" width="152.539" height="34.984" fill="none" stroke="#cccccc" stroke-width="0.1" />
+  </g>
+  <g id="stones">
+    <circle id="stone-ss10-path1-p1" cx="8.175" cy="32.775" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p2" cx="4.619" cy="32.305" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p3" cx="1.643" cy="30.392" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p4" cx="0.886" cy="26.952" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p5" cx="3.19" cy="24.873" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p6" cx="4.107" cy="27.926" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p7" cx="6.724" cy="29.93" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p8" cx="10.305" cy="29.862" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p9" cx="12.897" cy="27.676" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p10" cx="11.249" cy="24.782" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p11" cx="7.949" cy="23.348" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p12" cx="4.762" cy="21.695" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p12" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p13" cx="2.765" cy="18.788" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p14" cx="3.066" cy="15.257" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p15" cx="5.416" cy="12.61" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p16" cx="8.804" cy="11.47" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p16" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p17" cx="12.391" cy="11.487" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p17" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p18" cx="15.693" cy="12.822" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p18" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p19" cx="17.314" cy="15.908" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p19" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p20" cx="16.275" cy="19.192" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p20" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p21" cx="12.839" cy="14.522" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p21" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p23" cx="6.326" cy="15.886" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p23" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p24" cx="7.093" cy="19.129" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p24" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p25" cx="10.274" cy="20.779" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p25" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p26" cx="13.552" cy="22.262" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p26" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p27" cx="16.038" cy="24.778" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p27" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p28" cx="16.185" cy="28.311" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p28" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path1-p29" cx="14.156" cy="31.192" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path1-p29" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p1" cx="25.125" cy="32.7" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p2" cx="23.416" cy="30.198" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p3" cx="23.888" cy="26.63" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p4" cx="24.474" cy="23.078" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p5" cx="25.002" cy="19.517" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p6" cx="25.346" cy="15.936" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p7" cx="20.483" cy="17.658" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p8" cx="22.402" cy="12.468" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p9" cx="25.77" cy="11.381" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p10" cx="28.329" cy="13.484" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p11" cx="28.255" cy="17.059" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p13" cx="33.36" cy="11.663" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p14" cx="36.848" cy="11.831" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p15" cx="38.525" cy="14.872" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p16" cx="42.978" cy="11.793" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p16" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p17" cx="46.498" cy="11.595" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p17" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p18" cx="48.623" cy="14.289" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p18" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p19" cx="48.514" cy="17.865" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p19" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p20" cx="47.772" cy="21.388" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p20" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p21" cx="47.021" cy="24.909" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p21" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p22" cx="46.753" cy="28.469" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p22" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p23" cx="49.712" cy="29.418" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p23" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p24" cx="52.387" cy="27.047" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p24" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p26" cx="46.507" cy="32.597" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p26" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p27" cx="43.68" cy="30.576" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p27" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p28" cx="43.153" cy="27.071" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p28" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p29" cx="43.755" cy="23.524" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p29" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p30" cx="44.524" cy="20.007" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p30" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p31" cx="45.148" cy="16.467" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p31" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p32" cx="40.503" cy="17.368" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p32" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p33" cx="39.079" cy="20.668" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p33" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p34" cx="38.098" cy="24.13" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p34" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p35" cx="37.415" cy="27.664" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p35" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p36" cx="36.866" cy="31.221" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p36" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p37" cx="34.071" cy="32.506" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p37" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p38" cx="33.524" cy="29.141" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p38" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p39" cx="34.117" cy="25.59" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p39" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p40" cx="34.77" cy="22.05" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p40" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p41" cx="35.339" cy="18.496" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p41" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p42" cx="35.147" cy="14.984" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p42" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p43" cx="31.948" cy="15.547" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p43" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p45" cx="28.683" cy="21.878" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p45" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p46" cx="27.808" cy="25.369" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p46" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path2-p47" cx="27.17" cy="28.912" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path2-p47" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p1" cx="61.625" cy="32.7" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p2" cx="58.131" cy="31.962" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p3" cx="55.374" cy="29.708" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p5" cx="53.771" cy="22.85" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p6" cx="54.391" cy="19.313" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p7" cx="55.877" cy="16.047" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p8" cx="58.278" cy="13.388" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p9" cx="61.462" cy="11.754" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p10" cx="65.025" cy="11.417" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p11" cx="68.419" cy="12.516" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p12" cx="70.89" cy="15.081" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p12" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p13" cx="71.987" cy="18.481" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p14" cx="71.954" cy="22.073" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p15" cx="71.138" cy="25.569" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p16" cx="69.437" cy="28.727" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p16" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path3-p17" cx="66.826" cy="31.178" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path3-p17" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p2" cx="65.221" cy="28.618" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p3" cx="67.369" cy="25.776" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p4" cx="68.289" cy="22.309" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p5" cx="68.282" cy="18.719" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p6" cx="66.822" cy="15.498" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p7" cx="63.537" cy="14.34" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p8" cx="60.287" cy="15.719" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p9" cx="58.292" cy="18.677" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p10" cx="57.473" cy="22.168" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path4-p11" cx="57.582" cy="25.755" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path4-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p1" cx="84.025" cy="32.7" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p2" cx="80.531" cy="31.962" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p3" cx="77.774" cy="29.708" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p4" cx="76.349" cy="26.434" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p5" cx="76.171" cy="22.85" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p6" cx="76.791" cy="19.313" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p7" cx="78.277" cy="16.047" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p8" cx="80.678" cy="13.388" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p9" cx="83.862" cy="11.754" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p10" cx="87.426" cy="11.417" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p11" cx="90.819" cy="12.516" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p12" cx="93.29" cy="15.081" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p12" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p13" cx="94.387" cy="18.481" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p14" cx="94.354" cy="22.073" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p15" cx="93.538" cy="25.569" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p16" cx="91.837" cy="28.727" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p16" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path5-p17" cx="89.226" cy="31.178" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path5-p17" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p2" cx="87.621" cy="28.618" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p3" cx="89.769" cy="25.776" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p4" cx="90.689" cy="22.309" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p5" cx="90.682" cy="18.719" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p6" cx="89.222" cy="15.498" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p7" cx="85.937" cy="14.34" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p8" cx="82.687" cy="15.719" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p9" cx="80.692" cy="18.677" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p10" cx="79.873" cy="22.168" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path6-p11" cx="79.982" cy="25.755" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path6-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p1" cx="108.25" cy="32.7" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p2" cx="104.693" cy="32.232" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p3" cx="101.504" cy="30.613" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p4" cx="99.324" cy="27.791" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p5" cx="98.537" cy="24.303" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p6" cx="98.814" cy="20.721" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p7" cx="99.933" cy="17.311" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p8" cx="101.969" cy="14.36" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p9" cx="104.873" cy="12.265" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p10" cx="108.343" cy="11.396" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p11" cx="111.864" cy="11.942" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p12" cx="114.167" cy="14.577" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p12" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p13" cx="114.23" cy="18.127" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p14" cx="111.503" cy="19.621" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p15" cx="111.11" cy="16.282" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p17" cx="105.372" cy="15.439" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p17" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p18" cx="103.214" cy="18.276" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p18" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p19" cx="102.291" cy="21.738" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p19" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p20" cx="102.402" cy="25.32" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p20" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p21" cx="104.21" cy="28.352" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p21" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p22" cx="107.524" cy="29.622" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p22" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p23" cx="111.109" cy="29.498" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p23" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path7-p24" cx="114.566" cy="28.514" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path7-p24" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p1" cx="140.425" cy="27" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p1" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p2" cx="140.342" cy="30.026" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p3" cx="137.529" cy="32.225" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p4" cx="134.012" cy="32.524" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p4" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p5" cx="131.212" cy="30.406" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p5" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p6" cx="130.133" cy="27.004" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p6" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p7" cx="129.789" cy="23.809" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p7" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p8" cx="126.215" cy="24.224" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p8" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p9" cx="123.508" cy="29.92" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p9" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p10" cx="121.632" cy="32.723" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p10" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p11" cx="120.701" cy="26.964" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p11" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p12" cx="118.873" cy="22.261" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p12" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p13" cx="121.92" cy="21.19" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p13" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p14" cx="122.413" cy="17.626" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p14" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p15" cx="121.591" cy="14.383" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p15" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p16" cx="118.463" cy="15.833" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p16" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p18" cx="123.395" cy="11.483" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p18" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p19" cx="125.674" cy="14.007" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p19" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p20" cx="125.8" cy="17.59" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p20" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p21" cx="125.343" cy="21.16" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p21" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p23" cx="131.756" cy="16.169" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p23" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p24" cx="133.419" cy="12.988" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p24" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p25" cx="136.183" cy="10.791" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p25" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p26" cx="139.314" cy="11.885" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p26" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p27" cx="139.798" cy="15.386" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p27" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p28" cx="138.715" cy="18.784" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p28" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p29" cx="136.29" cy="21.404" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p29" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p30" cx="133.517" cy="23.331" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p30" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p31" cx="133.606" cy="26.924" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p31" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path8-p32" cx="135.524" cy="29.681" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path8-p32" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path9-p2" cx="135.039" cy="15.641" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path9-p2" data-stone-size="SS10" data-hole-diameter-mm="3" />
+    <circle id="stone-ss10-path9-p3" cx="134.07" cy="19.104" r="1.5" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ss10-path9-p3" data-stone-size="SS10" data-hole-diameter-mm="3" />
+  </g>
+  <g id="labels" />
+</svg>

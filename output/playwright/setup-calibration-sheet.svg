@@ -13,7 +13,6 @@
   <g id="guide">
     <rect x="3.4" y="3.85" width="49.35" height="48.9" fill="none" stroke="#cccccc" stroke-width="0.1" />
   </g>
-  <g id="cuts" />
   <g id="stones">
     <circle id="stone-SS6-recommended-0.1mm-row0-col0" cx="10" cy="10" r="1" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended-0.1mm-row0-col0" data-stone-size="SS6" data-hole-diameter-mm="2" />
     <circle id="stone-SS6-recommended-row0-col1" cx="22" cy="10" r="1.05" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="SS6-recommended-row0-col1" data-stone-size="SS6" data-hole-diameter-mm="2.1" />

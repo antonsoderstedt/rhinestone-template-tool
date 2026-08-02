@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "savedAt": "2026-07-31T16:58:28.551Z",
+  "projectName": "Untitled Project",
+  "exportSettings": {
+    "includeGuideBox": true,
+    "includeLabels": false,
+    "paddingMm": 5
+  },
+  "generatorState": {
+    "generatorId": "manual-editor",
+    "stones": [],
+    "includeGuideBox": true,
+    "paddingMm": 5
+  },
+  "activeTool": "manual",
+  "manualToolState": {
+    "snapToGrid": true,
+    "gridSnapSize": 5,
+    "addStoneSize": "SS10"
+  }
+}

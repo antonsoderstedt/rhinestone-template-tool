@@ -1,0 +1,621 @@
+[     241ms] [INFO] Download the React DevTools for a better development experience: https://react.dev/link/react-devtools @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[     243ms] [TIMESTAMP] Server Requests Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:710
+[     243ms] [TIMESTAMP] Server Components Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:710
+[     256ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[     265ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     265ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     265ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     265ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     294ms] [TIMESTAMP] Blocked @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9057
+[     353ms] [TIMESTAMP] Blocked @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9057
+[     353ms] [TIMESTAMP] Hydrated @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[     354ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[     354ms] [TIMESTAMP] Root @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] ServerRoot @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] AppRouter @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] RootErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] ErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] ErrorBoundaryHandler @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] Router @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] HistoryUpdater @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] HotReload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] AppDevOverlayErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] ReplaySsrOnlyErrors @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] DevRootHTTPAccessFallbackBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] HTTPAccessFallbackBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] HTTPAccessFallbackErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] RedirectBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] RedirectErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] Head @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] __next_viewport_boundary__ @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] __next_metadata_boundary__ @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] __next_root_layout_boundary__ @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] SegmentViewNode @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] SegmentTrieNode @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] OuterLayoutRouter @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     354ms] [TIMESTAMP] SegmentStateProvider @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] RenderFromTemplateContext @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ScrollAndMaybeFocusHandler @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] InnerScrollAndFocusHandlerOld @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] LoadingBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] HTTPAccessFallbackBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] HTTPAccessFallbackErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] RedirectBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] RedirectErrorBoundary @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] InnerLayoutRouter @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] SegmentViewNode @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] SegmentTrieNode @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] FolderOpen @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] Settings2 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorDialog @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorDialog @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] PanelSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] PanelSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] PanelSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] TextToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] FontPicker @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] StoneProfileControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] PhysicalDimensionsControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] DensityControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] AdvancedSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     355ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] PanelSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] DiamondMinus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] PanelSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] NumericInput @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[     356ms] [TIMESTAMP] __next_outlet_boundary__ @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] SegmentViewStateNode @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] AppRouterAnnouncer @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     356ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[     356ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     356ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     356ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     356ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     364ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[     365ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[     367ms] [TIMESTAMP] Server Requests Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:710
+[     368ms] [TIMESTAMP] Server Components Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:710
+[     368ms] [TIMESTAMP] ​Preloads @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​HTTPAccessErrorFallback @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​NotFound @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​RootLayout @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​Home @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​Next.MetadataOutlet @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​NonIndex @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​Next.Viewport @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​ViewportWrapper @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​Next.Metadata @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] ​MetadataWrapper @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js:2219
+[     368ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[     369ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] Layers @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] AppRouterAnnouncer @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     369ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     369ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     369ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     369ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     381ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[     382ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[     387ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[     387ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     387ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     388ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     388ms] [TIMESTAMP] Hand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     388ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[     388ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[     388ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     388ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     388ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     388ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     388ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[     389ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     389ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     389ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[     389ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[   10268ms] [WARNING] [JavaScript Warning: "The resource at “http://localhost:3000/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly." {file: "http://localhost:3000/" line: 0}] @ http://localhost:3000/:0
+[   10270ms] [WARNING] [JavaScript Warning: "The resource at “http://localhost:3000/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly." {file: "http://localhost:3000/" line: 0}] @ http://localhost:3000/:0
+[   33114ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[   33114ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[   33114ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[   33114ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[   33128ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[   33131ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[   33131ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] Download @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] WandSparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[   33132ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  110574ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  110574ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  110574ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  110574ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  110574ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  110591ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  110594ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  110594ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110594ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110594ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110594ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] EditorToast @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] CircleCheck @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] CircleX @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] TextToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110595ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] Hand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] CopyPlus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  110596ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  113800ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  113800ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  113800ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  113800ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  113814ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  113816ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  113819ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  113819ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] Save @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] Layers @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] TextToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113819ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] CopyPlus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] WandSparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  113820ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  243209ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243210ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243210ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243210ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243225ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  243228ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  243229ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] Save @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] RhinestoneFontToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] NumericInput @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] NumericInput @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] Plus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243229ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243230ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  243231ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  243290ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243290ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243290ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243290ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  243299ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  243302ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  243306ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  243306ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243307ms] [TIMESTAMP] ScanSearch @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243307ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243307ms] [TIMESTAMP] Hand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243307ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  243307ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  275875ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  275875ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  275875ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  275876ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  275876ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  275885ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  275886ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  275887ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275887ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275887ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275887ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275887ms] [TIMESTAMP] EditorToast @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275887ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] RhinestoneFontToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275888ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275889ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  275889ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  279094ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  279096ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  279096ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  279096ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  279113ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  279115ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  279117ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  279117ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] RotateCw @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] MousePointerClick @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] Plus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] MoveHorizontal @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279117ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279118ms] [TIMESTAMP] WandSparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  279118ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304176ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304177ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304177ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304177ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304177ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  304188ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  304191ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  304191ms] [TIMESTAMP] Waiting @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  304191ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] GridToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304191ms] [TIMESTAMP] StoneProfileControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] DensityControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] CopyPlus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] WandSparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304192ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  304192ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  304195ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304195ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304195ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304195ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  304200ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  304202ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  304203ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  304203ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304203ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304203ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304204ms] [TIMESTAMP] Grid3x3 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304204ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  304204ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  320202ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  320202ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  320202ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  320202ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  320202ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  320208ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  320209ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  320209ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320209ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320209ms] [TIMESTAMP] EditorToast @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320209ms] [TIMESTAMP] CircleCheck @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320209ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320209ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] Layers @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] MousePointerClick @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  320210ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  323416ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  323416ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  323416ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  323416ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  323432ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  323434ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  323435ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  323436ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] Download @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323436ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323437ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] MoveHorizontal @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  323438ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  365467ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365467ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365467ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365467ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365467ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  365475ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  365476ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  365476ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] SvgToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] Plus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  365477ms] [TIMESTAMP] MoveHorizontal @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] CircleCheck @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365477ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  365477ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  365480ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365480ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365480ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365480ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  365485ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  365486ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  365488ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  365488ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365488ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365488ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365489ms] [TIMESTAMP] Grid3x3 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365489ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  365489ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  377324ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377325ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377325ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377325ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377332ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  377335ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  377335ms] [TIMESTAMP] Waiting @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  377335ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377335ms] [TIMESTAMP] Grid3x3 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377335ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377335ms] [TIMESTAMP] Scan @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377335ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377335ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377551ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377551ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377551ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377551ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377560ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  377561ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  377570ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  377570ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] Settings2 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] StoneProfileControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] PhysicalDimensionsControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] FillModeControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] DensityControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] PlacementModeControl @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] AdvancedSection @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] Plus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377570ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377572ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  377572ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  377574ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377574ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377574ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377574ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  377583ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  377584ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  377587ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  377588ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] Hand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  377588ms] [TIMESTAMP] DiamondMinus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377588ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  377589ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  388705ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  388706ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  388706ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  388706ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  388706ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  388711ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  388712ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  388712ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] SvgToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorToolbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388712ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  388713ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  391919ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  391920ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  391920ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  391920ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  391931ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  391933ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  391935ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  391935ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391935ms] [TIMESTAMP] EditorTopbar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391935ms] [TIMESTAMP] Sparkles @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391935ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391935ms] [TIMESTAMP] Settings2 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391935ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] SourceSwitcher @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] SvgToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] EditorCanvas @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] EditorPropertiesPanel @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] SelectToolProperties @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] MoveHorizontal @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  391936ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  412453ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412453ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412453ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412453ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412453ms] [TIMESTAMP] Event: click @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9281
+[  412459ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  412459ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  412460ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412460ms] [TIMESTAMP] Expand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412460ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412460ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412460ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  412460ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  412462ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412462ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412462ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412462ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412466ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  412467ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  412468ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412468ms] [TIMESTAMP] Settings2 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412468ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412468ms] [TIMESTAMP] Expand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412468ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412469ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  412677ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412677ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412677ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412677ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412681ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  412682ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  412684ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  412684ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412684ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412684ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  412684ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  412684ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412684ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412685ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412685ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  412689ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  412689ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  412689ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] Plus @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] Hand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  412690ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  413027ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413027ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413027ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413027ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413034ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  413035ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  413035ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] RotateCcw @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] MoveVertical @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413035ms] [TIMESTAMP] EditorStatusBar @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413036ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  413036ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  413038ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413038ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413038ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413038ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413043ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  413047ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  413047ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] Upload @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] Type @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] Scan @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413047ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2874
+[  413047ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005
+[  413047ms] [TIMESTAMP] Blocking Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413047ms] [TIMESTAMP] Transition Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413047ms] [TIMESTAMP] Suspense Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413047ms] [TIMESTAMP] Idle Track @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9246
+[  413054ms] [TIMESTAMP] Render @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9696
+[  413054ms] [TIMESTAMP] Commit @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2915
+[  413056ms] [TIMESTAMP] Waiting for Paint @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9989
+[  413056ms] [TIMESTAMP] EditorShell @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413056ms] [TIMESTAMP] Expand @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413056ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413056ms] [TIMESTAMP] MoveHorizontal @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413056ms] [TIMESTAMP] ForwardRef @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:2804
+[  413056ms] [TIMESTAMP] Remaining Effects @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10005

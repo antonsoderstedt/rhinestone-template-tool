@@ -1,0 +1,194 @@
+- generic [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - banner [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e5]:
+          - generic [ref=f3e6]: R
+          - generic [ref=f3e7]:
+            - paragraph [ref=f3e8]: Rhinestone
+            - paragraph [ref=f3e9]: Template Editor
+        - textbox "Project name" [ref=f3e11]:
+          - /placeholder: Untitled Project
+          - text: Untitled Project
+      - generic [ref=f3e12]:
+        - button "New" [ref=f3e13]
+        - button "Open" [ref=f3e19]
+        - button "Save" [ref=f3e22]
+        - button "Undo" [disabled] [ref=f3e28]
+        - button "Redo" [disabled] [ref=f3e32]
+        - button "Export" [ref=f3e37]
+      - button "Setup" [ref=f3e43]
+    - dialog [ref=f3e828]:
+      - generic [ref=f3e829]:
+        - generic [ref=f3e837]:
+          - heading "Start a new project?" [level=2] [ref=f3e838]
+          - paragraph [ref=f3e839]: Unsaved changes in the current editor session will be lost.
+        - button "Close dialog" [ref=f3e840]
+      - generic [ref=f3e844]:
+        - button "Start new project" [active] [ref=f3e845]
+        - button "Cancel" [ref=f3e846]
+    - generic [ref=f3e63]:
+      - complementary [ref=f3e64]:
+        - generic [ref=f3e65]:
+          - generic [ref=f3e66]:
+            - generic [ref=f3e67]:
+              - heading "Design Source" [level=3] [ref=f3e68]
+              - paragraph [ref=f3e69]: Choose what drives the current template before you fine-tune individual stones.
+            - generic [ref=f3e70]:
+              - button "Text Outline or dot-matrix text" [ref=f3e71]:
+                - generic [ref=f3e72]: Text
+                - paragraph [ref=f3e78]: Outline or dot-matrix text
+              - button "Stone Font Pre-placed stones from a rhinestone font" [ref=f3e79]:
+                - generic [ref=f3e80]: Stone Font
+                - paragraph [ref=f3e86]: Pre-placed stones from a rhinestone font
+              - button "SVG Upload vector artwork" [ref=f3e87]:
+                - generic [ref=f3e88]: SVG
+                - paragraph [ref=f3e94]: Upload vector artwork
+              - button "Import Template Keep stones from an existing SVG template" [ref=f3e95]:
+                - generic [ref=f3e96]: Import Template
+                - paragraph [ref=f3e102]: Keep stones from an existing SVG template
+              - button "Grid Build an even stone grid" [ref=f3e103]:
+                - generic [ref=f3e104]: Grid
+                - paragraph [ref=f3e110]: Build an even stone grid
+              - button "Manual Place stones directly" [ref=f3e111]:
+                - generic [ref=f3e112]: Manual
+                - paragraph [ref=f3e117]: Place stones directly
+          - generic [ref=f3e118]:
+            - generic [ref=f3e119]:
+              - heading "Generated" [level=3] [ref=f3e601]
+              - paragraph [ref=f3e121]: Driven by generator settings.
+            - generic [ref=f3e122]:
+              - generic [ref=f3e123]: Generated
+              - paragraph [ref=f3e130]: Adjust the source settings or make the result editable to fine-tune stones.
+          - generic [ref=f3e131]:
+            - generic [ref=f3e132]:
+              - heading "Manual Source" [level=3] [ref=f3e133]
+              - paragraph [ref=f3e134]: These settings control the generated baseline for the current design source.
+            - generic [ref=f3e607]:
+              - generic [ref=f3e608]:
+                - paragraph [ref=f3e609]: Manual placement
+                - paragraph [ref=f3e610]: Place stones directly on the canvas. Snap controls affect placement only and never export.
+              - generic [ref=f3e611]:
+                - generic [ref=f3e612]: Stone Size
+                - combobox "Stone Size" [ref=f3e613]:
+                  - option "SS6"
+                  - option "SS8"
+                  - option "SS10" [selected]
+                  - option "SS12"
+              - generic [ref=f3e614]:
+                - generic [ref=f3e615] [cursor=pointer]:
+                  - checkbox "Snap to Grid" [checked] [ref=f3e616]
+                  - text: Snap to Grid
+                - generic [ref=f3e618]:
+                  - generic [ref=f3e619]: Grid Size (mm)
+                  - generic [ref=f3e620]:
+                    - spinbutton "Grid Size (mm) mm" [ref=f3e621]: "5"
+                    - generic: mm
+              - generic [ref=f3e622]:
+                - paragraph [ref=f3e623]: "Keyboard shortcuts:"
+                - list [ref=f3e624]:
+                  - listitem [ref=f3e625]: • Click to place stone
+                  - listitem [ref=f3e626]: • Switch to Select to edit
+      - main [ref=f3e155]:
+        - generic [ref=f3e157]:
+          - generic [ref=f3e158]:
+            - heading "Canvas workspace" [level=2] [ref=f3e159]
+            - paragraph [ref=f3e160]: Select, add, pan, zoom, and fit the current design without leaving the editor.
+          - complementary "Canvas and source tools" [ref=f3e161]:
+            - button "Select" [ref=f3e162]
+            - button "Add" [ref=f3e166]
+            - button "Text" [ref=f3e174]
+            - button "Stone Font" [ref=f3e180]
+            - button "SVG" [ref=f3e186]
+            - button "Import" [ref=f3e192]
+            - button "Grid" [ref=f3e198]
+            - generic [ref=f3e206]: Pan with Space or middle mouse
+        - generic [ref=f3e213]:
+          - generic [ref=f3e214]:
+            - button "Zoom in" [ref=f3e215]
+            - button "Zoom out" [ref=f3e219]
+            - button "Reset zoom" [ref=f3e222]
+            - button "Fit to screen" [ref=f3e228]
+            - button "Toggle grid" [ref=f3e239]
+          - generic [ref=f3e419]: 100%
+          - generic [ref=f3e799]:
+            - generic [ref=f3e800]: Click to place SS10 stone
+            - generic [ref=f3e801]: "Snap: 5mm grid"
+      - complementary [ref=f3e423]:
+        - generic [ref=f3e424]:
+          - generic [ref=f3e425]:
+            - generic [ref=f3e426]:
+              - heading "Inspector" [level=3] [ref=f3e427]
+              - paragraph [ref=f3e428]: Selection, position, alignment, and export controls live here.
+            - generic [ref=f3e429]:
+              - generic [ref=f3e430]:
+                - generic [ref=f3e431]: Generated output
+                - paragraph [ref=f3e439]: Review the generated result, then make it editable when you need per-stone control.
+                - list [ref=f3e440]:
+                  - listitem [ref=f3e802]: • Switch between Text, SVG, Grid, or Manual to change the source.
+                  - listitem [ref=f3e803]: • Use Make Editable to enable per-stone selection and movement.
+              - generic [ref=f3e443]:
+                - generic [ref=f3e444]:
+                  - button "Duplicate" [disabled] [ref=f3e445]
+                  - button "Delete" [disabled] [ref=f3e451]
+                - generic [ref=f3e455]:
+                  - generic [ref=f3e456]:
+                    - generic [ref=f3e457]: Align
+                    - generic [ref=f3e458]: Select at least two stones
+                  - generic [ref=f3e459]:
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e460]
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e465]
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e470]
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e475]
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e480]
+                    - button "Select at least two stones to align them." [disabled] [ref=f3e485]
+                - generic [ref=f3e490]:
+                  - generic [ref=f3e491]:
+                    - generic [ref=f3e492]: Distribute
+                    - generic [ref=f3e493]: Select at least three stones
+                  - generic [ref=f3e494]:
+                    - button "Horizontal" [disabled] [ref=f3e495]
+                    - button "Vertical" [disabled] [ref=f3e496]
+              - generic [ref=f3e804]:
+                - button "Make Editable" [ref=f3e805]
+                - paragraph [ref=f3e811]: Generated output is still driven by the source settings. Make Editable unlocks per-stone editing while keeping the original generator available.
+              - generic [ref=f3e505]:
+                - paragraph [ref=f3e506]: "Keyboard shortcuts:"
+                - list [ref=f3e507]:
+                  - listitem [ref=f3e508]: • Cmd/Ctrl+Z to undo
+                  - listitem [ref=f3e509]: • Cmd/Ctrl+Shift+Z to redo
+          - generic [ref=f3e510]:
+            - generic [ref=f3e511]:
+              - heading "Export Settings" [level=3] [ref=f3e512]
+              - paragraph [ref=f3e513]: These options affect only the exported SVG output.
+            - generic [ref=f3e514]:
+              - checkbox "Include guide box" [checked] [ref=f3e515]
+              - text: Include guide box
+            - generic [ref=f3e516]:
+              - checkbox "Include labels" [ref=f3e517]
+              - text: Include labels
+            - generic [ref=f3e518]:
+              - generic [ref=f3e519]: Padding
+              - generic [ref=f3e520]:
+                - spinbutton "Padding mm" [ref=f3e521]: "5"
+                - generic: mm
+    - contentinfo [ref=f3e522]:
+      - generic [ref=f3e523]:
+        - generic [ref=f3e524]: 86 stones
+        - generic [ref=f3e525]: "|"
+        - generic [ref=f3e526]: "Size: 116.7×23.0 mm"
+        - generic [ref=f3e527]: "|"
+        - generic "Adjust the source settings or make the result editable to fine-tune stones." [ref=f3e812]: Generated
+      - generic [ref=f3e539]:
+        - generic [ref=f3e540]:
+          - paragraph [ref=f3e541]: Driven by generator settings.
+          - paragraph [ref=f3e542]: Adjust the source settings or make the result editable to fine-tune stones.
+        - generic [ref=f3e822]: Ready to export
+      - generic [ref=f3e548]:
+        - generic [ref=f3e549]:
+          - text: "Zoom:"
+          - generic [ref=f3e550]: 100%
+        - generic [ref=f3e551]: "|"
+        - generic [ref=f3e552]: "Grid: 10mm"
+  - button "Open Next.js Dev Tools" [ref=f3e558] [cursor=pointer]
+  - alert [ref=f3e563]

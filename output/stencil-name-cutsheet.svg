@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="153.383mm"
+  height="48.867mm"
+  viewBox="-3 -3 153.383 48.867"
+  data-template-id="letter-stencil-preview"
+  data-template-name="Letter Stencils: NAME"
+  data-unit="mm"
+>
+  <title>Letter Stencils: NAME</title>
+  <desc>Rhinestone template — Letter Stencils: NAME — 182 stone(s)</desc>
+  <g id="guide" />
+  <g id="cuts">
+    <rect id="cut-card-0" x="0" y="0" width="34.617" height="42.867" rx="2" ry="2" fill="none" stroke="#000000" stroke-width="0.1" data-cut-shape="rect" />
+    <rect id="cut-card-1" x="37.617" y="0" width="34.627" height="42.867" rx="2" ry="2" fill="none" stroke="#000000" stroke-width="0.1" data-cut-shape="rect" />
+    <rect id="cut-card-2" x="75.244" y="0" width="34.44" height="42.867" rx="2" ry="2" fill="none" stroke="#000000" stroke-width="0.1" data-cut-shape="rect" />
+    <rect id="cut-card-3" x="112.683" y="0" width="34.7" height="42.867" rx="2" ry="2" fill="none" stroke="#000000" stroke-width="0.1" data-cut-shape="rect" />
+  </g>
+  <g id="stones">
+    <circle id="stone-ls-0" cx="8.809" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-0" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-1" cx="4.766" cy="29.788" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-1" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-2" cx="21.475" cy="34.1" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-2" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-3" cx="21.61" cy="17.049" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-3" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-4" cx="29.798" cy="8.777" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-4" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-5" cx="21.631" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-5" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-6" cx="17.204" cy="17.194" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-6" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-7" cx="29.788" cy="29.736" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-7" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-8" cx="4.715" cy="8.892" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-8" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-9" cx="17.194" cy="13.131" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-9" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-10" cx="29.705" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-10" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-11" cx="4.756" cy="21.496" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-11" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-12" cx="17.225" cy="29.736" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-12" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-13" cx="17.173" cy="34.194" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-13" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-14" cx="29.819" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-14" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-15" cx="17.267" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-15" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-16" cx="29.788" cy="21.569" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-16" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-17" cx="17.267" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-17" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-18" cx="17.111" cy="8.912" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-18" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-19" cx="29.809" cy="17.111" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-19" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-20" cx="4.85" cy="34.069" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-20" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-21" cx="17.152" cy="25.59" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-21" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-22" cx="25.559" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-22" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-23" cx="4.902" cy="17.111" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-23" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-24" cx="4.87" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-24" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-25" cx="8.736" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-25" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-26" cx="13.235" cy="21.485" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-26" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-27" cx="29.736" cy="34.069" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-27" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-28" cx="29.881" cy="25.652" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-28" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-29" cx="25.538" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-29" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-30" cx="4.839" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-30" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-31" cx="13.058" cy="8.746" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-31" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-32" cx="4.735" cy="13.142" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-32" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-33" cx="29.902" cy="13.235" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-33" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-34" cx="21.558" cy="13.11" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-34" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-35" cx="21.506" cy="8.902" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-35" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-36" cx="4.85" cy="25.59" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-36" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-37" cx="13.142" cy="4.714" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-37" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-38" cx="21.548" cy="21.371" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-38" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-39" cx="13.121" cy="25.694" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-39" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-40" cx="13.183" cy="34.079" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-40" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-41" cx="13.09" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-41" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-42" cx="13.1" cy="13.09" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-42" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-43" cx="21.537" cy="38.152" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-43" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-44" cx="21.589" cy="29.871" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-44" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-45" cx="13.121" cy="29.819" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-45" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-46" cx="46.508" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-46" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-47" cx="67.529" cy="8.834" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-47" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-48" cx="46.519" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-48" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-49" cx="67.477" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-49" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-50" cx="42.383" cy="13.095" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-50" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-51" cx="46.529" cy="8.834" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-51" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-52" cx="42.404" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-52" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-53" cx="42.373" cy="34.095" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-53" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-54" cx="42.331" cy="17.262" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-54" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-55" cx="50.675" cy="17.251" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-55" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-56" cx="42.466" cy="8.938" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-56" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-57" cx="50.893" cy="29.647" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-57" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-58" cx="54.727" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-58" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-59" cx="63.196" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-59" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-60" cx="54.821" cy="34.126" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-60" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-61" cx="42.477" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-61" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-62" cx="54.904" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-62" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-63" cx="67.384" cy="34.053" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-63" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-64" cx="54.935" cy="13.157" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-64" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-65" cx="67.425" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-65" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-66" cx="54.831" cy="29.71" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-66" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-67" cx="42.425" cy="25.522" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-67" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-68" cx="50.685" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-68" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-69" cx="67.404" cy="17.064" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-69" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-70" cx="67.508" cy="25.512" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-70" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-71" cx="54.779" cy="17.272" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-71" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-72" cx="59.216" cy="12.97" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-72" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-73" cx="67.415" cy="29.855" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-73" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-74" cx="50.685" cy="34.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-74" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-75" cx="54.914" cy="25.595" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-75" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-76" cx="42.352" cy="29.731" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-76" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-77" cx="59.081" cy="34.074" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-77" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-78" cx="59.144" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-78" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-79" cx="59.081" cy="17.126" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-79" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-80" cx="59.154" cy="29.762" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-80" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-81" cx="67.394" cy="21.48" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-81" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-82" cx="59.144" cy="25.491" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-82" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-83" cx="50.696" cy="13.053" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-83" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-84" cx="63.144" cy="8.866" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-84" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-85" cx="42.425" cy="21.532" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-85" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-86" cx="59.227" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-86" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-87" cx="67.519" cy="13.043" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-87" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-88" cx="50.696" cy="25.491" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-88" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-89" cx="50.685" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-89" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-90" cx="63.144" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-90" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-91" cx="88.385" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-91" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-92" cx="88.395" cy="8.845" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-92" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-93" cx="100.792" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-93" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-94" cx="100.761" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-94" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-95" cx="84.062" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-95" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-96" cx="79.958" cy="13.116" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-96" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-97" cx="104.917" cy="12.939" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-97" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-98" cx="79.968" cy="21.366" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-98" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-99" cx="104.907" cy="21.605" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-99" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-100" cx="92.469" cy="13.084" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-100" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-101" cx="96.791" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-101" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-102" cx="88.24" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-102" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-103" cx="104.959" cy="29.668" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-103" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-104" cx="80.103" cy="29.668" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-104" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-105" cx="79.989" cy="17.158" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-105" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-106" cx="104.959" cy="33.96" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-106" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-107" cx="80" cy="34.126" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-107" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-108" cx="96.677" cy="34.074" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-108" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-109" cx="80" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-109" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-110" cx="104.938" cy="25.377" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-110" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-111" cx="92.386" cy="17.116" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-111" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-112" cx="92.386" cy="8.928" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-112" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-113" cx="92.375" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-113" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-114" cx="88.385" cy="29.845" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-114" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-115" cx="92.386" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-115" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-116" cx="96.656" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-116" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-117" cx="92.427" cy="34.095" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-117" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-118" cx="104.969" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-118" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-119" cx="80.062" cy="25.491" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-119" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-120" cx="96.76" cy="29.866" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-120" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-121" cx="88.406" cy="33.991" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-121" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-122" cx="92.396" cy="29.783" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-122" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-123" cx="96.719" cy="13.064" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-123" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-124" cx="92.323" cy="25.429" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-124" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-125" cx="96.708" cy="8.907" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-125" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-126" cx="96.677" cy="25.533" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-126" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-127" cx="104.959" cy="17.137" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-127" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-128" cx="79.968" cy="8.814" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-128" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-129" cx="88.458" cy="13.126" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-129" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-130" cx="80" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-130" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-131" cx="88.499" cy="21.48" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-131" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-132" cx="88.416" cy="25.512" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-132" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-133" cx="96.708" cy="21.532" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-133" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-134" cx="104.948" cy="8.866" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-134" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-135" cx="104.948" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-135" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-136" cx="84.125" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-136" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-137" cx="121.617" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-137" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-138" cx="142.669" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-138" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-139" cx="117.491" cy="17.178" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-139" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-140" cx="142.617" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-140" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-141" cx="129.94" cy="29.741" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-141" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-142" cx="126.043" cy="12.939" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-142" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-143" cx="142.658" cy="17.043" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-143" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-144" cx="142.586" cy="8.845" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-144" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-145" cx="121.575" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-145" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-146" cx="129.857" cy="17.116" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-146" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-147" cx="142.669" cy="33.97" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-147" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-148" cx="125.908" cy="17.241" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-148" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-149" cx="134.179" cy="25.585" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-149" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-150" cx="138.315" cy="21.366" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-150" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-151" cx="126.012" cy="29.668" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-151" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-152" cx="126.043" cy="25.377" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-152" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-153" cx="125.918" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-153" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-154" cx="142.606" cy="29.886" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-154" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-155" cx="117.471" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-155" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-156" cx="134.148" cy="17.043" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-156" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-157" cx="134.138" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-157" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-158" cx="134.231" cy="29.855" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-158" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-159" cx="117.44" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-159" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-160" cx="129.888" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-160" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-161" cx="134.304" cy="13.084" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-161" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-162" cx="134.179" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-162" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-163" cx="129.971" cy="12.897" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-163" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-164" cx="117.533" cy="29.731" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-164" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-165" cx="117.471" cy="34.012" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-165" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-166" cx="138.471" cy="25.377" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-166" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-167" cx="138.346" cy="17.054" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-167" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-168" cx="138.388" cy="4.72" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-168" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-169" cx="117.398" cy="8.824" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-169" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-170" cx="117.585" cy="13.105" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-170" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-171" cx="138.45" cy="29.803" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-171" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-172" cx="138.419" cy="13.105" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-172" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-173" cx="117.575" cy="25.387" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-173" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-174" cx="129.971" cy="25.356" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-174" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-175" cx="117.637" cy="21.47" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-175" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-176" cx="129.898" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-176" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-177" cx="142.637" cy="21.48" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-177" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-178" cx="142.586" cy="12.96" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-178" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-179" cx="126.033" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-179" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-180" cx="142.586" cy="25.387" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-180" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+    <circle id="stone-ls-181" cx="138.45" cy="38.147" r="1.715" fill="none" stroke="#000000" stroke-width="0.05" data-stone-id="ls-181" data-stone-size="SS10" data-hole-diameter-mm="3.429" />
+  </g>
+  <g id="labels" />
+</svg>
