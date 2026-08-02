@@ -99,6 +99,10 @@ export function validateSafeSvgInput(svgString: string): SvgSafetyResult {
   return { safe: issues.length === 0, issues };
 }
 
+export function stripSvgStyleElements(svgString: string): string {
+  return svgString.replace(/<style\b[\s\S]*?<\/style>/gi, '');
+}
+
 /**
  * Extracts all supported primitive elements from an SVG string.
  *

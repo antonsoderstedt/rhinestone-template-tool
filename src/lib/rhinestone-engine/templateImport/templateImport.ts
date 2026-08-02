@@ -16,7 +16,7 @@
  * No scripts, no external resources, no DOM rendering.
  */
 
-import { parseSvgAttributes, validateSafeSvgInput } from '../svg/svgParser';
+import { parseSvgAttributes, validateSafeSvgInput, stripSvgStyleElements } from '../svg/svgParser';
 import { applySvgTransform, parseSvgTransform, type SvgTransform } from '../svg/svgTransform';
 import type { Point, StoneSizeId } from '../types/index';
 
@@ -308,8 +308,9 @@ function extractPathStone(
 
 export function importRhinestoneTemplate(options: TemplateImportOptions): TemplateImportResult {
   const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE } = options;
+  const sanitizedSvgText = stripSvgStyleElements(svgText);
 
-  const safety = validateSafeSvgInput(svgText);
+  const safety = validateSafeSvgInput(sanitizedSvgText);
   if (!safety.safe) {
     throw new Error(`Unsafe SVG: ${safety.issues.join(', ')}`);
   }
@@ -319,7 +320,7 @@ export function importRhinestoneTemplate(options: TemplateImportOptions): Templa
   let ignoredElements = 0;
 
   // Parse viewBox
-  const viewBoxMatch = svgText.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+  const viewBoxMatch = sanitizedSvgText.match(/viewBox\s*=\s*["']([^"']+)["']/i);
   const viewBox = viewBoxMatch ? parseViewBox(viewBoxMatch[1]) : null;
   const viewBoxWidth = viewBox?.width ?? null;
 
@@ -328,7 +329,7 @@ export function importRhinestoneTemplate(options: TemplateImportOptions): Templa
   const transformStack: SvgTransform[] = [{ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }];
   const groupStack: string[] = [];
 
-  const lines = svgText.split('\n');
+  const lines = sanitizedSvgText.split('\n');
   for (const line of lines) {
     // Handle group start
     const groupMatch = line.match(/<g\s+([^>]+)>/i);

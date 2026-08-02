@@ -106,6 +106,11 @@ describe('svgStringToPolylines — error cases', () => {
     expect(() => svgStringToPolylines(unsafeSvg)).toThrow(/unsafe/i);
   });
 
+  it('ignores inert style blocks from design-tool exports', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg"><style>.cls-1{fill:#000}</style><circle cx="10" cy="10" r="5" /></svg>';
+    expect(() => svgStringToPolylines(svg)).not.toThrow();
+  });
+
   it('throws when no supported shapes exist', () => {
     expect(() => svgStringToPolylines(noShapesSvg)).toThrow(/no supported/i);
   });

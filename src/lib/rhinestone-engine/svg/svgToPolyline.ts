@@ -19,7 +19,7 @@
 
 import type { Polyline, PolylinePoint } from '../path/polyline';
 import { roundMm } from '../geometry/rounding';
-import { validateSafeSvgInput, extractSvgElements } from './svgParser';
+import { validateSafeSvgInput, extractSvgElements, stripSvgStyleElements } from './svgParser';
 import type { PolylineCleanupOptions } from '../path/polylineCleanup';
 import { cleanupPolylines } from '../path/polylineCleanup';
 
@@ -212,13 +212,14 @@ export function svgStringToPolylines(
   svgString: string,
   options: SvgToPolylineOptions = {},
 ): Polyline[] {
-  const safety = validateSafeSvgInput(svgString);
+  const sanitizedSvgString = stripSvgStyleElements(svgString);
+  const safety = validateSafeSvgInput(sanitizedSvgString);
   if (!safety.safe) {
     throw new Error(`Unsafe SVG content: ${safety.issues.join('; ')}`);
   }
 
   const { circleSegments = 64, ellipseSegments = 64, curveSegments = 24 } = options;
-  const elements = extractSvgElements(svgString);
+  const elements = extractSvgElements(sanitizedSvgString);
   const polylines: Polyline[] = [];
 
   for (const el of elements) {
