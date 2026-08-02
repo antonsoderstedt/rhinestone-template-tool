@@ -768,11 +768,28 @@ function SvgAlphabetToolProperties({ state, dispatch }: EditorPropertiesPanelPro
 function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const { letterStencilTool } = state;
   const availableAlphabets = listSvgAlphabets();
+  const availableFonts = listRhinestoneFonts();
   const selectedAlphabet = getSvgAlphabetDefinition(letterStencilTool.svgAlphabetId as never);
-  const supportedStoneSizes = selectedAlphabet.supportedTargetStoneSizeIds;
+  const selectedFont = getRhinestoneFontDefinition(letterStencilTool.rhinestoneFontId as never);
+  const activeSource = letterStencilTool.sourceType === 'rhinestone-font'
+    ? {
+        displayName: selectedFont.displayName,
+        category: selectedFont.category,
+        style: selectedFont.style,
+        supportedStoneSizes: selectedFont.supportedTargetStoneSizeIds,
+        suggestedText: selectedFont.suggestedText,
+      }
+    : {
+        displayName: selectedAlphabet.displayName,
+        category: selectedAlphabet.category,
+        style: selectedAlphabet.style,
+        supportedStoneSizes: selectedAlphabet.supportedTargetStoneSizeIds,
+        suggestedText: selectedAlphabet.suggestedText,
+      };
   const calibration = TRW_STONE_SIZE_CALIBRATION[
     letterStencilTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
   ];
+  const supportedStoneSizes = activeSource.supportedStoneSizes;
   const cardCount = letterStencilTool.text.replace(/[\s\n]/g, '').length;
   const modeCopy = letterStencilTool.layoutMode === 'preview'
     ? 'Preview mode places cards edge-to-edge so you can read the assembled word. Card frames stay visible so you see letter boundaries.'
@@ -784,43 +801,107 @@ function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelP
         Generates a reusable stencil card per letter (typographically sized — I is narrow, W is wide, all cards share the same height). Arrange the cut cards on a metal tray to spell any word.
       </div>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">Alphabet</span>
-        <select
-          aria-label="Stencil alphabet"
-          value={letterStencilTool.svgAlphabetId}
-          onChange={(e) => {
-            const next = getSvgAlphabetDefinition(e.target.value as never);
-            dispatch({
-              type: 'UPDATE_LETTER_STENCIL_TOOL',
-              updates: {
-                svgAlphabetId: next.alphabetId,
-                stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
-              },
-            });
-          }}
-          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
-        >
-          {availableAlphabets.map((alphabet) => (
-            <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
-              {alphabet.displayName} — {alphabet.style}
-            </option>
-          ))}
-        </select>
-        <span className="text-[11px] text-zinc-500">
-          {selectedAlphabet.category} · {selectedAlphabet.style} · supports {supportedStoneSizes.join(', ')}
-        </span>
-      </label>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">Text</span>
-        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
-          <span>{cardCount} card{cardCount === 1 ? '' : 's'} · Suggested: {selectedAlphabet.suggestedText}</span>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Glyph source</span>
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => dispatch({
               type: 'UPDATE_LETTER_STENCIL_TOOL',
-              updates: { text: selectedAlphabet.suggestedText },
+              updates: {
+                sourceType: 'svg-alphabet',
+                stoneSize: selectedAlphabet.supportedTargetStoneSizeIds[0] ?? 'SS10',
+              },
+            })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.sourceType === 'svg-alphabet' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">SVG Alphabet</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Curated per-letter SVG glyphs</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({
+              type: 'UPDATE_LETTER_STENCIL_TOOL',
+              updates: {
+                sourceType: 'rhinestone-font',
+                stoneSize: selectedFont.supportedTargetStoneSizeIds[0] ?? 'SS10',
+              },
+            })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.sourceType === 'rhinestone-font' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">Rhinestone Font</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Any registered OpenType rhinestone font</div>
+          </button>
+        </div>
+      </div>
+
+      {letterStencilTool.sourceType === 'svg-alphabet' ? (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-400">Alphabet</span>
+          <select
+            aria-label="Stencil alphabet"
+            value={letterStencilTool.svgAlphabetId}
+            onChange={(e) => {
+              const next = getSvgAlphabetDefinition(e.target.value as never);
+              dispatch({
+                type: 'UPDATE_LETTER_STENCIL_TOOL',
+                updates: {
+                  svgAlphabetId: next.alphabetId,
+                  stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
+                },
+              });
+            }}
+            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+          >
+            {availableAlphabets.map((alphabet) => (
+              <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
+                {alphabet.displayName} — {alphabet.style}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px] text-zinc-500">
+            {selectedAlphabet.category} · {selectedAlphabet.style} · supports {selectedAlphabet.supportedTargetStoneSizeIds.join(', ')}
+          </span>
+        </label>
+      ) : (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-400">Rhinestone font</span>
+          <select
+            aria-label="Stencil rhinestone font"
+            value={letterStencilTool.rhinestoneFontId}
+            onChange={(e) => {
+              const next = getRhinestoneFontDefinition(e.target.value as never);
+              dispatch({
+                type: 'UPDATE_LETTER_STENCIL_TOOL',
+                updates: {
+                  rhinestoneFontId: next.fontId,
+                  stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
+                },
+              });
+            }}
+            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-2 text-sm text-white"
+          >
+            {availableFonts.map((font) => (
+              <option key={font.fontId} value={font.fontId}>
+                {font.displayName} — {font.style}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px] text-zinc-500">
+            {selectedFont.category} · {selectedFont.style} · supports {selectedFont.supportedTargetStoneSizeIds.join(', ')}
+          </span>
+        </label>
+      )}
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-zinc-400">Text</span>
+        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <span>{cardCount} card{cardCount === 1 ? '' : 's'} · Suggested: {activeSource.suggestedText}</span>
+          <button
+            type="button"
+            onClick={() => dispatch({
+              type: 'UPDATE_LETTER_STENCIL_TOOL',
+              updates: { text: activeSource.suggestedText },
             })}
             className="rounded-full border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800"
           >

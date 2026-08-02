@@ -31,6 +31,14 @@ function inMemoryLoader(glyphs: Record<string, string>): SvgAlphabetGlyphLoader 
   };
 }
 
+function svgAlphabetSource(glyphLoader: SvgAlphabetGlyphLoader) {
+  return {
+    type: 'svg-alphabet' as const,
+    alphabetId: DEFAULT_SVG_ALPHABET_ID,
+    glyphLoader,
+  };
+}
+
 // Narrow glyph (I-like) → single vertical row of circles at cx=500.
 const narrowGlyph = makeCircleSvg(
   Array.from({ length: 5 }, (_, i) => ({ cx: 500, cy: 100 + i * 200, r: 30 })),
@@ -48,10 +56,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph, C: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'ABC',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     expect(res.cards.length).toBe(3);
     expect(res.cards.map((c) => c.character)).toEqual(['A', 'B', 'C']);
@@ -61,10 +68,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ I: narrowGlyph, W: wideGlyph });
     const res = await createLetterStencilTemplate({
       text: 'IW',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     const cardI = res.cards.find((c) => c.character === 'I')!;
     const cardW = res.cards.find((c) => c.character === 'W')!;
@@ -75,10 +81,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ I: narrowGlyph, W: wideGlyph });
     const res = await createLetterStencilTemplate({
       text: 'IWIW',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     const heights = new Set(res.cards.map((c) => c.heightMm));
     expect(heights.size).toBe(1);
@@ -88,10 +93,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ I: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'I',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
       minCardWidthMm: 20,
     });
     expect(res.cards[0]!.widthMm).toBeGreaterThanOrEqual(20);
@@ -101,10 +105,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'AB',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
       layoutMode: 'preview',
     });
     const frames = res.template.cutShapes!;
@@ -116,10 +119,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'AB',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
       layoutMode: 'cut-sheet',
       cutSheetGapMm: 5,
     });
@@ -131,10 +133,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ I: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'I',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     const frame = res.template.cutShapes![0]!;
     const xs = res.template.stones.map((s) => s.center.x);
@@ -147,10 +148,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'AB',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     const svg = createBasicSvgExport(res.template);
     // Frame rects — one per card, with rounded corners.
@@ -169,10 +169,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph });
     const res = await createLetterStencilTemplate({
       text: 'AZ',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10',
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     });
     expect(res.unsupportedCharacters).toEqual(['Z']);
     expect(res.warnings.length).toBeGreaterThan(0);
@@ -184,10 +183,9 @@ describe('Letter Stencil System', () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
     const options = {
       text: 'AB',
-      alphabetId: DEFAULT_SVG_ALPHABET_ID,
+      source: svgAlphabetSource(loader),
       targetStoneSizeId: 'SS10' as const,
       targetStoneSizeMm: 3.429,
-      glyphLoader: loader,
     };
     const a = await createLetterStencilTemplate(options);
     const b = await createLetterStencilTemplate(options);

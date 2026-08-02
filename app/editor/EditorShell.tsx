@@ -293,10 +293,18 @@ export default function EditorShell() {
               }
               const result = await createLetterStencilTemplate({
                 text: state.letterStencilTool.text,
-                alphabetId: state.letterStencilTool.svgAlphabetId,
+                source: state.letterStencilTool.sourceType === 'rhinestone-font'
+                  ? {
+                      type: 'rhinestone-font',
+                      rhinestoneFontId: state.letterStencilTool.rhinestoneFontId,
+                    }
+                  : {
+                      type: 'svg-alphabet',
+                      alphabetId: state.letterStencilTool.svgAlphabetId,
+                      glyphLoader: defaultSvgAlphabetGlyphLoader,
+                    },
                 targetStoneSizeId: sizeId,
                 targetStoneSizeMm: targetDiameterMm,
-                glyphLoader: defaultSvgAlphabetGlyphLoader,
                 cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 3,
                 cardCornerRadiusMm: typeof state.letterStencilTool.cardCornerRadiusMm === 'number' ? state.letterStencilTool.cardCornerRadiusMm : 2,
                 minCardWidthMm: typeof state.letterStencilTool.minCardWidthMm === 'number' ? state.letterStencilTool.minCardWidthMm : 12,
@@ -396,7 +404,9 @@ export default function EditorShell() {
     state.svgAlphabetTool.unsupportedCharacters,
     state.svgAlphabetTool.warnings,
     state.letterStencilTool.text,
+    state.letterStencilTool.sourceType,
     state.letterStencilTool.svgAlphabetId,
+    state.letterStencilTool.rhinestoneFontId,
     state.letterStencilTool.stoneSize,
     state.letterStencilTool.cardPaddingMm,
     state.letterStencilTool.cardCornerRadiusMm,

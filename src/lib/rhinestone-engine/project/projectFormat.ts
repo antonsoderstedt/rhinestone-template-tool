@@ -216,8 +216,10 @@ export interface SvgAlphabetProjectState {
 
 export interface LetterStencilProjectState {
   generatorId: 'letter-stencil';
+  sourceType: 'svg-alphabet' | 'rhinestone-font';
   text: string;
   svgAlphabetId: string;
+  rhinestoneFontId: string;
   stoneSize: StoneSizeId;
   targetStoneSizeMm: number;
   cardPaddingMm: number;

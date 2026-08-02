@@ -237,8 +237,10 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
       if (!calibration) return null;
       return {
         generatorId: 'letter-stencil',
+        sourceType: state.letterStencilTool.sourceType,
         text: state.letterStencilTool.text,
         svgAlphabetId: state.letterStencilTool.svgAlphabetId,
+        rhinestoneFontId: state.letterStencilTool.rhinestoneFontId,
         stoneSize: state.letterStencilTool.stoneSize,
         targetStoneSizeMm: calibration.diameterMm,
         cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 3,

@@ -25,17 +25,37 @@ import {
   type SvgAlphabetId,
 } from '../svgAlphabet/svgAlphabetRegistry';
 import type { SvgAlphabetGlyphLoader } from '../svgAlphabet/svgAlphabetTemplate';
+import { loadRhinestoneFont } from '../rhinestoneFont/rhinestoneFontLoader';
+import { extractStonesFromGlyph } from '../rhinestoneFont/glyphExtraction';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type StencilLayoutMode = 'preview' | 'cut-sheet';
 
+/**
+ * Where each letter's glyph comes from. Two sources are supported:
+ *
+ * - `svg-alphabet`: per-letter SVG files from the curated alphabet library.
+ *   Uses the same glyph loader as the SVG Alphabet source.
+ * - `rhinestone-font`: OpenType rhinestone fonts (e.g. Blessed, Real, Atletico).
+ *   Uses the rhinestone font loader + glyph extraction.
+ */
+export type LetterStencilSource =
+  | {
+      type: 'svg-alphabet';
+      alphabetId: string;
+      glyphLoader: SvgAlphabetGlyphLoader;
+    }
+  | {
+      type: 'rhinestone-font';
+      rhinestoneFontId: string;
+    };
+
 export interface CreateLetterStencilOptions {
   text: string;
-  alphabetId: string;
+  source: LetterStencilSource;
   targetStoneSizeId: StoneSizeId;
   targetStoneSizeMm: number;
-  glyphLoader: SvgAlphabetGlyphLoader;
 
   /** Space between the glyph and the card edge on all sides (mm). Default 3. */
   cardPaddingMm?: number;
@@ -121,10 +141,9 @@ export async function createLetterStencilTemplate(
 ): Promise<LetterStencilResult> {
   const {
     text,
-    alphabetId,
+    source,
     targetStoneSizeId,
     targetStoneSizeMm,
-    glyphLoader,
     cardPaddingMm = 3,
     cardCornerRadiusMm = 2,
     minCardWidthMm = 12,
@@ -133,19 +152,8 @@ export async function createLetterStencilTemplate(
     cutSheetWidthMm = 305,
   } = options;
 
-  const resolvedAlphabetId: SvgAlphabetId = isKnownSvgAlphabetId(alphabetId)
-    ? alphabetId
-    : DEFAULT_SVG_ALPHABET_ID;
-  const definition: SvgAlphabetDefinition = getSvgAlphabetDefinition(resolvedAlphabetId);
-
-  if (!definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
-    throw new Error(
-      `SVG alphabet ${definition.displayName} supports ${definition.supportedTargetStoneSizeIds.join(', ')}. ` +
-      `Requested: ${targetStoneSizeId}.`,
-    );
-  }
-
-  // Pre-extract every unique non-space character exactly once.
+  // Resolve source metadata (display name is used in warnings) and pre-extract
+  // every unique non-space character.
   const uniqueChars = new Set<string>();
   for (const ch of text) {
     if (ch === ' ' || ch === '\n') continue;
@@ -155,21 +163,75 @@ export async function createLetterStencilTemplate(
   const rawByChar = new Map<string, RawGlyph>();
   const unsupportedCharacters: string[] = [];
   const allDiameters: number[] = [];
+  let sourceDisplayName: string;
+  let sourceIdForMetadata: string;
+  let sourceStyleForMetadata: string;
 
-  for (const ch of uniqueChars) {
-    const svg = await glyphLoader.loadGlyphSvg(resolvedAlphabetId, ch, targetStoneSizeId);
-    if (!svg) {
-      unsupportedCharacters.push(ch);
-      continue;
+  if (source.type === 'svg-alphabet') {
+    const resolvedAlphabetId: SvgAlphabetId = isKnownSvgAlphabetId(source.alphabetId)
+      ? source.alphabetId
+      : DEFAULT_SVG_ALPHABET_ID;
+    const definition: SvgAlphabetDefinition = getSvgAlphabetDefinition(resolvedAlphabetId);
+    sourceDisplayName = definition.displayName;
+    sourceIdForMetadata = resolvedAlphabetId;
+    sourceStyleForMetadata = definition.style;
+
+    if (!definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
+      throw new Error(
+        `SVG alphabet ${definition.displayName} supports ${definition.supportedTargetStoneSizeIds.join(', ')}. ` +
+        `Requested: ${targetStoneSizeId}.`,
+      );
     }
-    const parsed = importRhinestoneTemplate({ svgText: sanitizeCurationSvg(svg) });
-    if (parsed.stones.length === 0) {
-      unsupportedCharacters.push(ch);
-      continue;
+
+    for (const ch of uniqueChars) {
+      const svg = await source.glyphLoader.loadGlyphSvg(resolvedAlphabetId, ch, targetStoneSizeId);
+      if (!svg) {
+        unsupportedCharacters.push(ch);
+        continue;
+      }
+      const parsed = importRhinestoneTemplate({ svgText: sanitizeCurationSvg(svg) });
+      if (parsed.stones.length === 0) {
+        unsupportedCharacters.push(ch);
+        continue;
+      }
+      const normalized = normalizeGlyph(parsed.stones);
+      rawByChar.set(ch, normalized);
+      for (const stone of normalized.stones) allDiameters.push(stone.diameterMm);
     }
-    const normalized = normalizeGlyph(parsed.stones);
-    rawByChar.set(ch, normalized);
-    for (const stone of normalized.stones) allDiameters.push(stone.diameterMm);
+  } else {
+    const loaded = await loadRhinestoneFont(source.rhinestoneFontId, targetStoneSizeId);
+    sourceDisplayName = loaded.definition.displayName;
+    sourceIdForMetadata = loaded.definition.fontId;
+    sourceStyleForMetadata = loaded.definition.style;
+
+    if (!loaded.definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
+      throw new Error(
+        `Rhinestone font ${loaded.definition.displayName} supports ${loaded.definition.supportedTargetStoneSizeIds.join(', ')}. ` +
+        `Requested: ${targetStoneSizeId}.`,
+      );
+    }
+
+    for (const ch of uniqueChars) {
+      const extracted = extractStonesFromGlyph(loaded.font, ch);
+      if (extracted.stones.length === 0) {
+        unsupportedCharacters.push(ch);
+        continue;
+      }
+      // extractStonesFromGlyph returns positions in font units. Treat them as
+      // pseudo-mm here — the median-diameter auto-scale below normalises to the
+      // requested physical stone size regardless of source units.
+      const asImported: ImportedStone[] = extracted.stones.map((s, idx) => ({
+        center: { x: s.localX, y: s.localY },
+        diameterMm: s.diameterFontUnits,
+        fill: null,
+        stroke: null,
+        group: null,
+        originalIndex: idx,
+      }));
+      const normalized = normalizeGlyph(asImported);
+      rawByChar.set(ch, normalized);
+      for (const stone of normalized.stones) allDiameters.push(stone.diameterMm);
+    }
   }
 
   // Auto-scale so extracted stones match the requested physical stone size.
@@ -269,7 +331,8 @@ export async function createLetterStencilTemplate(
         metadata: {
           character: ch,
           cardId,
-          svgAlphabetId: resolvedAlphabetId,
+          stencilSourceType: source.type,
+          stencilSourceId: sourceIdForMetadata,
           presentationMode: 'stencil',
         },
       });
@@ -312,8 +375,9 @@ export async function createLetterStencilTemplate(
     widthMm,
     heightMm,
     metadata: {
-      svgAlphabetId: resolvedAlphabetId,
-      svgAlphabetStyle: definition.style,
+      stencilSourceType: source.type,
+      stencilSourceId: sourceIdForMetadata,
+      stencilSourceStyle: sourceStyleForMetadata,
       generatedBy: 'createLetterStencilTemplate',
       textPlacementStrategy: 'letter-stencil-cards-v1',
       layoutMode,
@@ -331,7 +395,7 @@ export async function createLetterStencilTemplate(
   const warnings: string[] = [];
   if (unsupportedCharacters.length > 0) {
     warnings.push(
-      `The following characters are not supported by ${definition.displayName}: ${unsupportedCharacters.join(', ')}`,
+      `The following characters are not supported by ${sourceDisplayName}: ${unsupportedCharacters.join(', ')}`,
     );
   }
 

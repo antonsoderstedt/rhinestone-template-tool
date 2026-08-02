@@ -270,6 +270,7 @@ export type {
   ManualEditorProjectState,
   RhinestoneFontProjectState,
   SvgAlphabetProjectState,
+  LetterStencilProjectState,
   TemplateImportProjectState,
   GeneratorProjectState,
   RhinestoneProjectFile,

@@ -152,8 +152,10 @@ export interface SvgAlphabetToolState {
 // ─── Letter Stencil Tool State ────────────────────────────────────────────────
 
 export interface LetterStencilToolState {
+  sourceType: 'svg-alphabet' | 'rhinestone-font';
   text: string;
   svgAlphabetId: string;
+  rhinestoneFontId: string;
   stoneSize: StoneSizeId;
   cardPaddingMm: number | '';
   cardCornerRadiusMm: number | '';
@@ -491,8 +493,10 @@ export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
 };
 
 export const DEFAULT_LETTER_STENCIL_TOOL_STATE: LetterStencilToolState = {
+  sourceType: 'svg-alphabet',
   text: 'NAME',
   svgAlphabetId: 'scoreboard-block',
+  rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
   cardPaddingMm: 3,
   cardCornerRadiusMm: 2,
