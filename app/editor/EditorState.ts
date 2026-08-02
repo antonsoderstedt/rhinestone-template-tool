@@ -25,6 +25,7 @@ import {
   getSupportedRhinestoneFontStoneSizes,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
+  suggestSvgUploadMode,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
@@ -359,6 +360,12 @@ function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextTo
 function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolState>): SvgToolState {
   const next: SvgToolState = { ...current, ...updates };
 
+  if (typeof updates.uploadedSvgText === 'string' && updates.coverageMode === undefined && updates.fillMode === undefined) {
+    const suggestedMode = suggestSvgUploadMode(updates.uploadedSvgText);
+    next.coverageMode = suggestedMode;
+    next.fillMode = suggestedMode;
+  }
+
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
     next.fillMode = updates.coverageMode;
   } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {
@@ -653,10 +660,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
       return { ...state, rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates) };
-    
+
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };
-    
+
     case 'UPDATE_LETTER_STENCIL_TOOL':
       return { ...state, letterStencilTool: { ...state.letterStencilTool, ...action.updates } };
     

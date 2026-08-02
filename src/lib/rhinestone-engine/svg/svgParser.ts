@@ -26,6 +26,8 @@ export interface SvgSafetyResult {
   issues: string[];
 }
 
+export type SvgUploadSuggestedMode = 'outline' | 'outline-fill';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SUPPORTED_ELEMENT_TAGS = new Set([
@@ -101,6 +103,83 @@ export function validateSafeSvgInput(svgString: string): SvgSafetyResult {
 
 export function stripSvgStyleElements(svgString: string): string {
   return svgString.replace(/<style\b[\s\S]*?<\/style>/gi, '');
+}
+
+function extractStyleBlocks(svgString: string): string[] {
+  return Array.from(svgString.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi), (match) => match[1] ?? '');
+}
+
+function collectClassPresentationValues(svgString: string, property: 'fill' | 'stroke'): Map<string, string> {
+  const classValues = new Map<string, string>();
+  const propertyPattern = new RegExp(`\\.${String.raw`([_a-zA-Z][\w-]*)`}\\s*\\{[\\s\\S]*?\\b${property}\\s*:\\s*([^;\\}]+)`, 'gi');
+
+  for (const styleBlock of extractStyleBlocks(svgString)) {
+    let match: RegExpExecArray | null;
+    while ((match = propertyPattern.exec(styleBlock)) !== null) {
+      classValues.set(match[1]!, match[2]!.trim().toLowerCase());
+    }
+  }
+
+  return classValues;
+}
+
+function getInlineStyleProperty(styleValue: string | undefined, property: 'fill' | 'stroke'): string | undefined {
+  if (!styleValue) return undefined;
+  const match = styleValue.match(new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`, 'i'));
+  return match?.[1]?.trim().toLowerCase();
+}
+
+function getClassPropertyValue(className: string | undefined, values: Map<string, string>): string | undefined {
+  if (!className) return undefined;
+  for (const token of className.split(/\s+/)) {
+    const value = values.get(token);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function resolvePresentationProperty(
+  attrs: Record<string, string>,
+  property: 'fill' | 'stroke',
+  classValues: Map<string, string>,
+): string | undefined {
+  return attrs[property]?.trim().toLowerCase()
+    ?? getInlineStyleProperty(attrs.style, property)
+    ?? getClassPropertyValue(attrs.class, classValues);
+}
+
+function isClosedSvgElement(tagName: string, attrs: Record<string, string>): boolean {
+  switch (tagName) {
+    case 'rect':
+    case 'circle':
+    case 'ellipse':
+    case 'polygon':
+      return true;
+    case 'path':
+      return /[Zz]/.test(attrs.d ?? '');
+    default:
+      return false;
+  }
+}
+
+export function suggestSvgUploadMode(svgString: string): SvgUploadSuggestedMode {
+  const fillValues = collectClassPresentationValues(svgString, 'fill');
+  const strokeValues = collectClassPresentationValues(svgString, 'stroke');
+  const elements = extractSvgElements(stripSvgStyleElements(svgString));
+
+  for (const element of elements) {
+    if (!isClosedSvgElement(element.tagName, element.attributes)) continue;
+
+    const fill = resolvePresentationProperty(element.attributes, 'fill', fillValues);
+    const stroke = resolvePresentationProperty(element.attributes, 'stroke', strokeValues);
+
+    if (fill === 'none') continue;
+    if (fill === undefined && stroke !== undefined && stroke !== 'none') continue;
+
+    return 'outline-fill';
+  }
+
+  return 'outline';
 }
 
 /**

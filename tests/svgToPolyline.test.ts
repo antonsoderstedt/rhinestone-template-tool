@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   svgStringToPolylines,
+  suggestSvgUploadMode,
   createPolylineRhinestoneTemplate,
   validateRhinestoneTemplate,
   createBasicSvgExport,
@@ -20,6 +21,7 @@ const pathCurveSvg = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M 0 0 C 1
 const transformSvg = '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="10" transform="translate(10,5)" /></svg>';
 const unsafeSvg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><circle cx="10" cy="10" r="5"/></svg>';
 const noShapesSvg = '<svg xmlns="http://www.w3.org/2000/svg"><text>Hello</text></svg>';
+const styledClosedPathSvg = '<svg xmlns="http://www.w3.org/2000/svg"><defs><style>.cls-1{fill:#ff7bb2;}</style></defs><path class="cls-1" d="M 0 0 L 20 0 L 20 20 Z" /></svg>';
 
 // ─── svgStringToPolylines — basic conversions ─────────────────────────────────
 
@@ -109,6 +111,14 @@ describe('svgStringToPolylines — error cases', () => {
   it('ignores inert style blocks from design-tool exports', () => {
     const svg = '<svg xmlns="http://www.w3.org/2000/svg"><style>.cls-1{fill:#000}</style><circle cx="10" cy="10" r="5" /></svg>';
     expect(() => svgStringToPolylines(svg)).not.toThrow();
+  });
+
+  it('suggests fill mode for closed filled SVG artwork', () => {
+    expect(suggestSvgUploadMode(styledClosedPathSvg)).toBe('outline-fill');
+  });
+
+  it('keeps outline mode for open stroke-style artwork', () => {
+    expect(suggestSvgUploadMode(lineSvg)).toBe('outline');
   });
 
   it('throws when no supported shapes exist', () => {

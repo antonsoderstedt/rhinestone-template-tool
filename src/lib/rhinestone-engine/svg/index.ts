@@ -1,8 +1,9 @@
-export type { ParsedSvgElement, SvgSafetyResult } from './svgParser';
+export type { ParsedSvgElement, SvgSafetyResult, SvgUploadSuggestedMode } from './svgParser';
 export {
   parseSvgAttributes,
   validateSafeSvgInput,
   extractSvgElements,
+  suggestSvgUploadMode,
 } from './svgParser';
 
 export type { SvgToPolylineOptions } from './svgToPolyline';

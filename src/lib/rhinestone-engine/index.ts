@@ -121,11 +121,12 @@ export {
 } from './path/polylineCleanup';
 
 // SVG upload (v2 — curves + transforms, no raw SVG rendering)
-export type { ParsedSvgElement, SvgSafetyResult } from './svg/svgParser';
+export type { ParsedSvgElement, SvgSafetyResult, SvgUploadSuggestedMode } from './svg/svgParser';
 export {
   parseSvgAttributes,
   validateSafeSvgInput,
   extractSvgElements,
+  suggestSvgUploadMode,
 } from './svg/svgParser';
 export type { SvgToPolylineOptions } from './svg/svgToPolyline';
 export { svgStringToPolylines } from './svg/svgToPolyline';
