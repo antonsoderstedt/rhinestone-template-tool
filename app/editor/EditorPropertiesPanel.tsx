@@ -82,7 +82,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="w-full border-r border-border bg-surface-raised/90 p-4">
+      <aside className="h-full w-full border-r border-border bg-surface-raised/90 p-4">
         <div className="flex h-full flex-col gap-4 overflow-y-auto">
           <PanelSection title="Tools" description="Choose how you want to work with this design.">
             <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
@@ -123,7 +123,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
   if (mode === 'inspector') {
     return (
-      <aside className="w-full border-l border-border bg-surface-raised/90 p-4">
+      <aside className="h-full w-full border-l border-border bg-surface-raised/90 p-4">
         <div className="flex h-full flex-col gap-4 overflow-y-auto">
           <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
             <SelectToolProperties state={state} dispatch={dispatch} />

@@ -1191,7 +1191,7 @@ export default function EditorShell() {
       )}
 
       <div className="flex min-h-0 flex-1 bg-surface">
-        <div className="w-[clamp(260px,22vw,320px)] shrink-0 overflow-hidden">
+        <div className="h-full min-h-0 w-[clamp(260px,22vw,320px)] shrink-0 overflow-hidden">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
         </div>
 
@@ -1210,7 +1210,7 @@ export default function EditorShell() {
           />
         </main>
 
-        <div className="w-[clamp(260px,23vw,336px)] shrink-0 overflow-hidden">
+        <div className="h-full min-h-0 w-[clamp(260px,23vw,336px)] shrink-0 overflow-hidden">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
         </div>
       </div>

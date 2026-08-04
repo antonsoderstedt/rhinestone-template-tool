@@ -33,8 +33,8 @@ interface EditorCanvasProps {
 }
 
 const RULER_BAND_PX = 32;
-const RULER_STEP_MM = 10;
-const RULER_LABEL_STEP_MM = 50;
+const RULER_NICE_STEPS_MM = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+const RULER_TARGET_LABEL_COUNT = 14;
 const SELECTION_MEASURE_OFFSET_MM = 18;
 const FIT_TO_SCREEN_PADDING_MM = 20;
 const FIT_TO_SCREEN_MARGIN = 0.92;
@@ -50,10 +50,18 @@ const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
   grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
 };
 
-function buildRulerTickValues(start: number, end: number): number[] {
-  const first = Math.ceil(start / RULER_STEP_MM) * RULER_STEP_MM;
+// Rounds up to a "nice" 1/2/5 step so ruler ticks/labels never crowd together at low zoom.
+function pickNiceRulerStep(rawStepMm: number): number {
+  for (const step of RULER_NICE_STEPS_MM) {
+    if (step >= rawStepMm) return step;
+  }
+  return RULER_NICE_STEPS_MM[RULER_NICE_STEPS_MM.length - 1];
+}
+
+function buildRulerTickValues(start: number, end: number, stepMm: number): number[] {
+  const first = Math.ceil(start / stepMm) * stepMm;
   const ticks: number[] = [];
-  for (let value = first; value <= end; value += RULER_STEP_MM) {
+  for (let value = first; value <= end; value += stepMm) {
     ticks.push(value);
   }
   return ticks;
@@ -218,6 +226,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   const viewBox = useMemo(
     () => calculateDisplayedCanvasViewBox(workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY),
     [workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY],
+  );
+
+  // Ruler tick/label spacing adapts to zoom so labels never crowd together when zoomed out.
+  const rulerLabelStepMm = useMemo(
+    () => pickNiceRulerStep(viewBox.width / RULER_TARGET_LABEL_COUNT),
+    [viewBox.width],
+  );
+  const rulerTickStepMm = useMemo(
+    () => pickNiceRulerStep(rulerLabelStepMm / 5),
+    [rulerLabelStepMm],
   );
 
   const selectionBounds = useMemo(() => {
@@ -1020,14 +1038,14 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 className="relative overflow-hidden border-b border-border bg-sand-50"
                 style={{ gridColumn: 2, gridRow: 1 }}
               >
-                {buildRulerTickValues(viewBox.x, viewBox.x + viewBox.width).map((tick) => (
+                {buildRulerTickValues(viewBox.x, viewBox.x + viewBox.width, rulerTickStepMm).map((tick) => (
                   <div
                     key={`overlay-top-${tick}`}
                     className="pointer-events-none absolute inset-y-0"
                     style={{ left: mmToRulerPercent(tick, viewBox.x, viewBox.width) }}
                   >
-                    <div className={`w-px bg-sand-400 ${tick % RULER_LABEL_STEP_MM === 0 ? 'h-full' : 'h-2.5'} self-end`} />
-                    {tick % RULER_LABEL_STEP_MM === 0 && (
+                    <div className={`w-px bg-sand-400 ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
+                    {tick % rulerLabelStepMm === 0 && (
                       <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted">
                         {Math.round(tick)}
                       </span>
@@ -1039,14 +1057,14 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 className="relative overflow-hidden border-r border-border bg-sand-50"
                 style={{ gridColumn: 1, gridRow: 2 }}
               >
-                {buildRulerTickValues(viewBox.y, viewBox.y + viewBox.height).map((tick) => (
+                {buildRulerTickValues(viewBox.y, viewBox.y + viewBox.height, rulerTickStepMm).map((tick) => (
                   <div
                     key={`overlay-left-${tick}`}
                     className="pointer-events-none absolute inset-x-0"
                     style={{ top: mmToRulerPercent(tick, viewBox.y, viewBox.height) }}
                   >
-                    <div className={`h-px bg-sand-400 ${tick % RULER_LABEL_STEP_MM === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
-                    {tick % RULER_LABEL_STEP_MM === 0 && (
+                    <div className={`h-px bg-sand-400 ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
+                    {tick % rulerLabelStepMm === 0 && (
                       <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-ink-muted">
                         {Math.round(tick)}
                       </span>
