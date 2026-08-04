@@ -82,85 +82,81 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="h-full w-full border-r border-border bg-surface-raised/90 p-4">
-        <div className="flex h-full flex-col gap-4 overflow-y-auto">
-          <PanelSection title="Tools" description="Choose how you want to work with this design.">
-            <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
+      <aside className="flex h-full w-full flex-col gap-4 overflow-y-auto overscroll-contain border-r border-border bg-surface-raised/90 p-4">
+        <PanelSection title="Tools" description="Choose how you want to work with this design.">
+          <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
+        </PanelSection>
+
+        {state.activeTool === 'select' ? (
+          <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
+            <p className="text-xs text-ink-muted">Fine-tune the selection — position, alignment, and export options — in the Inspector panel on the right.</p>
           </PanelSection>
-
-          {state.activeTool === 'select' ? (
-            <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
-              <p className="text-xs text-ink-muted">Fine-tune the selection — position, alignment, and export options — in the Inspector panel on the right.</p>
-            </PanelSection>
-          ) : (
-            <>
-              <PanelSection title={statusCopy.label} description={statusCopy.description}>
-                <div className={`rounded-xl border px-3 py-3 ${state.editableTemplate.isEditable ? 'border-info-500/30 bg-info-50 text-info-600' : 'border-accent-300 bg-accent-50 text-accent-700'}`}>
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    {state.editableTemplate.isEditable ? <PenLine className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-                    <span>{statusCopy.label}</span>
-                  </div>
-                  <p className="mt-2 text-xs text-ink-secondary">{statusCopy.actionHint}</p>
+        ) : (
+          <>
+            <PanelSection title={statusCopy.label} description={statusCopy.description}>
+              <div className={`rounded-xl border px-3 py-3 ${state.editableTemplate.isEditable ? 'border-info-500/30 bg-info-50 text-info-600' : 'border-accent-300 bg-accent-50 text-accent-700'}`}>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {state.editableTemplate.isEditable ? <PenLine className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                  <span>{statusCopy.label}</span>
                 </div>
-              </PanelSection>
+                <p className="mt-2 text-xs text-ink-secondary">{statusCopy.actionHint}</p>
+              </div>
+            </PanelSection>
 
-              <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
-                {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
-                {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
-                {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
-              </PanelSection>
-            </>
-          )}
-        </div>
+            <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
+              {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
+              {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
+            </PanelSection>
+          </>
+        )}
       </aside>
     );
   }
 
   if (mode === 'inspector') {
     return (
-      <aside className="h-full w-full border-l border-border bg-surface-raised/90 p-4">
-        <div className="flex h-full flex-col gap-4 overflow-y-auto">
-          <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
-            <SelectToolProperties state={state} dispatch={dispatch} />
-          </PanelSection>
+      <aside className="flex h-full w-full flex-col gap-4 overflow-y-auto overscroll-contain border-l border-border bg-surface-raised/90 p-4">
+        <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
+          <SelectToolProperties state={state} dispatch={dispatch} />
+        </PanelSection>
 
-          <PanelSection title="Export Settings" description="These options affect only the exported SVG output.">
-            <label className="flex items-center gap-2 text-sm text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={state.includeGuideBox}
-                onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: e.target.checked } })}
-                className="h-4 w-4 rounded border-border bg-surface-sunken"
-              />
-              Include guide box
-            </label>
-
-            <label className="flex items-center gap-2 text-sm text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={state.includeLabels}
-                onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: e.target.checked } })}
-                className="h-4 w-4 rounded border-border bg-surface-sunken"
-              />
-              Include labels
-            </label>
-
-            <NumericInput
-              label="Padding"
-              value={state.paddingMm}
-              onChange={(val) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { paddingMm: typeof val === 'number' ? val : state.paddingMm } })}
-              unit="mm"
-              min={0}
-              max={100}
-              step={0.5}
+        <PanelSection title="Export Settings" description="These options affect only the exported SVG output.">
+          <label className="flex items-center gap-2 text-sm text-ink-secondary">
+            <input
+              type="checkbox"
+              checked={state.includeGuideBox}
+              onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: e.target.checked } })}
+              className="h-4 w-4 rounded border-border bg-surface-sunken"
             />
-          </PanelSection>
-        </div>
+            Include guide box
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-ink-secondary">
+            <input
+              type="checkbox"
+              checked={state.includeLabels}
+              onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: e.target.checked } })}
+              className="h-4 w-4 rounded border-border bg-surface-sunken"
+            />
+            Include labels
+          </label>
+
+          <NumericInput
+            label="Padding"
+            value={state.paddingMm}
+            onChange={(val) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { paddingMm: typeof val === 'number' ? val : state.paddingMm } })}
+            unit="mm"
+            min={0}
+            max={100}
+            step={0.5}
+          />
+        </PanelSection>
       </aside>
     );
   }
@@ -1361,7 +1357,7 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
             <p className="text-[11px] text-ink-muted">
               {svgTool.renderMode === 'artwork-dots'
                 ? 'Artwork dots uses fill-only hexagonal sampling and is intended to mimic image-to-dot style rhinestone layouts.'
-                : 'Vector layout keeps the SVG as vector artwork and is better for cleaner outline-driven results.'}
+                : 'Vector layout keeps the SVG as vector artwork and is better for cleaner outline-driven results. Uploading a solid logo or badge? Try Artwork dots below for a denser, more polished look, or switch Fill mode to "Fill" on this side.'}
             </p>
           </div>
 

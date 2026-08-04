@@ -45,7 +45,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
-import { getSourcePanelTool } from './editorUi';
+import { getCanvasHint, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -1199,7 +1199,7 @@ export default function EditorShell() {
           <div className="border-b border-border px-4 py-3">
             <div>
               <h2 className="text-sm font-semibold text-ink">Canvas workspace</h2>
-              <p className="text-xs text-ink-muted">Pan, zoom, and fit the current design without leaving the editor.</p>
+              <p className="text-xs text-ink-muted">{getCanvasHint(state.activeTool)}</p>
             </div>
           </div>
 

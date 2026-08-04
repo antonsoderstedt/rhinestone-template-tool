@@ -512,7 +512,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   imageDetail: 128,
   imageInvert: false,
   cleanupEnabled: true,
-  cleanupSimplify: false,
+  cleanupSimplify: true,
   cleanupSimplifyTol: 0.25,
   cleanupRemoveTiny: true,
   cleanupMinLength: 1,

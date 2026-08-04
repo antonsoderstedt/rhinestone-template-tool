@@ -3,7 +3,7 @@
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
-import { EditorAction, EditorState, EditableStone, EditorTool } from './EditorState';
+import { EditorAction, EditorState, EditableStone } from './EditorState';
 import {
   calculateCanvasWorkspaceBounds,
   calculateDisplayedCanvasViewBox,
@@ -38,17 +38,6 @@ const RULER_TARGET_LABEL_COUNT = 14;
 const SELECTION_MEASURE_OFFSET_MM = 18;
 const FIT_TO_SCREEN_PADDING_MM = 20;
 const FIT_TO_SCREEN_MARGIN = 0.92;
-
-const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
-  select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
-  text: 'Adjust the text settings on the left, then Generate to see your design here.',
-  'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
-  'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',
-  'letter-stencil': 'Spell a word with letter stencils on the left, then Generate to preview it here.',
-  svg: 'Upload artwork on the left, then Generate to fill it with stones.',
-  'template-import': 'Import an existing SVG template to bring its stones in here.',
-  grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
-};
 
 // Rounds up to a "nice" 1/2/5 step so ruler ticks/labels never crowd together at low zoom.
 function pickNiceRulerStep(rawStepMm: number): number {
@@ -909,36 +898,53 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
-      const delta = e.deltaY > 0 ? 0.9 : 1.1; // zoom in/out
-      const newZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.1), 5);
-      if (newZoom === state.canvas.zoom) return;
-
       const rect = svg.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) {
-        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: newZoom } });
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      const currentViewBox = viewBoxRef.current;
+      const bounds = workspaceBoundsRef.current;
+
+      // Trackpad pinch (or Ctrl/Cmd + wheel) zooms, keeping the mm point under
+      // the cursor fixed. A plain two-finger scroll pans instead — matching
+      // standard design-tool behavior (Figma, Google Maps, etc).
+      if (e.ctrlKey || e.metaKey) {
+        const delta = e.deltaY > 0 ? 0.9 : 1.1; // zoom in/out
+        const newZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.1), 5);
+        if (newZoom === state.canvas.zoom) return;
+
+        const fractionX = (e.clientX - rect.left) / rect.width;
+        const fractionY = (e.clientY - rect.top) / rect.height;
+        const cursorMmX = currentViewBox.x + fractionX * currentViewBox.width;
+        const cursorMmY = currentViewBox.y + fractionY * currentViewBox.height;
+
+        const nextWidth = bounds.width / newZoom;
+        const nextHeight = bounds.height / newZoom;
+        const nextCenterX = cursorMmX - fractionX * nextWidth + nextWidth / 2;
+        const nextCenterY = cursorMmY - fractionY * nextHeight + nextHeight / 2;
+
+        dispatch({
+          type: 'UPDATE_CANVAS',
+          updates: {
+            zoom: newZoom,
+            panX: bounds.x + bounds.width / 2 - nextCenterX,
+            panY: bounds.y + bounds.height / 2 - nextCenterY,
+          },
+        });
         return;
       }
 
-      // Keep the mm point currently under the cursor fixed across the zoom step,
-      // instead of always re-centering on the workspace.
-      const currentViewBox = viewBoxRef.current;
-      const bounds = workspaceBoundsRef.current;
-      const fractionX = (e.clientX - rect.left) / rect.width;
-      const fractionY = (e.clientY - rect.top) / rect.height;
-      const cursorMmX = currentViewBox.x + fractionX * currentViewBox.width;
-      const cursorMmY = currentViewBox.y + fractionY * currentViewBox.height;
-
-      const nextWidth = bounds.width / newZoom;
-      const nextHeight = bounds.height / newZoom;
-      const nextCenterX = cursorMmX - fractionX * nextWidth + nextWidth / 2;
-      const nextCenterY = cursorMmY - fractionY * nextHeight + nextHeight / 2;
+      const mmPerPxX = currentViewBox.width / rect.width;
+      const mmPerPxY = currentViewBox.height / rect.height;
+      const currentCenterX = currentViewBox.x + currentViewBox.width / 2;
+      const currentCenterY = currentViewBox.y + currentViewBox.height / 2;
+      const currentPanX = bounds.x + bounds.width / 2 - currentCenterX;
+      const currentPanY = bounds.y + bounds.height / 2 - currentCenterY;
 
       dispatch({
         type: 'UPDATE_CANVAS',
         updates: {
-          zoom: newZoom,
-          panX: bounds.x + bounds.width / 2 - nextCenterX,
-          panY: bounds.y + bounds.height / 2 - nextCenterY,
+          panX: currentPanX - e.deltaX * mmPerPxX,
+          panY: currentPanY - e.deltaY * mmPerPxY,
         },
       });
     };
@@ -976,28 +982,6 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
   return (
     <div ref={containerRef} className="relative flex-1 overflow-hidden bg-sand-100">
-      {/* Canvas Controls */}
-      <div className="absolute left-4 top-4 z-10 max-w-xs rounded-2xl border border-border bg-surface-raised/95 px-3.5 py-3 text-xs text-ink-secondary shadow-md backdrop-blur-sm">
-        <div className="text-[13px] font-semibold text-ink">Canvas guide</div>
-        <div className="mt-1 leading-relaxed text-ink-muted">
-          {state.activeTool === 'manual'
-            ? state.manualTool.interactionMode === 'erase'
-              ? 'Click or drag to erase stones directly on the canvas.'
-              : `Click or drag to place stones at ${manualDrawSpacingMm.toFixed(1)} mm spacing. The smart preview shows when a stone will be nudged.`
-            : TOOL_CANVAS_HINTS[state.activeTool] ?? 'Use the tool controls, then pan and inspect the result here.'}
-        </div>
-        {hoverPosition && state.activeTool === 'manual' && (
-          <div className="mt-2 font-mono text-[11px] tabular-nums text-ink-secondary">
-            X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
-          </div>
-        )}
-        {hoverSuggestedFrom && state.activeTool === 'manual' && state.manualTool.interactionMode === 'place' && (
-          <div className="mt-1 text-[11px] text-warning-600">
-            Smart assist is nudging this stone to a safer spot.
-          </div>
-        )}
-      </div>
-
       <div className="absolute right-4 top-4 z-10 flex flex-col gap-1 rounded-2xl border border-border bg-surface-raised/95 p-1.5 shadow-md backdrop-blur-sm">
         <IconButton onClick={handleZoomIn} title="Zoom in" aria-label="Zoom in">
           <Plus className="h-4 w-4" />
@@ -1426,6 +1410,14 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           <div>Click to place {state.manualTool.addStoneSize} stone</div>
           {state.manualTool.snapToGrid && (
             <div className="mt-1 text-ink-muted">Snap: {state.manualTool.gridSnapSize}mm grid</div>
+          )}
+          {hoverPosition && (
+            <div className="mt-1 font-mono tabular-nums text-ink-muted">
+              X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
+            </div>
+          )}
+          {hoverSuggestedFrom && state.manualTool.interactionMode === 'place' && (
+            <div className="mt-1 text-warning-600">Smart assist nudged this stone to a safer spot.</div>
           )}
         </div>
       )}

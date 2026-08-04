@@ -108,11 +108,20 @@ function horizontalInsideIntervalsAtY(loops: readonly ClosedLoop[], y: number): 
   return intervals;
 }
 
+// Snaps candidates in this interval to a GLOBAL x-grid (shared across every
+// row and interval, offset every other row) instead of evenly re-distributing
+// points across each interval's own width. A per-interval distribution drifts
+// out of alignment between neighboring rows/letters — especially on bold or
+// curvy glyphs with many short intervals — producing a visually messy, non-
+// gridded fill. Snapping to one shared lattice (the same approach the
+// polygon offset-grid fill already uses) keeps the result reading as an
+// orderly pattern instead of scattered dots.
 function createIntervalCandidates(
   interval: [number, number],
   y: number,
   spacingMm: number,
-  holeDiameterMm: number,
+  gridOriginX: number,
+  rowXShift: number,
 ): GlyphScanlineCandidate[] {
   const [startX, endX] = interval;
   const width = endX - startX;
@@ -124,14 +133,8 @@ function createIntervalCandidates(
   );
   const left = startX + edgeInset;
   const right = endX - edgeInset;
-  const availableWidth = Math.max(0, right - left);
 
-  let count = availableWidth <= 0 ? 1 : Math.floor(availableWidth / spacingMm) + 1;
-  while (count > 1 && availableWidth / (count - 1) < holeDiameterMm * 0.95) {
-    count -= 1;
-  }
-
-  if (count <= 1) {
+  if (right <= left) {
     return [{
       x: roundMm((startX + endX) / 2, 4),
       y: roundMm(y, 4),
@@ -140,23 +143,36 @@ function createIntervalCandidates(
     }];
   }
 
+  const firstIndex = Math.ceil((left - gridOriginX - rowXShift) / spacingMm);
   const candidates: GlyphScanlineCandidate[] = [];
-  for (let index = 0; index < count; index++) {
-    const isEdgeCandidate = index === 0 || index === count - 1;
+  for (let index = firstIndex; ; index++) {
+    const x = gridOriginX + rowXShift + index * spacingMm;
+    if (x > right) break;
+    if (x < left) continue;
+    const isEdgeCandidate = x - left < spacingMm * 0.5 || right - x < spacingMm * 0.5;
     candidates.push({
-      x: roundMm(left + (availableWidth * index) / (count - 1), 4),
+      x: roundMm(x, 4),
       y: roundMm(y, 4),
       collisionPriority: isEdgeCandidate ? 2 : 1,
       edgeBand: isEdgeCandidate ? 'edge' : 'interior',
     });
   }
+
+  if (candidates.length === 0) {
+    return [{
+      x: roundMm((startX + endX) / 2, 4),
+      y: roundMm(y, 4),
+      collisionPriority: 2,
+      edgeBand: 'edge',
+    }];
+  }
+
   return candidates;
 }
 
 function createScanlineCandidates(
   loops: readonly ClosedLoop[],
   spacingMm: number,
-  holeDiameterMm: number,
 ): GlyphScanlineCandidate[] {
   const bounds = collectClosedLoopBounds(loops);
   const rowStepMm = spacingMm * Math.sqrt(3) / 2;
@@ -175,11 +191,14 @@ function createScanlineCandidates(
   }
 
   const candidates: GlyphScanlineCandidate[] = [];
-  for (const y of yValues) {
-    for (const interval of horizontalInsideIntervalsAtY(loops, y)) {
-      candidates.push(...createIntervalCandidates(interval, y, spacingMm, holeDiameterMm));
+  yValues.forEach((y, rowIndex) => {
+    const intervals = horizontalInsideIntervalsAtY(loops, y);
+    if (intervals.length === 0) return;
+    const rowXShift = rowIndex % 2 === 1 ? spacingMm / 2 : 0;
+    for (const interval of intervals) {
+      candidates.push(...createIntervalCandidates(interval, y, spacingMm, bounds.minX, rowXShift));
     }
-  }
+  });
 
   return candidates;
 }
@@ -187,12 +206,13 @@ function createScanlineCandidates(
 function filterCollidingCandidates(
   candidates: readonly GlyphScanlineCandidate[],
   loops: readonly ClosedLoop[],
+  minDistanceMm: number,
   holeDiameterMm: number,
   stoneSize: StoneSizeId,
   existingStones: readonly Stone[],
 ): Stone[] {
   const kept: Stone[] = [];
-  const minDist2 = holeDiameterMm * holeDiameterMm;
+  const minDist2 = minDistanceMm * minDistanceMm;
 
   const sortedCandidates = [...candidates].sort((a, b) => {
     const priorityDelta = b.collisionPriority - a.collisionPriority;
@@ -282,8 +302,8 @@ export function createGlyphScanlineFillTemplate(
   const { spacingMm, densityResult } = resolveSpacing(options);
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
   const rowStepMm = spacingMm * Math.sqrt(3) / 2;
-  const candidates = createScanlineCandidates(loops, spacingMm, holeDiameterMm);
-  const stones = filterCollidingCandidates(candidates, loops, holeDiameterMm, stoneSize, existingStones);
+  const candidates = createScanlineCandidates(loops, spacingMm);
+  const stones = filterCollidingCandidates(candidates, loops, spacingMm, holeDiameterMm, stoneSize, existingStones);
 
   return createRhinestoneTemplate({
     id,

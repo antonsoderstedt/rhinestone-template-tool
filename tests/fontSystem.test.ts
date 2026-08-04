@@ -206,7 +206,9 @@ describe('font system', () => {
     });
     expect(filled.metadata?.['fillEdgeInsetMm']).toBe(0);
     expect(filled.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-fill-v1');
-    expect(filled.stones.length).toBeGreaterThan(60);
+    // Grid-snapped fill (aligned lattice, matching the polygon offset-grid look)
+    // is intentionally a bit less dense than the old per-interval packing.
+    expect(filled.stones.length).toBeGreaterThan(40);
     expect(filled.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
     expect(filled.stones.some((stone) => stone.metadata?.edgeBand === 'edge')).toBe(true);
   });

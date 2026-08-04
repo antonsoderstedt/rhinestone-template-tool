@@ -164,3 +164,19 @@ export function getToolShortcutLabel(tool: EditorTool): string | null {
       return null;
   }
 }
+
+const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
+  select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
+  manual: 'Click or drag to place stones. Hold Space or the middle mouse button to pan.',
+  text: 'Adjust the text settings on the left, then Generate to see your design here.',
+  'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
+  'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',
+  'letter-stencil': 'Spell a word with letter stencils on the left, then Generate to preview it here.',
+  svg: 'Upload artwork on the left, then Generate to fill it with stones.',
+  'template-import': 'Import an existing SVG template to bring its stones in here.',
+  grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
+};
+
+export function getCanvasHint(activeTool: EditorTool): string {
+  return TOOL_CANVAS_HINTS[activeTool] ?? 'Pan, zoom, and fit the current design without leaving the editor.';
+}
