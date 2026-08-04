@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRasterArtworkTemplate } from '../src/lib/rhinestone-engine/index';
 
-function imageFromRows(rows: number[][][]): { widthPx: number; heightPx: number; rgba: Uint8ClampedArray } {
+function imageFromRows(rows: readonly (readonly number[])[][]): { widthPx: number; heightPx: number; rgba: Uint8ClampedArray } {
   const heightPx = rows.length;
   const widthPx = rows[0]!.length;
   const rgba = new Uint8ClampedArray(widthPx * heightPx * 4);

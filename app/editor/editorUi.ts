@@ -1,7 +1,29 @@
+import type { ComponentType } from 'react';
+import { Grid3X3, MousePointer2, MousePointerClick, Type, Upload } from 'lucide-react';
 import type { GeneratorId } from '@/src/lib/rhinestone-engine/index';
 import type { EditorState, EditorTool } from './EditorState';
 
 export type SourcePanelTool = 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'letter-stencil' | 'template-import' | 'manual';
+
+export interface EditorToolConfig {
+  id: EditorTool;
+  label: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+}
+
+/** The single canonical tool list — drives both the properties-panel switcher and any compact toolbar. */
+export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
+  { id: 'select', label: 'Select', description: 'Select, move, and box-select stones', icon: MousePointer2 },
+  { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
+  { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
+  { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
+  { id: 'letter-stencil', label: 'Stencils', description: 'Reusable per-letter stencil cards to spell words', icon: Type },
+  { id: 'svg', label: 'Artwork', description: 'Upload SVG or image artwork', icon: Upload },
+  { id: 'template-import', label: 'Import', description: 'Keep stones from an existing SVG template', icon: Upload },
+  { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Grid3X3 },
+  { id: 'manual', label: 'Pen', description: 'Draw with stones directly', icon: MousePointerClick },
+];
 
 export interface StatusCopy {
   label: 'Generated' | 'Editable';

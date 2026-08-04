@@ -147,19 +147,19 @@ describe('Rhinestone Font Text Processing', () => {
 // ─── Stone Size Scaling ──────────────────────────────────────────────────────
 
 describe('Rhinestone Font Size Scaling', () => {
-  it('generates different sized templates for each TRW stone size', async () => {
+  it('generates differently sized templates for each stone size a font supports', async () => {
+    // TRW Clean Stone is only digitized at SS10 (see rhinestoneFontRegistry.ts);
+    // 'blessed-stone' ships SS6 and SS10 packages, so it exercises real scaling.
     const sizes = [
       { id: 'SS6' as const, mm: 2.54 },
       { id: 'SS10' as const, mm: 3.429 },
-      { id: 'SS16' as const, mm: 4.394 },
-      { id: 'SS20' as const, mm: 5.283 },
     ];
 
     const results = [];
     for (const { id, mm } of sizes) {
       const result = await createRhinestoneFontTemplate({
         text: 'A',
-        rhinestoneFontId: TRW_CLEAN_STONE_FONT_ID,
+        rhinestoneFontId: 'blessed-stone',
         targetStoneSizeId: id,
         targetStoneSizeMm: mm,
         letterSpacingMm: 0,
@@ -177,8 +177,19 @@ describe('Rhinestone Font Size Scaling', () => {
     // Verify stone sizes match (compare stoneSize values, not hole diameters)
     expect(results[0].result.template.stones[0].stoneSize).toBe('SS6');
     expect(results[1].result.template.stones[0].stoneSize).toBe('SS10');
-    expect(results[2].result.template.stones[0].stoneSize).toBe('SS16');
-    expect(results[3].result.template.stones[0].stoneSize).toBe('SS20');
+  });
+
+  it('rejects a stone size a font was never digitized for', async () => {
+    await expect(
+      createRhinestoneFontTemplate({
+        text: 'A',
+        rhinestoneFontId: TRW_CLEAN_STONE_FONT_ID,
+        targetStoneSizeId: 'SS6',
+        targetStoneSizeMm: 2.54,
+        letterSpacingMm: 0,
+        lineSpacingMm: 0,
+      }),
+    ).rejects.toThrow(/supports SS10/);
   });
 
   it('letter spacing affects stone layout', async () => {

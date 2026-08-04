@@ -49,8 +49,8 @@ export default function TemplateStatsCard({
     <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
       {stats.map(({ label, value }) => (
         <div key={label}>
-          <dt className="text-zinc-500">{label}</dt>
-          <dd className="font-semibold text-zinc-900">{value}</dd>
+          <dt className="text-ink-muted">{label}</dt>
+          <dd className="font-semibold text-ink">{value}</dd>
         </div>
       ))}
     </dl>

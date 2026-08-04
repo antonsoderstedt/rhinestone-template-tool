@@ -35,7 +35,6 @@ import type {
   TemplateLibraryRepository,
 } from '@/src/lib/rhinestone-engine/index';
 import EditorTopbar from './EditorTopbar';
-import EditorToolbar from './EditorToolbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
 import EditorStatusBar from './EditorStatusBar';
@@ -113,13 +112,15 @@ export default function EditorShell() {
     templateLibraryRepositoryRef.current = new LocalStorageTemplateLibraryRepository();
     void refreshTemplateLibrary();
     const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
-    if (rawAutosave) {
+    if (!rawAutosave) return;
+    const timeoutId = window.setTimeout(() => {
       try {
         setAutosaveEntry(JSON.parse(rawAutosave) as TemplateLibraryEntry);
       } catch {
         setAutosaveEntry(null);
       }
-    }
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [refreshTemplateLibrary]);
 
   useEffect(() => {
@@ -127,24 +128,27 @@ export default function EditorShell() {
     if (state.projectName !== DEFAULT_EDITOR_STATE.projectName) return;
     if (state.template || state.editableTemplate.isEditable) return;
 
-    setPendingDialog({
-      kind: 'autosave-restore',
-      title: 'Restore autosave?',
-      message: `A recent autosave for "${autosaveEntry.name}" is available in this browser. Restore it now or discard it.`,
-      confirmLabel: 'Restore autosave',
-      icon: 'info',
-      tertiaryAction: {
-        label: 'Discard autosave',
-        tone: 'destructive',
-        onClick: () => {
-          globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
-          setAutosaveEntry(null);
-          setPendingDialog(null);
-          setToast({ message: 'Autosave discarded.', tone: 'info' });
+    const timeoutId = window.setTimeout(() => {
+      setPendingDialog({
+        kind: 'autosave-restore',
+        title: 'Restore autosave?',
+        message: `A recent autosave for "${autosaveEntry.name}" is available in this browser. Restore it now or discard it.`,
+        confirmLabel: 'Restore autosave',
+        icon: 'info',
+        tertiaryAction: {
+          label: 'Discard autosave',
+          tone: 'destructive',
+          onClick: () => {
+            globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
+            setAutosaveEntry(null);
+            setPendingDialog(null);
+            setToast({ message: 'Autosave discarded.', tone: 'info' });
+          },
         },
-      },
-    });
-    setHasPromptedAutosaveRestore(true);
+      });
+      setHasPromptedAutosaveRestore(true);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [autosaveEntry, hasPromptedAutosaveRestore, state.editableTemplate.isEditable, state.projectName, state.template]);
 
   // ─── Template Generation ───────────────────────────────────────────────────
@@ -1056,14 +1060,7 @@ export default function EditorShell() {
       }
     };
     reader.readAsText(file);
-  }, [
-    editorDispatch,
-    applyProjectToEditor,
-    state.svgTool.contourSettings,
-    state.svgTool.radialSettings,
-    state.textTool.contourSettings,
-    state.textTool.radialSettings,
-  ]);
+  }, [applyProjectToEditor]);
 
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
@@ -1121,7 +1118,7 @@ export default function EditorShell() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-900">
+    <div className="h-screen flex flex-col bg-surface">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}
@@ -1193,17 +1190,16 @@ export default function EditorShell() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 bg-zinc-950">
-        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
+      <div className="flex min-h-0 flex-1 bg-surface">
+        <div className="w-[clamp(260px,22vw,320px)] shrink-0 overflow-hidden">
+          <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
+        </div>
 
-        <main className="flex min-w-0 flex-1 flex-col bg-zinc-950">
-          <div className="border-b border-zinc-800 px-4 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-white">Canvas workspace</h2>
-                <p className="text-xs text-zinc-500">Select, add, pan, zoom, and fit the current design without leaving the editor.</p>
-              </div>
-              <EditorToolbar activeTool={state.activeTool} dispatch={editorDispatch} orientation="horizontal" />
+        <main className="flex min-w-0 flex-1 flex-col bg-surface">
+          <div className="border-b border-border px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-ink">Canvas workspace</h2>
+              <p className="text-xs text-ink-muted">Pan, zoom, and fit the current design without leaving the editor.</p>
             </div>
           </div>
 
@@ -1214,7 +1210,9 @@ export default function EditorShell() {
           />
         </main>
 
-        <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
+        <div className="w-[clamp(260px,23vw,336px)] shrink-0 overflow-hidden">
+          <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
+        </div>
       </div>
 
       <EditorStatusBar

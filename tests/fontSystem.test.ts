@@ -264,13 +264,13 @@ describe('font system', () => {
 
   it('exposes curated local rhinestone fonts and their supported sizes', () => {
     const ids = listRhinestoneFonts().map((font) => font.fontId);
-    expect(ids).toContain('blessed-ss10');
-    expect(ids).toContain('old-english-ss10');
-    expect(listRhinestoneFonts().find((font) => font.fontId === 'small-line-ss10')?.style).toBe('Line');
-    expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-numbers-ss10')?.style).toBe('Digits');
-    expect(listRhinestoneFonts().find((font) => font.fontId === 'small-line-ss10')?.suggestedText).toBe('CHEER');
-    expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-numbers-ss10')?.suggestedText).toBe('2026');
-    expect(getSupportedRhinestoneFontStoneSizes('old-english-ss10')).toEqual(['SS10', 'SS6']);
-    expect(getPreferredRhinestoneFontStoneSize('bride-ss10')).toBe('SS10');
+    expect(ids).toContain('blessed-stone');
+    expect(ids).toContain('old-english-stone');
+    expect(listRhinestoneFonts().find((font) => font.fontId === 'small-line-font')?.style).toBe('Line');
+    expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-digits')?.style).toBe('Digits');
+    expect(listRhinestoneFonts().find((font) => font.fontId === 'small-line-font')?.suggestedText).toBe('SMALL');
+    expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-digits')?.suggestedText).toBe('2026');
+    expect(getSupportedRhinestoneFontStoneSizes('old-english-stone')).toEqual(['SS6', 'SS10']);
+    expect(getPreferredRhinestoneFontStoneSize('bride-script')).toBe('SS10');
   });
 });

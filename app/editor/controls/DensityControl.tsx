@@ -29,11 +29,11 @@ export default function DensityControl({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">Density</span>
+        <span className="text-xs font-medium text-ink-secondary">Density</span>
         <select
           value={densityPreset}
           onChange={(e) => onDensityChange(e.target.value as DensityPreset)}
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
         >
           {DENSITY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>

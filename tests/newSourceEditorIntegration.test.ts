@@ -57,7 +57,7 @@ describe('main editor integration — rhinestone font', () => {
       }),
     );
     expect(html).toContain('aria-label="Stone Font"');
-    expect(html).toContain('bg-purple-600');
+    expect(html).toContain('bg-accent-500');
   });
 
   it('renders font, text, current registry fonts, and spacing controls', () => {
@@ -227,7 +227,7 @@ describe('main editor integration — existing template import', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('Import Template');
+    expect(html).toContain('Template Import');
     expect(html).toContain('Import stones to canvas');
     expect(html).toContain('SVG Convert Shape');
   });
@@ -372,8 +372,8 @@ describe('main editor integration — manual drawing canvas', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('Manual placement');
-    expect(html).toContain('Place or erase directly on the canvas');
+    expect(html).toContain('Pen tool');
+    expect(html).toContain('Draw or erase directly on the canvas');
     expect(html).toContain('Tool mode');
     expect(html).toContain('Place');
     expect(html).toContain('Erase');

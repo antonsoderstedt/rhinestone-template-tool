@@ -183,11 +183,21 @@ export function isPointNearStone(
   stoneX: number,
   stoneY: number,
   stoneRadiusMm: number,
-  hitAreaScale: number = 1.5
+  hitAreaScale: number = 2.5
 ): boolean {
   const dx = pointX - stoneX;
   const dy = pointY - stoneY;
   const distanceSquared = dx * dx + dy * dy;
   const hitRadius = stoneRadiusMm * hitAreaScale;
   return distanceSquared <= hitRadius * hitRadius;
+}
+
+/**
+ * Maps a value in a linear span (e.g. a viewBox axis) to a 0-100% CSS position.
+ * Shared by both ruler axes so tick placement can never drift from the value
+ * math used elsewhere for that axis.
+ */
+export function mmToRulerPercent(value: number, start: number, span: number): string {
+  if (span <= 0) return '0%';
+  return `${((value - start) / span) * 100}%`;
 }

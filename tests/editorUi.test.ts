@@ -87,6 +87,7 @@ describe('editor UI rendering', () => {
         onSaveProject: vi.fn(),
         onExport: vi.fn(),
         onOpenSetup: vi.fn(),
+        onOpenLibrary: vi.fn(),
       }),
     );
 
@@ -101,7 +102,7 @@ describe('editor UI rendering', () => {
 
     expect(html).toContain('aria-label="Select"');
     expect(html).toContain('Pan with Space or middle mouse');
-    expect(html).toContain('bg-purple-600');
+    expect(html).toContain('bg-accent-500');
   });
 
   it('renders toast feedback with an accessible live region', () => {

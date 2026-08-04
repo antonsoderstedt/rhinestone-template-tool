@@ -12,19 +12,19 @@ export default function EditorToast({ message, tone, onDismiss }: EditorToastPro
   const toneStyles = {
     success: {
       icon: CheckCircle2,
-      className: 'border-green-500/30 bg-green-500/12 text-green-100',
+      className: 'border-success-500/30 bg-success-500/12 text-success-600',
     },
     warning: {
       icon: AlertTriangle,
-      className: 'border-yellow-500/30 bg-yellow-500/12 text-yellow-100',
+      className: 'border-warning-500/30 bg-warning-500/12 text-warning-600',
     },
     error: {
       icon: XCircle,
-      className: 'border-red-500/30 bg-red-500/12 text-red-100',
+      className: 'border-danger-500/30 bg-danger-500/12 text-danger-600',
     },
     info: {
       icon: Info,
-      className: 'border-zinc-700 bg-zinc-900/95 text-zinc-100',
+      className: 'border-border bg-surface-raised/95 text-ink',
     },
   }[tone];
 

@@ -45,14 +45,14 @@ export default function CalibrationSheetGenerator() {
     <div className="flex flex-col gap-6">
 
       {/* ── Warning banner ───────────────────────────────────────────────── */}
-      <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+      <div className="rounded border border-warning-500/40 bg-warning-50 p-3 text-sm text-warning-600">
         <strong>⚠ Provisional values.</strong> Cut and test this sheet before using
         any stone size for production templates. Hole diameters vary by blade condition,
         mat tackiness, flock batch, and ambient humidity.
       </div>
 
       {/* ── Explanation ──────────────────────────────────────────────────── */}
-      <div className="text-sm text-zinc-600 leading-relaxed space-y-2">
+      <div className="text-sm text-ink-muted leading-relaxed space-y-2">
         <p>
           This sheet contains four hole diameter variants per stone size — at
           <span className="font-mono text-xs mx-1">recommended−0.1&nbsp;mm</span>,

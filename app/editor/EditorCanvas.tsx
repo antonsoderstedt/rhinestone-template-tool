@@ -3,10 +3,20 @@
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
-import { EditorAction, EditorState, EditableStone } from './EditorState';
-import { calculateCanvasWorkspaceBounds, calculateDisplayedCanvasViewBox, screenToMm, snapToGrid, isPointNearStone, interpolateLinePointsAtSpacing, CanvasTransform } from './canvasCoordinates';
+import { EditorAction, EditorState, EditableStone, EditorTool } from './EditorState';
+import {
+  calculateCanvasWorkspaceBounds,
+  calculateDisplayedCanvasViewBox,
+  screenToMm,
+  snapToGrid,
+  isPointNearStone,
+  interpolateLinePointsAtSpacing,
+  mmToRulerPercent,
+  CanvasTransform,
+} from './canvasCoordinates';
 import { findNearestValidStonePosition, wouldCollide } from './collisionDetection';
 import { isIgnoredKeyboardTarget } from './editorDomGuards';
+import { findSnapCandidates, type SnapGuideLine } from './alignmentGuides';
 import {
   applyBoxSelection,
   BOX_SELECTION_DRAG_THRESHOLD_PX,
@@ -14,6 +24,7 @@ import {
   hasExceededBoxSelectionThreshold,
   shouldStartBoxSelection,
 } from './selectionBox';
+import { IconButton } from './ui';
 
 interface EditorCanvasProps {
   state: EditorState;
@@ -21,10 +32,23 @@ interface EditorCanvasProps {
   onNotify?: (message: string, tone: 'success' | 'warning' | 'error' | 'info') => void;
 }
 
-const RULER_BAND_PX = 44;
+const RULER_BAND_PX = 32;
 const RULER_STEP_MM = 10;
 const RULER_LABEL_STEP_MM = 50;
 const SELECTION_MEASURE_OFFSET_MM = 18;
+const FIT_TO_SCREEN_PADDING_MM = 20;
+const FIT_TO_SCREEN_MARGIN = 0.92;
+
+const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
+  select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
+  text: 'Adjust the text settings on the left, then Generate to see your design here.',
+  'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
+  'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',
+  'letter-stencil': 'Spell a word with letter stencils on the left, then Generate to preview it here.',
+  svg: 'Upload artwork on the left, then Generate to fill it with stones.',
+  'template-import': 'Import an existing SVG template to bring its stones in here.',
+  grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
+};
 
 function buildRulerTickValues(start: number, end: number): number[] {
   const first = Math.ceil(start / RULER_STEP_MM) * RULER_STEP_MM;
@@ -35,15 +59,10 @@ function buildRulerTickValues(start: number, end: number): number[] {
   return ticks;
 }
 
-function toPercent(value: number, start: number, span: number): string {
-  if (span <= 0) return '0%';
-  return `${((value - start) / span) * 100}%`;
-}
-
 function getStoneCanvasColor(stone: EditableStone): string {
   if (typeof stone.metadata?.fill === 'string') return stone.metadata.fill;
   if (typeof stone.metadata?.stroke === 'string') return stone.metadata.stroke;
-  return '#7c3aed';
+  return '#7c4dff';
 }
 
 export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvasProps) {
@@ -57,6 +76,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   const [hoverSuggestedFrom, setHoverSuggestedFrom] = useState<{ x: number; y: number } | null>(null);
   const [hoverCollision, setHoverCollision] = useState<boolean>(false);
   const [recentPlacedStoneIds, setRecentPlacedStoneIds] = useState<Set<string>>(new Set());
+  const [hoveredStoneId, setHoveredStoneId] = useState<string | null>(null);
   const [drawState, setDrawState] = useState<{
     pointerId: number;
     lastPlacedX: number;
@@ -101,6 +121,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     shiftKey: boolean;
     hasExceededThreshold: boolean;
   } | null>(null);
+
+  // Alignment guides shown while dragging a single stone
+  const [snapGuides, setSnapGuides] = useState<SnapGuideLine[]>([]);
 
   // Determine which stones to render
   const stones = useMemo(() => {
@@ -233,13 +256,59 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
   };
 
+  // Fits the actual design (not the padded default workspace) snugly into the
+  // real, current pixel size of the canvas — distinct from "reset to 100%".
   const handleFitToScreen = () => {
-    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+    if (stones.length === 0) {
+      dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+      return;
+    }
+
+    const contentBounds = calculateCanvasWorkspaceBounds(stones, {
+      paddingMm: FIT_TO_SCREEN_PADDING_MM,
+      minWidthMm: 0,
+      minHeightMm: 0,
+    });
+
+    let targetWidth = contentBounds.width;
+    let targetHeight = contentBounds.height;
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (rect && rect.width > 0 && rect.height > 0) {
+      const contentAspect = targetWidth / targetHeight;
+      const rectAspect = rect.width / rect.height;
+      if (contentAspect > rectAspect) {
+        targetHeight = targetWidth / rectAspect;
+      } else {
+        targetWidth = targetHeight * rectAspect;
+      }
+    }
+
+    const exactFitZoom = Math.min(workspaceBounds.width / targetWidth, workspaceBounds.height / targetHeight);
+    // Zoom out slightly from the exact fit so the content isn't flush against the edges.
+    const nextZoom = Math.min(Math.max(exactFitZoom * FIT_TO_SCREEN_MARGIN, 0.1), 5);
+
+    dispatch({
+      type: 'UPDATE_CANVAS',
+      updates: {
+        zoom: nextZoom,
+        panX: workspaceBounds.x + workspaceBounds.width / 2 - (contentBounds.x + contentBounds.width / 2),
+        panY: workspaceBounds.y + workspaceBounds.height / 2 - (contentBounds.y + contentBounds.height / 2),
+      },
+    });
   };
 
   const toggleGrid = () => {
     dispatch({ type: 'UPDATE_CANVAS', updates: { showGrid: !state.canvas.showGrid } });
   };
+
+  // Kept fresh after every commit so the wheel handler (bound once per zoom
+  // change) can read current viewBox/workspace bounds without needing to rebind.
+  const viewBoxRef = useRef(viewBox);
+  const workspaceBoundsRef = useRef(workspaceBounds);
+  useEffect(() => {
+    viewBoxRef.current = viewBox;
+    workspaceBoundsRef.current = workspaceBounds;
+  }, [viewBox, workspaceBounds]);
 
   // Get canvas transform for coordinate conversion
   const getCanvasTransform = (): CanvasTransform | null => {
@@ -401,8 +470,29 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       if (!svg || !transform) return;
 
       const currentPos = screenToMm(e.clientX, e.clientY, svg, transform);
-      const dx = currentPos.x - dragState.dragStartX;
-      const dy = currentPos.y - dragState.dragStartY;
+      let dx = currentPos.x - dragState.dragStartX;
+      let dy = currentPos.y - dragState.dragStartY;
+      let guides: SnapGuideLine[] = [];
+
+      // Snap-to-neighbors only makes sense for a single stone, and would
+      // fight with explicit grid snapping, so the two are mutually exclusive.
+      if (state.selectedStoneIds.size === 1 && !state.manualTool.snapToGrid) {
+        const [singleId] = Array.from(state.selectedStoneIds);
+        const original = dragState.originalPositions.get(singleId);
+        if (original) {
+          const otherStones = stones
+            .filter((stone) => stone.id !== singleId)
+            .map((stone) => ({ x: stone.center.x, y: stone.center.y }));
+          const workspaceCenter = {
+            x: workspaceBounds.x + workspaceBounds.width / 2,
+            y: workspaceBounds.y + workspaceBounds.height / 2,
+          };
+          const snapped = findSnapCandidates(original.x + dx, original.y + dy, otherStones, workspaceCenter);
+          dx = snapped.x - original.x;
+          dy = snapped.y - original.y;
+          guides = snapped.guides;
+        }
+      }
 
       // Update drag state with current delta
       setDragState({
@@ -410,6 +500,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         currentDx: dx,
         currentDy: dy,
       });
+      setSnapGuides(guides);
     } else {
       setHoverPosition(null);
       setHoverCollision(false);
@@ -418,6 +509,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
   const handleMouseLeave = () => {
     if (boxSelection || drawState || eraseState) return;
+    setSnapGuides([]);
     setHoverPosition(null);
     setHoverSuggestedFrom(null);
     setHoverCollision(false);
@@ -633,6 +725,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     
     setDragState(null);
     setPanState(null);
+    setSnapGuides([]);
   };
 
   // Handle mouse down on SVG (for pan)
@@ -788,7 +881,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [boxSelection, state.selectedStoneIds, dispatch]);
+  }, [boxSelection, state.selectedStoneIds, state.editableTemplate.isEditable, state.editableTemplate.stones, dispatch]);
 
   // Mouse wheel zoom
   useEffect(() => {
@@ -797,11 +890,39 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      
+
       const delta = e.deltaY > 0 ? 0.9 : 1.1; // zoom in/out
       const newZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.1), 5);
-      
-      dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: newZoom } });
+      if (newZoom === state.canvas.zoom) return;
+
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: newZoom } });
+        return;
+      }
+
+      // Keep the mm point currently under the cursor fixed across the zoom step,
+      // instead of always re-centering on the workspace.
+      const currentViewBox = viewBoxRef.current;
+      const bounds = workspaceBoundsRef.current;
+      const fractionX = (e.clientX - rect.left) / rect.width;
+      const fractionY = (e.clientY - rect.top) / rect.height;
+      const cursorMmX = currentViewBox.x + fractionX * currentViewBox.width;
+      const cursorMmY = currentViewBox.y + fractionY * currentViewBox.height;
+
+      const nextWidth = bounds.width / newZoom;
+      const nextHeight = bounds.height / newZoom;
+      const nextCenterX = cursorMmX - fractionX * nextWidth + nextWidth / 2;
+      const nextCenterY = cursorMmY - fractionY * nextHeight + nextHeight / 2;
+
+      dispatch({
+        type: 'UPDATE_CANVAS',
+        updates: {
+          zoom: newZoom,
+          panX: bounds.x + bounds.width / 2 - nextCenterX,
+          panY: bounds.y + bounds.height / 2 - nextCenterY,
+        },
+      });
     };
 
     svg.addEventListener('wheel', handleWheel, { passive: false });
@@ -836,109 +957,97 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   }, [spacePressed]);
 
   return (
-    <div ref={containerRef} className="flex-1 bg-zinc-800 relative overflow-hidden">
+    <div ref={containerRef} className="relative flex-1 overflow-hidden bg-sand-100">
       {/* Canvas Controls */}
-      <div className="absolute left-4 top-4 z-10 rounded-xl border border-zinc-800 bg-zinc-950/90 px-3 py-2 text-xs text-zinc-300 shadow-lg backdrop-blur-sm">
-        <div className="font-medium text-zinc-100">Canvas guide</div>
-        <div className="mt-1 text-zinc-500">
+      <div className="absolute left-4 top-4 z-10 max-w-xs rounded-2xl border border-border bg-surface-raised/95 px-3.5 py-3 text-xs text-ink-secondary shadow-md backdrop-blur-sm">
+        <div className="text-[13px] font-semibold text-ink">Canvas guide</div>
+        <div className="mt-1 leading-relaxed text-ink-muted">
           {state.activeTool === 'manual'
             ? state.manualTool.interactionMode === 'erase'
               ? 'Click or drag to erase stones directly on the canvas.'
-                : `Click or drag to place stones at ${manualDrawSpacingMm.toFixed(1)} mm spacing. The smart preview shows when a stone will be nudged.`
-            : 'Use the tool controls, then pan and inspect the result here. Cmd/Ctrl+A selects the whole editable design so you can drag it together.'}
+              : `Click or drag to place stones at ${manualDrawSpacingMm.toFixed(1)} mm spacing. The smart preview shows when a stone will be nudged.`
+            : TOOL_CANVAS_HINTS[state.activeTool] ?? 'Use the tool controls, then pan and inspect the result here.'}
         </div>
         {hoverPosition && state.activeTool === 'manual' && (
-          <div className="mt-2 font-mono text-[11px] text-zinc-400">
+          <div className="mt-2 font-mono text-[11px] tabular-nums text-ink-secondary">
             X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
           </div>
         )}
         {hoverSuggestedFrom && state.activeTool === 'manual' && state.manualTool.interactionMode === 'place' && (
-          <div className="mt-1 text-[11px] text-amber-300">
+          <div className="mt-1 text-[11px] text-warning-600">
             Smart assist is nudging this stone to a safer spot.
           </div>
         )}
       </div>
 
-      <div className="absolute right-4 top-4 z-10 flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/90 p-2 shadow-lg backdrop-blur-sm">
-        <button
-          onClick={handleZoomIn}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
+      <div className="absolute right-4 top-4 z-10 flex flex-col gap-1 rounded-2xl border border-border bg-surface-raised/95 p-1.5 shadow-md backdrop-blur-sm">
+        <IconButton onClick={handleZoomIn} title="Zoom in" aria-label="Zoom in">
           <Plus className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-          title="Zoom out"
-          aria-label="Zoom out"
-        >
+        </IconButton>
+        <IconButton onClick={handleZoomOut} title="Zoom out" aria-label="Zoom out">
           <Minus className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleZoomReset}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-          title="Reset zoom to 100%"
-          aria-label="Reset zoom"
-        >
+        </IconButton>
+        <IconButton onClick={handleZoomReset} title="Reset zoom to 100%" aria-label="Reset zoom">
           <Scan className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleFitToScreen}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-          title="Fit the design to the current canvas view"
-          aria-label="Fit to screen"
-        >
+        </IconButton>
+        <IconButton onClick={handleFitToScreen} title="Fit the design to the current canvas view" aria-label="Fit to screen">
           <Expand className="h-4 w-4" />
-        </button>
-        <div className="my-1 h-px bg-zinc-800" />
-        <button
+        </IconButton>
+        <div className="my-1 h-px bg-border" />
+        <IconButton
           onClick={toggleGrid}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-lg transition ${
-            state.canvas.showGrid
-              ? 'bg-purple-600 text-white'
-              : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
-          }`}
+          intent={state.canvas.showGrid ? 'active' : 'default'}
           title={state.canvas.showGrid ? 'Hide grid overlay' : 'Show grid overlay'}
           aria-label="Toggle grid"
         >
           <Grid2X2 className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
 
       {/* SVG Canvas */}
-      <div className="w-full h-full p-8">
-        <div className="relative h-full w-full rounded-xl border border-zinc-700 bg-zinc-900/30 p-3">
+      <div className="h-full w-full p-6">
+        <div
+          className="grid h-full w-full overflow-hidden rounded-2xl border border-border bg-surface-raised shadow-sm"
+          style={{
+            gridTemplateColumns: state.canvas.showRulers ? `${RULER_BAND_PX}px 1fr` : '1fr',
+            gridTemplateRows: state.canvas.showRulers ? `${RULER_BAND_PX}px 1fr` : '1fr',
+          }}
+        >
           {state.canvas.showRulers && (
             <>
-              <div className="absolute left-0 top-0 z-10 h-11 w-11 rounded-tl-xl border-b border-r border-zinc-500 bg-slate-300" />
-              <div className="absolute left-11 right-0 top-0 z-10 h-11 overflow-hidden rounded-tr-xl border-b border-zinc-500 bg-slate-200">
+              <div className="border-b border-r border-border bg-sand-100" style={{ gridColumn: 1, gridRow: 1 }} />
+              <div
+                className="relative overflow-hidden border-b border-border bg-sand-50"
+                style={{ gridColumn: 2, gridRow: 1 }}
+              >
                 {buildRulerTickValues(viewBox.x, viewBox.x + viewBox.width).map((tick) => (
                   <div
                     key={`overlay-top-${tick}`}
                     className="pointer-events-none absolute inset-y-0"
-                    style={{ left: toPercent(tick, viewBox.x, viewBox.width) }}
+                    style={{ left: mmToRulerPercent(tick, viewBox.x, viewBox.width) }}
                   >
-                    <div className={`w-px bg-slate-700 ${tick % RULER_LABEL_STEP_MM === 0 ? 'h-11' : 'h-6'} `} />
+                    <div className={`w-px bg-sand-400 ${tick % RULER_LABEL_STEP_MM === 0 ? 'h-full' : 'h-2.5'} self-end`} />
                     {tick % RULER_LABEL_STEP_MM === 0 && (
-                      <span className="absolute left-1 top-1 text-[11px] font-semibold leading-none text-slate-900">
+                      <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted">
                         {Math.round(tick)}
                       </span>
                     )}
                   </div>
                 ))}
               </div>
-              <div className="absolute bottom-0 left-0 top-11 z-10 w-11 overflow-hidden rounded-bl-xl border-r border-zinc-500 bg-slate-200">
+              <div
+                className="relative overflow-hidden border-r border-border bg-sand-50"
+                style={{ gridColumn: 1, gridRow: 2 }}
+              >
                 {buildRulerTickValues(viewBox.y, viewBox.y + viewBox.height).map((tick) => (
                   <div
                     key={`overlay-left-${tick}`}
                     className="pointer-events-none absolute inset-x-0"
-                    style={{ top: toPercent(tick, viewBox.y, viewBox.height) }}
+                    style={{ top: mmToRulerPercent(tick, viewBox.y, viewBox.height) }}
                   >
-                    <div className={`h-px bg-slate-700 ${tick % RULER_LABEL_STEP_MM === 0 ? 'w-11' : 'w-6'} `} />
+                    <div className={`h-px bg-sand-400 ${tick % RULER_LABEL_STEP_MM === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
                     {tick % RULER_LABEL_STEP_MM === 0 && (
-                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[11px] font-semibold leading-none text-slate-900">
+                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-ink-muted">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -950,30 +1059,27 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
           <div
             className="relative h-full w-full"
-            style={{
-              paddingTop: state.canvas.showRulers ? `${RULER_BAND_PX}px` : 0,
-              paddingLeft: state.canvas.showRulers ? `${RULER_BAND_PX}px` : 0,
-            }}
+            style={{ gridColumn: state.canvas.showRulers ? 2 : 1, gridRow: state.canvas.showRulers ? 2 : 1 }}
           >
-        <svg
-          ref={svgRef}
-          viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-          className="border border-zinc-600 bg-white h-full w-full"
-          style={{
-            width: '100%',
-            height: '100%',
-            cursor: spacePressed || panState ? 'grab' :
-                    state.activeTool === 'manual' ? (hoverCollision ? 'not-allowed' : 'crosshair') :
-                    state.activeTool === 'select' ? 'default' :
-                    'default',
-          }}
-          onClick={handleSvgClick}
-          onPointerDown={handleSvgMouseDown}
-          onPointerMove={handleMouseMove}
-          onPointerLeave={handleMouseLeave}
-          onPointerUp={handleMouseUp}
-          onContextMenu={(e) => e.preventDefault()}
-        >
+            <svg
+              ref={svgRef}
+              viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
+              className="h-full w-full bg-white"
+              style={{
+                width: '100%',
+                height: '100%',
+                cursor: spacePressed || panState ? 'grab' :
+                        state.activeTool === 'manual' ? (hoverCollision ? 'not-allowed' : 'crosshair') :
+                        state.activeTool === 'select' ? 'default' :
+                        'default',
+              }}
+              onClick={handleSvgClick}
+              onPointerDown={handleSvgMouseDown}
+              onPointerMove={handleMouseMove}
+              onPointerLeave={handleMouseLeave}
+              onPointerUp={handleMouseUp}
+              onContextMenu={(e) => e.preventDefault()}
+            >
           {/* Grid */}
           {state.canvas.showGrid && (
             <defs>
@@ -986,7 +1092,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 <path
                   d={`M ${state.canvas.gridSizeMm} 0 L 0 0 0 ${state.canvas.gridSizeMm}`}
                   fill="none"
-                  stroke="#d4d4d8"
+                  stroke="#e8dfd3"
                   strokeWidth="0.45"
                 />
               </pattern>
@@ -999,7 +1105,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 <path
                   d={`M ${state.canvas.gridSizeMm * 5} 0 L 0 0 0 ${state.canvas.gridSizeMm * 5}`}
                   fill="none"
-                  stroke="#94a3b8"
+                  stroke="#d8cbb8"
                   strokeWidth="0.9"
                 />
               </pattern>
@@ -1036,8 +1142,14 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             const r = stone.holeDiameterMm / 2;
             const baseColor = getStoneCanvasColor(stone);
             
+            const isHovered = hoveredStoneId === stone.id;
+
             return (
               <g key={stone.id}>
+                {/* Hover ring (select tool only) */}
+                {isHovered && !isSelected && state.activeTool === 'select' && (
+                  <circle cx={displayX} cy={displayY} r={r + 0.7} fill="none" stroke="#b7a0ff" strokeWidth="0.7" />
+                )}
                 {/* Selection ring */}
                 {isSelected && (
                   <circle
@@ -1045,7 +1157,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                     cy={displayY}
                     r={r + 0.9}
                     fill="none"
-                    stroke="#3b82f6"
+                    stroke="#7c4dff"
                     strokeWidth="0.8"
                     strokeDasharray="1 1"
                   />
@@ -1056,33 +1168,50 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                     cy={displayY}
                     r={r + 1.4}
                     fill="none"
-                    stroke="#f59e0b"
+                    stroke="#e8960b"
                     strokeWidth="0.9"
                     strokeDasharray="1.5 1.5"
                     opacity="0.95"
                   />
                 )}
-                
+
                 {/* Stone hole */}
                 <circle
                   cx={displayX}
                   cy={displayY}
                   r={r}
-                  fill={isPendingErase ? 'rgba(239,68,68,0.18)' : baseColor}
+                  fill={isPendingErase ? 'rgba(228,69,59,0.18)' : baseColor}
                   fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.42 : isRecentlyPlaced ? 0.56 : 0.36}
                   stroke={
                     isPendingErase
-                      ? '#ef4444'
+                      ? '#e4453b'
                       : baseColor
                   }
                   strokeWidth={isPendingErase ? '0.65' : isSelected ? '0.95' : isRecentlyPlaced ? '1' : '0.72'}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
-                  className={state.activeTool === 'select' ? 'cursor-pointer hover:fill-purple-100 transition' : ''}
+                  className={state.activeTool === 'select' ? 'cursor-pointer transition' : ''}
                   onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}
+                  onPointerEnter={() => state.activeTool === 'select' && setHoveredStoneId(stone.id)}
+                  onPointerLeave={() => setHoveredStoneId((current) => (current === stone.id ? null : current))}
                 />
               </g>
             );
           })}
+
+          {snapGuides.map((guide) => (
+            <line
+              key={`snap-${guide.axis}-${guide.value}`}
+              x1={guide.axis === 'x' ? guide.value : viewBox.x}
+              y1={guide.axis === 'x' ? viewBox.y : guide.value}
+              x2={guide.axis === 'x' ? guide.value : viewBox.x + viewBox.width}
+              y2={guide.axis === 'x' ? viewBox.y + viewBox.height : guide.value}
+              stroke="#7c4dff"
+              strokeWidth="0.2"
+              strokeDasharray="1.5 1.5"
+              opacity="0.8"
+              pointerEvents="none"
+            />
+          ))}
 
           {selectionBounds && (
             <g pointerEvents="none">
@@ -1092,7 +1221,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 width={selectionBounds.width}
                 height={selectionBounds.height}
                 fill="none"
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
                 strokeDasharray="2 2"
                 opacity="0.7"
@@ -1103,7 +1232,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.minY - SELECTION_MEASURE_OFFSET_MM}
                 x2={selectionBounds.maxX}
                 y2={selectionBounds.minY - SELECTION_MEASURE_OFFSET_MM}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <line
@@ -1111,7 +1240,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.minY - SELECTION_MEASURE_OFFSET_MM + 3}
                 x2={selectionBounds.minX}
                 y2={selectionBounds.minY}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <line
@@ -1119,7 +1248,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.minY - SELECTION_MEASURE_OFFSET_MM + 3}
                 x2={selectionBounds.maxX}
                 y2={selectionBounds.minY}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <text
@@ -1127,7 +1256,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y={selectionBounds.minY - SELECTION_MEASURE_OFFSET_MM - 2}
                 textAnchor="middle"
                 fontSize="6"
-                fill="#0369a1"
+                fill="#5024be"
               >
                 {selectionBounds.width.toFixed(1)} mm
               </text>
@@ -1137,7 +1266,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.minY}
                 x2={selectionBounds.minX - SELECTION_MEASURE_OFFSET_MM}
                 y2={selectionBounds.maxY}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <line
@@ -1145,7 +1274,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.minY}
                 x2={selectionBounds.minX}
                 y2={selectionBounds.minY}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <line
@@ -1153,7 +1282,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y1={selectionBounds.maxY}
                 x2={selectionBounds.minX}
                 y2={selectionBounds.maxY}
-                stroke="#0ea5e9"
+                stroke="#7c4dff"
                 strokeWidth="0.25"
               />
               <text
@@ -1161,7 +1290,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 y={(selectionBounds.minY + selectionBounds.maxY) / 2}
                 textAnchor="middle"
                 fontSize="6"
-                fill="#0369a1"
+                fill="#5024be"
                 transform={`rotate(-90 ${selectionBounds.minX - SELECTION_MEASURE_OFFSET_MM - 2} ${(selectionBounds.minY + selectionBounds.maxY) / 2})`}
               >
                 {selectionBounds.height.toFixed(1)} mm
@@ -1175,16 +1304,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
               cx={stone.center.x}
               cy={stone.center.y}
               r={stone.holeDiameterMm / 2}
-              fill="#fb923c"
+              fill="#ff9466"
               fillOpacity="0.2"
-              stroke="#f97316"
+              stroke="#e24e22"
               strokeWidth="0.6"
               strokeDasharray="1.2 1.2"
               opacity="0.95"
             />
           ))}
 
-          {boxSelection?.hasExceededThreshold && (
+          {boxSelection && (
             (() => {
               const box = createSelectionBoxMm(
                 { x: boxSelection.startMmX, y: boxSelection.startMmY },
@@ -1196,8 +1325,8 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                   y={box.top}
                   width={box.right - box.left}
                   height={box.bottom - box.top}
-                  fill="#3b82f620"
-                  stroke="#3b82f6"
+                  fill="#7c4dff1a"
+                  stroke="#7c4dff"
                   strokeWidth="0.4"
                   strokeDasharray="2 2"
                   pointerEvents="none"
@@ -1211,28 +1340,28 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             <g pointerEvents="none">
                 {hoverSuggestedFrom && state.manualTool.interactionMode === 'place' && (
                   <>
-                    <line x1={hoverSuggestedFrom.x} y1={hoverSuggestedFrom.y} x2={hoverPosition.x} y2={hoverPosition.y} stroke="#f59e0b" strokeWidth="0.25" strokeDasharray="1.5 1.5" opacity="0.7" />
+                    <line x1={hoverSuggestedFrom.x} y1={hoverSuggestedFrom.y} x2={hoverPosition.x} y2={hoverPosition.y} stroke="#e8960b" strokeWidth="0.25" strokeDasharray="1.5 1.5" opacity="0.7" />
                     <circle
                       cx={hoverSuggestedFrom.x}
                       cy={hoverSuggestedFrom.y}
                       r={getStoneSizeProfile(state.manualTool.addStoneSize).recommendedHoleDiameterMm / 2}
                       fill="none"
-                      stroke="#f87171"
+                      stroke="#e4453b"
                       strokeWidth="0.25"
                       strokeDasharray="1 1"
                       opacity="0.7"
                     />
                   </>
                 )}
-              <line x1={viewBox.x} y1={hoverPosition.y} x2={viewBox.x + viewBox.width} y2={hoverPosition.y} stroke={state.manualTool.interactionMode === 'erase' ? '#f87171' : '#c084fc'} strokeWidth="0.15" strokeDasharray="1.5 1.5" opacity="0.45" />
-              <line x1={hoverPosition.x} y1={viewBox.y} x2={hoverPosition.x} y2={viewBox.y + viewBox.height} stroke={state.manualTool.interactionMode === 'erase' ? '#f87171' : '#c084fc'} strokeWidth="0.15" strokeDasharray="1.5 1.5" opacity="0.45" />
+              <line x1={viewBox.x} y1={hoverPosition.y} x2={viewBox.x + viewBox.width} y2={hoverPosition.y} stroke={state.manualTool.interactionMode === 'erase' ? '#e4453b' : '#9b7cff'} strokeWidth="0.15" strokeDasharray="1.5 1.5" opacity="0.45" />
+              <line x1={hoverPosition.x} y1={viewBox.y} x2={hoverPosition.x} y2={viewBox.y + viewBox.height} stroke={state.manualTool.interactionMode === 'erase' ? '#e4453b' : '#9b7cff'} strokeWidth="0.15" strokeDasharray="1.5 1.5" opacity="0.45" />
               <circle
                 cx={hoverPosition.x}
                 cy={hoverPosition.y}
                   r={state.manualTool.interactionMode === 'erase' ? manualAssistBrushRadiusMm : getStoneSizeProfile(state.manualTool.addStoneSize).recommendedHoleDiameterMm / 2}
-                fill={state.manualTool.interactionMode === 'erase' ? '#ef4444' : '#a855f7'}
+                fill={state.manualTool.interactionMode === 'erase' ? '#e4453b' : '#7c4dff'}
                 fillOpacity={state.manualTool.interactionMode === 'erase' ? 0.08 : 0.12}
-                stroke={state.manualTool.interactionMode === 'erase' ? '#ef4444' : hoverCollision ? '#ef4444' : '#9333ea'}
+                stroke={state.manualTool.interactionMode === 'erase' ? '#e4453b' : hoverCollision ? '#e4453b' : '#6633e6'}
                 strokeWidth="0.45"
                 strokeDasharray="2 2"
                 opacity="0.65"
@@ -1247,19 +1376,19 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 x={viewBox.x + viewBox.width / 2}
                 y={viewBox.y + viewBox.height / 2 - 20}
                 textAnchor="middle"
-                className="fill-zinc-400 text-sm"
-                style={{ fontSize: '14px' }}
+                className="fill-ink-secondary"
+                style={{ fontSize: '14px', fontWeight: 600 }}
               >
-                Choose a tool to start designing
+                Ready when you are
               </text>
               <text
                 x={viewBox.x + viewBox.width / 2}
                 y={viewBox.y + viewBox.height / 2}
                 textAnchor="middle"
-                className="fill-zinc-300 text-xs"
+                className="fill-ink-muted"
                 style={{ fontSize: '11px' }}
               >
-                Select Text, SVG, Grid, or Manual from the toolbar
+                Choose a tool on the left to start designing
               </text>
             </g>
           )}
@@ -1269,25 +1398,25 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       </div>
 
       {/* Zoom Indicator */}
-      <div className="absolute bottom-4 right-4 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300">
+      <div className="absolute bottom-4 right-4 rounded-lg border border-border bg-surface-raised/95 px-2.5 py-1 text-xs font-medium tabular-nums text-ink-secondary shadow-sm backdrop-blur-sm">
         {Math.round(state.canvas.zoom * 100)}%
       </div>
-      
+
       {/* Manual Tool Status */}
       {state.activeTool === 'manual' && (
-        <div className="absolute bottom-4 left-4 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-300">
+        <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-surface-raised/95 px-3 py-2 text-xs text-ink-secondary shadow-sm backdrop-blur-sm">
           <div>Click to place {state.manualTool.addStoneSize} stone</div>
           {state.manualTool.snapToGrid && (
-            <div className="text-zinc-400 mt-1">Snap: {state.manualTool.gridSnapSize}mm grid</div>
+            <div className="mt-1 text-ink-muted">Snap: {state.manualTool.gridSnapSize}mm grid</div>
           )}
         </div>
       )}
-      
+
       {/* Select Tool Status */}
       {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
-        <div className="absolute bottom-4 left-4 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-300">
+        <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-surface-raised/95 px-3 py-2 text-xs text-ink-secondary shadow-sm backdrop-blur-sm">
           {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
-          <div className="text-zinc-400 mt-1">Delete or drag to move</div>
+          <div className="mt-1 text-ink-muted">Delete or drag to move</div>
         </div>
       )}
     </div>

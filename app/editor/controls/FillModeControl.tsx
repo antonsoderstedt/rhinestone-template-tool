@@ -39,11 +39,11 @@ export default function FillModeControl({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">Fill Mode</span>
+        <span className="text-xs font-medium text-ink-secondary">Fill Mode</span>
         <select
           value={fillMode}
           onChange={(e) => onFillModeChange(e.target.value as TemplateFillMode)}
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
         >
           {visibleModes.map((mode) => (
             <option key={mode.value} value={mode.value}>
@@ -55,11 +55,11 @@ export default function FillModeControl({
 
       {showPatternControl && (
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-400">Fill Pattern</span>
+          <span className="text-xs font-medium text-ink-secondary">Fill Pattern</span>
           <select
             value={fillPattern}
             onChange={(e) => onFillPatternChange(e.target.value as FillPattern)}
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+            className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
           >
             {visiblePatterns.map((pattern) => (
               <option key={pattern.value} value={pattern.value}>

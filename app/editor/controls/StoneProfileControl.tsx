@@ -19,11 +19,11 @@ export default function StoneProfileControl({
 }: StoneProfileControlProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-zinc-400">{label}</span>
+      <span className="text-xs font-medium text-ink-secondary">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as StoneSizeId)}
-        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+        className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
       >
         {STONE_SIZES.map((size) => (
           <option key={size} value={size}>

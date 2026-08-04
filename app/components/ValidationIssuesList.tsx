@@ -23,8 +23,8 @@ export default function ValidationIssuesList({ valid, issues }: ValidationIssues
     <div
       className={`rounded border p-3 text-sm ${
         valid
-          ? 'border-green-300 bg-green-50 text-green-800'
-          : 'border-red-300 bg-red-50 text-red-700'
+          ? 'border-success-500/40 bg-success-50 text-success-600'
+          : 'border-danger-500/40 bg-danger-50 text-danger-600'
       }`}
     >
       <strong>{valid ? '✓ Template valid' : '✗ Template invalid'}</strong>

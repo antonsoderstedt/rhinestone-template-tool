@@ -119,7 +119,7 @@ export default function CalibrationWorkflow() {
     <div className="flex flex-col gap-6">
 
       {/* ── Explanation ──────────────────────────────────────────────────── */}
-      <div className="rounded-lg bg-amber-50 border border-amber-200 px-5 py-4 text-sm text-amber-900 leading-relaxed">
+      <div className="rounded-lg bg-warning-50 border border-warning-500/30 px-5 py-4 text-sm text-warning-600 leading-relaxed">
         <p className="font-semibold mb-1">How to calibrate</p>
         <ol className="ml-4 list-decimal space-y-1 text-xs">
           <li>Download and cut the <strong>Calibration Sheet</strong> on a scrap of Magic Flock.</li>
@@ -127,7 +127,7 @@ export default function CalibrationWorkflow() {
           <li>Enter those measured hole diameters below (one per stone size).</li>
           <li>Use the calibrated preview grid to verify before production.</li>
         </ol>
-        <p className="mt-2 text-xs text-amber-700">
+        <p className="mt-2 text-xs text-warning-600">
           ⚠ Calibration values are stored in-memory only. They reset when you reload the page.
           Saved material profiles with persistent calibration will come in a future update.
         </p>
@@ -136,10 +136,10 @@ export default function CalibrationWorkflow() {
       {/* ── Input fields ─────────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-zinc-700">Enter calibrated hole diameters (mm)</h3>
+          <h3 className="text-sm font-semibold text-ink-secondary">Enter calibrated hole diameters (mm)</h3>
           <button
             onClick={handleReset}
-            className="text-xs text-zinc-500 hover:text-zinc-800 underline underline-offset-2"
+            className="text-xs text-ink-muted hover:text-ink underline underline-offset-2"
           >
             Reset to recommended
           </button>
@@ -154,8 +154,8 @@ export default function CalibrationWorkflow() {
             const diff = !invalid ? (num - rec) : null;
             return (
               <div key={size} className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-zinc-600" htmlFor={`hole-${size}`}>
-                  {size} <span className="text-zinc-400">({physicalDiameter(size)} mm stone)</span>
+                <label className="text-xs font-medium text-ink-muted" htmlFor={`hole-${size}`}>
+                  {size} <span className="text-ink-secondary">({physicalDiameter(size)} mm stone)</span>
                 </label>
                 <input
                   id={`hole-${size}`}
@@ -166,17 +166,17 @@ export default function CalibrationWorkflow() {
                   onChange={(e) => handleChange(size, e.target.value)}
                   className={`rounded border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 ${
                     invalid
-                      ? 'border-red-400 bg-red-50 focus:ring-red-300'
-                      : 'border-zinc-300 focus:ring-zinc-400'
+                      ? 'border-danger-500 bg-danger-50 focus:ring-danger-400'
+                      : 'border-border-strong focus:ring-accent-400'
                   }`}
                 />
                 {!invalid && diff !== null && (
-                  <span className={`text-xs ${Math.abs(diff) < 0.001 ? 'text-zinc-400' : diff > 0 ? 'text-amber-600' : 'text-blue-600'}`}>
+                  <span className={`text-xs ${Math.abs(diff) < 0.001 ? 'text-ink-secondary' : diff > 0 ? 'text-warning-600' : 'text-info-600'}`}>
                     {diff > 0 ? '+' : ''}{diff.toFixed(3)} mm vs recommended
                   </span>
                 )}
                 {invalid && (
-                  <span className="text-xs text-red-500">Enter a value &gt; 0</span>
+                  <span className="text-xs text-danger-500">Enter a value &gt; 0</span>
                 )}
               </div>
             );
@@ -188,7 +188,7 @@ export default function CalibrationWorkflow() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-zinc-100 text-zinc-500 uppercase tracking-wide text-[10px]">
+            <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-[10px]">
               <th className="text-left px-3 py-2">Size</th>
               <th className="text-right px-3 py-2">Stone Ø</th>
               <th className="text-right px-3 py-2">Recommended hole</th>
@@ -196,24 +196,24 @@ export default function CalibrationWorkflow() {
               <th className="text-right px-3 py-2">Δ</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100">
+          <tbody className="divide-y divide-border">
             {STONE_SIZES.map((size) => {
               const rec  = recommended(size);
               const num  = parseFloat(holeMap[size]);
               const invalid = isNaN(num) || num <= 0;
               const diff = !invalid ? num - rec : null;
               return (
-                <tr key={size} className="hover:bg-zinc-50">
-                  <td className="px-3 py-2 font-semibold text-zinc-800">{size}</td>
-                  <td className="px-3 py-2 text-right text-zinc-600">{physicalDiameter(size)} mm</td>
-                  <td className="px-3 py-2 text-right text-zinc-600">{rec.toFixed(2)} mm</td>
-                  <td className="px-3 py-2 text-right font-medium text-zinc-900">
-                    {invalid ? <span className="text-red-500">—</span> : `${num.toFixed(2)} mm`}
+                <tr key={size} className="hover:bg-sand-50">
+                  <td className="px-3 py-2 font-semibold text-ink">{size}</td>
+                  <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
+                  <td className="px-3 py-2 text-right text-ink-muted">{rec.toFixed(2)} mm</td>
+                  <td className="px-3 py-2 text-right font-medium text-ink">
+                    {invalid ? <span className="text-danger-500">—</span> : `${num.toFixed(2)} mm`}
                   </td>
                   <td className={`px-3 py-2 text-right font-mono ${
-                    diff === null ? 'text-zinc-400' :
-                    Math.abs(diff) < 0.001 ? 'text-zinc-400' :
-                    diff > 0 ? 'text-amber-600' : 'text-blue-600'
+                    diff === null ? 'text-ink-secondary' :
+                    Math.abs(diff) < 0.001 ? 'text-ink-secondary' :
+                    diff > 0 ? 'text-warning-600' : 'text-info-600'
                   }`}>
                     {diff === null ? '—' : `${diff >= 0 ? '+' : ''}${diff.toFixed(3)}`}
                   </td>
@@ -226,12 +226,12 @@ export default function CalibrationWorkflow() {
 
       {/* ── Calibrated preview ───────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-700 mb-3">
+        <h3 className="text-sm font-semibold text-ink-secondary mb-3">
           Calibrated SS10 Test Grid (5×3)
         </h3>
 
         {!calibResult.ok ? (
-          <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-600">
             {calibResult.error}
           </div>
         ) : (

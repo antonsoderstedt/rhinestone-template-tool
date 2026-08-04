@@ -23,7 +23,7 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
       {/* ── Status bar ────────────────────────────────────────────────── */}
       <div
         className={`flex items-center gap-2 px-4 py-2.5 font-semibold ${
-          result.ready ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+          result.ready ? 'bg-success-500 text-ink-inverse' : 'bg-danger-500 text-ink-inverse'
         }`}
       >
         <span className="text-base">{result.ready ? '✓' : '✗'}</span>
@@ -33,40 +33,40 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
       </div>
 
       {/* ── Summary stats ─────────────────────────────────────────────── */}
-      <div className="bg-zinc-50 border-b border-zinc-200 px-4 py-3">
+      <div className="bg-surface border-b border-border px-4 py-3">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Stones</dt>
-            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.stoneCount}</dd>
+            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Stones</dt>
+            <dd className="font-semibold text-ink text-sm">{result.summary.stoneCount}</dd>
           </div>
           <div>
-            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Width</dt>
-            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.widthMm.toFixed(1)} mm</dd>
+            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Width</dt>
+            <dd className="font-semibold text-ink text-sm">{result.summary.widthMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Height</dt>
-            <dd className="font-semibold text-zinc-900 text-sm">{result.summary.heightMm.toFixed(1)} mm</dd>
+            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Height</dt>
+            <dd className="font-semibold text-ink text-sm">{result.summary.heightMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-zinc-400 uppercase tracking-wide text-[10px]">Cutter</dt>
-            <dd className="font-semibold text-zinc-900 text-sm truncate">{result.summary.cutter}</dd>
+            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Cutter</dt>
+            <dd className="font-semibold text-ink text-sm truncate">{result.summary.cutter}</dd>
           </div>
         </dl>
       </div>
 
       {/* ── Issues ────────────────────────────────────────────────────── */}
       {(errors.length > 0 || warnings.length > 0 || infos.length > 0) && (
-        <div className="divide-y divide-zinc-100">
+        <div className="divide-y divide-border">
 
           {errors.length > 0 && (
-            <div className="bg-red-50 px-4 py-3">
-              <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1.5">
+            <div className="bg-danger-50 px-4 py-3">
+              <p className="text-xs font-semibold text-danger-600 uppercase tracking-wide mb-1.5">
                 Errors — must fix before export
               </p>
               <ul className="space-y-1">
                 {errors.map((issue, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-red-700">
-                    <span className="shrink-0 font-mono text-red-400">[{issue.code}]</span>
+                  <li key={i} className="flex gap-2 text-xs text-danger-600">
+                    <span className="shrink-0 font-mono text-danger-600">[{issue.code}]</span>
                     <span>{issue.message}</span>
                   </li>
                 ))}
@@ -75,14 +75,14 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
           )}
 
           {warnings.length > 0 && (
-            <div className="bg-amber-50 px-4 py-3">
-              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">
+            <div className="bg-warning-50 px-4 py-3">
+              <p className="text-xs font-semibold text-warning-600 uppercase tracking-wide mb-1.5">
                 Warnings — export allowed, review before cutting
               </p>
               <ul className="space-y-1">
                 {warnings.map((issue, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-amber-700">
-                    <span className="shrink-0 font-mono text-amber-500">[{issue.code}]</span>
+                  <li key={i} className="flex gap-2 text-xs text-warning-600">
+                    <span className="shrink-0 font-mono text-warning-500">[{issue.code}]</span>
                     <span>{issue.message}</span>
                   </li>
                 ))}
@@ -94,8 +94,8 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
             <div className="bg-white px-4 py-3">
               <ul className="space-y-1">
                 {infos.map((issue, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-zinc-500">
-                    <span className="shrink-0 font-mono text-zinc-300">[{issue.code}]</span>
+                  <li key={i} className="flex gap-2 text-xs text-ink-muted">
+                    <span className="shrink-0 font-mono text-ink-secondary">[{issue.code}]</span>
                     <span>{issue.message}</span>
                   </li>
                 ))}

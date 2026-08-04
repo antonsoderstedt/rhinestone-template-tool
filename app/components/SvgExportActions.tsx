@@ -58,18 +58,18 @@ export default function SvgExportActions({
       <button
         onClick={handleDownload}
         disabled={isDisabled}
-        className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded bg-surface-raised px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-sand-200 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Download SVG
       </button>
       <button
         onClick={() => void handleCopy()}
         disabled={isDisabled}
-        className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded border border-border-strong px-4 py-2 text-sm font-medium text-ink-secondary transition-colors hover:bg-sand-50 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {copyLabel}
       </button>
-      <span className="text-xs text-zinc-400">{filename}</span>
+      <span className="text-xs text-ink-secondary">{filename}</span>
     </div>
   );
 }

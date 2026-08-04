@@ -36,68 +36,68 @@ export default function EditorStatusBar({
     : '0×0 mm';
 
   return (
-    <footer className="flex items-center justify-between gap-6 border-t border-zinc-800 bg-zinc-950 px-5 py-3 text-xs">
+    <footer className="flex items-center justify-between gap-6 border-t border-border bg-surface-sunken px-5 py-3 text-xs">
       {/* Left: Design stats */}
-      <div className="flex items-center gap-4 text-zinc-400">
+      <div className="flex items-center gap-4 text-ink-secondary">
         <span>
-          <span className="font-medium text-zinc-300">{stoneCount}</span> stone{stoneCount !== 1 && 's'}
+          <span className="font-medium text-ink-secondary">{stoneCount}</span> stone{stoneCount !== 1 && 's'}
         </span>
-        <span className="text-zinc-600">|</span>
+        <span className="text-ink-muted">|</span>
         <span>
-          Size: <span className="font-mono text-zinc-300">{physicalSize}</span>
+          Size: <span className="font-mono text-ink-secondary">{physicalSize}</span>
         </span>
-        <span className="text-zinc-600">|</span>
-        <span className={`flex items-center gap-2 rounded-full border px-3 py-1 ${isEditable ? 'border-blue-500/30 bg-blue-500/15 text-blue-200' : 'border-purple-500/30 bg-purple-500/15 text-purple-200'}`} title={statusCopy.actionHint}>
+        <span className="text-ink-muted">|</span>
+        <span className={`flex items-center gap-2 rounded-full border px-3 py-1 ${isEditable ? 'border-info-500/30 bg-info-500/15 text-info-700' : 'border-accent-300 bg-accent-50 text-accent-700'}`} title={statusCopy.actionHint}>
           {isEditable ? <PenSquare className="h-3.5 w-3.5" /> : <WandSparkles className="h-3.5 w-3.5" />}
           <span className="font-medium">{statusCopy.label}</span>
         </span>
       </div>
 
       {/* Center: Export readiness */}
-      <div className="flex min-w-[280px] items-center justify-center gap-3 text-zinc-300">
+      <div className="flex min-w-[280px] items-center justify-center gap-3 text-ink-secondary">
         <div className="hidden text-center lg:block">
-          <p className="font-medium text-zinc-100">{statusCopy.description}</p>
-          <p className="text-[11px] text-zinc-500">{statusCopy.actionHint}</p>
+          <p className="font-medium text-ink">{statusCopy.description}</p>
+          <p className="text-[11px] text-ink-muted">{statusCopy.actionHint}</p>
         </div>
         {exportReady ? (
-          <div className="flex items-center gap-1.5 text-green-400">
+          <div className="flex items-center gap-1.5 text-success-600">
             <CheckCircle2 className="h-4 w-4" />
             <span>Ready to export</span>
           </div>
         ) : template ? (
-          <div className="flex items-center gap-1.5 text-yellow-400">
-            <div className="w-2 h-2 rounded-full bg-yellow-400" />
+          <div className="flex items-center gap-1.5 text-warning-600">
+            <div className="w-2 h-2 rounded-full bg-warning-500" />
             <span>Has warnings</span>
           </div>
         ) : (
-          <span className="text-zinc-500">No template</span>
+          <span className="text-ink-muted">No template</span>
         )}
       </div>
 
       {/* Right: Canvas info */}
-      <div className="flex items-center gap-4 text-zinc-400">
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${activeLibraryName ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}`}>
+      <div className="flex items-center gap-4 text-ink-secondary">
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-border bg-surface-raised text-ink-secondary'}`}>
           <Clock3 className="h-3.5 w-3.5" />
           <span>{autosaveLabel}</span>
         </span>
-        <span className="text-zinc-600">|</span>
+        <span className="text-ink-muted">|</span>
         <span>
-          Library: <span className="font-medium text-zinc-300">{activeLibraryName ?? 'Local draft'}</span>
+          Library: <span className="font-medium text-ink-secondary">{activeLibraryName ?? 'Local draft'}</span>
         </span>
-        <span className="text-zinc-600">|</span>
+        <span className="text-ink-muted">|</span>
         <span>
-          Zoom: <span className="font-mono text-zinc-300">{Math.round(canvas.zoom * 100)}%</span>
+          Zoom: <span className="font-mono text-ink-secondary">{Math.round(canvas.zoom * 100)}%</span>
         </span>
         {canvas.showGrid && (
           <>
-            <span className="text-zinc-600">|</span>
-            <span className="text-zinc-500">Grid: {canvas.gridSizeMm}mm</span>
+            <span className="text-ink-muted">|</span>
+            <span className="text-ink-muted">Grid: {canvas.gridSizeMm}mm</span>
           </>
         )}
         {canvas.showRulers && (
           <>
-            <span className="text-zinc-600">|</span>
-            <span className="text-zinc-500">Rulers on</span>
+            <span className="text-ink-muted">|</span>
+            <span className="text-ink-muted">Rulers on</span>
           </>
         )}
       </div>

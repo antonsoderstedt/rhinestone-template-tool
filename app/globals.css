@@ -1,26 +1,103 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Rhinestone Template Tool — design tokens.
+ * One warm, light theme. No dark mode — see AGENTS.md / product decision.
+ */
+@theme {
+  /* ─── Neutrals: warm sand scale (not cold zinc/slate) ─────────────────── */
+  --color-sand-50: #faf8f5;
+  --color-sand-100: #f3eee7;
+  --color-sand-200: #e8dfd3;
+  --color-sand-300: #d8cbb8;
+  --color-sand-400: #b8a890;
+  --color-sand-500: #96876f;
+  --color-sand-600: #756757;
+  --color-sand-700: #574c3f;
+  --color-sand-800: #3a3226;
+  --color-sand-900: #241f17;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* ─── Semantic surface / text / border aliases ─────────────────────────── */
+  --color-surface: var(--color-sand-50);
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: var(--color-sand-100);
+  --color-surface-overlay: #ffffff;
+  --color-surface-inverse: var(--color-sand-800);
+
+  --color-ink: var(--color-sand-900);
+  --color-ink-secondary: var(--color-sand-600);
+  --color-ink-muted: var(--color-sand-500);
+  --color-ink-inverse: #ffffff;
+
+  --color-border: var(--color-sand-200);
+  --color-border-strong: var(--color-sand-300);
+
+  /* ─── Brand pair: warm coral primary + violet secondary ────────────────── */
+  --color-brand-50: #fff1ea;
+  --color-brand-100: #ffdfcc;
+  --color-brand-300: #ffb385;
+  --color-brand-400: #ff9466;
+  --color-brand-500: #ff6b3d;
+  --color-brand-600: #e24e22;
+  --color-brand-700: #b93a16;
+
+  --color-accent-50: #f1edff;
+  --color-accent-100: #e1d8ff;
+  --color-accent-300: #b7a0ff;
+  --color-accent-400: #9b7cff;
+  --color-accent-500: #7c4dff;
+  --color-accent-600: #6633e6;
+  --color-accent-700: #5024be;
+
+  /* ─── Semantic states ───────────────────────────────────────────────────── */
+  --color-success-50: #e7f7ee;
+  --color-success-500: #1fa971;
+  --color-success-600: #178556;
+
+  --color-warning-50: #fff6e5;
+  --color-warning-500: #e8960b;
+  --color-warning-600: #bc7908;
+
+  --color-danger-50: #fdeaea;
+  --color-danger-500: #e4453b;
+  --color-danger-600: #c22f26;
+
+  --color-info-50: #e9f3ff;
+  --color-info-500: #2f8cf0;
+  --color-info-600: #1d6fd1;
+
+  /* ─── Shape ─────────────────────────────────────────────────────────────── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+
+  /* ─── Depth: soft, warm-tinted shadows ─────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(58, 42, 20, 0.06);
+  --shadow-sm: 0 2px 8px rgba(58, 42, 20, 0.07);
+  --shadow-md: 0 8px 24px rgba(58, 42, 20, 0.09);
+  --shadow-lg: 0 16px 40px rgba(58, 42, 20, 0.14);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+* {
+  scrollbar-color: var(--color-sand-300) transparent;
+  scrollbar-width: thin;
 }

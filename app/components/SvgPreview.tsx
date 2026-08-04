@@ -20,16 +20,16 @@ interface SvgPreviewProps {
 export default function SvgPreview({ svg, title = 'Preview' }: SvgPreviewProps) {
   if (!svg) {
     return (
-      <div className="flex h-40 items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-sm text-zinc-400">
+      <div className="flex h-40 items-center justify-center rounded border border-border bg-surface text-sm text-ink-secondary">
         No SVG to preview.
       </div>
     );
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-zinc-200 bg-white shadow-inner">
-      <div className="border-b border-zinc-100 px-4 py-2">
-        <p className="text-xs font-medium text-zinc-500">
+    <div className="overflow-auto rounded-lg border border-border bg-white shadow-inner">
+      <div className="border-b border-border px-4 py-2">
+        <p className="text-xs font-medium text-ink-muted">
           {title} — <span className="font-normal">dimensions in mm (preview not to scale)</span>
         </p>
       </div>
