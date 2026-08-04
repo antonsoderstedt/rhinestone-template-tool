@@ -280,6 +280,8 @@ export interface RhinestoneProjectFile {
     snapToGrid: boolean;
     gridSnapSize: number;
     addStoneSize: StoneSizeId;
+    interactionMode?: 'place' | 'erase';
+    assistBrushSizeMm?: number;
   };
 }
 
@@ -780,13 +782,15 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
   }
   
   // Optional manual tool state
-  let manualToolState: { snapToGrid: boolean; gridSnapSize: number; addStoneSize: StoneSizeId } | undefined = undefined;
+  let manualToolState: { snapToGrid: boolean; gridSnapSize: number; addStoneSize: StoneSizeId; interactionMode?: 'place' | 'erase'; assistBrushSizeMm?: number } | undefined = undefined;
   if (obj.manualToolState !== undefined) {
     const mts = asRecord(obj.manualToolState, 'manualToolState');
     manualToolState = {
       snapToGrid: requireBoolean(mts, 'snapToGrid', 'manualToolState'),
       gridSnapSize: requireFiniteNumber(mts, 'gridSnapSize', 'manualToolState'),
       addStoneSize: requireEnum<StoneSizeId>(mts, 'addStoneSize', 'manualToolState', VALID_STONE_SIZES),
+      interactionMode: mts.interactionMode === undefined ? 'place' : requireEnum<'place' | 'erase'>(mts, 'interactionMode', 'manualToolState', new Set(['place', 'erase'])),
+      assistBrushSizeMm: mts.assistBrushSizeMm === undefined ? 12 : requireFiniteNumber(mts, 'assistBrushSizeMm', 'manualToolState'),
     };
   }
 

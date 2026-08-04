@@ -883,6 +883,8 @@ export default function EditorShell() {
           snapToGrid: project.manualToolState.snapToGrid,
           gridSnapSize: project.manualToolState.gridSnapSize,
           addStoneSize: project.manualToolState.addStoneSize,
+          interactionMode: project.manualToolState.interactionMode ?? 'place',
+          assistBrushSizeMm: project.manualToolState.assistBrushSizeMm ?? 12,
         },
       });
     }

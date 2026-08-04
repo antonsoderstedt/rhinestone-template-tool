@@ -17,7 +17,7 @@ const TOOLS: Array<{
   tooltip: string;
 }> = [
   { id: 'select', label: 'Select', icon: MousePointer2, tooltip: 'Select, move, and box-select stones' },
-  { id: 'manual', label: 'Add', icon: MousePointerClick, tooltip: 'Add individual stones to the canvas' },
+  { id: 'manual', label: 'Pen', icon: MousePointerClick, tooltip: 'Draw and erase stones directly on the canvas' },
   { id: 'text', label: 'Text', icon: Type, tooltip: 'Generate stones from outline or dot-matrix text' },
   { id: 'rhinestone-font', label: 'Stone Font', icon: Type, tooltip: 'Use a font that contains pre-placed rhinestones' },
   { id: 'svg-alphabet', label: 'Alphabet', icon: Type, tooltip: 'Compose text from a per-letter SVG alphabet library' },

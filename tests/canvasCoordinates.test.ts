@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { snapToGrid, isPointNearStone } from '../app/editor/canvasCoordinates';
+import { snapToGrid, isPointNearStone, interpolateLinePointsAtSpacing, calculateCanvasWorkspaceBounds, calculateDisplayedCanvasViewBox } from '../app/editor/canvasCoordinates';
 
 describe('snapToGrid', () => {
   it('should snap to nearest grid point', () => {
@@ -80,5 +80,84 @@ describe('isPointNearStone', () => {
   it('should handle negative coordinates', () => {
     const result = isPointNearStone(-10, -10, -10, -10, 2);
     expect(result).toBe(true);
+  });
+});
+
+describe('interpolateLinePointsAtSpacing', () => {
+  it('returns evenly spaced horizontal points', () => {
+    expect(interpolateLinePointsAtSpacing(0, 0, 10, 0, 3)).toEqual([
+      { x: 3, y: 0 },
+      { x: 6, y: 0 },
+      { x: 9, y: 0 },
+    ]);
+  });
+
+  it('returns diagonal points at the requested spacing', () => {
+    const points = interpolateLinePointsAtSpacing(0, 0, 6, 8, 5);
+    expect(points).toHaveLength(2);
+    expect(points[0]?.x).toBeCloseTo(3, 5);
+    expect(points[0]?.y).toBeCloseTo(4, 5);
+    expect(points[1]?.x).toBeCloseTo(6, 5);
+    expect(points[1]?.y).toBeCloseTo(8, 5);
+  });
+
+  it('returns no points when the segment is shorter than the spacing', () => {
+    expect(interpolateLinePointsAtSpacing(0, 0, 2, 0, 3)).toEqual([]);
+  });
+});
+
+describe('calculateCanvasWorkspaceBounds', () => {
+  it('uses a large default workspace when there are no stones', () => {
+    expect(calculateCanvasWorkspaceBounds([])).toEqual({ x: 0, y: 0, width: 900, height: 700 });
+  });
+
+  it('keeps small designs centered inside a larger workspace', () => {
+    const bounds = calculateCanvasWorkspaceBounds([
+      { center: { x: 100, y: 100 }, holeDiameterMm: 4 },
+      { center: { x: 120, y: 100 }, holeDiameterMm: 4 },
+    ]);
+    expect(bounds.width).toBe(900);
+    expect(bounds.height).toBe(700);
+    expect(bounds.x).toBe(0);
+    expect(bounds.y).toBe(0);
+  });
+
+  it('expands when the design exceeds the minimum workspace', () => {
+    const bounds = calculateCanvasWorkspaceBounds([
+      { center: { x: 0, y: 0 }, holeDiameterMm: 4 },
+      { center: { x: 1200, y: 0 }, holeDiameterMm: 4 },
+    ]);
+    expect(bounds.width).toBeGreaterThan(900);
+  });
+
+  it('expands left/up only when stones actually move beyond the origin', () => {
+    const bounds = calculateCanvasWorkspaceBounds([
+      { center: { x: -80, y: -40 }, holeDiameterMm: 4 },
+      { center: { x: 100, y: 120 }, holeDiameterMm: 4 },
+    ]);
+    expect(bounds.x).toBeLessThan(0);
+    expect(bounds.y).toBeLessThan(0);
+    expect(bounds.width).toBeGreaterThanOrEqual(900);
+    expect(bounds.height).toBeGreaterThanOrEqual(700);
+  });
+});
+
+describe('calculateDisplayedCanvasViewBox', () => {
+  it('zooms in by shrinking the visible viewBox', () => {
+    expect(calculateDisplayedCanvasViewBox({ x: 0, y: 0, width: 900, height: 700 }, 2, 0, 0)).toEqual({
+      x: 225,
+      y: 175,
+      width: 450,
+      height: 350,
+    });
+  });
+
+  it('applies pan in canvas mm space', () => {
+    expect(calculateDisplayedCanvasViewBox({ x: 0, y: 0, width: 900, height: 700 }, 1, 50, -25)).toEqual({
+      x: -50,
+      y: 25,
+      width: 900,
+      height: 700,
+    });
   });
 });

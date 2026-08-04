@@ -238,6 +238,7 @@ function restoreStateFromProject(projectJson: string): EditorState {
     restored.manualTool = {
       ...restored.manualTool,
       ...project.manualToolState,
+      assistBrushSizeMm: project.manualToolState.assistBrushSizeMm ?? restored.manualTool.assistBrushSizeMm,
     };
   }
 

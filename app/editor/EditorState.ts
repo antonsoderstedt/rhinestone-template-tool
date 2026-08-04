@@ -133,6 +133,8 @@ export interface GridToolState {
 
 export interface ManualToolState {
   addStoneSize: StoneSizeId;
+  interactionMode: 'place' | 'erase';
+  assistBrushSizeMm: number;
   snapToGrid: boolean;
   gridSnapSize: number; // mm
 }
@@ -543,8 +545,10 @@ export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
 
 export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
   addStoneSize: 'SS10',
-  snapToGrid: true,
-  gridSnapSize: 5, // 5mm grid
+  interactionMode: 'place',
+  assistBrushSizeMm: 12,
+  snapToGrid: false,
+  gridSnapSize: 2,
 };
 
 export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
@@ -619,7 +623,7 @@ export const DEFAULT_CANVAS_STATE: CanvasState = {
   panY: 0,
   showGrid: true,
   gridSizeMm: 10,
-  showRulers: false,
+  showRulers: true,
 };
 
 export const DEFAULT_EDITOR_STATE: EditorState = {
@@ -710,6 +714,16 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
+      if (action.tool === 'manual' && state.activeTool !== 'manual') {
+        const looksLikeOldCoarseSnapDefault = state.manualTool.snapToGrid && state.manualTool.gridSnapSize === 5;
+        return {
+          ...state,
+          activeTool: action.tool,
+          manualTool: looksLikeOldCoarseSnapDefault
+            ? { ...state.manualTool, snapToGrid: false, gridSnapSize: 2 }
+            : state.manualTool,
+        };
+      }
       return { ...state, activeTool: action.tool };
     
     case 'SET_PROJECT_NAME':

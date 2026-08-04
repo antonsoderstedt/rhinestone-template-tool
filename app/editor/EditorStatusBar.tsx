@@ -94,6 +94,12 @@ export default function EditorStatusBar({
             <span className="text-zinc-500">Grid: {canvas.gridSizeMm}mm</span>
           </>
         )}
+        {canvas.showRulers && (
+          <>
+            <span className="text-zinc-600">|</span>
+            <span className="text-zinc-500">Rulers on</span>
+          </>
+        )}
       </div>
     </footer>
   );

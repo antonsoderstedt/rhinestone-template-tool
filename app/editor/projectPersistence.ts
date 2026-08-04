@@ -302,6 +302,8 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
       snapToGrid: state.manualTool.snapToGrid,
       gridSnapSize: state.manualTool.gridSnapSize,
       addStoneSize: state.manualTool.addStoneSize,
+      interactionMode: state.manualTool.interactionMode,
+      assistBrushSizeMm: state.manualTool.assistBrushSizeMm,
     },
   };
 }

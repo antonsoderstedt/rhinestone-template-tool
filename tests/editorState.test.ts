@@ -5,6 +5,7 @@ import {
   type EditableStone,
   type EditorState,
 } from '../app/editor/EditorState';
+import { findNearestValidStonePosition } from '../app/editor/collisionDetection';
 
 function stone(id: string, x: number, y: number, holeDiameterMm = 3): EditableStone {
   return {
@@ -154,14 +155,14 @@ describe('editorReducer', () => {
   it('derives rhinestone font presentation mode from font style', () => {
     const line = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'small-line-ss10' },
+      updates: { rhinestoneFontId: 'small-line-font' },
     });
     expect(line.rhinestoneFontTool.presentationMode).toBe('line');
     expect(line.rhinestoneFontTool.letterSpacingMm).toBe(0);
 
     const digits = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'huge-numbers-ss10' },
+      updates: { rhinestoneFontId: 'huge-digits' },
     });
     expect(digits.rhinestoneFontTool.presentationMode).toBe('digits');
     expect(digits.rhinestoneFontTool.letterSpacingMm).toBe(0);
@@ -170,9 +171,9 @@ describe('editorReducer', () => {
   it('updates rhinestone font sample text when switching fonts from an untouched sample', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'small-line-ss10' },
+      updates: { rhinestoneFontId: 'small-line-font' },
     });
-    expect(state.rhinestoneFontTool.text).toBe('CHEER');
+    expect(state.rhinestoneFontTool.text).toBe('Sulay');
   });
 
   it('preserves custom rhinestone font text when switching fonts', () => {
@@ -182,7 +183,7 @@ describe('editorReducer', () => {
     });
     const switched = editorReducer(custom, {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'huge-numbers-ss10' },
+      updates: { rhinestoneFontId: 'huge-digits' },
     });
     expect(switched.rhinestoneFontTool.text).toBe('Custom Name');
   });
@@ -194,7 +195,7 @@ describe('editorReducer', () => {
     });
     const switched = editorReducer(custom, {
       type: 'UPDATE_RHINESTONE_FONT_TOOL',
-      updates: { rhinestoneFontId: 'small-line-ss10' },
+      updates: { rhinestoneFontId: 'small-line-font' },
     });
     expect(switched.rhinestoneFontTool.presentationMode).toBe('line');
     expect(switched.rhinestoneFontTool.letterSpacingMm).toBe(2.5);
@@ -318,5 +319,17 @@ describe('editorReducer', () => {
 
     state = editorReducer(state, { type: 'ADD_STONES', stones: [stone('new', 50, 50)] });
     expect(state.editableTemplate.stones).toHaveLength(2);
+  });
+
+  it('finds a nearby valid position when the desired spot is blocked', () => {
+    const stones = [stone('a', 10, 10), stone('b', 20, 10)];
+    const result = findNearestValidStonePosition(10, 10, 1.5, stones, { searchStepMm: 2, maxRadiusMm: 12 });
+    expect(result).not.toBeNull();
+    expect(result).not.toEqual({ x: 10, y: 10 });
+  });
+
+  it('returns the desired point when it is already valid', () => {
+    const stones = [stone('a', 10, 10)];
+    expect(findNearestValidStonePosition(30, 30, 1.5, stones)).toEqual({ x: 30, y: 30 });
   });
 });

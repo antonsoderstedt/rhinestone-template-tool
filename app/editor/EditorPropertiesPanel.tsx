@@ -3,7 +3,9 @@
 import { CopyPlus, DiamondMinus, Hand, Layers3, MoveHorizontal, MoveVertical, PenLine, Plus, ScanSearch, Sparkles, Type, Upload } from 'lucide-react';
 import {
   createImportedTemplate,
+  getRecommendedCenterDistance,
   getOutlineFontDefinition,
+  getRecommendedHoleDiameter,
   getPreferredRhinestoneFontStoneSize,
   getSupportedTextCoverageModes,
   getStoneSizeProfile,
@@ -25,6 +27,7 @@ import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import PlacementModeControl from './controls/PlacementModeControl';
 import { getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool, type SourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
+import { findNearestValidStonePosition } from './collisionDetection';
 
 interface EditorPropertiesPanelProps {
   state: EditorState;
@@ -41,7 +44,7 @@ const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; descriptio
   { id: 'svg', label: 'Artwork', description: 'Upload SVG or image artwork', icon: Upload },
   { id: 'template-import', label: 'Import Template', description: 'Keep stones from an existing SVG template', icon: Upload },
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Layers3 },
-  { id: 'manual', label: 'Manual', description: 'Place stones directly', icon: Plus },
+  { id: 'manual', label: 'Pen', description: 'Draw with stones directly', icon: Plus },
 ];
 
 function PanelSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
@@ -1603,18 +1606,83 @@ function GridToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
 
 function ManualToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const { manualTool } = state;
+  const recommendedDrawSpacingMm = getRecommendedCenterDistance(manualTool.addStoneSize);
+  const selectAllStoneIds = state.editableTemplate.isEditable
+    ? state.editableTemplate.stones.map((stone) => stone.id)
+    : state.template?.stones.map((stone) => stone.id) ?? [];
+
+  const handleMoveWholeDesign = () => {
+    if (!state.editableTemplate.isEditable && state.template) {
+      dispatch({ type: 'CONVERT_TO_EDITABLE' });
+    }
+    if (selectAllStoneIds.length > 0) {
+      dispatch({ type: 'SET_SELECTED_STONES', ids: new Set(selectAllStoneIds) });
+    }
+    dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'select' });
+  };
   
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm text-zinc-300">
-        <p className="font-medium text-white">Manual placement</p>
-        <p className="mt-1 text-xs text-zinc-500">Place stones directly on the canvas. Snap controls affect placement only and never export.</p>
+        <p className="font-medium text-white">Pen tool</p>
+        <p className="mt-1 text-xs text-zinc-500">Draw or erase directly on the canvas. Pen mode is now freehand by default, while the grid stays visible as a guide in the background.</p>
+      </div>
+
+      <div className="space-y-2">
+        <span className="text-xs font-medium text-zinc-400">Tool mode</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { interactionMode: 'place' } })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${manualTool.interactionMode === 'place' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">Place</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Click or drag to add stones</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { interactionMode: 'erase' } })}
+            className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${manualTool.interactionMode === 'erase' ? 'border-red-500/50 bg-red-500/10 text-red-100' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+          >
+            <div className="font-medium">Erase</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Click or drag to remove stones</div>
+          </button>
+        </div>
       </div>
       
       {/* Stone Size */}
       <StoneProfileControl
         value={manualTool.addStoneSize}
         onChange={(size) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { addStoneSize: size } })}
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'SET_SELECTED_STONES', ids: new Set(selectAllStoneIds) })}
+          disabled={selectAllStoneIds.length === 0}
+          className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-medium text-zinc-100 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Select all
+        </button>
+        <button
+          type="button"
+          onClick={handleMoveWholeDesign}
+          disabled={selectAllStoneIds.length === 0}
+          className="rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Move whole design
+        </button>
+      </div>
+
+      <NumericInput
+        label={manualTool.interactionMode === 'erase' ? 'Erase brush size' : 'Smart assist reach'}
+        value={manualTool.assistBrushSizeMm}
+        onChange={(val) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { assistBrushSizeMm: typeof val === 'number' ? val : manualTool.assistBrushSizeMm } })}
+        unit="mm"
+        min={2}
+        max={60}
+        step={0.5}
       />
       
       {/* Snap to Grid */}
@@ -1643,12 +1711,35 @@ function ManualToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
           {!manualTool.snapToGrid && <p className="mt-2 text-[11px] text-zinc-500">Enable Snap to Grid to adjust the placement step size.</p>}
         </div>
       </div>
+
+      {!manualTool.snapToGrid && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-[11px] text-emerald-100">
+          Free draw is active. The grid is visual only until you enable snapping.
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 text-xs font-medium text-zinc-300 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={state.canvas.showRulers}
+          onChange={(e) => dispatch({ type: 'UPDATE_CANVAS', updates: { showRulers: e.target.checked } })}
+          className="rounded border-zinc-700 bg-zinc-800 text-purple-600 focus:ring-purple-600 focus:ring-offset-0"
+        />
+        Show rulers in preview
+      </label>
+
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-[11px] text-zinc-500">
+        {manualTool.interactionMode === 'erase'
+          ? 'Erase mode removes stones directly under the cursor path without switching to Select.'
+          : `Draw mode uses about ${recommendedDrawSpacingMm.toFixed(1)} mm center-to-center spacing for ${manualTool.addStoneSize}. Smart assist can search about ${manualTool.assistBrushSizeMm.toFixed(1)} mm for a better spot.`}
+      </div>
       
       <div className="pt-4 border-t border-zinc-700 space-y-2">
         <p className="text-xs text-zinc-400">Keyboard shortcuts:</p>
         <ul className="text-xs text-zinc-500 space-y-1">
-          <li>• Click to place stone</li>
-          <li>• Switch to Select to edit</li>
+          <li>• Place mode: click one stone or drag a line</li>
+          <li>• Erase mode: click or drag to remove stones</li>
+          <li>• Move whole design selects everything and switches to Select</li>
         </ul>
       </div>
     </div>
@@ -1665,6 +1756,92 @@ function SelectToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const selectedStone = selectedCount === 1 
     ? editableTemplate.stones.find(s => state.selectedStoneIds.has(s.id))
     : null;
+  const allEditableStoneIds = editableTemplate.stones.map((stone) => stone.id);
+
+  const handleSmartFixSelection = () => {
+    if (!editableTemplate.isEditable || selectedCount === 0) return;
+    const selectedIds = [...state.selectedStoneIds];
+    const moveAccumulator: Array<{ id: string; toX: number; toY: number }> = [];
+    let workingStones = editableTemplate.stones.map((stone) => ({ ...stone, center: { ...stone.center } }));
+
+    for (const stoneId of selectedIds) {
+      const current = workingStones.find((stone) => stone.id === stoneId);
+      if (!current) continue;
+      const corrected = findNearestValidStonePosition(
+        current.center.x,
+        current.center.y,
+        current.holeDiameterMm / 2,
+        workingStones,
+        {
+          excludeIds: [stoneId],
+          snapToGrid: state.manualTool.snapToGrid,
+          gridSizeMm: state.manualTool.gridSnapSize,
+          searchStepMm: Math.max(getRecommendedCenterDistance(current.stoneSize) / 2, 1),
+          maxRadiusMm: Math.max(state.manualTool.assistBrushSizeMm, getRecommendedCenterDistance(current.stoneSize)),
+        },
+      );
+      if (!corrected) continue;
+      if (corrected.x === current.center.x && corrected.y === current.center.y) continue;
+
+      moveAccumulator.push({ id: stoneId, toX: corrected.x, toY: corrected.y });
+      workingStones = workingStones.map((stone) =>
+        stone.id === stoneId ? { ...stone, center: { x: corrected.x, y: corrected.y } } : stone,
+      );
+    }
+
+    if (moveAccumulator.length > 0) {
+      dispatch({ type: 'MOVE_STONES', moves: moveAccumulator });
+    }
+  };
+
+  const handleCleanUpSelection = () => {
+    if (!editableTemplate.isEditable || selectedCount < 3) return;
+    const selectedStones = editableTemplate.stones.filter((stone) => state.selectedStoneIds.has(stone.id));
+    if (selectedStones.length < 3) return;
+
+    let workingStones = editableTemplate.stones.map((stone) => ({ ...stone, center: { ...stone.center } }));
+    const spanX = Math.max(...selectedStones.map((stone) => stone.center.x)) - Math.min(...selectedStones.map((stone) => stone.center.x));
+    const spanY = Math.max(...selectedStones.map((stone) => stone.center.y)) - Math.min(...selectedStones.map((stone) => stone.center.y));
+    const primaryAxis: 'x' | 'y' = spanX >= spanY ? 'x' : 'y';
+    const secondaryAxis: 'x' | 'y' = primaryAxis === 'x' ? 'y' : 'x';
+    const ordered = [...selectedStones].sort((left, right) => left.center[primaryAxis] - right.center[primaryAxis]);
+    const first = ordered[0]!;
+    const last = ordered[ordered.length - 1]!;
+    const targetSecondary = ordered.reduce((sum, stone) => sum + stone.center[secondaryAxis], 0) / ordered.length;
+    const primarySpacing = ordered.length > 1
+      ? (last.center[primaryAxis] - first.center[primaryAxis]) / (ordered.length - 1)
+      : 0;
+    const moves: Array<{ id: string; toX: number; toY: number }> = [];
+
+    ordered.forEach((stone, index) => {
+      const targetPrimary = first.center[primaryAxis] + primarySpacing * index;
+      const desiredX = primaryAxis === 'x' ? targetPrimary : targetSecondary;
+      const desiredY = primaryAxis === 'x' ? targetSecondary : targetPrimary;
+      const corrected = findNearestValidStonePosition(
+        desiredX,
+        desiredY,
+        stone.holeDiameterMm / 2,
+        workingStones,
+        {
+          excludeIds: [stone.id],
+          snapToGrid: state.manualTool.snapToGrid,
+          gridSizeMm: state.manualTool.gridSnapSize,
+          searchStepMm: Math.max(getRecommendedCenterDistance(stone.stoneSize) / 2, 1),
+          maxRadiusMm: Math.max(state.manualTool.assistBrushSizeMm, getRecommendedCenterDistance(stone.stoneSize)),
+        },
+      );
+      if (!corrected) return;
+      if (corrected.x === stone.center.x && corrected.y === stone.center.y) return;
+      moves.push({ id: stone.id, toX: corrected.x, toY: corrected.y });
+      workingStones = workingStones.map((candidate) =>
+        candidate.id === stone.id ? { ...candidate, center: { x: corrected.x, y: corrected.y } } : candidate,
+      );
+    });
+
+    if (moves.length > 0) {
+      dispatch({ type: 'MOVE_STONES', moves });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -1763,7 +1940,25 @@ function SelectToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
       )}
       
       <div className="space-y-3">
+        <NumericInput
+          label="Smart fix brush size"
+          value={state.manualTool.assistBrushSizeMm}
+          onChange={(val) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { assistBrushSizeMm: typeof val === 'number' ? val : state.manualTool.assistBrushSizeMm } })}
+          unit="mm"
+          min={2}
+          max={60}
+          step={0.5}
+        />
+
         <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => dispatch({ type: 'SET_SELECTED_STONES', ids: new Set(allEditableStoneIds) })}
+            disabled={!editableTemplate.isEditable || allEditableStoneIds.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-medium text-zinc-100 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+            title={editableTemplate.isEditable ? 'Select all stones in the editable design.' : 'Make the design editable before selecting all stones.'}
+          >
+            Select all
+          </button>
           <button
             onClick={() => dispatch({ type: 'DUPLICATE_STONES', stoneIds: Array.from(state.selectedStoneIds) })}
             disabled={!actionState.canDuplicate}
@@ -1783,6 +1978,24 @@ function SelectToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
             Delete
           </button>
         </div>
+
+        <button
+          onClick={handleSmartFixSelection}
+          disabled={selectedCount === 0}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+          title={selectedCount > 0 ? 'Try to nudge the selected stones to the nearest safe positions.' : 'Select at least one stone to auto-correct it.'}
+        >
+          Smart fix selection
+        </button>
+
+        <button
+          onClick={handleCleanUpSelection}
+          disabled={selectedCount < 3}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+          title={selectedCount >= 3 ? 'Straighten the selection and even out spacing.' : 'Select at least three stones to clean up spacing.'}
+        >
+          Clean up selection
+        </button>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -1817,6 +2030,7 @@ function SelectToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
             <p className="font-medium">Selection Controls:</p>
             <ul className="text-zinc-500 space-y-1">
               <li>• Drag to move</li>
+              <li>• Cmd/Ctrl+A selects all stones</li>
               <li>• Shift+Click for multi-select</li>
               <li>• Ctrl/Cmd+D to duplicate</li>
               <li>• Ctrl/Cmd+C to copy</li>

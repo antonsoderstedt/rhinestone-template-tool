@@ -89,3 +89,49 @@ export function wouldMoveCauseCollision(
     collidingPairs,
   };
 }
+
+export function findNearestValidStonePosition(
+  desiredX: number,
+  desiredY: number,
+  radiusMm: number,
+  existingStones: EditableStone[] | readonly EditableStone[],
+  options?: {
+    excludeIds?: string[];
+    snapToGrid?: boolean;
+    gridSizeMm?: number;
+    searchStepMm?: number;
+    maxRadiusMm?: number;
+  },
+): { x: number; y: number } | null {
+  const excludeIds = options?.excludeIds ?? [];
+  const snapToGrid = options?.snapToGrid ?? false;
+  const gridSizeMm = options?.gridSizeMm ?? 1;
+  const searchStepMm = options?.searchStepMm ?? Math.max(radiusMm, 1);
+  const maxRadiusMm = options?.maxRadiusMm ?? Math.max(searchStepMm * 8, radiusMm * 6);
+
+  const normalizePoint = (x: number, y: number) => ({
+    x: snapToGrid ? Math.round(x / gridSizeMm) * gridSizeMm : x,
+    y: snapToGrid ? Math.round(y / gridSizeMm) * gridSizeMm : y,
+  });
+
+  const desired = normalizePoint(desiredX, desiredY);
+  if (!wouldCollide(desired.x, desired.y, radiusMm, existingStones, excludeIds).collides) {
+    return desired;
+  }
+
+  for (let ringRadius = searchStepMm; ringRadius <= maxRadiusMm; ringRadius += searchStepMm) {
+    const steps = Math.max(8, Math.ceil((Math.PI * 2 * ringRadius) / searchStepMm));
+    for (let step = 0; step < steps; step += 1) {
+      const angle = (step / steps) * Math.PI * 2;
+      const candidate = normalizePoint(
+        desiredX + Math.cos(angle) * ringRadius,
+        desiredY + Math.sin(angle) * ringRadius,
+      );
+      if (!wouldCollide(candidate.x, candidate.y, radiusMm, existingStones, excludeIds).collides) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
+}

@@ -355,3 +355,54 @@ describe('main editor integration — raster artwork', () => {
     });
   });
 });
+
+describe('main editor integration — manual drawing canvas', () => {
+  it('renders draw-oriented manual controls with a ruler toggle', () => {
+    const state = stateWith({
+      activeTool: 'manual',
+      editableTemplate: {
+        isEditable: true,
+        stones: [
+          { id: 'a', center: { x: 10, y: 10 }, holeDiameterMm: 3, stoneSize: 'SS10' },
+        ],
+        originalTemplate: null,
+        sourceGenerator: 'manual-editor',
+      },
+    });
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
+    );
+    expect(html).toContain('Manual placement');
+    expect(html).toContain('Place or erase directly on the canvas');
+    expect(html).toContain('Tool mode');
+    expect(html).toContain('Place');
+    expect(html).toContain('Erase');
+    expect(html).toContain('Smart assist reach');
+    expect(html).toContain('Select all');
+    expect(html).toContain('Move whole design');
+    expect(html).toContain('Show rulers in preview');
+    expect(html).toContain('Place mode: click one stone or drag a line');
+  });
+
+  it('renders a smart-fix action in selection mode', () => {
+    const state = stateWith({
+      activeTool: 'select',
+      editableTemplate: {
+        isEditable: true,
+        stones: [
+          { id: 'a', center: { x: 10, y: 10 }, holeDiameterMm: 3, stoneSize: 'SS10' },
+        ],
+        originalTemplate: null,
+        sourceGenerator: 'manual-editor',
+      },
+      selectedStoneIds: new Set(['a']),
+    });
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'inspector' }),
+    );
+    expect(html).toContain('Select all');
+    expect(html).toContain('Smart fix selection');
+    expect(html).toContain('Clean up selection');
+    expect(html).toContain('Smart fix brush size');
+  });
+});
