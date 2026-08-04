@@ -8,6 +8,7 @@
 import {
   RhinestoneTemplate,
   StoneSizeId,
+  Unit,
   DensityPreset,
   TemplateFillMode,
   TemplateCoverageMode,
@@ -83,15 +84,23 @@ export interface TextToolState {
 export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
 
 export interface SvgToolState {
+  assetKind: 'svg' | 'image';
   uploadedSvgText: string | null;
   svgFileName: string | null;
+  uploadedImageDataUrl: string | null;
+  imageFileName: string | null;
   renderMode: SvgRenderMode;
   stoneSize: StoneSizeId;
   targetWidthMm: number | '';
   targetHeightMm: number | '';
+  dimensionUnit: Unit;
   preserveAspectRatio: boolean;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
+  imageColorCount: 1 | 2 | 3 | 4;
+  imageThreshold: number;
+  imageDetail: number;
+  imageInvert: boolean;
   
   // Cleanup
   cleanupEnabled: boolean;
@@ -364,7 +373,23 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
   const next: SvgToolState = { ...current, ...updates };
   const usingDefaultSize = current.targetWidthMm === 100 && current.targetHeightMm === '';
 
+  if (typeof updates.uploadedImageDataUrl === 'string') {
+    next.assetKind = 'image';
+    next.uploadedSvgText = null;
+    next.svgFileName = null;
+    next.renderMode = 'artwork-dots';
+    next.coverageMode = 'fill';
+    next.fillMode = 'fill';
+    next.placementPattern = 'hexagonal';
+    if (updates.targetWidthMm === undefined && usingDefaultSize) {
+      next.targetWidthMm = 203.2;
+    }
+  }
+
   if (typeof updates.uploadedSvgText === 'string' && updates.coverageMode === undefined && updates.fillMode === undefined) {
+    next.assetKind = 'svg';
+    next.uploadedImageDataUrl = null;
+    next.imageFileName = null;
     const suggestedMode = suggestSvgUploadMode(updates.uploadedSvgText);
     if (suggestedMode === 'outline-fill') {
       next.renderMode = 'artwork-dots';
@@ -467,15 +492,23 @@ function normalizeRhinestoneFontToolUpdate(
 }
 
 export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
+  assetKind: 'svg',
   uploadedSvgText: null,
   svgFileName: null,
+  uploadedImageDataUrl: null,
+  imageFileName: null,
   renderMode: 'vector-layout',
   stoneSize: 'SS10',
   targetWidthMm: 100,
   targetHeightMm: '',
+  dimensionUnit: 'mm',
   preserveAspectRatio: true,
   densityPreset: 'standard',
   customSpacingMm: 4.0,
+  imageColorCount: 1,
+  imageThreshold: 128,
+  imageDetail: 128,
+  imageInvert: false,
   cleanupEnabled: true,
   cleanupSimplify: false,
   cleanupSimplifyTol: 0.25,
@@ -544,7 +577,7 @@ export const DEFAULT_LETTER_STENCIL_TOOL_STATE: LetterStencilToolState = {
   cardPaddingMm: 3,
   cardCornerRadiusMm: 2,
   minCardWidthMm: 12,
-  layoutMode: 'preview',
+  layoutMode: 'cut-sheet',
   cutSheetGapMm: 3,
   unsupportedCharacters: [],
   warnings: [],

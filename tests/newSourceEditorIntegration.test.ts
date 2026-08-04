@@ -60,7 +60,7 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('bg-purple-600');
   });
 
-  it('renders font, text, all four TRW sizes, and spacing controls', () => {
+  it('renders font, text, current registry fonts, and spacing controls', () => {
     const state = stateWith({ activeTool: 'rhinestone-font' });
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
@@ -72,7 +72,7 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('Script');
     expect(html).toContain('Gothic');
     expect(html).toContain('mode stones');
-    expect(html).toContain('Suggested sample: Sulay');
+    expect(html).toContain('Suggested sample: SULAY');
     expect(html).toContain('Use sample');
     expect(html).toContain('SS10');
     expect(html).toContain('Letter spacing');
@@ -85,7 +85,7 @@ describe('main editor integration — rhinestone font', () => {
       rhinestoneFontTool: {
         ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
         presentationMode: 'line',
-        rhinestoneFontId: 'small-line-ss10',
+        rhinestoneFontId: 'small-line-font',
         stoneSize: 'SS10',
       },
     });
@@ -93,7 +93,7 @@ describe('main editor integration — rhinestone font', () => {
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
     expect(html).toContain('mode line');
-    expect(html).toContain('Suggested sample: CHEER');
+    expect(html).toContain('Suggested sample: SMALL');
     expect(html).toContain('future centerline workflow');
   });
 
@@ -103,7 +103,7 @@ describe('main editor integration — rhinestone font', () => {
       rhinestoneFontTool: {
         ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
         presentationMode: 'digits',
-        rhinestoneFontId: 'huge-numbers-ss10',
+        rhinestoneFontId: 'huge-digits',
         stoneSize: 'SS10',
         text: 'ABC123',
       },
@@ -116,12 +116,12 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('optimized for digits');
   });
 
-  it('uses the authoritative TRW diameter in generated templates and SVG circles', async () => {
-    for (const size of ['SS6', 'SS10', 'SS16', 'SS20'] as const) {
+  it('uses the authoritative requested diameter in generated templates and SVG circles', async () => {
+    for (const size of ['SS6', 'SS10'] as const) {
       const diameter = TRW_STONE_SIZE_CALIBRATION[size].diameterMm;
       const result = await createRhinestoneFontTemplate({
         text: 'S',
-        rhinestoneFontId: TRW_CLEAN_STONE_FONT_ID,
+        rhinestoneFontId: 'cheer-block',
         targetStoneSizeId: size,
         targetStoneSizeMm: diameter,
         letterSpacingMm: 1,
@@ -162,7 +162,7 @@ describe('main editor integration — rhinestone font', () => {
       rhinestoneFontTool: {
         ...DEFAULT_EDITOR_STATE.rhinestoneFontTool,
         presentationMode: 'line',
-        rhinestoneFontId: 'small-line-ss10',
+        rhinestoneFontId: 'small-line-font',
         stoneSize: 'SS10',
         text: 'CHEER',
       },
@@ -291,5 +291,67 @@ describe('main editor integration — existing template import', () => {
     expect(buildProjectFileFromEditorState(state)).toBeNull();
     expect(state.templateImportTool.uploadedSvgText).toBeNull();
     expect(state.svgTool.uploadedSvgText).toBeNull();
+  });
+});
+
+describe('main editor integration — raster artwork', () => {
+  it('renders image artwork controls for upload, color count, threshold, detail, invert, and unit toggle', () => {
+    const state = stateWith({
+      activeTool: 'svg',
+      svgTool: {
+        ...DEFAULT_EDITOR_STATE.svgTool,
+        assetKind: 'image',
+        uploadedImageDataUrl: 'data:image/png;base64,AAA=',
+        imageFileName: 'photo.png',
+        imageColorCount: 3,
+      },
+    });
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
+    );
+    expect(html).toContain('Upload artwork');
+    expect(html).toContain('Drag and drop or paste artwork here.');
+    expect(html).toContain('Original image');
+    expect(html).toContain('Number of stone colors');
+    expect(html).toContain('Threshold');
+    expect(html).toContain('Refine details');
+    expect(html).toContain('Invert fill');
+    expect(html).toContain('Lock ratio');
+    expect(html).toContain('photo.png');
+  });
+
+  it('persists raster artwork settings in the shared svg-upload project state', () => {
+    const state = stateWith({
+      activeTool: 'svg',
+      svgTool: {
+        ...DEFAULT_EDITOR_STATE.svgTool,
+        assetKind: 'image',
+        uploadedImageDataUrl: 'data:image/png;base64,AAA=',
+        imageFileName: 'photo.png',
+        stoneSize: 'SS16',
+        targetWidthMm: 203.2,
+        targetHeightMm: '',
+        dimensionUnit: 'in',
+        customSpacingMm: 3.6,
+        imageColorCount: 4,
+        imageThreshold: 170,
+        imageDetail: 210,
+        imageInvert: true,
+      },
+    });
+    const project = buildProjectFileFromEditorState(state);
+    expect(project?.generatorState).toMatchObject({
+      generatorId: 'svg-upload',
+      assetKind: 'image',
+      uploadedImageDataUrl: 'data:image/png;base64,AAA=',
+      imageFileName: 'photo.png',
+      stoneSize: 'SS16',
+      dimensionUnit: 'in',
+      customSpacingMm: 3.6,
+      imageColorCount: 4,
+      imageThreshold: 170,
+      imageDetail: 210,
+      imageInvert: true,
+    });
   });
 });

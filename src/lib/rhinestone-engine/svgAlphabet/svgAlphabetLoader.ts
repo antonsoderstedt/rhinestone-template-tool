@@ -16,12 +16,9 @@ const glyphCache = new Map<string, Promise<string | null>>();
 async function loadGlyphSvgOnce(alphabetId: SvgAlphabetId, character: string, targetStoneSizeId?: StoneSizeId): Promise<string | null> {
   if (typeof window === 'undefined') {
     const { getSvgAlphabetDefinition } = await import('./svgAlphabetRegistry');
-    const { resolveSvgAlphabetGlyphPath } = await import('./svgAlphabetPath');
-    const { readFile } = await import('node:fs/promises');
+    const { loadSvgAlphabetGlyphText } = await import('./svgAlphabetPath');
     const definition = getSvgAlphabetDefinition(alphabetId);
-    const path = resolveSvgAlphabetGlyphPath(definition, character, targetStoneSizeId);
-    if (!path) return null;
-    return await readFile(path, 'utf-8');
+    return await loadSvgAlphabetGlyphText(definition, character, targetStoneSizeId);
   }
 
   const query = targetStoneSizeId ? `?size=${encodeURIComponent(targetStoneSizeId)}` : '';

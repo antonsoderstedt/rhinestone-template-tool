@@ -9,7 +9,7 @@
  * UI download / upload logic lives in components.
  */
 
-import type { StoneSizeId } from '../types/index';
+import type { StoneSizeId, Unit } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { OutlineTextAlign } from '../textOutline/outlineTextTemplate';
 import type { TemplateCoverageMode, TemplateFillMode, ContourCoverageSettings } from '../fill/fillTemplate';
@@ -111,11 +111,14 @@ export interface PolylineLogoProjectState {
 
 export interface SvgUploadProjectState {
   generatorId: 'svg-upload';
+  assetKind?: 'svg' | 'image';
   /**
    * Raw uploaded SVG text — only ever passed through the safe parser, never rendered.
    * null if no SVG was uploaded when the project was saved.
    */
   uploadedSvgText: string | null;
+  uploadedImageDataUrl?: string | null;
+  imageFileName?: string | null;
   renderMode?: 'vector-layout' | 'artwork-dots';
   stoneSize: StoneSizeId;
   includeGuideBox: boolean;
@@ -123,10 +126,15 @@ export interface SvgUploadProjectState {
   paddingMm: number;
   targetWidthMm: number | null;
   targetHeightMm: number | null;
+  dimensionUnit?: Unit;
   preserveAspectRatio: boolean;
   coverageMode?: TemplateCoverageMode;
   densityPreset: DensityPreset;
   customSpacingMm: number;
+  imageColorCount?: 1 | 2 | 3 | 4;
+  imageThreshold?: number;
+  imageDetail?: number;
+  imageInvert?: boolean;
   cleanupEnabled: boolean;
   cleanupSimplify: boolean;
   cleanupSimplifyTol: number;
@@ -285,6 +293,7 @@ const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
 const VALID_PLACEMENT_PATTERNS = new Set(['default', 'hexagonal', 'radial']);
 const VALID_TEXT_ALIGNS = new Set(['left', 'center', 'right']);
 const VALID_DEMO_SHAPES = new Set(['diamond', 'triangle', 'rectangle', 'zigzag']);
+const VALID_UNITS = new Set(['mm', 'in']);
 const VALID_GENERATOR_IDS = new Set([
   'outline-text',
   'dot-matrix-text',
@@ -480,6 +489,13 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
   if (svgText !== null && typeof svgText !== 'string') {
     throw new Error('[Project] generatorState.uploadedSvgText must be a string or null');
   }
+  const imageDataUrl = s.uploadedImageDataUrl;
+  if (imageDataUrl !== undefined && imageDataUrl !== null && typeof imageDataUrl !== 'string') {
+    throw new Error('[Project] generatorState.uploadedImageDataUrl must be a string or null');
+  }
+  if (s.imageFileName !== undefined && s.imageFileName !== null && typeof s.imageFileName !== 'string') {
+    throw new Error('[Project] generatorState.imageFileName must be a string or null');
+  }
   const renderMode = s.renderMode === 'artwork-dots'
     ? 'artwork-dots'
     : s.renderMode === 'vector-layout'
@@ -487,7 +503,10 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
       : undefined;
   return {
     generatorId: 'svg-upload',
+    assetKind: s.assetKind === 'image' ? 'image' : 'svg',
     uploadedSvgText: svgText as string | null,
+    uploadedImageDataUrl: imageDataUrl as string | null | undefined,
+    imageFileName: (s.imageFileName as string | null | undefined) ?? null,
     renderMode,
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
@@ -495,10 +514,15 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
     targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
     targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),
+    dimensionUnit: s.dimensionUnit === undefined ? 'mm' : requireEnum<Unit>(s, 'dimensionUnit', ctx, VALID_UNITS),
     preserveAspectRatio: requireBoolean(s, 'preserveAspectRatio', ctx),
     coverageMode: s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
+    imageColorCount: s.imageColorCount === undefined ? 1 : requireFiniteNumber(s, 'imageColorCount', ctx) as 1 | 2 | 3 | 4,
+    imageThreshold: s.imageThreshold === undefined ? 128 : requireFiniteNumber(s, 'imageThreshold', ctx),
+    imageDetail: s.imageDetail === undefined ? 128 : requireFiniteNumber(s, 'imageDetail', ctx),
+    imageInvert: s.imageInvert === undefined ? false : requireBoolean(s, 'imageInvert', ctx),
     cleanupEnabled: requireBoolean(s, 'cleanupEnabled', ctx),
     cleanupSimplify: requireBoolean(s, 'cleanupSimplify', ctx),
     cleanupSimplifyTol: requireFiniteNumber(s, 'cleanupSimplifyTol', ctx),

@@ -15,18 +15,24 @@ import {
   createPolylineFilledRhinestoneTemplate,
   scalePolylinesToFit,
   checkExportReadiness,
+  createTemplateLibraryEntry,
   parseRhinestoneProject,
   serializeRhinestoneProject,
   createBasicSvgExport,
   LEGACY_OUTLINE_FONT_ID,
+  LocalStorageTemplateLibraryRepository,
   createRhinestoneFontTemplate,
   createSvgAlphabetTemplate,
   createLetterStencilTemplate,
+  createRasterArtworkTemplate,
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
   TRW_STONE_SIZE_CALIBRATION,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
+  TemplateLibraryEntry,
+  TemplateLibraryRecord,
+  TemplateLibraryRepository,
 } from '@/src/lib/rhinestone-engine/index';
 import EditorTopbar from './EditorTopbar';
 import EditorToolbar from './EditorToolbar';
@@ -35,6 +41,7 @@ import EditorPropertiesPanel from './EditorPropertiesPanel';
 import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
 import EditorToast from './EditorToast';
+import TemplateLibraryPanel from './TemplateLibraryPanel';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -45,13 +52,21 @@ import {
   buildProjectFileFromEditorState,
   savedStoneToEditableStone,
 } from './projectPersistence';
+import { decodeRasterImageDataUrl } from './rasterImageDecode';
 
 export default function EditorShell() {
+  const AUTOSAVE_STORAGE_KEY = 'rhinestone-template-library-autosave';
   const [state, dispatch] = useReducer(editorReducer, DEFAULT_EDITOR_STATE);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const templateLibraryRepositoryRef = useRef<TemplateLibraryRepository | null>(null);
   const generationRequestRef = useRef(0);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
+  const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
+  const [hasPromptedAutosaveRestore, setHasPromptedAutosaveRestore] = useState(false);
+  const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
     message: string | null;
@@ -64,12 +79,17 @@ export default function EditorShell() {
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
-        kind: 'new-project' | 'export-warning';
+        kind: 'new-project' | 'export-warning' | 'autosave-restore';
         title: string;
         message: string;
         confirmLabel: string;
         confirmTone?: 'default' | 'destructive';
         icon?: 'sparkles' | 'warning' | 'info';
+        tertiaryAction?: {
+          label: string;
+          onClick: () => void;
+          tone?: 'default' | 'destructive';
+        };
       }
   >(null);
 
@@ -78,6 +98,54 @@ export default function EditorShell() {
     const timeoutId = window.setTimeout(() => setToast(null), toast.tone === 'error' ? 5000 : 3200);
     return () => window.clearTimeout(timeoutId);
   }, [toast]);
+
+  const refreshTemplateLibrary = useCallback(async () => {
+    if (!templateLibraryRepositoryRef.current) return;
+    const record = await templateLibraryRepositoryRef.current.list();
+    setLibraryRecord({
+      ...record,
+      builtInTemplates: [...record.builtInTemplates].sort((left, right) => left.name.localeCompare(right.name)),
+      userTemplates: [...record.userTemplates].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+    });
+  }, []);
+
+  useEffect(() => {
+    templateLibraryRepositoryRef.current = new LocalStorageTemplateLibraryRepository();
+    void refreshTemplateLibrary();
+    const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
+    if (rawAutosave) {
+      try {
+        setAutosaveEntry(JSON.parse(rawAutosave) as TemplateLibraryEntry);
+      } catch {
+        setAutosaveEntry(null);
+      }
+    }
+  }, [refreshTemplateLibrary]);
+
+  useEffect(() => {
+    if (!autosaveEntry || hasPromptedAutosaveRestore) return;
+    if (state.projectName !== DEFAULT_EDITOR_STATE.projectName) return;
+    if (state.template || state.editableTemplate.isEditable) return;
+
+    setPendingDialog({
+      kind: 'autosave-restore',
+      title: 'Restore autosave?',
+      message: `A recent autosave for "${autosaveEntry.name}" is available in this browser. Restore it now or discard it.`,
+      confirmLabel: 'Restore autosave',
+      icon: 'info',
+      tertiaryAction: {
+        label: 'Discard autosave',
+        tone: 'destructive',
+        onClick: () => {
+          globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
+          setAutosaveEntry(null);
+          setPendingDialog(null);
+          setToast({ message: 'Autosave discarded.', tone: 'info' });
+        },
+      },
+    });
+    setHasPromptedAutosaveRestore(true);
+  }, [autosaveEntry, hasPromptedAutosaveRestore, state.editableTemplate.isEditable, state.projectName, state.template]);
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
@@ -162,7 +230,23 @@ export default function EditorShell() {
             break;
 
           case 'svg':
-            if (state.svgTool.uploadedSvgText) {
+            if (state.svgTool.assetKind === 'image' && state.svgTool.uploadedImageDataUrl) {
+              const rasterImage = await decodeRasterImageDataUrl(state.svgTool.uploadedImageDataUrl);
+              const rasterResult = createRasterArtworkTemplate({
+                image: rasterImage,
+                name: state.svgTool.imageFileName || 'Image Artwork Preview',
+                stoneSize: state.svgTool.stoneSize,
+                spacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4,
+                threshold: state.svgTool.imageThreshold,
+                detail: state.svgTool.imageDetail,
+                invert: state.svgTool.imageInvert,
+                colorCount: state.svgTool.imageColorCount,
+                targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
+                targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
+                preserveAspectRatio: state.svgTool.preserveAspectRatio,
+              });
+              template = rasterResult.template;
+            } else if (state.svgTool.uploadedSvgText) {
               const polylines = svgStringToPolylines(state.svgTool.uploadedSvgText, {
                 cleanupOptions: state.svgTool.cleanupEnabled
                   ? {
@@ -426,6 +510,94 @@ export default function EditorShell() {
   // ─── Export Readiness ──────────────────────────────────────────────────────
 
   const effectiveTemplate = useMemo(() => buildEffectiveTemplate(state), [state]);
+  const activeLibraryEntry = useMemo(
+    () => libraryRecord.userTemplates.find((entry) => entry.templateId === activeLibraryTemplateId) ?? null,
+    [activeLibraryTemplateId, libraryRecord.userTemplates],
+  );
+
+  const inferLibraryCategory = useCallback((generatorId: string | null): TemplateLibraryEntry['category'] => {
+    switch (generatorId) {
+      case 'manual-grid':
+        return 'grid';
+      case 'svg-upload':
+      case 'template-import':
+        return 'svg';
+      case 'manual-editor':
+        return 'manual';
+      case 'outline-text':
+      case 'dot-matrix-text':
+      case 'rhinestone-font':
+      case 'rhinestone-font-line':
+      case 'rhinestone-font-digits':
+      case 'svg-alphabet':
+      case 'letter-stencil':
+      default:
+        return 'text';
+    }
+  }, []);
+
+  const buildPreviewRef = useCallback((template: NonNullable<typeof effectiveTemplate>) => {
+    const svgString = createBasicSvgExport(template, {
+      includeGuideBox: false,
+      includeLabels: false,
+      paddingMm: 4,
+      decimalPlaces: 2,
+    });
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+  }, []);
+
+  const buildLibraryTags = useCallback((category: TemplateLibraryEntry['category']) => {
+    const tags = new Set<string>([category, state.activeTool]);
+    if (effectiveTemplate) {
+      for (const sizeId of new Set(effectiveTemplate.stones.map((stone) => stone.stoneSize))) {
+        tags.add(sizeId.toLowerCase());
+      }
+    }
+    return Array.from(tags);
+  }, [effectiveTemplate, state.activeTool]);
+
+  const buildCurrentLibraryEntry = useCallback((templateId: string, name: string, createdAt: string, favorite: boolean) => {
+    if (!effectiveTemplate) return null;
+    const project = buildProjectFileFromEditorState(state);
+    if (!project) return null;
+
+    const category = inferLibraryCategory(project.generatorState.generatorId);
+    return createTemplateLibraryEntry({
+      templateId,
+      name,
+      category,
+      tags: buildLibraryTags(category),
+      builtIn: false,
+      readOnly: false,
+      favorite,
+      previewRef: buildPreviewRef(effectiveTemplate),
+      widthMm: effectiveTemplate.widthMm ?? null,
+      heightMm: effectiveTemplate.heightMm ?? null,
+      stoneCount: effectiveTemplate.stones.length,
+      stoneSizes: Array.from(new Set(effectiveTemplate.stones.map((stone) => stone.stoneSize))),
+      colorLayerCount: Array.from(new Set(effectiveTemplate.stones.map((stone) => String(stone.metadata?.fill ?? stone.metadata?.stroke ?? 'default')))).length,
+      createdAt,
+      updatedAt: new Date().toISOString(),
+      snapshot: project,
+    });
+  }, [buildLibraryTags, buildPreviewRef, effectiveTemplate, inferLibraryCategory, state]);
+
+  useEffect(() => {
+    if (!effectiveTemplate) return;
+    const timeoutId = window.setTimeout(() => {
+      const entry = buildCurrentLibraryEntry('autosave-current-design', `${state.projectName} (Autosave)`, autosaveEntry?.createdAt ?? new Date().toISOString(), false);
+      if (!entry) return;
+      const nextAutosaveEntry: TemplateLibraryEntry = {
+        ...entry,
+        readOnly: true,
+        tags: [...entry.tags, 'autosave'],
+      };
+      globalThis.localStorage?.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(nextAutosaveEntry));
+      setAutosaveEntry(nextAutosaveEntry);
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [autosaveEntry?.createdAt, buildCurrentLibraryEntry, effectiveTemplate, state.projectName]);
 
   const exportReady = useMemo(() => {
     if (!effectiveTemplate) return false;
@@ -483,21 +655,6 @@ export default function EditorShell() {
     setToast({ message, tone });
   }, []);
 
-  const handleDialogConfirm = useCallback(() => {
-    if (!pendingDialog) return;
-
-    if (pendingDialog.kind === 'new-project') {
-      dispatch({ type: 'RESET_EDITOR' });
-      setToast({ message: 'Started a new project.', tone: 'info' });
-    }
-
-    if (pendingDialog.kind === 'export-warning') {
-      runExport();
-    }
-
-    setPendingDialog(null);
-  }, [pendingDialog, runExport]);
-
   // ─── Topbar Actions ────────────────────────────────────────────────────────
 
   const handleNewProject = useCallback(() => {
@@ -514,6 +671,371 @@ export default function EditorShell() {
     fileInputRef.current?.click();
   }, []);
 
+  const applyProjectToEditor = useCallback((project: ReturnType<typeof parseRhinestoneProject>) => {
+    dispatch({ type: 'SET_PROJECT_NAME', name: project.projectName });
+
+    if (project.exportSettings) {
+      dispatch({
+        type: 'UPDATE_EXPORT_SETTINGS',
+        updates: {
+          includeGuideBox: project.exportSettings.includeGuideBox,
+          includeLabels: project.exportSettings.includeLabels,
+          paddingMm: project.exportSettings.paddingMm,
+        },
+      });
+    } else if ('includeGuideBox' in project.generatorState) {
+      dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: project.generatorState.includeGuideBox } });
+      if ('includeLabels' in project.generatorState) {
+        dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: project.generatorState.includeLabels } });
+      }
+      if ('paddingMm' in project.generatorState) {
+        dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { paddingMm: project.generatorState.paddingMm } });
+      }
+    }
+
+    switch (project.generatorState.generatorId) {
+      case 'manual-grid':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'grid' });
+        editorDispatch({
+          type: 'UPDATE_GRID_TOOL',
+          updates: {
+            stoneSize: project.generatorState.stoneSize,
+            columns: project.generatorState.columns,
+            rows: project.generatorState.rows,
+            densityPreset: project.generatorState.densityPreset,
+            customSpacingMm: project.generatorState.customSpacingMm,
+          },
+        });
+        break;
+      case 'outline-text':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
+        editorDispatch({
+          type: 'UPDATE_TEXT_TOOL',
+          updates: {
+            mode: 'outline',
+            text: project.generatorState.text,
+            stoneSize: project.generatorState.stoneSize,
+            outlineTextStyle: project.generatorState.outlineTextStyle ?? ((project.generatorState.coverageMode ?? project.generatorState.fillMode) === 'outline' ? 'outline' : 'filled-typography'),
+            fontId: project.generatorState.fontId ?? LEGACY_OUTLINE_FONT_ID,
+            fontSizeMm: project.generatorState.fontSizeMm,
+            targetWidthMm: project.generatorState.targetWidthMm ?? '',
+            targetHeightMm: project.generatorState.targetHeightMm ?? '',
+            preserveAspectRatio: project.generatorState.preserveAspectRatio,
+            align: project.generatorState.align,
+            letterSpacingMm: project.generatorState.letterSpacingMm,
+            lineSpacingMm: project.generatorState.lineSpacingMm,
+            coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
+            fillMode: project.generatorState.fillMode,
+            fillPattern: project.generatorState.fillPattern,
+            placementPattern: project.generatorState.placementPattern ?? 'default',
+            contourSettings: project.generatorState.contourSettings ?? state.textTool.contourSettings,
+            radialSettings: project.generatorState.radialSettings ?? state.textTool.radialSettings,
+            densityPreset: project.generatorState.densityPreset,
+            customSpacingMm: project.generatorState.customSpacingMm,
+          },
+        });
+        break;
+      case 'dot-matrix-text':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
+        editorDispatch({
+          type: 'UPDATE_TEXT_TOOL',
+          updates: {
+            mode: 'dot-matrix',
+            text: project.generatorState.text,
+            stoneSize: project.generatorState.stoneSize,
+            targetWidthMm: project.generatorState.targetWidthMm ?? '',
+            targetHeightMm: project.generatorState.targetHeightMm ?? '',
+            preserveAspectRatio: project.generatorState.preserveAspectRatio,
+            letterSpacingColumns: project.generatorState.letterSpacingColumns,
+            lineSpacingRows: project.generatorState.lineSpacingRows,
+            densityPreset: project.generatorState.densityPreset,
+            customSpacingMm: project.generatorState.customSpacingMm,
+          },
+        });
+        break;
+      case 'svg-upload':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
+        editorDispatch({
+          type: 'UPDATE_SVG_TOOL',
+          updates: {
+            assetKind: project.generatorState.assetKind ?? (project.generatorState.uploadedImageDataUrl ? 'image' : 'svg'),
+            uploadedSvgText: project.generatorState.uploadedSvgText,
+            svgFileName: project.generatorState.assetKind === 'svg' ? 'loaded.svg' : null,
+            uploadedImageDataUrl: project.generatorState.uploadedImageDataUrl ?? null,
+            imageFileName: project.generatorState.imageFileName ?? null,
+            renderMode: project.generatorState.renderMode ?? ((project.generatorState.fillMode === 'fill' && (project.generatorState.placementPattern ?? 'default') === 'hexagonal') ? 'artwork-dots' : 'vector-layout'),
+            stoneSize: project.generatorState.stoneSize,
+            targetWidthMm: project.generatorState.targetWidthMm ?? '',
+            targetHeightMm: project.generatorState.targetHeightMm ?? '',
+            dimensionUnit: project.generatorState.dimensionUnit ?? 'mm',
+            preserveAspectRatio: project.generatorState.preserveAspectRatio,
+            coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
+            fillMode: project.generatorState.fillMode,
+            fillPattern: project.generatorState.fillPattern,
+            placementPattern: project.generatorState.placementPattern ?? 'default',
+            contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
+            radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
+            densityPreset: project.generatorState.densityPreset,
+            customSpacingMm: project.generatorState.customSpacingMm,
+            imageColorCount: project.generatorState.imageColorCount ?? 1,
+            imageThreshold: project.generatorState.imageThreshold ?? 128,
+            imageDetail: project.generatorState.imageDetail ?? 128,
+            imageInvert: project.generatorState.imageInvert ?? false,
+            cleanupEnabled: project.generatorState.cleanupEnabled,
+            cleanupSimplify: project.generatorState.cleanupSimplify,
+            cleanupSimplifyTol: project.generatorState.cleanupSimplifyTol,
+            cleanupRemoveTiny: project.generatorState.cleanupRemoveTiny,
+            cleanupMinLength: project.generatorState.cleanupMinLength,
+            cleanupRemoveDups: project.generatorState.cleanupRemoveDups,
+            cleanupDupTol: project.generatorState.cleanupDupTol,
+          },
+        });
+        break;
+      case 'rhinestone-font':
+      case 'rhinestone-font-line':
+      case 'rhinestone-font-digits':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'rhinestone-font' });
+        dispatch({
+          type: 'UPDATE_RHINESTONE_FONT_TOOL',
+          updates: {
+            presentationMode: project.generatorState.presentationMode
+              ?? (project.generatorState.generatorId === 'rhinestone-font-line'
+                ? 'line'
+                : project.generatorState.generatorId === 'rhinestone-font-digits'
+                  ? 'digits'
+                  : 'stones'),
+            text: project.generatorState.text,
+            rhinestoneFontId: project.generatorState.rhinestoneFontId,
+            stoneSize: project.generatorState.stoneSize,
+            letterSpacingMm: project.generatorState.letterSpacingMm,
+            lineSpacingMm: project.generatorState.lineSpacingMm,
+            unsupportedCharacters: [],
+            warnings: [],
+          },
+        });
+        break;
+      case 'svg-alphabet':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg-alphabet' });
+        dispatch({
+          type: 'UPDATE_SVG_ALPHABET_TOOL',
+          updates: {
+            text: project.generatorState.text,
+            svgAlphabetId: project.generatorState.svgAlphabetId,
+            stoneSize: project.generatorState.stoneSize,
+            letterSpacingMm: project.generatorState.letterSpacingMm,
+            lineSpacingMm: project.generatorState.lineSpacingMm,
+            unsupportedCharacters: [],
+            warnings: [],
+          },
+        });
+        break;
+      case 'letter-stencil':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'letter-stencil' });
+        dispatch({
+          type: 'UPDATE_LETTER_STENCIL_TOOL',
+          updates: {
+            sourceType: project.generatorState.sourceType,
+            text: project.generatorState.text,
+            svgAlphabetId: project.generatorState.svgAlphabetId,
+            rhinestoneFontId: project.generatorState.rhinestoneFontId,
+            stoneSize: project.generatorState.stoneSize,
+            cardPaddingMm: project.generatorState.cardPaddingMm,
+            cardCornerRadiusMm: project.generatorState.cardCornerRadiusMm,
+            minCardWidthMm: project.generatorState.minCardWidthMm,
+            layoutMode: project.generatorState.layoutMode,
+            cutSheetGapMm: project.generatorState.cutSheetGapMm,
+            unsupportedCharacters: [],
+            warnings: [],
+          },
+        });
+        break;
+      case 'template-import':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'template-import' });
+        dispatch({
+          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+          updates: {
+            uploadedSvgText: project.generatorState.uploadedSvgText,
+            svgFileName: project.generatorState.svgFileName,
+            pendingSvgText: null,
+            pendingFileName: null,
+            defaultStoneSize: project.generatorState.defaultStoneSize,
+            detectedDiameters: project.generatorState.importMetadata?.detectedDiameters ?? [],
+            detectedColors: project.generatorState.importMetadata?.detectedColors ?? [],
+            ignoredElements: project.generatorState.importMetadata?.ignoredElements ?? 0,
+            warnings: [],
+            importSummary: project.generatorState.importMetadata ? `Imported ${project.generatorState.importMetadata.originalStoneCount} stones.` : null,
+            importError: null,
+          },
+        });
+        break;
+      case 'manual-editor':
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'manual' });
+        dispatch({ type: 'SET_TEMPLATE', template: null });
+        break;
+      default:
+        throw new Error(`Project type "${project.generatorState.generatorId}" is not yet supported in this editor.`);
+    }
+
+    if (project.manualToolState) {
+      dispatch({
+        type: 'UPDATE_MANUAL_TOOL',
+        updates: {
+          snapToGrid: project.manualToolState.snapToGrid,
+          gridSnapSize: project.manualToolState.gridSnapSize,
+          addStoneSize: project.manualToolState.addStoneSize,
+        },
+      });
+    }
+
+    if (project.activeTool) {
+      dispatch({ type: 'SET_ACTIVE_TOOL', tool: project.activeTool });
+    }
+
+    if (project.editableState) {
+      setTimeout(() => {
+        const editableStones: EditableStone[] = project.editableState!.stones.map(savedStoneToEditableStone);
+        dispatch({
+          type: 'RESTORE_EDITABLE',
+          stones: editableStones,
+          sourceGenerator: project.generatorState.generatorId,
+        });
+      }, 100);
+    } else if (project.generatorState.generatorId === 'manual-editor') {
+      const manualStones: EditableStone[] = project.generatorState.stones.map(savedStoneToEditableStone);
+      setTimeout(() => {
+        dispatch({
+          type: 'RESTORE_EDITABLE',
+          stones: manualStones,
+          sourceGenerator: 'manual-editor',
+        });
+      }, 0);
+    }
+  }, [editorDispatch, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
+
+  const handleOpenLibrary = useCallback(() => {
+    setTemplateLibraryOpen(true);
+  }, []);
+
+  const handleSaveToLibrary = useCallback(async () => {
+    if (!effectiveTemplate) {
+      setToast({ message: 'Nothing to save to the library yet.', tone: 'warning' });
+      return;
+    }
+    if (!templateLibraryRepositoryRef.current) {
+      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      return;
+    }
+
+    let entry = null;
+    if (activeLibraryTemplateId) {
+      const currentEntry = await templateLibraryRepositoryRef.current.get(activeLibraryTemplateId);
+      if (currentEntry && !currentEntry.builtIn) {
+        entry = buildCurrentLibraryEntry(currentEntry.templateId, currentEntry.name, currentEntry.createdAt, currentEntry.favorite);
+      }
+    }
+
+    if (!entry) {
+      const now = new Date().toISOString();
+      entry = buildCurrentLibraryEntry(`library-${now}`, state.projectName, now, false);
+    }
+
+    if (!entry) {
+      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      return;
+    }
+
+    await templateLibraryRepositoryRef.current.save(entry);
+    setActiveLibraryTemplateId(entry.templateId);
+    await refreshTemplateLibrary();
+    setToast({ message: activeLibraryTemplateId ? 'Library design updated.' : 'Design saved to the local library.', tone: 'success' });
+  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, effectiveTemplate, refreshTemplateLibrary, state.projectName]);
+
+  const handleLoadFromLibrary = useCallback(async (templateId: string) => {
+    if (!templateLibraryRepositoryRef.current) return;
+    const entry = await templateLibraryRepositoryRef.current.get(templateId);
+    if (!entry) {
+      setToast({ message: 'That library entry could not be found.', tone: 'error' });
+      return;
+    }
+
+    const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
+    applyProjectToEditor(project);
+    setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
+    setTemplateLibraryOpen(false);
+    setToast({ message: 'Library design opened.', tone: 'success' });
+  }, [applyProjectToEditor]);
+
+  const handleLoadAutosave = useCallback(() => {
+    if (!autosaveEntry) return;
+    const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
+    applyProjectToEditor(project);
+    setActiveLibraryTemplateId(null);
+    setTemplateLibraryOpen(false);
+    setToast({ message: 'Autosave opened.', tone: 'success' });
+  }, [applyProjectToEditor, autosaveEntry]);
+
+  const handleDialogConfirm = useCallback(() => {
+    if (!pendingDialog) return;
+
+    if (pendingDialog.kind === 'new-project') {
+      dispatch({ type: 'RESET_EDITOR' });
+      setToast({ message: 'Started a new project.', tone: 'info' });
+    }
+
+    if (pendingDialog.kind === 'export-warning') {
+      runExport();
+    }
+
+    if (pendingDialog.kind === 'autosave-restore') {
+      handleLoadAutosave();
+    }
+
+    setPendingDialog(null);
+  }, [handleLoadAutosave, pendingDialog, runExport]);
+
+  const handleFavoriteLibraryEntry = useCallback(async (templateId: string, favorite: boolean) => {
+    if (!templateLibraryRepositoryRef.current) return;
+    await templateLibraryRepositoryRef.current.favorite(templateId, favorite);
+    await refreshTemplateLibrary();
+  }, [refreshTemplateLibrary]);
+
+  const handleDeleteLibraryEntry = useCallback(async (templateId: string) => {
+    if (!templateLibraryRepositoryRef.current) return;
+    await templateLibraryRepositoryRef.current.delete(templateId);
+    await refreshTemplateLibrary();
+    setToast({ message: 'Library design deleted.', tone: 'info' });
+  }, [refreshTemplateLibrary]);
+
+  const handleRenameLibraryEntry = useCallback(async (templateId: string) => {
+    if (!templateLibraryRepositoryRef.current) return;
+    const nextName = window.prompt('Rename design');
+    if (!nextName || !nextName.trim()) return;
+    await templateLibraryRepositoryRef.current.rename(templateId, nextName.trim());
+    await refreshTemplateLibrary();
+    setToast({ message: 'Library design renamed.', tone: 'success' });
+  }, [refreshTemplateLibrary]);
+
+  const handleDuplicateLibraryEntry = useCallback(async (templateId: string) => {
+    if (!templateLibraryRepositoryRef.current) return;
+    const nextName = window.prompt('Duplicate design as');
+    if (!nextName || !nextName.trim()) return;
+    const nextTemplateId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? `library-${crypto.randomUUID()}`
+      : `library-${Date.now()}`;
+
+    if (activeLibraryTemplateId === templateId) {
+      const duplicate = buildCurrentLibraryEntry(nextTemplateId, nextName.trim(), new Date().toISOString(), false);
+      if (duplicate) {
+        await templateLibraryRepositoryRef.current.save(duplicate);
+      }
+    } else {
+      await templateLibraryRepositoryRef.current.duplicate(templateId, nextTemplateId, nextName.trim());
+    }
+
+    await refreshTemplateLibrary();
+    setToast({ message: 'Library design duplicated.', tone: 'success' });
+  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, refreshTemplateLibrary]);
+
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -525,225 +1047,7 @@ export default function EditorShell() {
       const json = typeof ev.target?.result === 'string' ? ev.target.result : '';
       try {
         const project = parseRhinestoneProject(json);
-        
-        // Update project name
-        dispatch({ type: 'SET_PROJECT_NAME', name: project.projectName });
-
-        // Update export settings
-        if (project.exportSettings) {
-          dispatch({
-            type: 'UPDATE_EXPORT_SETTINGS',
-            updates: {
-              includeGuideBox: project.exportSettings.includeGuideBox,
-              includeLabels: project.exportSettings.includeLabels,
-              paddingMm: project.exportSettings.paddingMm,
-            },
-          });
-        } else if ('includeGuideBox' in project.generatorState) {
-          dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: project.generatorState.includeGuideBox } });
-          if ('includeLabels' in project.generatorState) {
-            dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: project.generatorState.includeLabels } });
-          }
-          if ('paddingMm' in project.generatorState) {
-            dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { paddingMm: project.generatorState.paddingMm } });
-          }
-        }
-
-        // Map generatorState to editor state and activate correct tool
-        switch (project.generatorState.generatorId) {
-          case 'manual-grid':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'grid' });
-            editorDispatch({
-              type: 'UPDATE_GRID_TOOL',
-              updates: {
-                stoneSize: project.generatorState.stoneSize,
-                columns: project.generatorState.columns,
-                rows: project.generatorState.rows,
-                densityPreset: project.generatorState.densityPreset,
-                customSpacingMm: project.generatorState.customSpacingMm,
-              },
-            });
-            break;
-
-          case 'outline-text':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-            editorDispatch({
-              type: 'UPDATE_TEXT_TOOL',
-              updates: {
-                mode: 'outline',
-                text: project.generatorState.text,
-                stoneSize: project.generatorState.stoneSize,
-                outlineTextStyle: project.generatorState.outlineTextStyle ?? ((project.generatorState.coverageMode ?? project.generatorState.fillMode) === 'outline' ? 'outline' : 'filled-typography'),
-                fontId: project.generatorState.fontId ?? LEGACY_OUTLINE_FONT_ID,
-                fontSizeMm: project.generatorState.fontSizeMm,
-                targetWidthMm: project.generatorState.targetWidthMm ?? '',
-                targetHeightMm: project.generatorState.targetHeightMm ?? '',
-                preserveAspectRatio: project.generatorState.preserveAspectRatio,
-                align: project.generatorState.align,
-                letterSpacingMm: project.generatorState.letterSpacingMm,
-                lineSpacingMm: project.generatorState.lineSpacingMm,
-                coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
-                fillMode: project.generatorState.fillMode,
-                fillPattern: project.generatorState.fillPattern,
-                placementPattern: project.generatorState.placementPattern ?? 'default',
-                contourSettings: project.generatorState.contourSettings ?? state.textTool.contourSettings,
-                radialSettings: project.generatorState.radialSettings ?? state.textTool.radialSettings,
-                densityPreset: project.generatorState.densityPreset,
-                customSpacingMm: project.generatorState.customSpacingMm,
-              },
-            });
-            break;
-
-          case 'dot-matrix-text':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-            editorDispatch({
-              type: 'UPDATE_TEXT_TOOL',
-              updates: {
-                mode: 'dot-matrix',
-                text: project.generatorState.text,
-                stoneSize: project.generatorState.stoneSize,
-                targetWidthMm: project.generatorState.targetWidthMm ?? '',
-                targetHeightMm: project.generatorState.targetHeightMm ?? '',
-                preserveAspectRatio: project.generatorState.preserveAspectRatio,
-                letterSpacingColumns: project.generatorState.letterSpacingColumns,
-                lineSpacingRows: project.generatorState.lineSpacingRows,
-                densityPreset: project.generatorState.densityPreset,
-                customSpacingMm: project.generatorState.customSpacingMm,
-              },
-            });
-            break;
-
-          case 'svg-upload':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
-            editorDispatch({
-              type: 'UPDATE_SVG_TOOL',
-              updates: {
-                uploadedSvgText: project.generatorState.uploadedSvgText,
-                svgFileName: 'loaded.svg',
-                renderMode: project.generatorState.renderMode
-                  ?? ((project.generatorState.fillMode === 'fill' && (project.generatorState.placementPattern ?? 'default') === 'hexagonal')
-                    ? 'artwork-dots'
-                    : 'vector-layout'),
-                stoneSize: project.generatorState.stoneSize,
-                targetWidthMm: project.generatorState.targetWidthMm ?? '',
-                targetHeightMm: project.generatorState.targetHeightMm ?? '',
-                preserveAspectRatio: project.generatorState.preserveAspectRatio,
-                coverageMode: project.generatorState.coverageMode ?? project.generatorState.fillMode,
-                fillMode: project.generatorState.fillMode,
-                fillPattern: project.generatorState.fillPattern,
-                placementPattern: project.generatorState.placementPattern ?? 'default',
-                contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
-                radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
-                densityPreset: project.generatorState.densityPreset,
-                customSpacingMm: project.generatorState.customSpacingMm,
-                cleanupEnabled: project.generatorState.cleanupEnabled,
-                cleanupSimplify: project.generatorState.cleanupSimplify,
-                cleanupSimplifyTol: project.generatorState.cleanupSimplifyTol,
-                cleanupRemoveTiny: project.generatorState.cleanupRemoveTiny,
-                cleanupMinLength: project.generatorState.cleanupMinLength,
-                cleanupRemoveDups: project.generatorState.cleanupRemoveDups,
-                cleanupDupTol: project.generatorState.cleanupDupTol,
-              },
-            });
-            break;
-
-          case 'rhinestone-font':
-          case 'rhinestone-font-line':
-          case 'rhinestone-font-digits':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'rhinestone-font' });
-            dispatch({
-              type: 'UPDATE_RHINESTONE_FONT_TOOL',
-              updates: {
-                presentationMode: project.generatorState.presentationMode
-                  ?? (project.generatorState.generatorId === 'rhinestone-font-line'
-                    ? 'line'
-                    : project.generatorState.generatorId === 'rhinestone-font-digits'
-                      ? 'digits'
-                      : 'stones'),
-                text: project.generatorState.text,
-                rhinestoneFontId: project.generatorState.rhinestoneFontId,
-                stoneSize: project.generatorState.stoneSize,
-                letterSpacingMm: project.generatorState.letterSpacingMm,
-                lineSpacingMm: project.generatorState.lineSpacingMm,
-                unsupportedCharacters: [],
-                warnings: [],
-              },
-            });
-            break;
-
-          case 'template-import':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'template-import' });
-            dispatch({
-              type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
-              updates: {
-                uploadedSvgText: project.generatorState.uploadedSvgText,
-                svgFileName: project.generatorState.svgFileName,
-                pendingSvgText: null,
-                pendingFileName: null,
-                defaultStoneSize: project.generatorState.defaultStoneSize,
-                detectedDiameters: project.generatorState.importMetadata?.detectedDiameters ?? [],
-                detectedColors: project.generatorState.importMetadata?.detectedColors ?? [],
-                ignoredElements: project.generatorState.importMetadata?.ignoredElements ?? 0,
-                warnings: [],
-                importSummary: project.generatorState.importMetadata
-                  ? `Imported ${project.generatorState.importMetadata.originalStoneCount} stones.`
-                  : null,
-                importError: null,
-              },
-            });
-            break;
-
-          case 'manual-editor':
-            dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'manual' });
-            dispatch({ type: 'SET_TEMPLATE', template: null });
-            break;
-
-          default:
-            setToast({ message: `Project type "${project.generatorState.generatorId}" is not yet supported in this editor.`, tone: 'error' });
-            return;
-        }
-
-        // Restore manual tool state if present
-        if (project.manualToolState) {
-          dispatch({
-            type: 'UPDATE_MANUAL_TOOL',
-            updates: {
-              snapToGrid: project.manualToolState.snapToGrid,
-              gridSnapSize: project.manualToolState.gridSnapSize,
-              addStoneSize: project.manualToolState.addStoneSize,
-            },
-          });
-        }
-
-        // Override active tool if specified in project
-        if (project.activeTool) {
-          dispatch({ type: 'SET_ACTIVE_TOOL', tool: project.activeTool });
-        }
-
-        // Restore editable state if present (wait for template to generate first)
-        if (project.editableState) {
-          // Use setTimeout to allow template generation to complete
-          setTimeout(() => {
-            const editableStones: EditableStone[] = project.editableState!.stones.map(savedStoneToEditableStone);
-
-            dispatch({
-              type: 'RESTORE_EDITABLE',
-              stones: editableStones,
-              sourceGenerator: project.generatorState.generatorId,
-            });
-          }, 100);
-        } else if (project.generatorState.generatorId === 'manual-editor') {
-          const manualStones: EditableStone[] = project.generatorState.stones.map(savedStoneToEditableStone);
-          setTimeout(() => {
-            dispatch({
-              type: 'RESTORE_EDITABLE',
-              stones: manualStones,
-              sourceGenerator: 'manual-editor',
-            });
-          }, 0);
-        }
-
-        // Success - template will auto-generate from state update
+        applyProjectToEditor(project);
         setToast({ message: 'Project opened.', tone: 'success' });
       } catch (err) {
         setToast({ message: `Invalid project file: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
@@ -752,6 +1056,7 @@ export default function EditorShell() {
     reader.readAsText(file);
   }, [
     editorDispatch,
+    applyProjectToEditor,
     state.svgTool.contourSettings,
     state.svgTool.radialSettings,
     state.textTool.contourSettings,
@@ -833,8 +1138,24 @@ export default function EditorShell() {
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
         onSaveProject={handleSaveProject}
+        onOpenLibrary={handleOpenLibrary}
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
+      />
+
+      <TemplateLibraryPanel
+        open={templateLibraryOpen}
+        autosaveEntry={autosaveEntry}
+        builtInEntries={libraryRecord.builtInTemplates}
+        userEntries={libraryRecord.userTemplates}
+        onClose={() => setTemplateLibraryOpen(false)}
+        onSaveCurrent={handleSaveToLibrary}
+        onLoad={handleLoadFromLibrary}
+        onLoadAutosave={handleLoadAutosave}
+        onFavorite={handleFavoriteLibraryEntry}
+        onDelete={handleDeleteLibraryEntry}
+        onRename={handleRenameLibraryEntry}
+        onDuplicate={handleDuplicateLibraryEntry}
       />
 
       <EditorDialog
@@ -861,6 +1182,7 @@ export default function EditorShell() {
         onCancel={() => setPendingDialog(null)}
         tone={pendingDialog?.confirmTone ?? 'default'}
         icon={pendingDialog?.icon ?? 'info'}
+        tertiaryAction={pendingDialog?.tertiaryAction}
       />
 
       {toast && (
@@ -898,6 +1220,8 @@ export default function EditorShell() {
         canvas={state.canvas}
         exportReady={exportReady}
         isEditable={state.editableTemplate.isEditable}
+        autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
+        activeLibraryName={activeLibraryEntry?.name ?? null}
       />
     </div>
   );

@@ -7,9 +7,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { readFile } from 'node:fs/promises';
 import { SVG_ALPHABET_REGISTRY } from '../../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetRegistry';
-import { resolveSvgAlphabetGlyphPath } from '../../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetPath';
+import { loadSvgAlphabetGlyphText } from '../../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetPath';
 import type { StoneSizeId } from '../../../../../src/lib/rhinestone-engine/types/index';
 
 const KNOWN_STONE_SIZES: readonly StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
@@ -40,12 +39,10 @@ export async function GET(
   const url = new URL(request.url);
   const requestedSize = parseStoneSize(url.searchParams.get('size'));
 
-  const resolvedPath = resolveSvgAlphabetGlyphPath(definition, decoded, requestedSize);
-  if (!resolvedPath) {
+  const svgText = await loadSvgAlphabetGlyphText(definition, decoded, requestedSize);
+  if (!svgText) {
     return new NextResponse(`Glyph "${decoded}" not found for ${definition.displayName}`, { status: 404 });
   }
-
-  const svgText = await readFile(resolvedPath, 'utf-8');
 
   return new NextResponse(svgText, {
     headers: {

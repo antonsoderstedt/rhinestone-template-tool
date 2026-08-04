@@ -40,7 +40,7 @@ function mapTemplateIdToTool(templateId: string | undefined): SourcePanelTool | 
   if (templateId.startsWith('text-outline') || templateId.startsWith('text-dotmatrix')) {
     return 'text';
   }
-  if (templateId.startsWith('svg-')) {
+  if (templateId.startsWith('svg-') || templateId.startsWith('image-artwork-')) {
     return 'svg';
   }
   if (templateId.startsWith('grid-')) {

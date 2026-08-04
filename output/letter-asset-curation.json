@@ -1,0 +1,592 @@
+{
+  "version": 1,
+  "packageCount": 46,
+  "summary": {
+    "candidateCount": 35,
+    "duplicateArchiveCount": 11,
+    "reviewCount": 0
+  },
+  "entries": [
+    {
+      "packageName": "F1-Forever-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f1-forever-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F1-Forever-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F11-Big-Bold-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f11-big-bold-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F11-Big-Bold-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F13-OLD-ENGLISH-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f13-old-english-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F13-OLD-ENGLISH-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F14-LINE-FONT-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f14-line-font-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F14-LINE-FONT-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F15-COLLEGE-FONT-2COLOR-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f15-college-font-2color-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F15-COLLEGE-FONT-2COLOR-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F15-COLLEGE-FONT-2COLOR-ALPHABET.zip",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f15-college-font-2color-alphabet",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "F15-COLLEGE-FONT-2COLOR-ALPHABET",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": [
+        "Archive not inspected; classification is based on the archive name only.",
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F16-OUTLINE-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f16-outline-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F16-OUTLINE-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F16-OUTLINE-ALPHABET.zip",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f16-outline-alphabet",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "F16-OUTLINE-ALPHABET",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": [
+        "Archive not inspected; classification is based on the archive name only.",
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F2-Cheer-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f2-cheer-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F2-Cheer-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F20-COLLAGE-LINE-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f20-collage-line-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F20-COLLAGE-LINE-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F21-COLLAGE-OUTLINE-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f21-collage-outline-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F21-COLLAGE-OUTLINE-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F23-ALPHABET-DESIGN",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f23-alphabet-design",
+      "status": "candidate",
+      "canonicalPackageName": "F23-ALPHABET-DESIGN",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F26-SMALL-LINE-ALPHABET.zip",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f26-small-line-alphabet",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "F26-SMALL-LINE-ALPHABET",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": [
+        "Archive not inspected; classification is based on the archive name only.",
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F27-VARSTY-FONT-2COLOR-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f27-varsty-font-2color-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F27-VARSTY-FONT-2COLOR-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F27-VARSTY-FONT-2COLOR-ALPHABET.zip",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f27-varsty-font-2color-alphabet",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "F27-VARSTY-FONT-2COLOR-ALPHABET",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": [
+        "Archive not inspected; classification is based on the archive name only.",
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F3-Blessed-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f3-blessed-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F3-Blessed-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F3-Blessed-ALPHABET.zip",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f3-blessed-alphabet",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "F3-Blessed-ALPHABET",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": [
+        "Archive not inspected; classification is based on the archive name only.",
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F4-REAL-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f4-real-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F4-REAL-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F5-Bride-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f5-bride-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F5-Bride-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F6-COLLEGE-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f6-college-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F6-COLLEGE-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F7-Huge-Digits-ALPHABET",
+      "sourceRootName": "FONT GENERATED CHATGPT",
+      "suggestedId": "f7-huge-digits-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F7-Huge-Digits-ALPHABET",
+      "recommendedKinds": [
+        "rhinestone-font",
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-Blessed-SS6-SS10",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-blessed-ss6-ss10",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-Blessed-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-Blessed-SS6-SS10 (1).zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-blessed-ss6-ss10",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-Blessed-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-Blessed-SS6-SS10.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-blessed-ss6-ss10",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-Blessed-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F16-Outline-SS6-SS10",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f16-outline-ss6-ss10",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-F16-Outline-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F16-Outline-SS6-SS10.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f16-outline-ss6-ss10",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-F16-Outline-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F26-Small-Line-SS6-SS10",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f26-small-line-ss6-ss10",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-F26-Small-Line-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F26-Small-Line-SS6-SS10.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f26-small-line-ss6-ss10",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-F26-Small-Line-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F27-Varsity-2Color-SS6-SS10.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f27-varsity-2color-ss6-ss10",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-F27-Varsity-2Color-SS6-SS10.zip",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F4-F5-F7-font-packages",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f4-f5-f7-font-packages",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-F4-F5-F7-font-packages",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-F4-F5-F7-font-packages.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-f4-f5-f7-font-packages",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-F4-F5-F7-font-packages",
+      "recommendedKinds": [],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-Old-English-SS6-SS10",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-old-english-ss6-ss10",
+      "status": "candidate",
+      "canonicalPackageName": "Rhinestone-Old-English-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "Rhinestone-Old-English-SS6-SS10.zip",
+      "sourceRootName": "Rhinsestont font library",
+      "suggestedId": "rhinestone-old-english-ss6-ss10",
+      "status": "duplicate-archive",
+      "canonicalPackageName": "Rhinestone-Old-English-SS6-SS10",
+      "recommendedKinds": [
+        "rhinestone-font"
+      ],
+      "reason": "Archive duplicate of a stronger package source.",
+      "notes": []
+    },
+    {
+      "packageName": "F10-Retro-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f10-retro-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F10-Retro-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F12-BRODWAY-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f12-brodway-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F12-BRODWAY-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F17-TOYS-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f17-toys-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F17-TOYS-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F18-DISNEY-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f18-disney-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F18-DISNEY-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F19-BIRTHDAY-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f19-birthday-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F19-BIRTHDAY-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F24-RETRO-WIDE-A-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f24-retro-wide-a-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F24-RETRO-WIDE-A-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    },
+    {
+      "packageName": "F26-SMALL-LINE-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f26-small-line-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F26-SMALL-LINE-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F28-SCOREBOARD-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f28-scoreboard-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F28-SCOREBOARD-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F30-DISNEY-ALPHABET",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f30-disney-alphabet",
+      "status": "candidate",
+      "canonicalPackageName": "F30-DISNEY-ALPHABET",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F31-VARSITY-FONT-3COLOR-A",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f31-varsity-font-3color-a",
+      "status": "candidate",
+      "canonicalPackageName": "F31-VARSITY-FONT-3COLOR-A",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "F32-VARSİTY-FONT-3COLOR-B",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "f32-varsi-ty-font-3color-b",
+      "status": "candidate",
+      "canonicalPackageName": "F32-VARSİTY-FONT-3COLOR-B",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "xx-HUGE-LETTER-RHINESTONE",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "xx-huge-letter-rhinestone",
+      "status": "candidate",
+      "canonicalPackageName": "xx-HUGE-LETTER-RHINESTONE",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": [
+        "Stone size could not be inferred from names."
+      ]
+    },
+    {
+      "packageName": "xx-MONOGRAM-RHINESTONE",
+      "sourceRootName": "TEXT FONT TEMPLATE",
+      "suggestedId": "xx-monogram-rhinestone",
+      "status": "candidate",
+      "canonicalPackageName": "xx-MONOGRAM-RHINESTONE",
+      "recommendedKinds": [
+        "svg-alphabet"
+      ],
+      "reason": "Contains source assets that are usable for registry curation.",
+      "notes": []
+    }
+  ]
+}

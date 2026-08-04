@@ -38,7 +38,7 @@ const SOURCE_TOOL_CONFIG: Array<{ id: SourcePanelTool; label: string; descriptio
   { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
   { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
   { id: 'letter-stencil', label: 'Stencils', description: 'Reusable per-letter stencil cards to spell words', icon: Type },
-  { id: 'svg', label: 'SVG', description: 'Upload vector artwork', icon: Upload },
+  { id: 'svg', label: 'Artwork', description: 'Upload SVG or image artwork', icon: Upload },
   { id: 'template-import', label: 'Import Template', description: 'Keep stones from an existing SVG template', icon: Upload },
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Layers3 },
   { id: 'manual', label: 'Manual', description: 'Place stones directly', icon: Plus },
@@ -792,13 +792,13 @@ function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelP
   const supportedStoneSizes = activeSource.supportedStoneSizes;
   const cardCount = letterStencilTool.text.replace(/[\s\n]/g, '').length;
   const modeCopy = letterStencilTool.layoutMode === 'preview'
-    ? 'Preview mode places cards edge-to-edge so you can read the assembled word. Card frames stay visible so you see letter boundaries.'
-    : 'Cut-sheet mode wraps cards onto a 12" (305 mm) mat with a small gap between them — the layout you actually send to Cricut for cutting.';
+    ? 'Preview mode places cards edge-to-edge so you can read the assembled word. Use this for on-screen layout only, not as the final Cricut cut file.'
+    : 'Cut-sheet mode keeps an equal-height frame around every letter and inserts a cut gap between cards — this is the layout you send to Cricut.';
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
-        Generates a reusable stencil card per letter (typographically sized — I is narrow, W is wide, all cards share the same height). Arrange the cut cards on a metal tray to spell any word.
+        Generates a reusable stencil card per letter with an outer cut frame. I stays narrow, W stays wide, and every card keeps the same height so the machine cuts the card and the rhinestone holes together.
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -954,7 +954,7 @@ function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelP
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.layoutMode === 'preview' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
           >
             <div className="font-medium">Preview</div>
-            <div className="mt-1 text-[10px] text-zinc-500">Cards edge-to-edge, see the assembled word</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Cards edge-to-edge, for visual word preview only</div>
           </button>
           <button
             type="button"
@@ -962,7 +962,7 @@ function LetterStencilToolProperties({ state, dispatch }: EditorPropertiesPanelP
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 ${letterStencilTool.layoutMode === 'cut-sheet' ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
           >
             <div className="font-medium">Cut sheet</div>
-            <div className="mt-1 text-[10px] text-zinc-500">Wrapped on 12&quot; mat, ready to cut</div>
+            <div className="mt-1 text-[10px] text-zinc-500">Framed cards with cut spacing, ready to cut</div>
           </button>
         </div>
         <span className="text-[11px] text-zinc-500">{modeCopy}</span>
@@ -1167,43 +1167,232 @@ function TemplateImportToolProperties({ state, dispatch }: EditorPropertiesPanel
 function SvgToolProperties({ state, dispatch }: EditorPropertiesPanelProps) {
   const { svgTool } = state;
   const svgCapabilities = getGeneratorCapabilityProfile('svg');
+  const currentArtworkName = svgTool.assetKind === 'image' ? svgTool.imageFileName : svgTool.svgFileName;
+  const uploadInputId = 'artwork-upload-input';
+  const displayUnit = svgTool.dimensionUnit;
+  const toDisplayUnit = (value: number | '') => {
+    if (value === '') return '';
+    return displayUnit === 'in' ? Number((value / 25.4).toFixed(3)) : value;
+  };
+  const fromDisplayUnit = (value: number | '') => {
+    if (value === '') return '';
+    return displayUnit === 'in' ? Number((value * 25.4).toFixed(3)) : value;
+  };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const loadArtworkFile = (file: File | null | undefined) => {
     if (!file) return;
+
+    const lowerName = file.name.toLowerCase();
+    const isSvg = file.type === 'image/svg+xml' || lowerName.endsWith('.svg');
 
     const reader = new FileReader();
     reader.onload = () => {
-      const svgText = reader.result as string;
-      dispatch({
-        type: 'UPDATE_SVG_TOOL',
-        updates: {
-          uploadedSvgText: svgText,
-          svgFileName: file.name,
-        },
-      });
+      if (isSvg) {
+        const svgText = reader.result as string;
+        dispatch({
+          type: 'UPDATE_SVG_TOOL',
+          updates: {
+            assetKind: 'svg',
+            uploadedSvgText: svgText,
+            svgFileName: file.name,
+            uploadedImageDataUrl: null,
+            imageFileName: null,
+          },
+        });
+      } else {
+        dispatch({
+          type: 'UPDATE_SVG_TOOL',
+          updates: {
+            assetKind: 'image',
+            uploadedImageDataUrl: reader.result as string,
+            imageFileName: file.name,
+            uploadedSvgText: null,
+            svgFileName: null,
+          },
+        });
+      }
     };
-    reader.readAsText(file);
+    if (isSvg) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    loadArtworkFile(file);
     e.target.value = ''; // Reset for re-upload
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    loadArtworkFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const fileItem = Array.from(e.clipboardData.items).find((item) => item.kind === 'file');
+    if (!fileItem) return;
+    e.preventDefault();
+    loadArtworkFile(fileItem.getAsFile());
   };
 
   return (
     <div className="space-y-4">
       {/* File Upload */}
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-zinc-400">Upload SVG</span>
+        <span className="text-xs font-medium text-zinc-400">Upload artwork</span>
+        <div
+          tabIndex={0}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
+          className="rounded-xl border border-dashed border-zinc-700 bg-zinc-950 px-4 py-4 text-center text-sm text-zinc-300 outline-none transition hover:border-zinc-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+        >
+          <p>Drag and drop or paste artwork here.</p>
+          <p className="mt-1 text-[11px] text-zinc-500">Use the file picker below if you prefer browsing.</p>
+        </div>
         <input
+          id={uploadInputId}
           type="file"
-          accept=".svg"
+          accept=".svg,image/svg+xml,.png,.jpg,.jpeg,.webp,.bmp,.gif,image/png,image/jpeg,image/webp,image/bmp,image/gif"
           onChange={handleFileSelect}
           className="text-xs text-zinc-300 file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-purple-600 file:text-white file:text-xs file:font-medium hover:file:bg-purple-700 file:cursor-pointer cursor-pointer"
         />
-        {svgTool.svgFileName && (
-          <span className="text-xs text-zinc-400 mt-1">📄 {svgTool.svgFileName}</span>
+        <span className="text-[11px] text-zinc-500">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
+        {currentArtworkName && (
+          <span className="text-xs text-zinc-400 mt-1">📄 {currentArtworkName}</span>
         )}
       </label>
 
-      {svgTool.uploadedSvgText && (
+      {svgTool.assetKind === 'image' && svgTool.uploadedImageDataUrl && (
+        <>
+          <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-3 text-xs text-purple-100">
+            Converts a raster image into a rhinestone layout using thresholded image sampling, color layers, and physical stone spacing.
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+            <div className="border-b border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400">Original image</div>
+            <img
+              src={svgTool.uploadedImageDataUrl}
+              alt={currentArtworkName ?? 'Uploaded artwork preview'}
+              className="max-h-56 w-full object-contain bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.14),_transparent_35%),linear-gradient(180deg,_#111827,_#09090b)]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-zinc-400">Number of stone colors</span>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageColorCount: count as 1 | 2 | 3 | 4 } })}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${svgTool.imageColorCount === count ? 'border-purple-500/50 bg-purple-500/15 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'}`}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <StoneProfileControl
+            value={svgTool.stoneSize}
+            onChange={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
+          />
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-zinc-400">Target Dimensions</span>
+              <div className="ml-auto inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1 text-xs">
+                {(['in', 'mm'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    type="button"
+                    onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { dimensionUnit: unit } })}
+                    className={`rounded px-2 py-1 transition ${displayUnit === unit ? 'bg-purple-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <NumericInput
+                label="Width"
+                value={toDisplayUnit(svgTool.targetWidthMm)}
+                onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: fromDisplayUnit(value) } })}
+                unit={displayUnit}
+                min={displayUnit === 'in' ? 0.25 : 5}
+                max={displayUnit === 'in' ? 30 : 762}
+                step={displayUnit === 'in' ? 0.1 : 0.1}
+              />
+              <NumericInput
+                label="Height"
+                value={toDisplayUnit(svgTool.targetHeightMm)}
+                onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetHeightMm: fromDisplayUnit(value) } })}
+                unit={displayUnit}
+                min={displayUnit === 'in' ? 0.25 : 5}
+                max={displayUnit === 'in' ? 30 : 762}
+                step={displayUnit === 'in' ? 0.1 : 0.1}
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={svgTool.preserveAspectRatio}
+                onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: e.target.checked } })}
+                className="h-3.5 w-3.5 rounded"
+              />
+              Lock ratio
+            </label>
+          </div>
+
+          <NumericInput
+            label="Stone spacing"
+            value={toDisplayUnit(svgTool.customSpacingMm)}
+            onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: fromDisplayUnit(value), densityPreset: 'custom' } })}
+            unit={displayUnit}
+            min={displayUnit === 'in' ? 0.03 : 0.75}
+            max={displayUnit === 'in' ? 1 : 25}
+            step={displayUnit === 'in' ? 0.01 : 0.1}
+          />
+
+          <NumericInput
+            label="Threshold"
+            value={svgTool.imageThreshold}
+            onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageThreshold: typeof value === 'number' ? value : 128 } })}
+            min={0}
+            max={255}
+            step={1}
+            helpText="Lower values keep only darker regions. Higher values keep more of the image."
+          />
+
+          <NumericInput
+            label="Refine details"
+            value={svgTool.imageDetail}
+            onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageDetail: typeof value === 'number' ? value : 128 } })}
+            min={0}
+            max={255}
+            step={1}
+            helpText="Higher values keep small details. Lower values smooth isolated noise."
+          />
+
+          <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={svgTool.imageInvert}
+              onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageInvert: e.target.checked } })}
+              className="h-3.5 w-3.5 rounded"
+            />
+            Invert fill (place stones on lighter regions)
+          </label>
+        </>
+      )}
+
+      {svgTool.assetKind === 'svg' && svgTool.uploadedSvgText && (
         <>
           <div className="space-y-2">
             <span className="text-xs font-medium text-zinc-400">SVG mode</span>
@@ -1672,7 +1861,7 @@ function getToolTitle(tool: EditorTool): string {
   switch (tool) {
     case 'select': return 'Selection';
     case 'text': return 'Text Source';
-    case 'svg': return 'SVG Source';
+    case 'svg': return 'Artwork Source';
     case 'grid': return 'Grid Source';
     case 'rhinestone-font': return 'Rhinestone Font';
     case 'svg-alphabet': return 'SVG Alphabet';

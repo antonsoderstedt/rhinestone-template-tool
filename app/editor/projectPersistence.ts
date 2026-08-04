@@ -143,16 +143,20 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         lineSpacingRows: state.textTool.lineSpacingRows,
       } satisfies DotMatrixTextProjectState;
     case 'svg-upload':
-      if (!state.svgTool.uploadedSvgText) {
+      if (!state.svgTool.uploadedSvgText && !state.svgTool.uploadedImageDataUrl) {
         return null;
       }
       return {
         generatorId: 'svg-upload',
+        assetKind: state.svgTool.assetKind,
         uploadedSvgText: state.svgTool.uploadedSvgText,
+        uploadedImageDataUrl: state.svgTool.uploadedImageDataUrl,
+        imageFileName: state.svgTool.imageFileName,
         renderMode: state.svgTool.renderMode,
         stoneSize: state.svgTool.stoneSize,
         targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : null,
         targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : null,
+        dimensionUnit: state.svgTool.dimensionUnit,
         preserveAspectRatio: state.svgTool.preserveAspectRatio,
         coverageMode: state.svgTool.coverageMode,
         fillMode: state.svgTool.fillMode,
@@ -162,6 +166,10 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         radialSettings: state.svgTool.radialSettings,
         densityPreset: state.svgTool.densityPreset,
         customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4.0,
+        imageColorCount: state.svgTool.imageColorCount,
+        imageThreshold: state.svgTool.imageThreshold,
+        imageDetail: state.svgTool.imageDetail,
+        imageInvert: state.svgTool.imageInvert,
         cleanupEnabled: state.svgTool.cleanupEnabled,
         cleanupSimplify: state.svgTool.cleanupSimplify,
         cleanupSimplifyTol: state.svgTool.cleanupSimplifyTol,

@@ -64,7 +64,7 @@ export interface CreateLetterStencilOptions {
   /** Minimum card width so single-stroke letters (I, 1) don't collapse (mm). Default 12. */
   minCardWidthMm?: number;
 
-  /** How cards are arranged on the sheet. Default 'preview'. */
+  /** How cards are arranged on the sheet. Default 'cut-sheet'. */
   layoutMode?: StencilLayoutMode;
   /** For 'cut-sheet' mode: gap between adjacent cards (mm). Default 3. */
   cutSheetGapMm?: number;
@@ -91,8 +91,13 @@ export interface LetterStencilResult {
 
 interface RawGlyph {
   stones: Array<{ x: number; y: number; diameterMm: number }>;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
   widthMm: number;
   heightMm: number;
+  advanceWidthMm: number;
 }
 
 function sanitizeCurationSvg(svgText: string): string {
@@ -105,7 +110,16 @@ function sanitizeCurationSvg(svgText: string): string {
 
 function normalizeGlyph(rawStones: ImportedStone[]): RawGlyph {
   if (rawStones.length === 0) {
-    return { stones: [], widthMm: 0, heightMm: 0 };
+    return {
+      stones: [],
+      minX: 0,
+      minY: 0,
+      maxX: 0,
+      maxY: 0,
+      widthMm: 0,
+      heightMm: 0,
+      advanceWidthMm: 0,
+    };
   }
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const stone of rawStones) {
@@ -115,22 +129,74 @@ function normalizeGlyph(rawStones: ImportedStone[]): RawGlyph {
     maxX = Math.max(maxX, stone.center.x + r);
     maxY = Math.max(maxY, stone.center.y + r);
   }
+  const widthMm = maxX - minX;
+  const heightMm = maxY - minY;
   return {
     stones: rawStones.map((s) => ({
       x: s.center.x - minX,
       y: s.center.y - minY,
       diameterMm: s.diameterMm,
     })),
+    minX: 0,
+    minY: 0,
+    maxX: widthMm,
+    maxY: heightMm,
+    widthMm,
+    heightMm,
+    advanceWidthMm: widthMm,
+  };
+}
+
+function createFontRawGlyph(rawStones: ImportedStone[], advanceWidthMm: number): RawGlyph {
+  if (rawStones.length === 0) {
+    return {
+      stones: [],
+      minX: 0,
+      minY: 0,
+      maxX: 0,
+      maxY: 0,
+      widthMm: 0,
+      heightMm: 0,
+      advanceWidthMm,
+    };
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const stones = rawStones.map((s) => {
+    const radius = s.diameterMm / 2;
+    minX = Math.min(minX, s.center.x - radius);
+    minY = Math.min(minY, s.center.y - radius);
+    maxX = Math.max(maxX, s.center.x + radius);
+    maxY = Math.max(maxY, s.center.y + radius);
+    return {
+      x: s.center.x,
+      y: s.center.y,
+      diameterMm: s.diameterMm,
+    };
+  });
+
+  return {
+    stones,
+    minX,
+    minY,
+    maxX,
+    maxY,
     widthMm: maxX - minX,
     heightMm: maxY - minY,
+    advanceWidthMm,
   };
 }
 
 function scaleGlyph(g: RawGlyph, scale: number): RawGlyph {
   return {
     stones: g.stones.map((s) => ({ x: s.x * scale, y: s.y * scale, diameterMm: s.diameterMm * scale })),
+    minX: g.minX * scale,
+    minY: g.minY * scale,
+    maxX: g.maxX * scale,
+    maxY: g.maxY * scale,
     widthMm: g.widthMm * scale,
     heightMm: g.heightMm * scale,
+    advanceWidthMm: g.advanceWidthMm * scale,
   };
 }
 
@@ -147,7 +213,7 @@ export async function createLetterStencilTemplate(
     cardPaddingMm = 3,
     cardCornerRadiusMm = 2,
     minCardWidthMm = 12,
-    layoutMode = 'preview',
+    layoutMode = 'cut-sheet',
     cutSheetGapMm = 3,
     cutSheetWidthMm = 305,
   } = options;
@@ -166,6 +232,7 @@ export async function createLetterStencilTemplate(
   let sourceDisplayName: string;
   let sourceIdForMetadata: string;
   let sourceStyleForMetadata: string;
+  const useFontMetrics = source.type === 'rhinestone-font';
 
   if (source.type === 'svg-alphabet') {
     const resolvedAlphabetId: SvgAlphabetId = isKnownSvgAlphabetId(source.alphabetId)
@@ -228,9 +295,9 @@ export async function createLetterStencilTemplate(
         group: null,
         originalIndex: idx,
       }));
-      const normalized = normalizeGlyph(asImported);
-      rawByChar.set(ch, normalized);
-      for (const stone of normalized.stones) allDiameters.push(stone.diameterMm);
+      const rawGlyph = createFontRawGlyph(asImported, extracted.advanceWidth);
+      rawByChar.set(ch, rawGlyph);
+      for (const stone of rawGlyph.stones) allDiameters.push(stone.diameterMm);
     }
   }
 
@@ -245,12 +312,19 @@ export async function createLetterStencilTemplate(
   // 2 * padding, so every letter card is the same height (typographic constant).
   const scaledByChar = new Map<string, RawGlyph>();
   let maxGlyphHeight = 0;
+  let globalMinY = 0;
+  let globalMaxY = 0;
   for (const [ch, raw] of rawByChar) {
     const scaled = scaleGlyph(raw, scale);
     scaledByChar.set(ch, scaled);
     if (scaled.heightMm > maxGlyphHeight) maxGlyphHeight = scaled.heightMm;
+    if (useFontMetrics) {
+      globalMinY = Math.min(globalMinY, scaled.minY);
+      globalMaxY = Math.max(globalMaxY, scaled.maxY);
+    }
   }
-  const cardHeightMm = maxGlyphHeight + 2 * cardPaddingMm;
+  const naturalCardHeightMm = useFontMetrics ? globalMaxY - globalMinY : maxGlyphHeight;
+  const cardHeightMm = naturalCardHeightMm + 2 * cardPaddingMm;
 
   // Emit cards in the order characters appear in text (respecting duplicates).
   const stones: Stone[] = [];
@@ -297,7 +371,13 @@ export async function createLetterStencilTemplate(
     if (!scaled) continue; // already reported as unsupported
 
     const glyphWidth = Math.max(scaled.widthMm, 0);
-    const cardWidthMm = Math.max(glyphWidth + 2 * cardPaddingMm, minCardWidthMm);
+    const leftOverflowMm = useFontMetrics ? Math.max(0, -scaled.minX) : 0;
+    const rightEdgeMm = useFontMetrics ? Math.max(scaled.advanceWidthMm, scaled.maxX) : glyphWidth;
+    const naturalCardWidthMm = useFontMetrics
+      ? rightEdgeMm + leftOverflowMm + 2 * cardPaddingMm
+      : glyphWidth + 2 * cardPaddingMm;
+    const cardWidthMm = Math.max(naturalCardWidthMm, minCardWidthMm);
+    const extraHorizontalInsetMm = (cardWidthMm - naturalCardWidthMm) / 2;
 
     if (layoutMode === 'cut-sheet' && !firstCardOnRow && (cursorX + cardWidthMm) > cutSheetWidthMm) {
       advanceToNextRow();
@@ -318,9 +398,12 @@ export async function createLetterStencilTemplate(
       id: cardId,
     });
 
-    // Centre the glyph inside the card horizontally + vertically.
-    const glyphOffsetX = cardX + (cardWidthMm - glyphWidth) / 2;
-    const glyphOffsetY = cardY + (cardHeightMm - scaled.heightMm) / 2;
+    const glyphOffsetX = useFontMetrics
+      ? cardX + cardPaddingMm + leftOverflowMm + extraHorizontalInsetMm
+      : cardX + (cardWidthMm - glyphWidth) / 2;
+    const glyphOffsetY = useFontMetrics
+      ? cardY + cardPaddingMm - globalMinY
+      : cardY + (cardHeightMm - scaled.heightMm) / 2;
 
     for (const s of scaled.stones) {
       stones.push({

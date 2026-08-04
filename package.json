@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "generate:examples": "tsx scripts/generate-examples.ts"
+    "generate:examples": "tsx scripts/generate-examples.ts",
+    "scan:letter-assets": "tsx scripts/scan-letter-assets.ts",
+    "curate:letter-assets": "tsx scripts/generate-letter-asset-curation.ts",
+    "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",

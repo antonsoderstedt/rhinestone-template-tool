@@ -8,6 +8,7 @@
 import * as opentype from 'opentype.js';
 import {
   getRhinestoneFontDefinition,
+  getPreferredRhinestoneFontStoneSize,
   isKnownRhinestoneFontId,
   DEFAULT_RHINESTONE_FONT_ID,
   type RhinestoneFontDefinition,
@@ -18,7 +19,6 @@ import type { StoneSizeId } from '../types/index';
 export interface LoadedRhinestoneFont {
   definition: RhinestoneFontDefinition;
   font: opentype.Font;
-  loadedStoneSizeId?: StoneSizeId;
 }
 
 const parsedFontCache = new Map<string, Promise<LoadedRhinestoneFont>>();
@@ -29,30 +29,28 @@ function bufferToArrayBuffer(buffer: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
-async function readFontArrayBuffer(
-  definition: RhinestoneFontDefinition,
-  targetStoneSizeId?: StoneSizeId,
-): Promise<ArrayBuffer> {
-  if (!definition.assetUrl && !definition.nodeFilePath) {
+async function readFontArrayBuffer(definition: RhinestoneFontDefinition, targetStoneSizeId?: StoneSizeId): Promise<ArrayBuffer> {
+  if (!definition.assetUrl && !definition.nodeFilePath && !definition.libraryRelativePath && !definition.libraryRelativePathBySize) {
     throw new Error(`Rhinestone font "${definition.displayName}" has no loadable asset.`);
   }
 
   if (typeof window === 'undefined') {
-    const { readFile } = await import('node:fs/promises');
     const { resolveRhinestoneFontFilePath } = await import('./fontLibraryPath');
     const resolvedPath = resolveRhinestoneFontFilePath(definition, targetStoneSizeId);
-
     if (!resolvedPath) {
+      throw new Error(`Rhinestone font "${definition.displayName}" has no node file path.`);
+    }
+    const { readFile } = await import('node:fs/promises');
+    const { existsSync } = await import('node:fs');
+    
+    if (!existsSync(resolvedPath)) {
       throw new Error(
-        `Rhinestone font file not found for: ${definition.displayName}\n` +
+        `Rhinestone font file not found: ${resolvedPath}\n` +
         `Font: ${definition.displayName} (${definition.fontId})\n` +
-        `Requested size: ${targetStoneSizeId ?? '(any)'}\n` +
-        `Expected node path: ${definition.nodeFilePath ?? '(none)'}\n` +
-        `Expected library-relative path: ${definition.libraryRelativePath ?? '(none)'}\n` +
-        `This font must be available in RHINESTONE_FONT_LIBRARY_DIR, ~/Desktop/LETTER UTVALDA, or the repo font library.`
+        `This font must be manually placed at the expected location.`
       );
     }
-
+    
     const fileBuffer = await readFile(resolvedPath);
     return bufferToArrayBuffer(fileBuffer);
   }
@@ -61,34 +59,27 @@ async function readFontArrayBuffer(
     throw new Error(`Rhinestone font "${definition.displayName}" has no browser asset URL.`);
   }
 
-  const url = targetStoneSizeId ? `${definition.assetUrl}?size=${targetStoneSizeId}` : definition.assetUrl;
-  const response = await fetch(url);
+  const sizeId = targetStoneSizeId ?? getPreferredRhinestoneFontStoneSize(definition.fontId);
+  const response = await fetch(`${definition.assetUrl}?size=${encodeURIComponent(sizeId)}`);
   if (!response.ok) {
     throw new Error(`Failed to load rhinestone font asset for ${definition.displayName}: ${response.status}`);
   }
   return await response.arrayBuffer();
 }
 
-export async function loadRhinestoneFont(
-  fontId: string | undefined | null,
-  targetStoneSizeId?: StoneSizeId,
-): Promise<LoadedRhinestoneFont> {
+export async function loadRhinestoneFont(fontId: string | undefined | null, targetStoneSizeId?: StoneSizeId): Promise<LoadedRhinestoneFont> {
   const resolvedId = isKnownRhinestoneFontId(fontId) ? fontId : DEFAULT_RHINESTONE_FONT_ID;
   const definition = getRhinestoneFontDefinition(resolvedId);
-
-  const hasSizedVariant = targetStoneSizeId !== undefined
-    && definition.libraryRelativePathBySize?.[targetStoneSizeId] !== undefined;
-  const cacheKey = hasSizedVariant
-    ? `${definition.fontId}::${targetStoneSizeId}`
-    : definition.fontId;
+  const resolvedSizeId = targetStoneSizeId ?? getPreferredRhinestoneFontStoneSize(definition.fontId);
+  const cacheKey = `${definition.fontId}::${resolvedSizeId}`;
 
   const existing = parsedFontCache.get(cacheKey);
   if (existing) return existing;
 
   const promise = (async () => {
-    const arrayBuffer = await readFontArrayBuffer(definition, hasSizedVariant ? targetStoneSizeId : undefined);
+    const arrayBuffer = await readFontArrayBuffer(definition, resolvedSizeId);
     const font = opentype.parse(arrayBuffer);
-    return { definition, font, loadedStoneSizeId: hasSizedVariant ? targetStoneSizeId : undefined };
+    return { definition, font };
   })();
 
   parsedFontCache.set(cacheKey, promise);
@@ -100,10 +91,7 @@ export function clearRhinestoneFontCacheForTests() {
 }
 
 export function listCachedRhinestoneFontIds(): RhinestoneFontId[] {
-  const ids = new Set<RhinestoneFontId>();
-  for (const key of parsedFontCache.keys()) {
-    const [fontId] = key.split('::');
-    if (isKnownRhinestoneFontId(fontId)) ids.add(fontId);
-  }
-  return Array.from(ids);
+  return Array.from(parsedFontCache.keys()).filter((fontId): fontId is RhinestoneFontId =>
+    isKnownRhinestoneFontId(fontId)
+  );
 }

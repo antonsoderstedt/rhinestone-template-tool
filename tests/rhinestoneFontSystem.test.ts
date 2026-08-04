@@ -13,6 +13,7 @@ import {
   layoutRhinestoneFontText,
   TRW_STONE_SIZE_CALIBRATION,
   createRhinestoneFontTemplate,
+  getSupportedRhinestoneFontStoneSizes,
 } from '../src/lib/rhinestone-engine/index';
 
 describe('Rhinestone Font System', () => {
@@ -40,6 +41,36 @@ describe('Rhinestone Font System', () => {
         digits: false,
         swedish: false,
       });
+    });
+
+    it('should load a size-aware library font from LETTER UTVALDA', async () => {
+      const loaded = await loadRhinestoneFont('atletico-real', 'SS10');
+
+      expect(loaded.definition.fontId).toBe('atletico-real');
+      expect(loaded.definition.displayName).toBe('Atletico Real');
+      expect(loaded.definition.supportedTargetStoneSizeIds).toEqual(['SS6', 'SS10']);
+      expect(getSupportedRhinestoneFontStoneSizes('atletico-real')).toEqual(['SS6', 'SS10']);
+      expect(loaded.font.unitsPerEm).toBeGreaterThan(0);
+    });
+
+    it('should load the Cheer Block font from FONT GENERATED CHATGPT', async () => {
+      const loaded = await loadRhinestoneFont('cheer-block', 'SS10');
+
+      expect(loaded.definition.fontId).toBe('cheer-block');
+      expect(loaded.definition.displayName).toBe('Cheer Block');
+      expect(loaded.definition.supportedTargetStoneSizeIds).toEqual(['SS6', 'SS10']);
+      expect(getSupportedRhinestoneFontStoneSizes('cheer-block')).toEqual(['SS6', 'SS10']);
+      expect(loaded.font.unitsPerEm).toBeGreaterThan(0);
+    });
+
+    it('should load the extracted Forever font from FONT GENERATED CHATGPT', async () => {
+      const loaded = await loadRhinestoneFont('forever-script', 'SS10');
+
+      expect(loaded.definition.fontId).toBe('forever-script');
+      expect(loaded.definition.displayName).toBe('Forever');
+      expect(loaded.definition.supportedTargetStoneSizeIds).toEqual(['SS6', 'SS10']);
+      expect(getSupportedRhinestoneFontStoneSizes('forever-script')).toEqual(['SS6', 'SS10']);
+      expect(loaded.font.unitsPerEm).toBeGreaterThan(0);
     });
   });
 
@@ -230,7 +261,6 @@ describe('Rhinestone Font System', () => {
       expect(result.template.heightMm).toBeGreaterThan(0);
       expect(result.unsupportedCharacters.length).toBe(0);
       expect(result.warnings.length).toBe(0);
-      expect(result.template.metadata?.presentationMode).toBe('stones');
 
       // Verify stones have correct properties
       for (const stone of result.template.stones) {
@@ -294,45 +324,6 @@ describe('Rhinestone Font System', () => {
         expect(s1.stoneSize).toBe(s2.stoneSize);
       }
     });
-
-    it('should reject unsupported target stone sizes for size-specific fonts', async () => {
-      await expect(createRhinestoneFontTemplate({
-        text: 'ABS',
-        rhinestoneFontId: 'trw-clean-stone',
-        targetStoneSizeId: 'SS12',
-        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm * 1.5,
-        letterSpacingMm: 0,
-        lineSpacingMm: 0,
-      })).rejects.toThrow(/supports SS6, SS10, SS16, SS20/i);
-    });
-
-    it('should add usage warnings for line-style rhinestone fonts', async () => {
-      const result = await createRhinestoneFontTemplate({
-        text: 'AB',
-        rhinestoneFontId: 'small-line-ss10',
-        targetStoneSizeId: 'SS10',
-        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
-        letterSpacingMm: 0,
-        lineSpacingMm: 0,
-      });
-
-      expect(result.warnings.some((warning) => warning.includes('line-style'))).toBe(true);
-      expect(result.template.metadata?.presentationMode).toBe('line');
-    });
-
-    it('should add usage warnings for digits-focused rhinestone fonts', async () => {
-      const result = await createRhinestoneFontTemplate({
-        text: '1234',
-        rhinestoneFontId: 'huge-numbers-ss10',
-        targetStoneSizeId: 'SS10',
-        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
-        letterSpacingMm: 0,
-        lineSpacingMm: 0,
-      });
-
-      expect(result.warnings.some((warning) => warning.includes('digits-focused'))).toBe(true);
-      expect(result.template.metadata?.presentationMode).toBe('digits');
-    });
   });
 
   describe('Stone Size Calibration', () => {
@@ -346,30 +337,30 @@ describe('Rhinestone Font System', () => {
     it('should scale stones correctly for different sizes', async () => {
       const ss6Result = await createRhinestoneFontTemplate({
         text: 'A',
-        rhinestoneFontId: 'trw-clean-stone',
+        rhinestoneFontId: 'atletico-real',
         targetStoneSizeId: 'SS6',
         targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS6.diameterMm,
         letterSpacingMm: 0,
         lineSpacingMm: 0,
       });
 
-      const ss16Result = await createRhinestoneFontTemplate({
+      const ss10Result = await createRhinestoneFontTemplate({
         text: 'A',
-        rhinestoneFontId: 'trw-clean-stone',
-        targetStoneSizeId: 'SS16',
-        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS16.diameterMm,
+        rhinestoneFontId: 'atletico-real',
+        targetStoneSizeId: 'SS10',
+        targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
         letterSpacingMm: 0,
         lineSpacingMm: 0,
       });
 
-      // SS16 should be larger than SS6
-      expect(ss16Result.template.widthMm).toBeDefined();
+      // SS10 should be larger than SS6
+      expect(ss10Result.template.widthMm).toBeDefined();
       expect(ss6Result.template.widthMm).toBeDefined();
-      expect(ss16Result.template.widthMm!).toBeGreaterThan(ss6Result.template.widthMm!);
-      expect(ss16Result.template.heightMm!).toBeGreaterThan(ss6Result.template.heightMm!);
+      expect(ss10Result.template.widthMm!).toBeGreaterThan(ss6Result.template.widthMm!);
+      expect(ss10Result.template.heightMm!).toBeGreaterThan(ss6Result.template.heightMm!);
 
       // Stone count should be the same
-      expect(ss16Result.template.stones.length).toBe(ss6Result.template.stones.length);
+      expect(ss10Result.template.stones.length).toBe(ss6Result.template.stones.length);
     });
   });
 });

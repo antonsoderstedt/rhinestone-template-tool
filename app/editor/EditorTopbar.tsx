@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, FolderOpen, RotateCcw, RotateCw, Save, Settings2, Sparkles } from 'lucide-react';
+import { Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Sparkles } from 'lucide-react';
 import { EditorAction } from './EditorState';
 
 interface EditorTopbarProps {
@@ -12,6 +12,7 @@ interface EditorTopbarProps {
   onNewProject: () => void;
   onOpenProject: () => void;
   onSaveProject: () => void;
+  onOpenLibrary: () => void;
   onExport: () => void;
   onOpenSetup: () => void;
 }
@@ -25,6 +26,7 @@ export default function EditorTopbar({
   onNewProject,
   onOpenProject,
   onSaveProject,
+  onOpenLibrary,
   onExport,
   onOpenSetup,
 }: EditorTopbarProps) {
@@ -77,6 +79,14 @@ export default function EditorTopbar({
         >
           <Save className="h-4 w-4" />
           Save
+        </button>
+        <button
+          onClick={onOpenLibrary}
+          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          title="Open the local template library"
+        >
+          <LibraryBig className="h-4 w-4" />
+          Library
         </button>
         
         <div className="mx-1 h-6 w-px bg-zinc-800" />

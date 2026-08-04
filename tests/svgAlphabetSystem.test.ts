@@ -8,8 +8,10 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  clearSvgAlphabetGlyphCacheForTests,
   createSvgAlphabetTemplate,
   DEFAULT_SVG_ALPHABET_ID,
+  defaultSvgAlphabetGlyphLoader,
   getSvgAlphabetDefinition,
   isKnownSvgAlphabetId,
   listSvgAlphabets,
@@ -49,11 +51,89 @@ describe('SVG Alphabet System', () => {
     const alphabets = listSvgAlphabets();
     const ids = alphabets.map((a) => a.alphabetId);
     expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toContain('big-bold');
+    expect(ids).toContain('blessed-script');
+    expect(ids).toContain('broadway-retro');
+    expect(ids).toContain('bride-script');
+    expect(ids).toContain('cheer-block');
+    expect(ids).toContain('college-varsity');
+    expect(ids).toContain('disney-script');
+    expect(ids).toContain('forever-script');
+    expect(ids).toContain('huge-digits');
+    expect(ids).toContain('line-font');
+    expect(ids).toContain('real-college');
     expect(ids).toContain('scoreboard-block');
     expect(ids).toContain('toys-bubble');
     expect(ids).toContain('birthday-script');
     expect(ids).toContain('retro-wide');
     expect(ids).toContain('varsity-collage-a');
+  });
+
+  it('offers SS6 and SS10 for the Cheer package via libraryRelativeDirBySize', () => {
+    const cheer = getSvgAlphabetDefinition('cheer-block');
+    expect(cheer.supportedTargetStoneSizeIds).toContain('SS6');
+    expect(cheer.supportedTargetStoneSizeIds).toContain('SS10');
+    expect(cheer.libraryRelativeDirBySize?.SS6).toBeDefined();
+    expect(cheer.libraryRelativeDirBySize?.SS10).toBeDefined();
+  });
+
+  it('resolves uppercase, lowercase, and digit glyphs for Forever from separate directories', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('forever-script', 'A', 'SS10');
+    const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('forever-script', 'a', 'SS10');
+    const digit = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('forever-script', '0', 'SS10');
+
+    expect(upper).toContain('<svg');
+    expect(lower).toContain('<svg');
+    expect(digit).toContain('<svg');
+  });
+
+  it('resolves Real College glyphs from combined strip files', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const a = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('real-college', 'A', 'SS10');
+    const n = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('real-college', 'N', 'SS10');
+    const zero = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('real-college', '0', 'SS10');
+
+    expect(a).toContain('<svg');
+    expect(n).toContain('<svg');
+    expect(zero).toContain('<svg');
+  });
+
+  it('resolves Broadway glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('broadway-retro', 'A', 'SS10');
+    const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('broadway-retro', 'a', 'SS10');
+    const digit = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('broadway-retro', '0', 'SS10');
+
+    expect(upper).toContain('<svg');
+    expect(lower).toContain('<svg');
+    expect(digit).toContain('<svg');
+  });
+
+  it('resolves Blessed and Bride glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const blessedUpper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('blessed-script', 'A', 'SS10');
+    const blessedLower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('blessed-script', 'a', 'SS10');
+    const blessedDigit = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('blessed-script', '0', 'SS10');
+    const brideUpper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('bride-script', 'A', 'SS10');
+    const brideLower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('bride-script', 'a', 'SS10');
+    const brideDigit = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('bride-script', '0', 'SS10');
+
+    expect(blessedUpper).toContain('<svg');
+    expect(blessedLower).toContain('<svg');
+    expect(blessedDigit).toContain('<svg');
+    expect(brideUpper).toContain('<svg');
+    expect(brideLower).toContain('<svg');
+    expect(brideDigit).toContain('<svg');
+  });
+
+  it('resolves Huge Digits from its zip-backed digit directory', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const zero = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('huge-digits', '0', 'SS10');
+    const eight = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('huge-digits', '8', 'SS10');
+
+    expect(zero).toContain('<svg');
+    expect(eight).toContain('<svg');
   });
 
   it('offers SS6 and SS10 for size-variant alphabets via libraryRelativeDirBySize', () => {

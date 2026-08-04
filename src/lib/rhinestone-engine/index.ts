@@ -214,7 +214,11 @@ export type {
 } from './templateLibrary/model';
 export { deepCloneProjectSnapshot, createTemplateLibraryEntry } from './templateLibrary/model';
 export type { TemplateLibraryRepository } from './templateLibrary/repository';
-export { InMemoryTemplateLibraryRepository } from './templateLibrary/repository';
+export {
+  DEFAULT_TEMPLATE_LIBRARY_STORAGE_KEY,
+  InMemoryTemplateLibraryRepository,
+  LocalStorageTemplateLibraryRepository,
+} from './templateLibrary/repository';
 
 // Fill Mode v1 — outline, fill, outline-fill
 export type { FillPattern, PolygonFillOptions, PolygonBounds } from './fill/polygonFill';
@@ -351,3 +355,11 @@ export type {
   LetterStencilResult,
 } from './letterStencil/letterStencilTemplate';
 export { createLetterStencilTemplate } from './letterStencil/letterStencilTemplate';
+
+// Raster artwork / image upload
+export type {
+  RasterArtworkImageData,
+  CreateRasterArtworkTemplateOptions,
+  RasterArtworkTemplateResult,
+} from './image/rasterArtworkTemplate';
+export { createRasterArtworkTemplate } from './image/rasterArtworkTemplate';

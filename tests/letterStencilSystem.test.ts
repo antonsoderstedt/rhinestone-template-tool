@@ -11,6 +11,9 @@ import {
   createLetterStencilTemplate,
   createBasicSvgExport,
   DEFAULT_SVG_ALPHABET_ID,
+  loadRhinestoneFont,
+  extractStonesFromGlyph,
+  TRW_STONE_SIZE_CALIBRATION,
   type SvgAlphabetGlyphLoader,
   type SvgAlphabetId,
 } from '../src/lib/rhinestone-engine/index';
@@ -101,6 +104,19 @@ describe('Letter Stencil System', () => {
     expect(res.cards[0]!.widthMm).toBeGreaterThanOrEqual(20);
   });
 
+  it('defaults to cut-sheet spacing so card frames remain separately cuttable', async () => {
+    const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
+    const res = await createLetterStencilTemplate({
+      text: 'AB',
+      source: svgAlphabetSource(loader),
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.429,
+      cutSheetGapMm: 5,
+    });
+    const frames = res.template.cutShapes!;
+    expect(frames[1]!.x).toBeCloseTo(frames[0]!.x + frames[0]!.widthMm + 5, 3);
+  });
+
   it('produces edge-to-edge cards in preview mode (no gap between adjacent cards)', async () => {
     const loader = inMemoryLoader({ A: narrowGlyph, B: narrowGlyph });
     const res = await createLetterStencilTemplate({
@@ -113,6 +129,29 @@ describe('Letter Stencil System', () => {
     const frames = res.template.cutShapes!;
     expect(frames.length).toBe(2);
     expect(frames[1]!.x).toBeCloseTo(frames[0]!.x + frames[0]!.widthMm, 3);
+  });
+
+  it('uses rhinestone font advance width so narrow glyph cards keep usable side spacing', async () => {
+    const loaded = await loadRhinestoneFont('old-english-stone', 'SS10');
+    const extracted = extractStonesFromGlyph(loaded.font, 'l');
+    const diameters = extracted.stones.map((stone) => stone.diameterFontUnits).sort((a, b) => a - b);
+    const medianDiameter = diameters[Math.floor(diameters.length / 2)]!;
+    const scale = TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm / medianDiameter;
+
+    const result = await createLetterStencilTemplate({
+      text: 'l',
+      source: {
+        type: 'rhinestone-font',
+        rhinestoneFontId: 'old-english-stone',
+      },
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: TRW_STONE_SIZE_CALIBRATION.SS10.diameterMm,
+      cardPaddingMm: 3,
+      minCardWidthMm: 0,
+    });
+
+    const expectedSlotWidthMm = extracted.advanceWidth * scale;
+    expect(result.cards[0]!.widthMm).toBeGreaterThanOrEqual(expectedSlotWidthMm + 6 - 0.1);
   });
 
   it('inserts inter-card gap in cut-sheet mode', async () => {

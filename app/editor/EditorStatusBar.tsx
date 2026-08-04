@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, PenSquare, WandSparkles } from 'lucide-react';
+import { CheckCircle2, Clock3, PenSquare, WandSparkles } from 'lucide-react';
 import { RhinestoneTemplate, getTemplatePhysicalSize } from '@/src/lib/rhinestone-engine/index';
 import { CanvasState } from './EditorState';
 import { getEditableStatusCopy } from './editorUi';
@@ -10,11 +10,23 @@ interface EditorStatusBarProps {
   canvas: CanvasState;
   exportReady: boolean;
   isEditable: boolean;
+  autosaveUpdatedAt: string | null;
+  activeLibraryName: string | null;
 }
 
-export default function EditorStatusBar({ template, canvas, exportReady, isEditable }: EditorStatusBarProps) {
+export default function EditorStatusBar({
+  template,
+  canvas,
+  exportReady,
+  isEditable,
+  autosaveUpdatedAt,
+  activeLibraryName,
+}: EditorStatusBarProps) {
   const stoneCount = template?.stones.length ?? 0;
   const statusCopy = getEditableStatusCopy(isEditable);
+  const autosaveLabel = autosaveUpdatedAt
+    ? `Autosaved ${new Date(autosaveUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Autosave pending';
   
   const physicalSize = template && template.stones.length > 0
     ? (() => {
@@ -64,6 +76,15 @@ export default function EditorStatusBar({ template, canvas, exportReady, isEdita
 
       {/* Right: Canvas info */}
       <div className="flex items-center gap-4 text-zinc-400">
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${activeLibraryName ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}`}>
+          <Clock3 className="h-3.5 w-3.5" />
+          <span>{autosaveLabel}</span>
+        </span>
+        <span className="text-zinc-600">|</span>
+        <span>
+          Library: <span className="font-medium text-zinc-300">{activeLibraryName ?? 'Local draft'}</span>
+        </span>
+        <span className="text-zinc-600">|</span>
         <span>
           Zoom: <span className="font-mono text-zinc-300">{Math.round(canvas.zoom * 100)}%</span>
         </span>

@@ -10,7 +10,7 @@ interface StoneProfileControlProps {
   label?: string;
 }
 
-const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12'];
+const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
 
 export default function StoneProfileControl({ 
   value, 
