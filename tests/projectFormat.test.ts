@@ -3,6 +3,7 @@ import {
   LEGACY_OUTLINE_FONT_ID,
   parseRhinestoneProject,
   serializeRhinestoneProject,
+  getRecommendedHoleDiameter,
   type RhinestoneProjectFile,
 } from '../src/lib/rhinestone-engine/index';
 
@@ -135,6 +136,30 @@ describe('Project format — parseRhinestoneProject', () => {
     const json = serializeRhinestoneProject(project);
     const parsed = parseRhinestoneProject(json);
     expect(parsed).toEqual(project);
+  });
+
+  it('old-project protection: a saved stone keeps its exact literal holeDiameterMm even when it no longer matches the current recommended default', () => {
+    // Simulates a project saved before the Magic Flock SS10 hole diameter was
+    // corrected from 3.0mm to 3.43mm. Loading it must never silently migrate
+    // the stored value to the new default — only an explicit user edit or a
+    // fresh generation should do that.
+    const project: RhinestoneProjectFile = {
+      schemaVersion: 1,
+      savedAt: '2026-01-01T00:00:00.000Z',
+      projectName: 'Pre-correction project',
+      generatorState: {
+        generatorId: 'manual-editor',
+        stones: [{ id: 's0', x: 0, y: 0, stoneSize: 'SS10', holeDiameterMm: 3.0 }],
+        includeGuideBox: true,
+        paddingMm: 5,
+      },
+    };
+    const parsed = parseRhinestoneProject(serializeRhinestoneProject(project));
+    expect(parsed.generatorState.generatorId).toBe('manual-editor');
+    if (parsed.generatorState.generatorId === 'manual-editor') {
+      expect(parsed.generatorState.stones[0]!.holeDiameterMm).toBe(3.0);
+      expect(parsed.generatorState.stones[0]!.holeDiameterMm).not.toBe(getRecommendedHoleDiameter('SS10'));
+    }
   });
 
   it('parses dot-matrix-text with all layout v2 fields', () => {

@@ -120,18 +120,23 @@ describe('font system', () => {
     });
     expect(template.metadata?.['coverageMode']).toBe('outline');
     expect(template.metadata?.['fillMode']).toBe('outline');
-    expect(template.stones.length).toBeGreaterThan(120);
+    // Magic Flock's larger, vendor-verified SS10 hole (3.43mm) and its wider
+    // required edge spacing place fewer stones per mm than the old 3.0mm hole.
+    expect(template.stones.length).toBeGreaterThan(100);
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
   });
 
   it('still offers filled typography as opt-in for bold bundled fonts', async () => {
+    // A larger font size than the outline-only test above: at 25mm the bold
+    // glyph strokes are too narrow to fit any interior fill stone once the
+    // larger Magic Flock SS10 hole + minimum edge spacing are honored.
     const template = await createOutlineTextTemplateAsync({
       id: 'bundled-optin-fill',
       name: 'Bundled Opt-in Fill',
       text: 'SMOOCH',
       stoneSize: 'SS10',
       fontId: 'archivo-black',
-      fontSizeMm: 25,
+      fontSizeMm: 45,
       outlineTextStyle: 'filled-typography',
     });
     expect(template.metadata?.['coverageMode']).toBe('outline-fill');
@@ -207,8 +212,10 @@ describe('font system', () => {
     expect(filled.metadata?.['fillEdgeInsetMm']).toBe(0);
     expect(filled.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-fill-v1');
     // Grid-snapped fill (aligned lattice, matching the polygon offset-grid look)
-    // is intentionally a bit less dense than the old per-interval packing.
-    expect(filled.stones.length).toBeGreaterThan(40);
+    // is intentionally a bit less dense than the old per-interval packing, and
+    // Magic Flock's larger, vendor-verified SS10 hole + minimum edge spacing
+    // further reduce how many stones fit per mm than the old 3.0mm hole.
+    expect(filled.stones.length).toBeGreaterThan(20);
     expect(filled.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
     expect(filled.stones.some((stone) => stone.metadata?.edgeBand === 'edge')).toBe(true);
   });

@@ -3,10 +3,17 @@ import {
   STONE_SIZE_PROFILES,
   getStoneSizeProfile,
   MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
+  MAGIC_FLOCK_HOLE_PRESETS,
+  MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
   MATERIAL_PROFILES,
   getMaterialProfile,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
+  getHolePreset,
+  getCalibrationSeries,
+  isHolePresetProvisional,
+  getMinimumEdgeSpacingMm,
+  getMinimumCenterDistance,
 } from '../src/lib/rhinestone-engine/index.js';
 
 // ─── Stone size profiles ──────────────────────────────────────────────────────
@@ -100,24 +107,153 @@ describe('MATERIAL_PROFILES registry', () => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 describe('getRecommendedHoleDiameter', () => {
-  it('returns 3.0 for SS10 with default material profile (kerf = 0)', () => {
-    expect(getRecommendedHoleDiameter('SS10')).toBe(3.0);
+  it('returns the Magic Flock SS10 hole preset (3.43) for the default material profile (kerf = 0)', () => {
+    expect(getRecommendedHoleDiameter('SS10')).toBe(3.43);
   });
 
   it('returns correct value for explicit magic-flock-cricut-maker profile', () => {
-    expect(getRecommendedHoleDiameter('SS10', 'magic-flock-cricut-maker')).toBe(3.0);
+    expect(getRecommendedHoleDiameter('SS10', 'magic-flock-cricut-maker')).toBe(3.43);
   });
 });
 
 describe('getRecommendedCenterDistance', () => {
-  it('returns at least 3.35 for SS10 (safety margin applied)', () => {
+  it('returns at least the minimum center distance for SS10 (safety margin applied)', () => {
     const dist = getRecommendedCenterDistance('SS10');
-    // minCenterDistanceMm (3.35) + spacingSafetyMarginMm (0.25) = 3.60
-    expect(dist).toBeGreaterThanOrEqual(3.35);
+    // minimumCenterDistance (3.43 + 0.508 = 3.938) + spacingSafetyMarginMm (0.25) = 4.188
+    expect(dist).toBeGreaterThanOrEqual(3.938);
   });
 
-  it('equals minCenterDistanceMm + spacingSafetyMarginMm for SS10', () => {
+  it('equals holeDiameterMm + minimumEdgeSpacingMm + spacingSafetyMarginMm for SS10', () => {
     const dist = getRecommendedCenterDistance('SS10', 'magic-flock-cricut-maker');
-    expect(dist).toBe(3.35 + MAGIC_FLOCK_CRICUT_MAKER_PROFILE.spacingSafetyMarginMm);
+    expect(dist).toBeCloseTo(3.43 + MAGIC_FLOCK_CRICUT_MAKER_PROFILE.minimumEdgeSpacingMm + MAGIC_FLOCK_CRICUT_MAKER_PROFILE.spacingSafetyMarginMm, 6);
+  });
+});
+
+// ─── Magic Flock hole presets — default hole diameters per stone size ─────────
+
+describe('MAGIC_FLOCK_HOLE_PRESETS — default hole diameters', () => {
+  const expected: Record<string, number> = {
+    SS6: 2.54,
+    SS8: 3.00,
+    SS10: 3.43,
+    SS12: 3.80,
+    SS16: 4.39,
+    SS20: 5.28,
+  };
+
+  it('has an entry for every supported stone size', () => {
+    const ids = MAGIC_FLOCK_HOLE_PRESETS.map((p) => p.stoneSize);
+    expect(ids).toEqual(['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20']);
+  });
+
+  for (const [stoneSize, holeDiameterMm] of Object.entries(expected)) {
+    it(`${stoneSize} default hole diameter is ${holeDiameterMm}mm`, () => {
+      expect(getHolePreset(stoneSize as never)?.holeDiameterMm).toBe(holeDiameterMm);
+      expect(getRecommendedHoleDiameter(stoneSize as never)).toBe(holeDiameterMm);
+    });
+  }
+
+  it('SS12 is the only preset marked provisional', () => {
+    for (const preset of MAGIC_FLOCK_HOLE_PRESETS) {
+      if (preset.stoneSize === 'SS12') {
+        expect(preset.status).toBe('provisional');
+        expect(preset.note).toBeDefined();
+      } else {
+        expect(preset.status).toBe('verified');
+      }
+    }
+  });
+
+  it('isHolePresetProvisional reports true only for SS12', () => {
+    expect(isHolePresetProvisional('SS12')).toBe(true);
+    for (const size of ['SS6', 'SS8', 'SS10', 'SS16', 'SS20'] as const) {
+      expect(isHolePresetProvisional(size)).toBe(false);
+    }
+  });
+});
+
+// ─── Calibration series — 5 explicit values per stone size ────────────────────
+
+describe('getCalibrationSeries — Magic Flock', () => {
+  it('SS10 series has exactly 5 ascending values, centered on the default', () => {
+    const series = getCalibrationSeries('SS10');
+    expect(series).toEqual([3.33, 3.38, 3.43, 3.48, 3.53]);
+    expect(series[2]).toBe(getRecommendedHoleDiameter('SS10'));
+  });
+
+  it('every supported stone size has a 5-value calibration series', () => {
+    for (const size of MAGIC_FLOCK_CRICUT_MAKER_PROFILE.supportedStoneSizes) {
+      expect(getCalibrationSeries(size)).toHaveLength(5);
+    }
+  });
+
+  it('SS12 series is centered on the provisional 3.80mm default', () => {
+    const series = getCalibrationSeries('SS12');
+    expect(series).toEqual([3.60, 3.70, 3.80, 3.90, 4.00]);
+  });
+});
+
+// ─── Dynamic minimum center distance (holeRadiusA + holeRadiusB + edge gap) ───
+
+describe('getMinimumCenterDistance — dynamic edge-gap formula', () => {
+  it('getMinimumEdgeSpacingMm is 0.508mm for Magic Flock', () => {
+    expect(getMinimumEdgeSpacingMm('magic-flock-cricut-maker')).toBe(0.508);
+    expect(getMinimumEdgeSpacingMm()).toBe(0.508); // default profile
+  });
+
+  it('equal-size holes: minimum = holeDiameterMm + minimumEdgeSpacingMm', () => {
+    const holeDiameterMm = getRecommendedHoleDiameter('SS10');
+    const min = getMinimumCenterDistance(holeDiameterMm / 2, holeDiameterMm / 2);
+    expect(min).toBeCloseTo(holeDiameterMm + 0.508, 6);
+  });
+
+  it('mixed-size holes: minimum = radiusA + radiusB + minimumEdgeSpacingMm', () => {
+    const ss6 = getRecommendedHoleDiameter('SS6');
+    const ss20 = getRecommendedHoleDiameter('SS20');
+    const min = getMinimumCenterDistance(ss6 / 2, ss20 / 2);
+    expect(min).toBeCloseTo(ss6 / 2 + ss20 / 2 + 0.508, 6);
+  });
+});
+
+// ─── Cricut Maker 3 machine recommendation ─────────────────────────────────────
+
+describe('MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION', () => {
+  it('has the specified cut settings', () => {
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.machine).toBe('Cricut Maker 3');
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.blade).toBe('Deep-Point Blade');
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.customPressure).toBe(350);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.pressureSetting).toBe('More');
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.passes).toBe(1);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.multiCut).toBe(false);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.mirror).toBe(false);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.testCutRequired).toBe(true);
+  });
+
+  it('marks 340 as an alternative pressure only, not the primary recommendation', () => {
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.customPressure).not.toBe(340);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.alternativePressure?.customPressure).toBe(340);
+    expect(MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION.alternativePressure?.label).toMatch(/alternative/i);
+  });
+
+  it('is attached to the Magic Flock material profile', () => {
+    expect(MAGIC_FLOCK_CRICUT_MAKER_PROFILE.machineRecommendations).toContain(
+      MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
+    );
+    expect(MAGIC_FLOCK_CRICUT_MAKER_PROFILE.cutter).toBe('Cricut Maker 3');
+  });
+});
+
+// ─── Saved-project protection: explicit stone diameters are never recomputed ──
+
+describe('old-project protection — explicit hole diameters are immutable data', () => {
+  it('a stone created with a superseded default diameter keeps that exact value', () => {
+    // Simulates a project saved before this profile correction, when SS10
+    // resolved to 3.0mm. The stone's holeDiameterMm is a plain literal on
+    // the Stone object, not a live lookup — so it is never silently migrated
+    // to the new 3.43mm default just by re-reading the current profile.
+    const legacyStone = { id: 's1', center: { x: 0, y: 0 }, stoneSize: 'SS10' as const, holeDiameterMm: 3.0 };
+    expect(legacyStone.holeDiameterMm).toBe(3.0);
+    expect(getRecommendedHoleDiameter('SS10')).toBe(3.43);
+    expect(legacyStone.holeDiameterMm).not.toBe(getRecommendedHoleDiameter('SS10'));
   });
 });

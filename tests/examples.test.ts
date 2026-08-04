@@ -133,9 +133,9 @@ describe('magic-flock-calibration-sheet.svg — SVG content', () => {
     expect(svg()).not.toContain('<image');
   });
 
-  it('has 16 circles (4 sizes × 4 variants)', () => {
+  it('has 30 circles (6 sizes × 5 variants)', () => {
     const matches = svg().match(/<circle/g);
-    expect(matches).toHaveLength(16);
+    expect(matches).toHaveLength(30);
   });
 
   it('contains width in mm', () => {

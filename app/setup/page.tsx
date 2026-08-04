@@ -20,7 +20,7 @@ export default function SetupPage() {
             Setup & Calibration
           </h1>
           <p className="mt-2 text-base text-ink-muted font-medium">
-            System tools for calibrating your Cricut + Magic Flock workflow.
+            System tools for calibrating your Cricut Maker 3 + Magic Flock workflow.
           </p>
           <p className="mt-3 text-sm text-ink-muted leading-relaxed max-w-2xl">
             These tools help you verify your machine settings and calibrate hole sizes
@@ -33,7 +33,7 @@ export default function SetupPage() {
           <div className="mb-5">
             <h2 className="text-lg font-bold text-ink">🎯 Cricut Test Pack</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Start here. Four ready-to-cut SVGs for validating your Cricut + Magic Flock setup.
+              Start here. Four ready-to-cut SVGs for validating your Cricut Maker 3 + Magic Flock setup.
             </p>
           </div>
           <CricutTestPack />
@@ -56,7 +56,7 @@ export default function SetupPage() {
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-ink">Calibration Sheet</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Hole-diameter variants for SS6–SS12. Cut before any production run.
+              Hole-diameter variants for SS6–SS20. Cut before any production run.
               Find the diameter that seats stones perfectly for your blade and flock batch.
             </p>
           </div>

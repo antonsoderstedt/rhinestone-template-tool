@@ -25,26 +25,28 @@ describe('createCalibrationSheet — return shape', () => {
 // ─── Stone counts ─────────────────────────────────────────────────────────────
 
 describe('createCalibrationSheet — stone counts', () => {
-  it('includes stones for all four supported sizes (SS6, SS8, SS10, SS12)', () => {
+  it('includes stones for all six supported sizes (SS6, SS8, SS10, SS12, SS16, SS20)', () => {
     const sheet = createCalibrationSheet(MAGIC_FLOCK_CRICUT_MAKER_PROFILE);
     const sizes = new Set(sheet.stones.map((s) => s.stoneSize));
     expect(sizes.has('SS6')).toBe(true);
     expect(sizes.has('SS8')).toBe(true);
     expect(sizes.has('SS10')).toBe(true);
     expect(sizes.has('SS12')).toBe(true);
+    expect(sizes.has('SS16')).toBe(true);
+    expect(sizes.has('SS20')).toBe(true);
   });
 
-  it('creates 4 diameter variants per stone size when includeDiameterVariants is true (default)', () => {
+  it('creates 5 diameter variants per stone size when includeDiameterVariants is true (default)', () => {
     const sheet = createCalibrationSheet(MAGIC_FLOCK_CRICUT_MAKER_PROFILE);
     const bySizeId = new Map<string, number>();
     for (const stone of sheet.stones) {
       bySizeId.set(stone.stoneSize, (bySizeId.get(stone.stoneSize) ?? 0) + 1);
     }
     for (const [, count] of bySizeId) {
-      expect(count).toBe(4);
+      expect(count).toBe(5);
     }
-    // 4 sizes × 4 variants = 16 total stones
-    expect(sheet.stones.length).toBe(16);
+    // 6 sizes × 5 variants = 30 total stones
+    expect(sheet.stones.length).toBe(30);
   });
 
   it('creates 1 stone per size when includeDiameterVariants is false', () => {
@@ -58,8 +60,8 @@ describe('createCalibrationSheet — stone counts', () => {
     for (const [, count] of bySizeId) {
       expect(count).toBe(1);
     }
-    // 4 sizes × 1 variant = 4 total stones
-    expect(sheet.stones.length).toBe(4);
+    // 6 sizes × 1 variant = 6 total stones
+    expect(sheet.stones.length).toBe(6);
   });
 });
 
@@ -104,7 +106,7 @@ describe('createCalibrationSheet — stone metadata', () => {
   it('all stones have cutter in metadata', () => {
     const sheet = createCalibrationSheet(MAGIC_FLOCK_CRICUT_MAKER_PROFILE);
     for (const stone of sheet.stones) {
-      expect(stone.metadata?.cutter).toBe('Cricut Maker');
+      expect(stone.metadata?.cutter).toBe('Cricut Maker 3');
     }
   });
 });
@@ -155,11 +157,11 @@ describe('createDefaultMagicFlockCalibrationSheet', () => {
     expect(createDefaultMagicFlockCalibrationSheet().unit).toBe('mm');
   });
 
-  it('has stones for all four sizes', () => {
+  it('has stones for all six sizes', () => {
     const sizes = new Set(
       createDefaultMagicFlockCalibrationSheet().stones.map((s) => s.stoneSize),
     );
-    expect(sizes.size).toBe(4);
+    expect(sizes.size).toBe(6);
   });
 });
 

@@ -14,8 +14,7 @@
  */
 
 import type { StoneSizeId } from '../types/index';
-import { getRecommendedCenterDistance } from '../profiles/materialProfiles';
-import { getStoneSizeProfile } from '../profiles/stoneSizes';
+import { getMinimumCenterDistance, getRecommendedCenterDistance, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,7 +44,10 @@ export interface DensitySpacingResult {
   recommendedCenterDistanceMm: number;
   /** Actual spacing to use for stone placement (mm). */
   spacingMm: number;
-  /** Stone profile minCenterDistanceMm — absolute physical minimum. */
+  /**
+   * Absolute physical minimum center distance for this stone size + material
+   * (from getMinimumCenterDistance — holeDiameterMm + minimumEdgeSpacingMm).
+   */
   minAllowedSpacingMm: number;
   /** Present if dense spacing was clamped to the minimum. */
   warning?: string;
@@ -65,8 +67,8 @@ export function getDensitySpacing(
   const { stoneSize, materialProfileId, preset } = options;
 
   const recommended = getRecommendedCenterDistance(stoneSize, materialProfileId);
-  const sizeProfile = getStoneSizeProfile(stoneSize);
-  const minAllowed = sizeProfile.minCenterDistanceMm;
+  const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
+  const minAllowed = getMinimumCenterDistance(holeDiameterMm / 2, holeDiameterMm / 2, materialProfileId);
 
   let spacingMm: number;
   let warning: string | undefined;

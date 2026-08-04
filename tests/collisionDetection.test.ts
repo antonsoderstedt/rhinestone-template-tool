@@ -129,3 +129,38 @@ describe('wouldMoveCauseCollision', () => {
     expect(result.collidingPairs.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+// ─── Dynamic material-profile minimum edge spacing (Magic Flock: 0.508mm) ─────
+
+describe('wouldCollide — material profile minimum edge spacing', () => {
+  it('flags a collision when holes touch edge-to-edge but leave no material gap', () => {
+    // Two SS10-sized (3.43mm) holes placed exactly holeDiameterMm apart:
+    // edges touch (0mm gap), which is below Magic Flock's required 0.508mm.
+    const existing: EditableStone[] = [
+      { id: 'a', center: { x: 0, y: 0 }, holeDiameterMm: 3.43, stoneSize: 'SS10' },
+    ];
+    const result = wouldCollide(3.43, 0, 3.43 / 2, existing);
+    expect(result.collides).toBe(true);
+  });
+
+  it('does not flag a collision once the full minimum edge gap is respected', () => {
+    const existing: EditableStone[] = [
+      { id: 'a', center: { x: 0, y: 0 }, holeDiameterMm: 3.43, stoneSize: 'SS10' },
+    ];
+    // Center distance = holeDiameterMm (3.43) + minimumEdgeSpacingMm (0.508) + margin
+    const result = wouldCollide(3.43 + 0.508 + 0.01, 0, 3.43 / 2, existing);
+    expect(result.collides).toBe(false);
+  });
+
+  it('applies the sum-of-radii + edge-gap formula for mixed-size stones', () => {
+    // SS6 hole (2.54mm) next to an SS20 hole (5.28mm): minimum center
+    // distance = radiusA + radiusB + minimumEdgeSpacingMm = 1.27 + 2.64 + 0.508 = 4.418
+    const existing: EditableStone[] = [
+      { id: 'big', center: { x: 0, y: 0 }, holeDiameterMm: 5.28, stoneSize: 'SS20' },
+    ];
+    const justBelowMinimum = wouldCollide(4.4, 0, 2.54 / 2, existing);
+    const justAboveMinimum = wouldCollide(4.43, 0, 2.54 / 2, existing);
+    expect(justBelowMinimum.collides).toBe(true);
+    expect(justAboveMinimum.collides).toBe(false);
+  });
+});

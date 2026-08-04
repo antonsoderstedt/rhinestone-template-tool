@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Rhinestone Template Tool",
-  description: "Precision SVG templates for Cricut Maker + Magic Flock",
+  description: "Precision SVG templates for Cricut Maker 3 + Magic Flock",
 };
 
 export default function RootLayout({

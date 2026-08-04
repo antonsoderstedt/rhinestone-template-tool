@@ -2,7 +2,7 @@ import type { Stone, StoneSizeId } from '../types/index';
 import type { Polyline } from '../path/polyline';
 import type { DensityPreset } from '../spacing/density';
 import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
-import { getRecommendedCenterDistance, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
+import { getMinimumEdgeSpacingMm, getRecommendedCenterDistance, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
 import { getDensitySpacing } from '../spacing/density';
 import { circlesOverlap } from '../geometry/collision';
 import { closedLoopsToPolylines, offsetClosedLoops, sortLoopsDeterministically, normalizeClosedPolylines } from './compositeShape';
@@ -56,6 +56,7 @@ export function createContourRhinestoneTemplate(options: ContourCoverageOptions)
 
   const spacingMm = resolveOutlineSpacingMm(options);
   const holeDiameterMm = getRecommendedHoleDiameter(options.stoneSize, options.materialProfileId);
+  const minGapMm = getMinimumEdgeSpacingMm(options.materialProfileId);
   const offsets = contourOffsets(options.rowCount, options.rowSpacingMm, options.direction);
   const keptStones: Stone[] = [];
   let skippedRows = 0;
@@ -86,7 +87,7 @@ export function createContourRhinestoneTemplate(options: ContourCoverageOptions)
         circlesOverlap(
           { center: stone.center, radiusMm: holeDiameterMm / 2 },
           { center: existing.center, radiusMm: existing.holeDiameterMm / 2 },
-          0,
+          minGapMm,
         ),
       );
       if (collides) continue;

@@ -8,7 +8,7 @@
 
 import type { RhinestoneTemplate, StoneSizeId } from '../types/index';
 import { validateRhinestoneTemplate } from '../validation/templateValidation';
-import { getMaterialProfile, getDefaultMaterialProfile } from '../profiles/materialProfiles';
+import { getMaterialProfile, getDefaultMaterialProfile, isHolePresetProvisional } from '../profiles/materialProfiles';
 import { getTemplatePhysicalSize } from '../sizing/templateSizing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -128,7 +128,11 @@ export function checkExportReadiness(
   }
 
   // ── Template validation (duplicates, invalid holes, collisions) ───────────
-  const validationResult = validateRhinestoneTemplate(template);
+  // minGapMm enforces the material's minimum edge-to-edge spacing, not just
+  // raw geometric overlap — see MaterialProfile.minimumEdgeSpacingMm.
+  const validationResult = validateRhinestoneTemplate(template, {
+    minGapMm: materialProfile.minimumEdgeSpacingMm,
+  });
   for (const issue of validationResult.issues) {
     issues.push({
       severity: 'error',
@@ -200,6 +204,22 @@ export function checkExportReadiness(
         message:
           `Stone size ${size} is not listed as supported by ${materialProfile.name}. ` +
           `Verify compatibility before cutting.`,
+      });
+    }
+  }
+
+  // ── Provisional hole presets (e.g. SS12 on Magic Flock) ──────────────────
+  // Surfaces on any template using a stone size whose hole diameter has no
+  // verified vendor source yet — not just on calibration sheets.
+  for (const size of stoneSizes) {
+    if (isHolePresetProvisional(size, materialProfile.id)) {
+      issues.push({
+        severity: 'warning',
+        code: 'PROVISIONAL_HOLE_PRESET',
+        message:
+          `${size}'s hole diameter for ${materialProfile.name} has no verified vendor source ` +
+          `yet and is a preliminary starting point only. Cut a calibration sheet and confirm the ` +
+          `hole size before production use.`,
       });
     }
   }

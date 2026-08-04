@@ -1,5 +1,5 @@
 import type { Stone, StoneSizeId } from '../types/index';
-import { getRecommendedHoleDiameter } from '../profiles/materialProfiles';
+import { getMinimumEdgeSpacingMm, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
 import type { DensityPreset } from '../spacing/density';
 import { getDensitySpacing } from '../spacing/density';
 import type { PolylinePoint } from '../path/polyline';
@@ -69,6 +69,7 @@ function dedupeAndFilterFillPoints(
   options: FillPlacementStrategyOptions,
 ): Stone[] {
   const holeDiameterMm = getRecommendedHoleDiameter(options.stoneSize, options.materialProfileId);
+  const minGapMm = getMinimumEdgeSpacingMm(options.materialProfileId);
   const insetMm = options.fillEdgeInsetMm ?? holeDiameterMm / 2;
   const existingCircles = (options.existingStones ?? []).map((stone) => ({
     center: stone.center,
@@ -89,14 +90,14 @@ function dedupeAndFilterFillPoints(
     const circle = { center: point, radiusMm: holeDiameterMm / 2 };
     let collides = false;
     for (const other of existingCircles) {
-      if (circlesOverlap(circle, other, 0)) {
+      if (circlesOverlap(circle, other, minGapMm)) {
         collides = true;
         break;
       }
     }
     if (collides) continue;
     for (const stone of kept) {
-      if (circlesOverlap(circle, { center: stone.center, radiusMm: stone.holeDiameterMm / 2 }, 0)) {
+      if (circlesOverlap(circle, { center: stone.center, radiusMm: stone.holeDiameterMm / 2 }, minGapMm)) {
         collides = true;
         break;
       }

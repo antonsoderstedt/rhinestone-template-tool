@@ -5,13 +5,15 @@ import {
   createCricutTestPack,
   createBasicSvgExport,
   checkExportReadiness,
+  MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
 } from '@/src/lib/rhinestone-engine/index';
 import type { StoneSizeId, CricutTestPackItem, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import SvgExportActions from './SvgExportActions';
+import MachineCutSettingsCard from './MachineCutSettingsCard';
 
 // ─── Stone size options ───────────────────────────────────────────────────────
 
-const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12'];
+const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
 
 // ─── Per-item type (adds readiness + svg to the engine item) ──────────────────
 
@@ -48,7 +50,7 @@ export default function CricutTestPack() {
         <p className="font-semibold text-base mb-1">What is the Cricut Test Pack?</p>
         <p>
           A curated set of four SVG templates designed to help you validate your
-          Cricut Maker + Magic Flock setup before cutting production designs.
+          Cricut Maker 3 + Magic Flock setup before cutting production designs.
           Download all four, import them into Cricut Design Space, and cut on a
           small scrap of Magic Flock first.
         </p>
@@ -59,6 +61,9 @@ export default function CricutTestPack() {
           <li>Cut the <strong>Diamond</strong> — test outline shape accuracy at corners.</li>
         </ol>
       </div>
+
+      {/* ── Machine cut settings (separate from the template cards below) ──── */}
+      <MachineCutSettingsCard recommendation={MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION} />
 
       {/* ── Stone size selector ───────────────────────────────────────────── */}
       <div className="flex items-center gap-3">

@@ -9,17 +9,22 @@ import {
   checkExportReadiness,
   getRecommendedHoleDiameter,
   getStoneSizeProfile,
+  isHolePresetProvisional,
+  MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
+  MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
 } from '@/src/lib/rhinestone-engine/index';
 import type { StoneSizeId, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import ExportReadinessPanel from './ExportReadinessPanel';
 import SvgExportActions from './SvgExportActions';
+import MachineCutSettingsCard from './MachineCutSettingsCard';
+import Badge from '@/app/editor/ui/Badge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PROFILE_ID = 'magic-flock-cricut-maker';
 
-// Only show standard sizes in calibration workflow, not rhinestone font sizes
-const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12'];
+// All stone sizes Magic Flock supports (matches MAGIC_FLOCK_CRICUT_MAKER_PROFILE.supportedStoneSizes).
+const STONE_SIZES: StoneSizeId[] = [...MAGIC_FLOCK_CRICUT_MAKER_PROFILE.supportedStoneSizes];
 
 /** Returns the recommended hole diameter for a stone size from the engine. */
 function recommended(size: StoneSizeId): number {
@@ -118,9 +123,12 @@ export default function CalibrationWorkflow() {
   return (
     <div className="flex flex-col gap-6">
 
+      {/* ── Machine cut settings (separate from template settings below) ──── */}
+      <MachineCutSettingsCard recommendation={MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION} />
+
       {/* ── Explanation ──────────────────────────────────────────────────── */}
       <div className="rounded-lg bg-warning-50 border border-warning-500/30 px-5 py-4 text-sm text-warning-600 leading-relaxed">
-        <p className="font-semibold mb-1">How to calibrate</p>
+        <p className="font-semibold mb-1">Template settings — how to calibrate hole diameter</p>
         <ol className="ml-4 list-decimal space-y-1 text-xs">
           <li>Download and cut the <strong>Calibration Sheet</strong> on a scrap of Magic Flock.</li>
           <li>Place stones in each hole and find which diameter seats correctly.</li>
@@ -154,8 +162,9 @@ export default function CalibrationWorkflow() {
             const diff = !invalid ? (num - rec) : null;
             return (
               <div key={size} className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-ink-muted" htmlFor={`hole-${size}`}>
+                <label className="text-xs font-medium text-ink-muted flex items-center gap-1.5" htmlFor={`hole-${size}`}>
                   {size} <span className="text-ink-secondary">({physicalDiameter(size)} mm stone)</span>
+                  {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
                 </label>
                 <input
                   id={`hole-${size}`}
@@ -204,7 +213,12 @@ export default function CalibrationWorkflow() {
               const diff = !invalid ? num - rec : null;
               return (
                 <tr key={size} className="hover:bg-sand-50">
-                  <td className="px-3 py-2 font-semibold text-ink">{size}</td>
+                  <td className="px-3 py-2 font-semibold text-ink">
+                    <span className="flex items-center gap-1.5">
+                      {size}
+                      {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
+                    </span>
+                  </td>
                   <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
                   <td className="px-3 py-2 text-right text-ink-muted">{rec.toFixed(2)} mm</td>
                   <td className="px-3 py-2 text-right font-medium text-ink">

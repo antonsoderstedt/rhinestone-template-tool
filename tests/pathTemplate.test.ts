@@ -168,11 +168,18 @@ describe('createPolylineRhinestoneTemplate — basic creation', () => {
   });
 
   it('creates more stones from a closed polyline than an open one', () => {
+    // A larger square than SQUARE_10: at Magic Flock's SS10 recommended
+    // spacing (~4.19mm) a 10mm square's closing segment gets absorbed by the
+    // wraparound minimum-distance check, so use a square with enough
+    // perimeter for the closing segment to add a genuinely separate stone.
+    const square20: Polyline = {
+      points: [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }],
+    };
     const opts = { id: 'test', name: 'Test', stoneSize: 'SS10' as const };
-    const open = createPolylineRhinestoneTemplate({ ...opts, polylines: [SQUARE_10] });
+    const open = createPolylineRhinestoneTemplate({ ...opts, polylines: [square20] });
     const closed = createPolylineRhinestoneTemplate({
       ...opts,
-      polylines: [{ ...SQUARE_10, closed: true }],
+      polylines: [{ ...square20, closed: true }],
     });
     expect(closed.stones.length).toBeGreaterThan(open.stones.length);
   });

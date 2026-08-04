@@ -123,6 +123,20 @@ describe('checkExportReadiness — warnings', () => {
     const r = checkExportReadiness(VALID_GRID, { minHeightMm: 999, requireCalibration: false });
     expect(r.issues.some((i) => i.code === 'BELOW_MIN_HEIGHT' && i.severity === 'warning')).toBe(true);
   });
+
+  it('SS12 (provisional Magic Flock preset) produces a PROVISIONAL_HOLE_PRESET warning, not an error', () => {
+    const ss12Grid = createStoneGridTemplate({
+      id: 'ss12-grid', name: 'SS12 Grid', stoneSize: 'SS12', columns: 2, rows: 2,
+    });
+    const r = checkExportReadiness(ss12Grid, { requireCalibration: false });
+    expect(r.ready).toBe(true); // provisional preset does not block export
+    expect(r.issues.some((i) => i.code === 'PROVISIONAL_HOLE_PRESET' && i.severity === 'warning')).toBe(true);
+  });
+
+  it('verified stone sizes (e.g. SS10) do not produce PROVISIONAL_HOLE_PRESET', () => {
+    const r = checkExportReadiness(VALID_GRID, { requireCalibration: false });
+    expect(r.issues.some((i) => i.code === 'PROVISIONAL_HOLE_PRESET')).toBe(false);
+  });
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

@@ -18,6 +18,9 @@ export type {
   Stone,
   StoneSizeProfile,
   MaterialProfile,
+  HolePresetStatus,
+  HolePreset,
+  MachineRecommendation,
   RhinestoneTemplate,
   ExportOptions,
 } from './types/index';
@@ -33,10 +36,17 @@ export {
 export {
   MATERIAL_PROFILES,
   MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
+  MAGIC_FLOCK_HOLE_PRESETS,
+  MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
   getMaterialProfile,
   getDefaultMaterialProfile,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
+  getHolePreset,
+  getCalibrationSeries,
+  isHolePresetProvisional,
+  getMinimumEdgeSpacingMm,
+  getMinimumCenterDistance,
 } from './profiles/materialProfiles';
 
 // Geometry utilities

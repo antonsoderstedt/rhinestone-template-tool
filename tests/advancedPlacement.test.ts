@@ -44,7 +44,7 @@ describe('advanced placement modes', () => {
       rowCount: 1,
       rowSpacingMm: 4,
       direction: 'inward',
-      spacingMm: 4,
+      spacingMm: 4.2,
     });
     const threeRows = createContourRhinestoneTemplate({
       id: 'contour-3',
@@ -54,7 +54,7 @@ describe('advanced placement modes', () => {
       rowCount: 3,
       rowSpacingMm: 4,
       direction: 'inward',
-      spacingMm: 4,
+      spacingMm: 4.2,
     });
     expect(threeRows.stones.length).toBeGreaterThan(oneRow.stones.length);
     expect(hasCollisions(threeRows.stones)).toBe(false);
@@ -69,7 +69,7 @@ describe('advanced placement modes', () => {
       rowCount: 5,
       rowSpacingMm: 10,
       direction: 'inward',
-      spacingMm: 4,
+      spacingMm: 4.2,
     });
     expect(contour.stones.length).toBeGreaterThan(0);
     expect(contour.skippedRows).toBeGreaterThanOrEqual(0);
@@ -78,13 +78,13 @@ describe('advanced placement modes', () => {
   it('hexagonal placement differs from default and avoids hole interiors', () => {
     const defaultFill = generatePlacedFillStones(donut, {
       stoneSize: 'SS10',
-      spacingMm: 4,
+      spacingMm: 4.2,
       placementPattern: 'default',
       fillPattern: 'offset-grid',
     });
     const hexFill = generatePlacedFillStones(donut, {
       stoneSize: 'SS10',
-      spacingMm: 4,
+      spacingMm: 4.2,
       placementPattern: 'hexagonal',
       fillPattern: 'offset-grid',
     });
@@ -97,19 +97,19 @@ describe('advanced placement modes', () => {
   it('radial placement is deterministic and responds to center offsets', () => {
     const radial = generatePlacedFillStones(donut, {
       stoneSize: 'SS10',
-      spacingMm: 4,
+      spacingMm: 4.2,
       placementPattern: 'radial',
       radialSettings: { ringSpacingMm: 4, centerOffsetXmm: 0, centerOffsetYmm: 0, includeCenterStone: true },
     });
     const radialAgain = generatePlacedFillStones(donut, {
       stoneSize: 'SS10',
-      spacingMm: 4,
+      spacingMm: 4.2,
       placementPattern: 'radial',
       radialSettings: { ringSpacingMm: 4, centerOffsetXmm: 0, centerOffsetYmm: 0, includeCenterStone: true },
     });
     const shifted = generatePlacedFillStones(donut, {
       stoneSize: 'SS10',
-      spacingMm: 4,
+      spacingMm: 4.2,
       placementPattern: 'radial',
       radialSettings: { ringSpacingMm: 4, centerOffsetXmm: 6, centerOffsetYmm: -4, includeCenterStone: true },
     });
@@ -128,7 +128,7 @@ describe('advanced placement modes', () => {
       fillMode: 'outline-fill',
       placementPattern: 'hexagonal',
       fillPattern: 'offset-grid',
-      spacingMm: 4,
+      spacingMm: 4.2,
     });
     const radial = createPolylineFilledRhinestoneTemplate({
       id: 'radial-template',
@@ -139,7 +139,7 @@ describe('advanced placement modes', () => {
       fillMode: 'outline-fill',
       placementPattern: 'radial',
       radialSettings: { ringSpacingMm: 4, centerOffsetXmm: 0, centerOffsetYmm: 0, includeCenterStone: true },
-      spacingMm: 4,
+      spacingMm: 4.2,
     });
     expect(hasCollisions(hex.stones)).toBe(false);
     expect(hasCollisions(radial.stones)).toBe(false);

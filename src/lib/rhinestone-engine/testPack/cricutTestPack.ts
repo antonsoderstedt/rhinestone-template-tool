@@ -1,6 +1,6 @@
 /**
  * Cricut Test Pack — a curated set of starter templates for physical testing
- * with Cricut Maker + Magic Flock.
+ * with Cricut Maker 3 + Magic Flock.
  *
  * Recommended first-use sequence:
  * 1. Cut the calibration sheet to find the correct hole diameter for your setup.
@@ -60,8 +60,8 @@ const DIAMOND_POLYLINE = {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Creates a curated set of test templates for physical Cricut + Magic Flock
- * validation. All templates are export-ready (unit: "mm", no collisions).
+ * Creates a curated set of test templates for physical Cricut Maker 3 + Magic
+ * Flock validation. All templates are export-ready (unit: "mm", no collisions).
  *
  * The returned pack is deterministic: same options → same templates every time.
  */
@@ -108,7 +108,7 @@ export function createCricutTestPack(
     {
       id: 'calibration',
       name: 'Calibration Sheet',
-      description: 'Hole diameter variants for SS6–SS12. Cut first and place stones to find the correct size for your machine.',
+      description: 'Hole diameter variants for SS6–SS20. Cut first and place stones to find the correct size for your machine.',
       template: createDefaultMagicFlockCalibrationSheet(),
       recommendedFilename: 'magic-flock-calibration-sheet.svg',
     },

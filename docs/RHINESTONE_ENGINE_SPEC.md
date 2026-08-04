@@ -10,15 +10,20 @@ The engine is a **pure TypeScript library** with no UI, no DOM, and no external 
 
 ## Stone Sizes
 
-| Size | Physical Diameter | Hole Diameter | Min Center-to-Center Gap |
-|------|------------------|---------------|--------------------------|
-| SS6  | 2.0 mm           | 1.8 mm        | 2.1 mm                   |
-| SS8  | 2.4 mm           | 2.2 mm        | 2.5 mm                   |
-| SS10 | 2.8 mm           | 2.6 mm        | 2.9 mm                   |
-| SS12 | 3.2 mm           | 3.0 mm        | 3.3 mm                   |
+Stone sizes are `SS6`, `SS8`, `SS10`, `SS12`, `SS16`, `SS20`. Physical stone
+diameter is generic per size (`profiles/stoneSizes.ts`); the **hole diameter**
+actually cut is material-specific and lives on the material profile's
+`holePresets` (see `MAGIC_FLOCK_HOLE_PRESETS` in
+`profiles/materialProfiles.ts` and ADR 0004) — do not hand-maintain a second
+copy of these numbers here. Call `getRecommendedHoleDiameter(stoneSize, materialProfileId)`
+for the current authoritative value; do not hardcode hole diameters elsewhere.
 
-> **Hole diameter** is slightly smaller than physical diameter to ensure the stone snaps in.
-> **Min center-to-center gap** includes a small safety margin to prevent material tearing.
+SS12 has no verified vendor source and is marked `status: 'provisional'` —
+treat it as a starting point requiring physical calibration, never an
+official default.
+
+> **Hole diameter** is smaller than physical stone diameter to ensure the stone snaps in.
+> **Minimum center-to-center gap** is derived dynamically — see Collision Detection below — not a fixed per-size constant.
 
 ---
 
@@ -41,10 +46,16 @@ The grid covers the entire bounding box of the input paths. Positions outside th
 After grid generation, every candidate position is checked against every already-accepted position. A position is accepted only if:
 
 ```
-distance(candidateCenter, acceptedCenter) >= stoneSize.holeDiameter + safetyMargin
+distance(candidateCenter, acceptedCenter) >= holeRadiusA + holeRadiusB + minimumEdgeSpacingMm
 ```
 
-The safety margin is defined per material profile (see `docs/MATERIAL_PROFILES.md`).
+This is `getMinimumCenterDistance(holeRadiusAMm, holeRadiusBMm, materialProfileId)` in
+`profiles/materialProfiles.ts` — the hard physical safety floor, used by collision
+detection, automatic placement, and export validation. It is symmetric and handles
+mixed stone sizes correctly (e.g. an SS6 hole next to an SS20 hole). `minimumEdgeSpacingMm`
+(0.508 mm for Magic Flock) is defined per material profile (see `docs/MATERIAL_PROFILES.md`
+and ADR 0004). `getRecommendedCenterDistance` adds the profile's `spacingSafetyMarginMm`
+on top of this floor for a comfortable default — always ≥ the physical minimum.
 
 Collision detection must run even after path filtering, because grid positions near path boundaries may be closer than the grid spacing suggests when both paths and offset grids are involved.
 

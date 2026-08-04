@@ -12,6 +12,7 @@ import type { StoneSizeId, Stone, RhinestoneTemplate } from '../types/index';
 import {
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
+  getMinimumCenterDistance,
 } from '../profiles/materialProfiles';
 import { getStoneSizeProfile } from '../profiles/stoneSizes';
 import { createRhinestoneTemplate } from '../template/createTemplate';
@@ -197,6 +198,7 @@ export function createPolylineRhinestoneTemplate(
   }
 
   const holeDiameterMm = getRecommendedHoleDiameter(stoneSize, materialProfileId);
+  const minCenterDistanceMm = getMinimumCenterDistance(holeDiameterMm / 2, holeDiameterMm / 2, materialProfileId);
 
   // ── Apply physical sizing (optional) ─────────────────────────────────────
   const { targetWidthMm, targetHeightMm, preserveAspectRatio, originXmm, originYmm } = options;
@@ -239,7 +241,7 @@ export function createPolylineRhinestoneTemplate(
         continue;
       }
       const prev = safePoints[safePoints.length - 1]!;
-      if (Math.hypot(pt.x - prev.x, pt.y - prev.y) >= holeDiameterMm) {
+      if (Math.hypot(pt.x - prev.x, pt.y - prev.y) >= minCenterDistanceMm) {
         safePoints.push(pt);
         continue;
       }
@@ -255,7 +257,7 @@ export function createPolylineRhinestoneTemplate(
     if (normalizedPolyline.closed && safePoints.length > 1) {
       const first = safePoints[0]!;
       const last  = safePoints[safePoints.length - 1]!;
-      if (Math.hypot(last.x - first.x, last.y - first.y) < holeDiameterMm) {
+      if (Math.hypot(last.x - first.x, last.y - first.y) < minCenterDistanceMm) {
         safePoints.pop();
       }
     }

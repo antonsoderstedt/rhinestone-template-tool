@@ -73,7 +73,7 @@ const SS10_PROFILE: StoneSizeProfile = {
   // Provisional — must be validated by physical cut test
   minCenterDistanceMm: 3.35,
   notes:
-    'Default size for Magic Flock + Cricut Maker. Good balance of coverage and ' +
+    'Default size for Magic Flock + Cricut Maker 3. Good balance of coverage and ' +
     'structural integrity. All values are provisional and require physical calibration.',
   requiresPhysicalValidation: true,
 };

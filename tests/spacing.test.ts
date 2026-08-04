@@ -3,7 +3,8 @@ import {
   getDensitySpacing,
   getDensityPresetOptions,
   getRecommendedCenterDistance,
-  getStoneSizeProfile,
+  getRecommendedHoleDiameter,
+  getMinimumCenterDistance,
   createDotMatrixTextTemplate,
   createPolylineRhinestoneTemplate,
   createStoneGridTemplate,
@@ -56,14 +57,14 @@ describe('getDensitySpacing — presets', () => {
     expect(loose).toBeGreaterThan(standard);
   });
 
-  it('minAllowedSpacingMm equals stone profile minCenterDistanceMm', () => {
-    const result  = getDensitySpacing({ stoneSize: 'SS10', preset: 'standard' });
-    const profile = getStoneSizeProfile('SS10');
-    expect(result.minAllowedSpacingMm).toBe(profile.minCenterDistanceMm);
+  it('minAllowedSpacingMm equals holeDiameterMm + minimumEdgeSpacingMm for the material', () => {
+    const result = getDensitySpacing({ stoneSize: 'SS10', preset: 'standard' });
+    // Magic Flock SS10 hole preset (3.43) + minimumEdgeSpacingMm (0.508) = 3.938
+    expect(result.minAllowedSpacingMm).toBeCloseTo(3.938, 6);
   });
 
   it('dense warning is undefined when not clamped (SS10)', () => {
-    // SS10: recommended 3.60, dense target 3.45, minAllowed 3.35 → no clamp
+    // SS10: recommended 4.188, dense target 4.038, minAllowed 3.938 → no clamp
     const dense = getDensitySpacing({ stoneSize: 'SS10', preset: 'dense' });
     expect(dense.warning).toBeUndefined();
   });
@@ -77,14 +78,14 @@ describe('getDensitySpacing — presets', () => {
 
 describe('getDensitySpacing — custom preset', () => {
   it('custom spacing works when valid', () => {
-    const minAllowed = getStoneSizeProfile('SS10').minCenterDistanceMm;
+    const minAllowed = getMinimumCenterDistance(getRecommendedHoleDiameter('SS10') / 2, getRecommendedHoleDiameter('SS10') / 2);
     const custom = minAllowed + 1.0;
     const result = getDensitySpacing({ stoneSize: 'SS10', preset: 'custom', customSpacingMm: custom });
     expect(result.spacingMm).toBe(custom);
   });
 
   it('custom spacing below minAllowedSpacingMm throws', () => {
-    const minAllowed = getStoneSizeProfile('SS10').minCenterDistanceMm;
+    const minAllowed = getMinimumCenterDistance(getRecommendedHoleDiameter('SS10') / 2, getRecommendedHoleDiameter('SS10') / 2);
     expect(() =>
       getDensitySpacing({ stoneSize: 'SS10', preset: 'custom', customSpacingMm: minAllowed - 0.1 }),
     ).toThrow(/minimum/i);
@@ -149,7 +150,7 @@ describe('createDotMatrixTextTemplate — densityPreset', () => {
   });
 
   it('custom spacing metadata is preserved', () => {
-    const custom = getStoneSizeProfile('SS10').minCenterDistanceMm + 1.0;
+    const custom = getMinimumCenterDistance(getRecommendedHoleDiameter('SS10') / 2, getRecommendedHoleDiameter('SS10') / 2) + 1.0;
     const t = createDotMatrixTextTemplate({ id:'t', name:'T', text:'A', stoneSize:'SS10', densityPreset:'custom', customSpacingMm: custom });
     expect(t.metadata?.densityPreset).toBe('custom');
     expect(t.metadata?.resolvedSpacingMm).toBe(custom);
