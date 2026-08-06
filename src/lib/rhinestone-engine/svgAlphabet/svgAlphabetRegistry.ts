@@ -37,7 +37,8 @@ export type SvgAlphabetId =
   | 'toys-bubble'
   | 'birthday-script'
   | 'retro-wide'
-  | 'varsity-collage-a';
+  | 'varsity-collage-a'
+  | 'old-english-gothic';
 
 export type SvgAlphabetCategory = 'Library';
 export type SvgAlphabetStyle = 'Block' | 'Varsity' | 'Bubble' | 'Script' | 'Line' | 'Digits' | 'Retro' | 'Gothic';
@@ -54,8 +55,29 @@ export interface SvgAlphabetDefinition {
   libraryRelativeDirBySize?: Partial<Record<StoneSizeId, string>>;
   /** Optional per-character-class directories when uppercase/lowercase/digits live in separate folders. */
   libraryRelativeDirByCharacterClass?: Partial<Record<SvgAlphabetCharacterClass, string>>;
+  /**
+   * Optional per-size, per-character-class directories, for packages that
+   * split by both size AND case (e.g. SS06-UPPERCASE, SS06-LOWERCASE,
+   * SS10-UPPERCASE, SS10-LOWERCASE). Takes priority over both
+   * `libraryRelativeDirBySize` and `libraryRelativeDirByCharacterClass`.
+   */
+  libraryRelativeDirBySizeAndCharacterClass?: Partial<Record<StoneSizeId, Partial<Record<SvgAlphabetCharacterClass, string>>>>;
   /** Optional combined strip files that must be split into per-character glyphs server-side. */
   combinedSources?: readonly SvgAlphabetCombinedSource[];
+  /**
+   * Optional per-character glyph file basename fallbacks, tried when the
+   * primary `<character><glyphExtension>` file does not exist (e.g. a source
+   * package that named its i-glyph with a dotless ı).
+   */
+  glyphFileFallbackByChar?: Readonly<Record<string, string>>;
+  /**
+   * Optional typographic baseline metrics: fraction of each glyph's own height
+   * that hangs below the text baseline (0 = bottom sits on the baseline,
+   * negative = bottom floats above it, e.g. a shortened z). Characters not
+   * listed sit on the baseline. When present, generators align glyphs to a
+   * shared baseline using these exact fractions instead of heuristics.
+   */
+  baselineBelowFractionByChar?: Readonly<Record<string, number>>;
   /** File extension for each glyph SVG (usually '.svg'). */
   glyphExtension: string;
   /** Native stone size the alphabet was authored for. */
@@ -468,6 +490,57 @@ export const SVG_ALPHABET_REGISTRY: readonly SvgAlphabetDefinition[] = [
       swedish: false,
     },
     limitations: ['Uppercase only', 'Sized for SS10 package', '3-color source flattened to single-color output'],
+  },
+  {
+    alphabetId: 'old-english-gothic',
+    displayName: 'Old English',
+    category: 'Library',
+    style: 'Gothic',
+    suggestedText: 'OLD',
+    libraryRelativeDir: 'Rhinestone fonts till projektet/F13-OLD-ENGLISH-RHINESTONE-FONT/SS10-UPPERCASE/SVG',
+    libraryRelativeDirBySizeAndCharacterClass: {
+      SS6: {
+        uppercase: 'Rhinestone fonts till projektet/F13-OLD-ENGLISH-RHINESTONE-FONT/SS06-UPPERCASE/SVG',
+        lowercase: 'Rhinestone fonts till projektet/F13-OLD-ENGLISH-RHINESTONE-FONT/SS06-LOWERCASE/SVG',
+      },
+      SS10: {
+        uppercase: 'Rhinestone fonts till projektet/F13-OLD-ENGLISH-RHINESTONE-FONT/SS10-UPPERCASE/SVG',
+        lowercase: 'Rhinestone fonts till projektet/F13-OLD-ENGLISH-RHINESTONE-FONT/SS10-LOWERCASE/SVG',
+      },
+    },
+    glyphExtension: '.svg',
+    // The SS10 lowercase source file for i is named with a dotless-ı; the
+    // fallback lets 'i' resolve there (SS6 ships a correctly-named i.svg).
+    glyphFileFallbackByChar: { i: 'ı' },
+    // Baseline metrics for this design. Lowercase fractions are measured from
+    // the package's own ALL-ALPHABET-old-english-Lowercase.svg strip, where
+    // each row of letters shares a true baseline. Uppercase fractions come
+    // from the Old London typeface this design is based on (per-glyph
+    // bounding boxes relative to the font baseline). Only letters with a
+    // meaningful below-baseline tail (or, for z, a raised bottom) are listed.
+    baselineBelowFractionByChar: {
+      A: 0.018, B: 0.139, C: 0.015, D: 0.064, E: 0.015, F: 0.171, G: 0.015,
+      H: 0.164, I: 0.018, J: 0.166, K: 0.018, L: 0.035, M: 0.112, N: 0.095,
+      O: 0.015, P: 0.172, Q: 0.06, R: 0.025, S: 0.028, T: 0.015, U: 0.016,
+      V: 0.016, W: 0.016, X: 0.016, Y: 0.174, Z: 0.015, '&': 0.015,
+      f: 0.07, g: 0.32, j: 0.167, p: 0.248, q: 0.22, s: 0.031, y: 0.234,
+      z: -0.058,
+    },
+    authoredStoneSizeId: 'SS10',
+    supportedTargetStoneSizeIds: ['SS6', 'SS10'],
+    license: 'User-provided local asset',
+    licenseSource: 'LETTER UTVALDA / Rhinestone fonts till projektet / F13-OLD-ENGLISH-RHINESTONE-FONT',
+    isPrivate: true,
+    characterCoverage: {
+      uppercase: true,
+      lowercase: true,
+      digits: false,
+      swedish: false,
+    },
+    limitations: [
+      'No digit glyphs in this package',
+      'A dense, fine-detail design (roughly 50-140 individual stones per letter) — at true stone size, letters render considerably larger than simpler block/script alphabets',
+    ],
   },
 ];
 

@@ -656,3 +656,31 @@ Generates a `RhinestoneTemplate` containing rows of holes at varying diameters f
 **Output:** A `RhinestoneTemplate` with `unit: 'mm'`. Every stone has a `metadata` object containing `calibration: true`, `materialProfileId`, `variantLabel`, `recommendedHoleDiameterMm`, and `testedHoleDiameterMm`.
 
 **Export:** Use `createBasicSvgExport()` — the same function used for production templates. The calibration sheet and production templates share a single, audited export path.
+
+---
+
+## SVG Alphabet Baseline Metrics
+
+Curated SVG alphabets store each character in its own file, so no cross-file
+baseline survives import (every glyph is re-zeroed to its own bounding box).
+Generators that compose letters (`createSvgAlphabetTemplate`,
+`createLetterStencilTemplate`) therefore need to know how far each glyph
+should hang below a shared text baseline.
+
+An alphabet definition may carry `baselineBelowFractionByChar`: a map from
+character to the fraction of that glyph's own height that sits below the
+baseline (`0` = bottom on the baseline, negative = bottom floats above it).
+Characters not listed sit on the baseline. When present, both generators align
+glyphs using these exact fractions and skip the layout heuristics (lowercase
+descender list, cap-height outlier detection) that remain the fallback for
+alphabets without metrics.
+
+Fractions are derived from the alphabet's source material — measured from a
+combined all-letters strip that shares a real baseline, or computed from the
+per-glyph bounding boxes of the typeface the design is based on (e.g. Old
+London for `old-english-gothic`). They are static data in the registry: the
+engine stays pure and deterministic, with no font parsing at compose time.
+
+An alphabet definition may also carry `glyphFileFallbackByChar`: alternate
+file basenames tried when the primary `<char>.svg` is missing (e.g. the Old
+English SS10 package names its i-glyph with a dotless ı).

@@ -154,29 +154,56 @@ function findCombinedSource(
 }
 
 /**
+ * Resolves which glyph directory to use for a character, in priority order:
+ * 1. Per-size + per-character-class directory (packages split by both, e.g. SS06-UPPERCASE)
+ * 2. Per-character-class directory (uppercase/lowercase/digits in separate folders)
+ * 3. Per-size directory (SS6/SS10 in separate folders)
+ * 4. The alphabet's default directory
+ */
+function resolveGlyphDir(
+  definition: SvgAlphabetDefinition,
+  characterClass: SvgAlphabetCharacterClass | null,
+  targetStoneSizeId?: StoneSizeId,
+): string {
+  const sizeClassDir =
+    targetStoneSizeId && characterClass
+      ? definition.libraryRelativeDirBySizeAndCharacterClass?.[targetStoneSizeId]?.[characterClass]
+      : undefined;
+  const classDir = characterClass ? definition.libraryRelativeDirByCharacterClass?.[characterClass] : undefined;
+  const sizedDir = targetStoneSizeId ? definition.libraryRelativeDirBySize?.[targetStoneSizeId] : undefined;
+  return sizeClassDir ?? classDir ?? sizedDir ?? definition.libraryRelativeDir;
+}
+
+/**
  * Resolve the absolute filesystem path of a single glyph SVG in an alphabet.
  * The character is used as the file basename (e.g. 'A' → 'A.svg'). When the
  * alphabet ships size-specific glyph folders, the requested targetStoneSizeId
  * picks the matching subfolder; otherwise the default libraryRelativeDir is
  * used.
  */
+function glyphFileBasenames(definition: SvgAlphabetDefinition, character: string): string[] {
+  const basenames = [character];
+  const fallback = definition.glyphFileFallbackByChar?.[character];
+  if (fallback) basenames.push(fallback);
+  return basenames;
+}
+
 export function resolveSvgAlphabetGlyphPath(
   definition: SvgAlphabetDefinition,
   character: string,
   targetStoneSizeId?: StoneSizeId,
 ): string | null {
   if (!character || character.length !== 1) return null;
-  const filename = `${character}${definition.glyphExtension}`;
   const characterClass = classifyCharacter(character);
+  const dir = resolveGlyphDir(definition, characterClass, targetStoneSizeId);
 
-  const sizedDir = targetStoneSizeId ? definition.libraryRelativeDirBySize?.[targetStoneSizeId] : undefined;
-  const classDir = characterClass ? definition.libraryRelativeDirByCharacterClass?.[characterClass] : undefined;
-  const dir = classDir ?? sizedDir ?? definition.libraryRelativeDir;
-
-  for (const root of getLibraryRoots()) {
-    const candidate = join(/* turbopackIgnore: true */ root, dir, filename);
-    if (existsSync(candidate)) {
-      return candidate;
+  for (const basename of glyphFileBasenames(definition, character)) {
+    const filename = `${basename}${definition.glyphExtension}`;
+    for (const root of getLibraryRoots()) {
+      const candidate = join(/* turbopackIgnore: true */ root, dir, filename);
+      if (existsSync(candidate)) {
+        return candidate;
+      }
     }
   }
   return null;
@@ -187,15 +214,13 @@ export async function loadSvgAlphabetGlyphText(
   character: string,
   targetStoneSizeId?: StoneSizeId,
 ): Promise<string | null> {
-  const filename = `${character}${definition.glyphExtension}`;
   const characterClass = classifyCharacter(character);
-  const sizedDir = targetStoneSizeId ? definition.libraryRelativeDirBySize?.[targetStoneSizeId] : undefined;
-  const classDir = characterClass ? definition.libraryRelativeDirByCharacterClass?.[characterClass] : undefined;
-  const dir = classDir ?? sizedDir ?? definition.libraryRelativeDir;
-  const relativeGlyphPath = `${dir}/${filename}`;
-  const zippedGlyphPath = splitZipRelativePath(relativeGlyphPath);
+  const dir = resolveGlyphDir(definition, characterClass, targetStoneSizeId);
 
-  if (zippedGlyphPath) {
+  for (const basename of glyphFileBasenames(definition, character)) {
+    const relativeGlyphPath = `${dir}/${basename}${definition.glyphExtension}`;
+    const zippedGlyphPath = splitZipRelativePath(relativeGlyphPath);
+    if (!zippedGlyphPath) continue;
     for (const root of getLibraryRoots()) {
       const archivePath = join(/* turbopackIgnore: true */ root, zippedGlyphPath.archiveRelativePath);
       if (!existsSync(archivePath)) continue;
@@ -204,11 +229,11 @@ export async function loadSvgAlphabetGlyphText(
         return svgText;
       }
     }
-  } else {
-    const directPath = resolveSvgAlphabetGlyphPath(definition, character, targetStoneSizeId);
-    if (directPath) {
-      return await readFile(directPath, 'utf-8');
-    }
+  }
+
+  const directPath = resolveSvgAlphabetGlyphPath(definition, character, targetStoneSizeId);
+  if (directPath) {
+    return await readFile(directPath, 'utf-8');
   }
 
   const combinedSource = findCombinedSource(definition, character, targetStoneSizeId);

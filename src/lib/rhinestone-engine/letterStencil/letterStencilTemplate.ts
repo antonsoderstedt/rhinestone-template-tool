@@ -68,8 +68,6 @@ export interface CreateLetterStencilOptions {
   layoutMode?: StencilLayoutMode;
   /** For 'cut-sheet' mode: gap between adjacent cards (mm). Default 3. */
   cutSheetGapMm?: number;
-  /** For 'cut-sheet' mode: sheet width used to wrap cards (mm). Default 305 (12"). */
-  cutSheetWidthMm?: number;
 }
 
 export interface LetterStencilCardMetadata {
@@ -88,6 +86,11 @@ export interface LetterStencilResult {
 }
 
 // ─── Internals ────────────────────────────────────────────────────────────────
+
+// Latin-script lowercase letters that conventionally extend below the
+// baseline (a descender). Used only to refine SVG Alphabet vertical
+// alignment — see the xHeightMm/anchorHeightMm comment near glyphOffsetY.
+const DESCENDER_CHARS = new Set(['g', 'j', 'p', 'q', 'y']);
 
 interface RawGlyph {
   stones: Array<{ x: number; y: number; diameterMm: number }>;
@@ -215,7 +218,6 @@ export async function createLetterStencilTemplate(
     minCardWidthMm = 12,
     layoutMode = 'cut-sheet',
     cutSheetGapMm = 3,
-    cutSheetWidthMm = 305,
   } = options;
 
   // Resolve source metadata (display name is used in warnings) and pre-extract
@@ -233,6 +235,7 @@ export async function createLetterStencilTemplate(
   let sourceIdForMetadata: string;
   let sourceStyleForMetadata: string;
   const useFontMetrics = source.type === 'rhinestone-font';
+  let baselineBelowFractionByChar: Readonly<Record<string, number>> | undefined;
 
   if (source.type === 'svg-alphabet') {
     const resolvedAlphabetId: SvgAlphabetId = isKnownSvgAlphabetId(source.alphabetId)
@@ -242,6 +245,7 @@ export async function createLetterStencilTemplate(
     sourceDisplayName = definition.displayName;
     sourceIdForMetadata = resolvedAlphabetId;
     sourceStyleForMetadata = definition.style;
+    baselineBelowFractionByChar = definition.baselineBelowFractionByChar;
 
     if (!definition.supportedTargetStoneSizeIds.includes(targetStoneSizeId)) {
       throw new Error(
@@ -308,22 +312,87 @@ export async function createLetterStencilTemplate(
     : targetStoneSizeMm;
   const scale = medianDiameter > 0 ? targetStoneSizeMm / medianDiameter : 1;
 
-  // Scale every glyph up front. Uniform card height = max scaled glyph height +
-  // 2 * padding, so every letter card is the same height (typographic constant).
+  // Scale every glyph up front.
   const scaledByChar = new Map<string, RawGlyph>();
-  let maxGlyphHeight = 0;
   let globalMinY = 0;
   let globalMaxY = 0;
   for (const [ch, raw] of rawByChar) {
     const scaled = scaleGlyph(raw, scale);
     scaledByChar.set(ch, scaled);
-    if (scaled.heightMm > maxGlyphHeight) maxGlyphHeight = scaled.heightMm;
     if (useFontMetrics) {
       globalMinY = Math.min(globalMinY, scaled.minY);
       globalMaxY = Math.max(globalMaxY, scaled.maxY);
     }
   }
-  const naturalCardHeightMm = useFontMetrics ? globalMaxY - globalMinY : maxGlyphHeight;
+
+  // Reference "x-height" for SVG Alphabet descender correction: the shortest
+  // lowercase, non-descender glyph actually present in this word/alphabet.
+  // SVG Alphabet packages carry no font metrics, so there's no way to know
+  // how much of a descender letter's height (g, j, p, q, y) is its main body
+  // versus its tail below the baseline — bottom-aligning by full height (as
+  // every other letter correctly is) would push descenders' whole body up,
+  // out of proportion with their neighbors. Approximating the body height as
+  // this word's own x-height reference lets most of the tail hang below the
+  // shared baseline instead, which reads far closer to correct.
+  let xHeightMm = Infinity;
+  if (!useFontMetrics) {
+    for (const [ch, glyph] of scaledByChar) {
+      if (/^[a-z]$/.test(ch) && !DESCENDER_CHARS.has(ch)) {
+        xHeightMm = Math.min(xHeightMm, glyph.heightMm);
+      }
+    }
+  }
+
+  // Decorative capitals (common in blackletter/Gothic alphabets — e.g. a
+  // capital Y or J with a swash tail curling below the normal cap line) need
+  // the same treatment, but there is no fixed "which capitals have a tail"
+  // list the way DESCENDER_CHARS is for lowercase — it's font-specific.
+  // Instead, treat any capital whose height clearly exceeds the shortest
+  // capital present as carrying a tail: ordinary per-letter design variance
+  // among capitals is modest (rarely more than ~8%), so an outlier well
+  // beyond that is almost certainly a swash, not just a taller letterform.
+  const CAP_HEIGHT_OUTLIER_RATIO = 1.08;
+  let capHeightMm = Infinity;
+  if (!useFontMetrics) {
+    for (const [ch, glyph] of scaledByChar) {
+      if (/^[A-Z]$/.test(ch)) {
+        capHeightMm = Math.min(capHeightMm, glyph.heightMm);
+      }
+    }
+  }
+
+  /** The height actually used to anchor a glyph's bottom to the shared baseline. */
+  function anchorHeightMmFor(ch: string, glyph: RawGlyph): number {
+    if (useFontMetrics) return glyph.heightMm;
+    // Alphabets that ship exact baseline metrics (measured from their source
+    // typeface / combined strips) bypass the heuristics below entirely.
+    if (baselineBelowFractionByChar) {
+      const belowFraction = baselineBelowFractionByChar[ch] ?? 0;
+      return glyph.heightMm * (1 - belowFraction);
+    }
+    if (DESCENDER_CHARS.has(ch) && isFinite(xHeightMm)) {
+      return Math.min(glyph.heightMm, xHeightMm);
+    }
+    if (/^[A-Z]$/.test(ch) && isFinite(capHeightMm) && glyph.heightMm > capHeightMm * CAP_HEIGHT_OUTLIER_RATIO) {
+      return capHeightMm;
+    }
+    return glyph.heightMm;
+  }
+
+  // Uniform card height must fit both the tallest content ABOVE the shared
+  // baseline (spaceAboveMm — every letter's own anchor height, capped for
+  // descenders per the x-height correction) AND the deepest content BELOW it
+  // (spaceBelowMm — how far a descender's true bottom extends past its
+  // anchor). Without spaceBelowMm, a descender's tail would render past the
+  // bottom of its own card.
+  let spaceAboveMm = 0;
+  let spaceBelowMm = 0;
+  for (const [ch, glyph] of scaledByChar) {
+    const anchor = anchorHeightMmFor(ch, glyph);
+    spaceAboveMm = Math.max(spaceAboveMm, anchor);
+    spaceBelowMm = Math.max(spaceBelowMm, glyph.heightMm - anchor);
+  }
+  const naturalCardHeightMm = useFontMetrics ? globalMaxY - globalMinY : spaceAboveMm + spaceBelowMm;
   const cardHeightMm = naturalCardHeightMm + 2 * cardPaddingMm;
 
   // Emit cards in the order characters appear in text (respecting duplicates).
@@ -336,13 +405,11 @@ export async function createLetterStencilTemplate(
   let rowMaxHeight = 0;
   let stoneCounter = 0;
   let cardCounter = 0;
-  let firstCardOnRow = true;
 
   const advanceToNextRow = () => {
     cursorX = 0;
     cursorY += rowMaxHeight + cutSheetGapMm;
     rowMaxHeight = 0;
-    firstCardOnRow = true;
   };
 
   for (const ch of text) {
@@ -350,7 +417,6 @@ export async function createLetterStencilTemplate(
       if (layoutMode === 'preview') {
         cursorX = 0;
         cursorY += cardHeightMm;
-        firstCardOnRow = true;
       } else {
         advanceToNextRow();
       }
@@ -379,10 +445,6 @@ export async function createLetterStencilTemplate(
     const cardWidthMm = Math.max(naturalCardWidthMm, minCardWidthMm);
     const extraHorizontalInsetMm = (cardWidthMm - naturalCardWidthMm) / 2;
 
-    if (layoutMode === 'cut-sheet' && !firstCardOnRow && (cursorX + cardWidthMm) > cutSheetWidthMm) {
-      advanceToNextRow();
-    }
-
     const cardId = `card-${cardCounter}`;
     const cardX = cursorX;
     const cardY = cursorY;
@@ -401,9 +463,20 @@ export async function createLetterStencilTemplate(
     const glyphOffsetX = useFontMetrics
       ? cardX + cardPaddingMm + leftOverflowMm + extraHorizontalInsetMm
       : cardX + (cardWidthMm - glyphWidth) / 2;
+    // Rhinestone fonts preserve real font-space Y coordinates, so every glyph
+    // can share one true baseline (globalMinY, from font ascender/descender
+    // metrics). SVG Alphabet glyphs come from independently-imported files
+    // that get re-zeroed to their own top-left per file (no cross-file
+    // baseline survives), so instead every glyph's anchor height (see
+    // spaceAboveMm/spaceBelowMm above) is pinned to one shared baseline line
+    // (cardY + cardPaddingMm + spaceAboveMm) — letters without descenders sit
+    // with their bottom exactly on it; known descender letters sit with only
+    // their x-height-sized "body" reaching it, letting the actual tail hang
+    // down into the spaceBelowMm allowance instead of dragging the whole
+    // glyph upward or overflowing past the card's bottom edge.
     const glyphOffsetY = useFontMetrics
       ? cardY + cardPaddingMm - globalMinY
-      : cardY + (cardHeightMm - scaled.heightMm) / 2;
+      : cardY + cardPaddingMm + spaceAboveMm - anchorHeightMmFor(ch, scaled);
 
     for (const s of scaled.stones) {
       stones.push({
@@ -436,7 +509,6 @@ export async function createLetterStencilTemplate(
       cursorX += cardWidthMm + cutSheetGapMm;
     }
     if (cardHeightMm > rowMaxHeight) rowMaxHeight = cardHeightMm;
-    firstCardOnRow = false;
     cardCounter += 1;
   }
 

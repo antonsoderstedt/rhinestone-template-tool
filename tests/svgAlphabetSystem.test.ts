@@ -67,6 +67,7 @@ describe('SVG Alphabet System', () => {
     expect(ids).toContain('birthday-script');
     expect(ids).toContain('retro-wide');
     expect(ids).toContain('varsity-collage-a');
+    expect(ids).toContain('old-english-gothic');
   });
 
   it('offers SS6 and SS10 for the Cheer package via libraryRelativeDirBySize', () => {
@@ -125,6 +126,55 @@ describe('SVG Alphabet System', () => {
     expect(brideUpper).toContain('<svg');
     expect(brideLower).toContain('<svg');
     expect(brideDigit).toContain('<svg');
+  });
+
+  it('resolves Old English uppercase and lowercase glyphs from separate directories at SS10', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'S', 'SS10');
+    const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'a', 'SS10');
+
+    expect(upper).toContain('<svg');
+    expect(lower).toContain('<svg');
+  });
+
+  it("resolves the SS10 lowercase i through the dotless-ı filename fallback", async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const oldEnglish = getSvgAlphabetDefinition('old-english-gothic');
+    expect(oldEnglish.glyphFileFallbackByChar?.i).toBe('ı');
+
+    const lowerI = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'i', 'SS10');
+    expect(lowerI).toContain('<svg');
+  });
+
+  it('resolves Old English uppercase and lowercase glyphs from separate directories at SS6', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'S', 'SS6');
+    const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'a', 'SS6');
+    // Lowercase 'i' is correctly named at SS6 (unlike SS10's dotless-ı file).
+    const lowerI = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'i', 'SS6');
+
+    expect(upper).toContain('<svg');
+    expect(lower).toContain('<svg');
+    expect(lowerI).toContain('<svg');
+  });
+
+  it('SS6 and SS10 Old English glyphs resolve from different directories', async () => {
+    clearSvgAlphabetGlyphCacheForTests();
+    const oldEnglish = getSvgAlphabetDefinition('old-english-gothic');
+    const ss6Dir = oldEnglish.libraryRelativeDirBySizeAndCharacterClass?.SS6?.uppercase;
+    const ss10Dir = oldEnglish.libraryRelativeDirBySizeAndCharacterClass?.SS10?.uppercase;
+    expect(ss6Dir).toBeDefined();
+    expect(ss10Dir).toBeDefined();
+    expect(ss6Dir).not.toBe(ss10Dir);
+  });
+
+  it('reports Old English as supporting SS6 and SS10 with no digit glyphs', () => {
+    const oldEnglish = getSvgAlphabetDefinition('old-english-gothic');
+    expect(oldEnglish.supportedTargetStoneSizeIds).toEqual(['SS6', 'SS10']);
+    expect(oldEnglish.characterCoverage.uppercase).toBe(true);
+    expect(oldEnglish.characterCoverage.lowercase).toBe(true);
+    expect(oldEnglish.characterCoverage.digits).toBe(false);
+    expect(oldEnglish.style).toBe('Gothic');
   });
 
   it('resolves Huge Digits from its zip-backed digit directory', async () => {
@@ -243,5 +293,68 @@ describe('SVG Alphabet System', () => {
       text: 'A', alphabetId: DEFAULT_SVG_ALPHABET_ID, targetStoneSizeId: 'SS20',
       targetStoneSizeMm: 5.283, letterSpacingMm: 0, lineSpacingMm: 0, glyphLoader: loader,
     })).rejects.toThrow(/supports/);
+  });
+
+  it('hangs metric descenders below the shared baseline for alphabets with baseline metrics', async () => {
+    // old-english-gothic ships baselineBelowFractionByChar (B: 0.139, o: on
+    // baseline). Two synthetic glyphs of identical height: B must end up
+    // sitting lower than o by its below-baseline fraction of the glyph height.
+    const column = Array.from({ length: 5 }, (_, i) => ({ cx: 500, cy: 100 + i * 200, r: 30 }));
+    const loader = inMemoryLoader({
+      B: makeCircleSvg(column),
+      o: makeCircleSvg(column),
+    });
+
+    const result = await createSvgAlphabetTemplate({
+      text: 'Bo',
+      alphabetId: 'old-english-gothic',
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.0,
+      letterSpacingMm: 2,
+      lineSpacingMm: 0,
+      glyphLoader: loader,
+    });
+
+    const bottomOf = (ch: string) => Math.max(
+      ...result.template.stones
+        .filter((s) => s.metadata?.['character'] === ch)
+        .map((s) => s.center.y + s.holeDiameterMm / 2),
+    );
+    const heightOf = (ch: string) => {
+      const ys = result.template.stones
+        .filter((s) => s.metadata?.['character'] === ch)
+        .map((s) => s.center.y);
+      return Math.max(...ys) - Math.min(...ys) + 3.0;
+    };
+
+    const expectedDrop = heightOf('B') * 0.139;
+    expect(bottomOf('B') - bottomOf('o')).toBeCloseTo(expectedDrop, 1);
+  });
+
+  it('raises a bottom-shortened glyph (Old English z) above the shared baseline', async () => {
+    const column = Array.from({ length: 5 }, (_, i) => ({ cx: 500, cy: 100 + i * 200, r: 30 }));
+    const loader = inMemoryLoader({
+      x: makeCircleSvg(column),
+      z: makeCircleSvg(column),
+    });
+
+    const result = await createSvgAlphabetTemplate({
+      text: 'xz',
+      alphabetId: 'old-english-gothic',
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.0,
+      letterSpacingMm: 2,
+      lineSpacingMm: 0,
+      glyphLoader: loader,
+    });
+
+    const bottomOf = (ch: string) => Math.max(
+      ...result.template.stones
+        .filter((s) => s.metadata?.['character'] === ch)
+        .map((s) => s.center.y + s.holeDiameterMm / 2),
+    );
+
+    // z's bottom sits above the baseline (negative below-fraction), x sits on it.
+    expect(bottomOf('z')).toBeLessThan(bottomOf('x'));
   });
 });

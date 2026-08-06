@@ -130,6 +130,15 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     return state.template?.stones || [];
   }, [state.template, state.editableTemplate]);
 
+  // Cut shapes (e.g. letter-stencil card frames) — not stored on the
+  // editable snapshot, so fall back to the pre-edit template when editable.
+  const cutShapes = useMemo(() => {
+    if (state.editableTemplate.isEditable) {
+      return state.editableTemplate.originalTemplate?.cutShapes ?? [];
+    }
+    return state.template?.cutShapes ?? [];
+  }, [state.template, state.editableTemplate]);
+
   const selectedStones = useMemo(
     () => stones.filter((stone) => state.selectedStoneIds.has(stone.id)),
     [stones, state.selectedStoneIds],
@@ -1119,6 +1128,24 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
               <rect width="100%" height="100%" fill="url(#grid-major)" opacity="0.95" />
             </>
           )}
+
+          {/* Cut shapes (e.g. letter-stencil card frames) */}
+          {cutShapes.map((shape) => (
+            <rect
+              key={shape.id ?? `${shape.x}-${shape.y}`}
+              x={shape.x}
+              y={shape.y}
+              width={shape.widthMm}
+              height={shape.heightMm}
+              rx={shape.cornerRadiusMm ?? 0}
+              ry={shape.cornerRadiusMm ?? 0}
+              fill="none"
+              stroke="#7c4dff"
+              strokeWidth="0.3"
+              strokeDasharray="1.4 1"
+              opacity="0.8"
+            />
+          ))}
 
           {/* Stones */}
           {stones.map((stone) => {

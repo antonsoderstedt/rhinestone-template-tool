@@ -157,9 +157,29 @@ export async function createSvgAlphabetTemplate(
 
   const emittedStones: Stone[] = [];
 
+  // Alphabets with exact baseline metrics get true baseline alignment: each
+  // glyph's below-baseline fraction decides how far it hangs under the shared
+  // line. Alphabets without metrics keep the legacy top-aligned layout.
+  const baselineByChar = definition.baselineBelowFractionByChar;
+  const aboveBaselineMmFor = (char: string, heightMm: number): number =>
+    heightMm * (1 - (baselineByChar?.[char] ?? 0));
+
   for (const line of lines) {
     let currentX = 0;
     let lineHeight = 0;
+
+    let lineAscentMm = 0;
+    let lineDescentMm = 0;
+    if (baselineByChar) {
+      for (const char of line) {
+        const rawGlyph = normalizedByChar.get(char);
+        if (!rawGlyph) continue;
+        const heightMm = rawGlyph.heightMm * scale;
+        const aboveMm = aboveBaselineMmFor(char, heightMm);
+        lineAscentMm = Math.max(lineAscentMm, aboveMm);
+        lineDescentMm = Math.max(lineDescentMm, heightMm - aboveMm);
+      }
+    }
 
     for (const char of line) {
       if (char === ' ') {
@@ -171,10 +191,13 @@ export async function createSvgAlphabetTemplate(
       if (!rawGlyph) continue; // Unsupported — already logged
 
       const scaledGlyph = scaleGlyph(rawGlyph, scale);
+      const glyphOffsetY = baselineByChar
+        ? currentY + lineAscentMm - aboveBaselineMmFor(char, scaledGlyph.heightMm)
+        : currentY;
       for (const s of scaledGlyph.stones) {
         emittedStones.push({
           id: `sva-${stoneCounter++}`,
-          center: { x: currentX + s.x, y: currentY + s.y },
+          center: { x: currentX + s.x, y: glyphOffsetY + s.y },
           stoneSize: targetStoneSizeId,
           holeDiameterMm: targetStoneSizeMm,
           metadata: {
@@ -188,7 +211,7 @@ export async function createSvgAlphabetTemplate(
       lineHeight = Math.max(lineHeight, scaledGlyph.heightMm);
     }
 
-    currentY += lineHeight + lineSpacingMm;
+    currentY += (baselineByChar ? lineAscentMm + lineDescentMm : lineHeight) + lineSpacingMm;
   }
 
   // Bounds
