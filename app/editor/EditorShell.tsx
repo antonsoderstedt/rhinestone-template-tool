@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   editorReducer,
   DEFAULT_EDITOR_STATE,
@@ -53,13 +54,16 @@ import {
   savedStoneToEditableStone,
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
+import { findAssetById } from '../lib/workspaceVault';
 
 export default function EditorShell() {
+  const searchParams = useSearchParams();
   const AUTOSAVE_STORAGE_KEY = 'rhinestone-template-library-autosave';
   const [state, dispatch] = useReducer(editorReducer, DEFAULT_EDITOR_STATE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateLibraryRepositoryRef = useRef<TemplateLibraryRepository | null>(null);
   const generationRequestRef = useRef(0);
+  const handledQueryRef = useRef<string | null>(null);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
@@ -938,6 +942,74 @@ export default function EditorShell() {
     }
   }, [editorDispatch, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
 
+  useEffect(() => {
+    const designId = searchParams.get('designId');
+    const assetId = searchParams.get('asset');
+    const fontId = searchParams.get('font');
+    const launchText = searchParams.get('text');
+    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}`;
+
+    if (queryKey === '|||') return;
+    if (handledQueryRef.current === queryKey) return;
+
+    const applyQueryIntent = async () => {
+      if (designId && templateLibraryRepositoryRef.current) {
+        const entry = await templateLibraryRepositoryRef.current.get(designId);
+        if (entry) {
+          const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
+          applyProjectToEditor(project);
+          setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
+          handledQueryRef.current = queryKey;
+          return;
+        }
+      }
+
+      if (assetId) {
+        const asset = findAssetById(assetId);
+        if (asset) {
+          dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
+          dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
+          dispatch({
+            type: 'UPDATE_SVG_TOOL',
+            updates: asset.kind === 'svg'
+              ? {
+                  assetKind: 'svg',
+                  uploadedSvgText: asset.svgText,
+                  svgFileName: asset.fileName,
+                  uploadedImageDataUrl: null,
+                  imageFileName: null,
+                }
+              : {
+                  assetKind: 'image',
+                  uploadedImageDataUrl: asset.sourceDataUrl,
+                  imageFileName: asset.fileName,
+                  uploadedSvgText: null,
+                  svgFileName: null,
+                },
+          });
+          handledQueryRef.current = queryKey;
+          return;
+        }
+      }
+
+      if (fontId) {
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
+        dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} Rhinestone Design` });
+        dispatch({
+          type: 'UPDATE_TEXT_TOOL',
+          updates: {
+            mode: 'outline',
+            fontId,
+            text: launchText ?? 'Sulay 123',
+          },
+        });
+        handledQueryRef.current = queryKey;
+      }
+    };
+
+    void applyQueryIntent();
+  }, [applyProjectToEditor, searchParams]);
+
   const handleOpenLibrary = useCallback(() => {
     setTemplateLibraryOpen(true);
   }, []);
@@ -1138,7 +1210,7 @@ export default function EditorShell() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex flex-col bg-surface">
+    <div className="h-full min-h-0 flex flex-col bg-surface">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}

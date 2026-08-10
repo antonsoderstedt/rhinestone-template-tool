@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Download, RotateCcw, RotateCw, Shirt } from 'lucide-react';
+import { Download, RotateCcw, RotateCw, Save, Shirt } from 'lucide-react';
 import type { HtvAction } from './HtvState';
 
 interface HtvTopbarProps {
@@ -11,6 +11,7 @@ interface HtvTopbarProps {
   canExport: boolean;
   canPreviewGarment: boolean;
   dispatch: React.Dispatch<HtvAction>;
+  onSaveDesign: () => void;
   onExport: () => void;
   onOpenGarmentPreview: () => void;
 }
@@ -22,6 +23,7 @@ export default function HtvTopbar({
   canExport,
   canPreviewGarment,
   dispatch,
+  onSaveDesign,
   onExport,
   onOpenGarmentPreview,
 }: HtvTopbarProps) {
@@ -38,7 +40,7 @@ export default function HtvTopbar({
           </div>
         </div>
         <Link
-          href="/"
+          href="/rhinestone"
           className="hidden rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink md:inline-flex"
         >
           ← Rhinestone Studio
@@ -84,6 +86,17 @@ export default function HtvTopbar({
         >
           <Shirt className="h-4 w-4" />
           Preview
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-surface-sunken" />
+
+        <button
+          onClick={onSaveDesign}
+          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-secondary transition hover:bg-surface-sunken hover:text-ink focus:outline-none focus:ring-2 focus:ring-accent-400"
+          title="Save this HTV design to My Designs"
+        >
+          <Save className="h-4 w-4" />
+          Save
         </button>
 
         <div className="mx-1 h-6 w-px bg-surface-sunken" />

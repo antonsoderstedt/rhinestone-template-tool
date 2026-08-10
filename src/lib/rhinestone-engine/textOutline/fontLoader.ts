@@ -1,5 +1,5 @@
 import * as opentype from 'opentype.js';
-import { getOutlineFontDefinition, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID, type OutlineFontDefinition, type OutlineFontId } from './fontRegistry';
+import { getOutlineFontDefinition, isAvailableOutlineFontId, LEGACY_OUTLINE_FONT_ID, type OutlineFontDefinition } from './fontRegistry';
 
 export interface LoadedOutlineFont {
   definition: OutlineFontDefinition;
@@ -16,15 +16,45 @@ function bufferToArrayBuffer(buffer: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
+function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
+  const match = /^data:.*?(;base64)?,(.*)$/i.exec(dataUrl);
+  if (!match) {
+    throw new Error('Invalid uploaded font data URL.');
+  }
+
+  const payload = match[2] ?? '';
+  if (match[1]) {
+    if (typeof Buffer !== 'undefined') {
+      return bufferToArrayBuffer(Buffer.from(payload, 'base64'));
+    }
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  return new TextEncoder().encode(decodeURIComponent(payload)).buffer;
+}
+
 async function readFontArrayBuffer(definition: OutlineFontDefinition): Promise<ArrayBuffer> {
-  if (!definition.assetUrl || !definition.nodeFilePath) {
+  if (!definition.assetUrl && !definition.nodeFilePath) {
     throw new Error(`Font "${definition.displayName}" has no loadable asset.`);
   }
 
-  if (typeof window === 'undefined') {
+  if (definition.assetUrl?.startsWith('data:')) {
+    return dataUrlToArrayBuffer(definition.assetUrl);
+  }
+
+  if (typeof window === 'undefined' && definition.nodeFilePath) {
     const { readFile } = await import('node:fs/promises');
     const fileBuffer = await readFile(definition.nodeFilePath);
     return bufferToArrayBuffer(fileBuffer);
+  }
+
+  if (!definition.assetUrl) {
+    throw new Error(`Font "${definition.displayName}" has no browser asset URL.`);
   }
 
   const response = await fetch(definition.assetUrl);
@@ -48,7 +78,7 @@ function assertFontSupportsCharacters(font: opentype.Font, definition: OutlineFo
 }
 
 export async function loadOutlineFont(fontId: string | undefined | null): Promise<LoadedOutlineFont> {
-  const resolvedId = isKnownOutlineFontId(fontId) ? fontId : LEGACY_OUTLINE_FONT_ID;
+  const resolvedId = isAvailableOutlineFontId(fontId) ? fontId! : LEGACY_OUTLINE_FONT_ID;
   const definition = getOutlineFontDefinition(resolvedId);
 
   if (definition.isLegacy) {
@@ -73,6 +103,6 @@ export function clearOutlineFontCacheForTests() {
   parsedFontCache.clear();
 }
 
-export function listCachedFontIds(): OutlineFontId[] {
-  return Array.from(parsedFontCache.keys()).filter((fontId): fontId is OutlineFontId => isKnownOutlineFontId(fontId));
+export function listCachedFontIds(): string[] {
+  return Array.from(parsedFontCache.keys());
 }

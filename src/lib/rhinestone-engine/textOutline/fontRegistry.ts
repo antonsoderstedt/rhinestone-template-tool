@@ -8,7 +8,8 @@ export type OutlineFontCategory =
   | 'Gothic'
   | 'Script'
   | 'Handwritten'
-  | 'Display';
+  | 'Display'
+  | 'Uploads';
 
 import type { TemplateCoverageMode, TemplateFillMode } from '../fill/fillTemplate';
 
@@ -25,7 +26,7 @@ export type OutlineFontId =
   | 'righteous-varsity';
 
 export interface OutlineFontDefinition {
-  fontId: OutlineFontId;
+  fontId: string;
   displayName: string;
   category: OutlineFontCategory;
   fontFamily: string;
@@ -45,6 +46,7 @@ export interface OutlineFontDefinition {
 
 export const LEGACY_OUTLINE_FONT_ID: OutlineFontId = 'legacy-original';
 export const DEFAULT_OUTLINE_FONT_ID: OutlineFontId = LEGACY_OUTLINE_FONT_ID;
+const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
 
 function localFontAssetUrl(fontId: Exclude<OutlineFontId, 'legacy-original'>): string {
   return `/api/outline-fonts/${fontId}`;
@@ -226,15 +228,112 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
 
 const FONT_MAP = new Map(OUTLINE_FONT_REGISTRY.map((font) => [font.fontId, font]));
 
+interface UploadedWorkspaceFontRecord {
+  fontId: string;
+  name: string;
+  category?: string;
+  styleLabel?: string;
+  previewFamily: string;
+  previewText?: string;
+  licenseSource?: string;
+  note?: string;
+  preferredTextCoverageMode?: TemplateFillMode;
+  supportedTextCoverageModes?: TemplateCoverageMode[];
+  sourceDataUrl: string;
+}
+
+const VALID_UPLOAD_CATEGORIES: ReadonlySet<OutlineFontCategory> = new Set([
+  'Block',
+  'Condensed',
+  'Varsity',
+  'Bubble',
+  'Serif',
+  'Gothic',
+  'Script',
+  'Handwritten',
+  'Display',
+  'Uploads',
+]);
+
+function resolveUploadedCategory(category: string | undefined): OutlineFontCategory {
+  return category && VALID_UPLOAD_CATEGORIES.has(category as OutlineFontCategory)
+    ? category as OutlineFontCategory
+    : 'Uploads';
+}
+
+function resolveUploadedCoverageModes(modes: readonly TemplateCoverageMode[] | undefined): readonly TemplateCoverageMode[] {
+  if (!modes || modes.length === 0) return ['outline', 'fill', 'outline-fill', 'contour'];
+  const valid = modes.filter((mode): mode is TemplateCoverageMode =>
+    mode === 'outline' || mode === 'fill' || mode === 'outline-fill' || mode === 'contour',
+  );
+  return valid.length > 0 ? valid : ['outline', 'fill', 'outline-fill', 'contour'];
+}
+
+function getStorage(): Storage | null {
+  const candidate = globalThis.localStorage as Partial<Storage> | undefined;
+  return typeof candidate === 'object'
+    && candidate !== null
+    && typeof candidate.getItem === 'function'
+    ? candidate as Storage
+    : null;
+}
+
+function readUploadedWorkspaceFonts(): UploadedWorkspaceFontRecord[] {
+  const storage = getStorage();
+  if (!storage) return [];
+
+  const raw = storage.getItem(WORKSPACE_VAULT_STORAGE_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw) as { uploadedFonts?: UploadedWorkspaceFontRecord[] };
+    return Array.isArray(parsed.uploadedFonts) ? parsed.uploadedFonts : [];
+  } catch {
+    return [];
+  }
+}
+
+function createUploadedOutlineFontDefinition(record: UploadedWorkspaceFontRecord): OutlineFontDefinition {
+  const supportedTextCoverageModes = resolveUploadedCoverageModes(record.supportedTextCoverageModes);
+  const preferredTextCoverageMode = record.preferredTextCoverageMode === 'fill' || record.preferredTextCoverageMode === 'outline-fill'
+    ? record.preferredTextCoverageMode
+    : 'outline';
+
+  return {
+    fontId: record.fontId,
+    displayName: record.name,
+    category: resolveUploadedCategory(record.category),
+    fontFamily: record.name,
+    previewFontFamily: record.previewFamily,
+    fontWeight: 400,
+    fontStyle: 'normal',
+    assetUrl: record.sourceDataUrl,
+    nodeFilePath: null,
+    license: 'User uploaded in browser',
+    licenseSource: record.licenseSource ?? `Workspace upload: ${record.name}`,
+    packageName: null,
+    isLegacy: false,
+    preferredTextCoverageMode,
+    supportedTextCoverageModes,
+    limitations: [record.styleLabel ? `Style: ${record.styleLabel}` : 'User uploaded workspace font', record.note ?? 'Available in this browser workspace only'],
+  };
+}
+
+export function listUploadedOutlineFonts(): readonly OutlineFontDefinition[] {
+  return readUploadedWorkspaceFonts().map(createUploadedOutlineFontDefinition);
+}
+
 export function listOutlineFonts(): readonly OutlineFontDefinition[] {
-  return OUTLINE_FONT_REGISTRY;
+  return [...OUTLINE_FONT_REGISTRY, ...listUploadedOutlineFonts()];
 }
 
 export function getOutlineFontDefinition(fontId: string | undefined | null): OutlineFontDefinition {
   if (!fontId) {
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
-  return FONT_MAP.get(fontId as OutlineFontId) ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
+  return FONT_MAP.get(fontId as OutlineFontId)
+    ?? listUploadedOutlineFonts().find((font) => font.fontId === fontId)
+    ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
 }
 
 export function getPreferredTextCoverageMode(fontId: string | undefined | null): TemplateFillMode {
@@ -249,11 +348,15 @@ export function isKnownOutlineFontId(fontId: string | undefined | null): fontId 
   return typeof fontId === 'string' && FONT_MAP.has(fontId as OutlineFontId);
 }
 
+export function isAvailableOutlineFontId(fontId: string | undefined | null): boolean {
+  return isKnownOutlineFontId(fontId) || listUploadedOutlineFonts().some((font) => font.fontId === fontId);
+}
+
 export function getOutlineFontFaceCss(): string {
-  return OUTLINE_FONT_REGISTRY.filter((font) => !font.isLegacy && font.assetUrl).map((font) => `
+  return listOutlineFonts().filter((font) => !font.isLegacy && font.assetUrl).map((font) => `
 @font-face {
   font-family: '${font.previewFontFamily}';
-  src: url('${font.assetUrl}') format('woff');
+  src: url('${font.assetUrl}');
   font-style: ${font.fontStyle};
   font-weight: ${font.fontWeight};
   font-display: swap;

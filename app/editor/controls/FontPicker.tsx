@@ -6,7 +6,6 @@ import {
   getOutlineFontFaceCss,
   getOutlineFontDefinition,
   listOutlineFonts,
-  type OutlineFontId,
 } from '@/src/lib/rhinestone-engine/index';
 
 export interface OutlineFontStatus {
@@ -18,15 +17,20 @@ export interface OutlineFontStatus {
 interface FontPickerProps {
   value: string;
   previewText: string;
-  onChange: (fontId: OutlineFontId) => void;
+  onChange: (fontId: string) => void;
   status: OutlineFontStatus;
 }
 
-function getFontPolicyLabel(fontId: OutlineFontId): string {
+function getFontPolicyLabel(fontId: string): string {
   const font = getOutlineFontDefinition(fontId);
-  return font.supportedTextCoverageModes.includes('fill')
-    ? 'Filled typography'
-    : 'Outline only';
+  switch (font.preferredTextCoverageMode) {
+    case 'fill':
+      return 'Fill default';
+    case 'outline-fill':
+      return 'Outline + fill default';
+    default:
+      return font.supportedTextCoverageModes.includes('fill') ? 'Outline default' : 'Outline only';
+  }
 }
 
 export default function FontPicker({ value, previewText, onChange, status }: FontPickerProps) {
@@ -49,7 +53,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
     setOpen(true);
   };
 
-  const handleSelect = (fontId: OutlineFontId) => {
+  const handleSelect = (fontId: string) => {
     onChange(fontId);
     setOpen(false);
     buttonRef.current?.focus();

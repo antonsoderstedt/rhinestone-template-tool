@@ -32,7 +32,7 @@ let libraryAvailableCache: Promise<boolean> | null = null;
 
 async function checkLibraryAvailableOnce(): Promise<boolean> {
   if (typeof window === 'undefined') {
-    const { isSvgAlphabetLibraryAvailable } = await import('./svgAlphabetPath');
+    const { isSvgAlphabetLibraryAvailable } = await import('./svgAlphabetLibraryRoots');
     return isSvgAlphabetLibraryAvailable();
   }
 

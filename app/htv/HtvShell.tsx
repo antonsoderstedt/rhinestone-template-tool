@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   DEFAULT_HTV_STATE,
   createHtvTextLayer,
@@ -17,15 +18,26 @@ import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { listOutlineFonts, svgStringToPolylines, type TraceableImageData } from '@/src/lib/rhinestone-engine/index';
+import {
+  buildHtvDesignEntry,
+  deserializeHtvState,
+  findAssetById,
+  findHtvDesignById,
+  readWorkspaceVault,
+  writeWorkspaceVault,
+} from '../lib/workspaceVault';
 
 const DEFAULT_TEXT_FONT_ID = listOutlineFonts().find((f) => !f.isLegacy)?.fontId ?? '';
 
 export default function HtvShell() {
+  const searchParams = useSearchParams();
   const [state, dispatch] = useReducer(htvReducer, DEFAULT_HTV_STATE);
-  const [nextLayerId, setNextLayerId] = useState(0);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
+  const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
+  const nextLayerIdRef = useRef(0);
+  const handledQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -33,10 +45,22 @@ export default function HtvShell() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  const syncNextLayerId = useCallback((layerIds: readonly { id: string }[]) => {
+    let max = 0;
+    for (const layer of layerIds) {
+      const match = /(\d+)$/.exec(layer.id);
+      if (!match) continue;
+      const value = Number(match[1]);
+      if (value > max) max = value;
+    }
+    nextLayerIdRef.current = max + 1;
+  }, []);
+
   const createLayerId = useCallback((prefix: string) => {
-    setNextLayerId((n) => n + 1);
-    return `${prefix}-${nextLayerId}`;
-  }, [nextLayerId]);
+    const id = `${prefix}-${nextLayerIdRef.current}`;
+    nextLayerIdRef.current += 1;
+    return id;
+  }, []);
 
   const handleAddText = useCallback(() => {
     const layer = createHtvTextLayer({ id: createLayerId('text'), fontId: DEFAULT_TEXT_FONT_ID, text: 'TEXT' });
@@ -92,6 +116,21 @@ export default function HtvShell() {
     setPendingImage(null);
   }, [createLayerId]);
 
+  const handleSaveDesign = useCallback(() => {
+    const vault = readWorkspaceVault();
+    const existing = activeSavedDesignId
+      ? vault.htvDesigns.find((design) => design.designId === activeSavedDesignId) ?? null
+      : null;
+    const entry = buildHtvDesignEntry(state, existing);
+    const nextVault = {
+      ...vault,
+      htvDesigns: [entry, ...vault.htvDesigns.filter((design) => design.designId !== entry.designId)],
+    };
+    writeWorkspaceVault(nextVault);
+    setActiveSavedDesignId(entry.designId);
+    setToast({ message: existing ? 'HTV design updated in My Designs.' : 'HTV design saved to My Designs.', tone: 'success' });
+  }, [activeSavedDesignId, state]);
+
   const handleExport = useCallback(async () => {
     try {
       const result = await createHtvSvgExport(state.layers, state.projectName);
@@ -140,8 +179,80 @@ export default function HtvShell() {
 
   const hasLayers = state.layers.length > 0;
 
+  useEffect(() => {
+    syncNextLayerId(state.layers);
+  }, [state.layers, syncNextLayerId]);
+
+  useEffect(() => {
+    const designId = searchParams.get('designId');
+    const assetId = searchParams.get('asset');
+    const fontId = searchParams.get('font');
+    const launchText = searchParams.get('text');
+    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}`;
+
+    if (queryKey === '|||') return;
+    if (handledQueryRef.current === queryKey) return;
+
+    const applyQueryIntent = async () => {
+      if (designId) {
+        const design = findHtvDesignById(designId);
+        if (design) {
+          const restored = deserializeHtvState(design.snapshot);
+          dispatch({ type: 'LOAD_STATE', state: restored });
+          setActiveSavedDesignId(design.designId);
+          handledQueryRef.current = queryKey;
+          return;
+        }
+      }
+
+      if (assetId) {
+        const asset = findAssetById(assetId);
+        if (asset) {
+          dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
+          if (asset.kind === 'svg' && asset.svgText) {
+            const raw = svgStringToPolylines(asset.svgText);
+            if (raw.length > 0) {
+              const { polylines, widthMm, heightMm } = centerPolylines(raw);
+              dispatch({
+                type: 'ADD_LAYERS',
+                layers: [createHtvVectorLayer({
+                  id: createLayerId('svg'),
+                  name: asset.name,
+                  polylines,
+                  naturalWidthMm: widthMm,
+                  naturalHeightMm: heightMm,
+                  sourceKind: 'svg-upload',
+                })],
+              });
+            }
+          } else if (asset.kind === 'image') {
+            const image = await decodeRasterImageDataUrl(asset.sourceDataUrl);
+            setPendingImage({ image, previewDataUrl: asset.sourceDataUrl });
+          }
+          handledQueryRef.current = queryKey;
+          return;
+        }
+      }
+
+      if (fontId) {
+        dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} HTV Design` });
+        dispatch({
+          type: 'ADD_LAYERS',
+          layers: [createHtvTextLayer({
+            id: createLayerId('text'),
+            text: launchText ?? 'Sulay 123',
+            fontId,
+          })],
+        });
+        handledQueryRef.current = queryKey;
+      }
+    };
+
+    void applyQueryIntent();
+  }, [createLayerId, searchParams]);
+
   return (
-    <div className="h-screen flex flex-col bg-surface">
+    <div className="h-full min-h-0 flex flex-col bg-surface">
       <HtvTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -149,6 +260,7 @@ export default function HtvShell() {
         canExport={hasLayers}
         canPreviewGarment={hasLayers}
         dispatch={dispatch}
+        onSaveDesign={handleSaveDesign}
         onExport={handleExport}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
       />

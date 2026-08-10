@@ -142,6 +142,7 @@ export type HtvAction =
   | { type: 'SET_SELECTED_LAYERS'; ids: string[] }
   | { type: 'UPDATE_CANVAS'; updates: Partial<HtvCanvasState> }
   | { type: 'UPDATE_GARMENT'; updates: Partial<HtvGarmentState> }
+  | { type: 'LOAD_STATE'; state: HtvState }
   | { type: 'UNDO' }
   | { type: 'REDO' };
 
@@ -234,6 +235,9 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
 
     case 'UPDATE_GARMENT':
       return { ...state, garment: { ...state.garment, ...action.updates } };
+
+    case 'LOAD_STATE':
+      return action.state;
 
     case 'UNDO': {
       if (state.history.past.length === 0) return state;

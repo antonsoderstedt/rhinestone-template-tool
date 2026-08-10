@@ -25,7 +25,7 @@ import { getVectorGlyph, isVectorGlyphSupported, BUILT_IN_VECTOR_FONT } from './
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
-import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
+import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isAvailableOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
 import { loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
@@ -156,7 +156,7 @@ function validateOutlineOptions(options: NormalizedOutlineTextTemplateOptions) {
   if (options.fillEdgeInsetMm !== undefined && (!isFinite(options.fillEdgeInsetMm) || options.fillEdgeInsetMm < 0)) {
     throw new Error(`createOutlineTextTemplate: "fillEdgeInsetMm" must be a non-negative finite number, got ${options.fillEdgeInsetMm}.`);
   }
-  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isKnownOutlineFontId(options.fontId)) {
+  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isAvailableOutlineFontId(options.fontId)) {
     throw new Error(`Unknown outline fontId: ${options.fontId}`);
   }
 }

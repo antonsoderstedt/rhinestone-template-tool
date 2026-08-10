@@ -9,31 +9,12 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { ImportedStone } from '../templateImport/templateImport';
 import { importRhinestoneTemplate } from '../templateImport/templateImport';
 import type { SvgAlphabetCharacterClass, SvgAlphabetCombinedSource, SvgAlphabetDefinition } from './svgAlphabetRegistry';
 import type { StoneSizeId } from '../types/index';
-
-function getLibraryRoots(): string[] {
-  const roots = [
-    process.env.RHINESTONE_FONT_LIBRARY_DIR,
-    join(/* turbopackIgnore: true */ homedir(), 'Desktop', 'LETTER UTVALDA'),
-    join(/* turbopackIgnore: true */ process.cwd(), 'public', 'fonts', 'rhinestone-library'),
-  ];
-  return roots.filter((root): root is string => typeof root === 'string' && root.length > 0);
-}
-
-/**
- * True when at least one SVG alphabet library root directory actually exists
- * on disk. Lets callers distinguish "this character genuinely isn't part of
- * the alphabet" from "the whole asset library is missing/unreachable" —
- * without this, a missing library makes every character look unsupported.
- */
-export function isSvgAlphabetLibraryAvailable(): boolean {
-  return getLibraryRoots().some((root) => existsSync(root));
-}
+import { getSvgAlphabetLibraryRoots } from './svgAlphabetLibraryRoots';
 
 function classifyCharacter(character: string): SvgAlphabetCharacterClass | null {
   if (/^[A-Z]$/.test(character)) return 'uppercase';
@@ -209,7 +190,7 @@ export function resolveSvgAlphabetGlyphPath(
 
   for (const basename of glyphFileBasenames(definition, character)) {
     const filename = `${basename}${definition.glyphExtension}`;
-    for (const root of getLibraryRoots()) {
+    for (const root of getSvgAlphabetLibraryRoots()) {
       const candidate = join(/* turbopackIgnore: true */ root, dir, filename);
       if (existsSync(candidate)) {
         return candidate;
@@ -231,10 +212,10 @@ export async function loadSvgAlphabetGlyphText(
     const relativeGlyphPath = `${dir}/${basename}${definition.glyphExtension}`;
     const zippedGlyphPath = splitZipRelativePath(relativeGlyphPath);
     if (!zippedGlyphPath) continue;
-    for (const root of getLibraryRoots()) {
+    for (const root of getSvgAlphabetLibraryRoots()) {
       const archivePath = join(/* turbopackIgnore: true */ root, zippedGlyphPath.archiveRelativePath);
-      if (!existsSync(archivePath)) continue;
-      const svgText = readZipEntry(archivePath, zippedGlyphPath.entryRelativePath);
+      if (!existsSync(/* turbopackIgnore: true */ archivePath)) continue;
+      const svgText = readZipEntry(/* turbopackIgnore: true */ archivePath, zippedGlyphPath.entryRelativePath);
       if (svgText) {
         return svgText;
       }
@@ -243,17 +224,17 @@ export async function loadSvgAlphabetGlyphText(
 
   const directPath = resolveSvgAlphabetGlyphPath(definition, character, targetStoneSizeId);
   if (directPath) {
-    return await readFile(directPath, 'utf-8');
+    return await readFile(/* turbopackIgnore: true */ directPath, 'utf-8');
   }
 
   const combinedSource = findCombinedSource(definition, character, targetStoneSizeId);
   if (!combinedSource) return null;
 
-  for (const root of getLibraryRoots()) {
+  for (const root of getSvgAlphabetLibraryRoots()) {
     const combinedPath = join(/* turbopackIgnore: true */ root, combinedSource.libraryRelativeFile);
-    if (!existsSync(combinedPath)) continue;
+    if (!existsSync(/* turbopackIgnore: true */ combinedPath)) continue;
 
-    const svgText = sanitizeCurationSvg(await readFile(combinedPath, 'utf-8'));
+    const svgText = sanitizeCurationSvg(await readFile(/* turbopackIgnore: true */ combinedPath, 'utf-8'));
     const imported = importRhinestoneTemplate({ svgText });
     const groups = splitCombinedGlyphGroups(imported.stones, combinedSource.groupMergeMargin);
     if (groups.length !== combinedSource.characters.length) {

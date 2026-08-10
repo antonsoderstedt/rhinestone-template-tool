@@ -7,7 +7,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { isSvgAlphabetLibraryAvailable } from '../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetPath';
+import { isSvgAlphabetLibraryAvailable } from '../../../../src/lib/rhinestone-engine/svgAlphabet/svgAlphabetLibraryRoots';
 
 export async function GET() {
   return NextResponse.json({ available: isSvgAlphabetLibraryAvailable() });

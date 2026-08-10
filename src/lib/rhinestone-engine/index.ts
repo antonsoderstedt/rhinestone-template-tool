@@ -190,10 +190,12 @@ export {
   DEFAULT_OUTLINE_FONT_ID,
   LEGACY_OUTLINE_FONT_ID,
   listOutlineFonts,
+  listUploadedOutlineFonts,
   getOutlineFontDefinition,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
   isKnownOutlineFontId,
+  isAvailableOutlineFontId,
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';

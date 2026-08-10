@@ -5,13 +5,13 @@ import Link from 'next/link';
 
 export default function SetupPage() {
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-full bg-surface">
       <main className="mx-auto max-w-5xl px-6 py-14 space-y-14">
 
         {/* ── Header with Back Link ──────────────────────────────────────── */}
         <header>
           <Link
-            href="/"
+            href="/rhinestone"
             className="inline-flex items-center gap-2 text-sm text-accent-600 hover:text-accent-600 mb-4"
           >
             ← Back to Editor

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp, Copy, Eye, EyeOff, Lock, Trash2, Unlock } from 'lucide-react';
 import NumericInput from '../editor/controls/NumericInput';
 import type { HtvAction, HtvLayer, HtvState } from './HtvState';
@@ -10,8 +11,6 @@ interface HtvInspectorPanelProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
 }
-
-const outlineFonts = listOutlineFonts().filter((f) => !f.isLegacy);
 
 export default function HtvInspectorPanel({ state, dispatch }: HtvInspectorPanelProps) {
   const selectedLayers = state.layers.filter((l) => state.selectedLayerIds.has(l.id));
@@ -123,6 +122,8 @@ export default function HtvInspectorPanel({ state, dispatch }: HtvInspectorPanel
 }
 
 function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'text' }>; dispatch: React.Dispatch<HtvAction> }) {
+  const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), []);
+
   return (
     <div className="space-y-3 rounded-xl border border-border bg-surface-sunken p-3">
       <label className="flex flex-col gap-1.5">
