@@ -357,4 +357,69 @@ describe('SVG Alphabet System', () => {
     // z's bottom sits above the baseline (negative below-fraction), x sits on it.
     expect(bottomOf('z')).toBeLessThan(bottomOf('x'));
   });
+
+  it('blames a missing asset library instead of character coverage when isLibraryAvailable reports false', async () => {
+    const unreachableLoader: SvgAlphabetGlyphLoader = {
+      async loadGlyphSvg() {
+        return null; // every character fails — as it would if the library folder is gone
+      },
+      isLibraryAvailable: () => false,
+    };
+
+    const result = await createSvgAlphabetTemplate({
+      text: 'AB',
+      alphabetId: 'real-college',
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.0,
+      letterSpacingMm: 2,
+      lineSpacingMm: 0,
+      glyphLoader: unreachableLoader,
+    });
+
+    expect(result.unsupportedCharacters.sort()).toEqual(['A', 'B']);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/library is unavailable/i);
+    expect(result.warnings[0]).not.toMatch(/not supported by/i);
+  });
+
+  it('blames character coverage, not the library, when isLibraryAvailable reports true', async () => {
+    const loader: SvgAlphabetGlyphLoader = {
+      async loadGlyphSvg(_alphabetId, character) {
+        return character === 'A' ? makeCircleSvg([{ cx: 500, cy: 500, r: 30 }]) : null;
+      },
+      isLibraryAvailable: () => true,
+    };
+
+    const result = await createSvgAlphabetTemplate({
+      text: 'AZ',
+      alphabetId: 'real-college',
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.0,
+      letterSpacingMm: 2,
+      lineSpacingMm: 0,
+      glyphLoader: loader,
+    });
+
+    expect(result.unsupportedCharacters).toEqual(['Z']);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/not supported by/i);
+    expect(result.warnings[0]).not.toMatch(/library is unavailable/i);
+  });
+
+  it('treats a loader with no isLibraryAvailable method as always-available (backward compatible)', async () => {
+    const loader = inMemoryLoader({ A: makeCircleSvg([{ cx: 500, cy: 500, r: 30 }]) });
+
+    const result = await createSvgAlphabetTemplate({
+      text: 'AZ',
+      alphabetId: 'real-college',
+      targetStoneSizeId: 'SS10',
+      targetStoneSizeMm: 3.0,
+      letterSpacingMm: 2,
+      lineSpacingMm: 0,
+      glyphLoader: loader,
+    });
+
+    expect(result.unsupportedCharacters).toEqual(['Z']);
+    expect(result.warnings[0]).toMatch(/not supported by/i);
+  });
 });

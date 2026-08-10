@@ -105,6 +105,20 @@ describe('createOutlineTextTemplate', () => {
     expect(t.stones.length).toBeGreaterThan(10);
   });
 
+  it('tracks characters with no real glyph instead of silently substituting them', () => {
+    const clean = createOutlineTextTemplate({
+      id: 'test-clean', name: 'Clean', text: 'HELLO', stoneSize: 'SS10',
+    });
+    expect(clean.metadata?.['unsupportedCharacters']).toBe('');
+
+    // Apostrophe and ampersand have no glyph in the built-in vector font.
+    const dirty = createOutlineTextTemplate({
+      id: 'test-dirty', name: 'Dirty', text: "DON'T & DO", stoneSize: 'SS10',
+    });
+    const unsupported = String(dirty.metadata?.['unsupportedCharacters'] ?? '').split(',').filter(Boolean);
+    expect(unsupported).toEqual(["'", '&']);
+  });
+
   it('handles lowercase input by mapping to uppercase glyphs', () => {
     const upper = createOutlineTextTemplate({
       id: 'test-upper', name: 'Upper', text: 'ABC', stoneSize: 'SS10',

@@ -14,6 +14,7 @@ import {
   getSupportedRhinestoneFontStoneSizes,
   listSvgAlphabets,
   getSvgAlphabetDefinition,
+  TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
 } from '@/src/lib/rhinestone-engine/index';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
@@ -50,6 +51,23 @@ function PanelSection({ title, description, children }: { title: string; descrip
       </div>
       {children}
     </section>
+  );
+}
+
+/**
+ * Surfaces a generation error (e.g. a font asset that failed to load) for
+ * generator panels that don't otherwise show one. `outlineFontStatus` is a
+ * single shared "last generation attempt" status set by EditorShell for
+ * every generator, not just the outline text tool — panels other than the
+ * outline text tool previously never rendered it, so failures were only
+ * ever visible in the browser console.
+ */
+function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: OutlineFontStatus }) {
+  if (outlineFontStatus?.status !== 'error' || !outlineFontStatus.message) return null;
+  return (
+    <div role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-3 text-xs text-danger-600">
+      {outlineFontStatus.message}
+    </div>
   );
 }
 
@@ -105,9 +123,9 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
             <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
               {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
-              {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} />}
-              {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} />}
-              {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
+              {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
+              {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
@@ -146,6 +164,12 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
             />
             Include labels
           </label>
+
+          {state.includeLabels && (
+            <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
+              {TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE}
+            </div>
+          )}
 
           <NumericInput
             label="Padding"
@@ -247,6 +271,13 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           status={outlineFontStatus}
           onChange={(fontId) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fontId } })}
         />
+      )}
+
+      {textTool.mode === 'outline' && textTool.unsupportedCharacters.length > 0 && (
+        <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
+          Unsupported characters: {textTool.unsupportedCharacters.join(', ')}.
+          The Legacy font doesn&apos;t have a glyph for {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} — a &apos;?&apos; is drawn instead. Try a bundled font, or remove {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} from the text.
+        </div>
       )}
 
       {textTool.mode === 'outline' && (
@@ -412,7 +443,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
   );
 }
 
-function RhinestoneFontToolProperties({ state, dispatch }: ToolPropertiesProps) {
+function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { rhinestoneFontTool } = state;
   const availableFonts = listRhinestoneFonts();
   const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
@@ -436,6 +467,8 @@ function RhinestoneFontToolProperties({ state, dispatch }: ToolPropertiesProps) 
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
         {modeCopy}
       </div>
+
+      <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-ink-secondary">Rhinestone font</span>
@@ -570,7 +603,7 @@ function RhinestoneFontToolProperties({ state, dispatch }: ToolPropertiesProps) 
   );
 }
 
-function SvgAlphabetToolProperties({ state, dispatch }: ToolPropertiesProps) {
+function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { svgAlphabetTool } = state;
   const availableAlphabets = listSvgAlphabets();
   const selectedAlphabet = getSvgAlphabetDefinition(svgAlphabetTool.svgAlphabetId as never);
@@ -584,6 +617,8 @@ function SvgAlphabetToolProperties({ state, dispatch }: ToolPropertiesProps) {
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
         Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. The engine reuses the letters as-is — no fill or outline pass runs.
       </div>
+
+      <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-ink-secondary">Alphabet</span>
@@ -698,14 +733,16 @@ function SvgAlphabetToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
       {svgAlphabetTool.unsupportedCharacters.length > 0 && (
         <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
-          Unsupported characters: {svgAlphabetTool.unsupportedCharacters.join(', ')}
+          {svgAlphabetTool.warnings.length > 0
+            ? svgAlphabetTool.warnings.join(' ')
+            : `Unsupported characters: ${svgAlphabetTool.unsupportedCharacters.join(', ')}`}
         </div>
       )}
     </div>
   );
 }
 
-function LetterStencilToolProperties({ state, dispatch }: ToolPropertiesProps) {
+function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { letterStencilTool } = state;
   const availableAlphabets = listSvgAlphabets();
   const availableFonts = listRhinestoneFonts();
@@ -740,6 +777,8 @@ function LetterStencilToolProperties({ state, dispatch }: ToolPropertiesProps) {
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
         Generates a reusable stencil card per letter with an outer cut frame. I stays narrow, W stays wide, and every card keeps the same height so the machine cuts the card and the rhinestone holes together.
       </div>
+
+      <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-ink-secondary">Glyph source</span>
@@ -964,7 +1003,9 @@ function LetterStencilToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
       {letterStencilTool.unsupportedCharacters.length > 0 && (
         <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
-          Unsupported characters: {letterStencilTool.unsupportedCharacters.join(', ')}
+          {letterStencilTool.warnings.length > 0
+            ? letterStencilTool.warnings.join(' ')
+            : `Unsupported characters: ${letterStencilTool.unsupportedCharacters.join(', ')}`}
         </div>
       )}
     </div>
@@ -1213,6 +1254,7 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
           <div className="overflow-hidden rounded-xl border border-border bg-surface-sunken">
             <div className="border-b border-border px-3 py-2 text-xs font-medium text-ink-secondary">Original image</div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- client-side data: URI, no network fetch for next/image to optimize */}
             <img
               src={svgTool.uploadedImageDataUrl}
               alt={currentArtworkName ?? 'Uploaded artwork preview'}
@@ -1587,6 +1629,44 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
         </div>
       </div>
       
+      {manualTool.interactionMode === 'place' && (
+        <div className="space-y-2">
+          <span className="text-xs font-medium text-ink-secondary">Draw mode</span>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'freehand' } })}
+              className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'freehand' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+            >
+              <div className="font-medium">Freehand</div>
+              <div className="mt-1 text-[10px] text-ink-muted">Follows the cursor, nudges around crowding</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'grid' } })}
+              className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'grid' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+            >
+              <div className="font-medium">Grid snap</div>
+              <div className="mt-1 text-[10px] text-ink-muted">Locks every stone to the grid</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'row' } })}
+              className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'row' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+            >
+              <div className="font-medium">Row lock</div>
+              <div className="mt-1 text-[10px] text-ink-muted">Keeps a drag perfectly straight</div>
+            </button>
+          </div>
+          {manualTool.drawMode === 'grid' && (
+            <p className="text-[11px] text-ink-muted">Grid snap forces every stone onto the grid below, ignoring &quot;Snap to Grid&quot; — a spot that would collide is skipped instead of nudged.</p>
+          )}
+          {manualTool.drawMode === 'row' && (
+            <p className="text-[11px] text-ink-muted">Row lock picks a horizontal or vertical line the moment you start dragging, then keeps every stone on it.</p>
+          )}
+        </div>
+      )}
+
       {/* Stone Size */}
       <StoneProfileControl
         value={manualTool.addStoneSize}
@@ -1649,9 +1729,9 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
         </div>
       </div>
 
-      {!manualTool.snapToGrid && (
+      {!manualTool.snapToGrid && manualTool.drawMode !== 'grid' && (
         <div className="rounded-xl border border-success-500/20 bg-success-50 px-3 py-3 text-[11px] text-success-600">
-          Free draw is active. The grid is visual only until you enable snapping.
+          Free draw is active. The grid is visual only until you enable snapping{manualTool.drawMode === 'freehand' ? '' : ' (Row lock still keeps the drag straight)'}.
         </div>
       )}
 

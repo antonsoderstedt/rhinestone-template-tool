@@ -350,6 +350,13 @@ export function isKnownRhinestoneFontId(fontId: string | undefined | null): font
   return typeof fontId === 'string' && FONT_MAP.has(fontId as RhinestoneFontId);
 }
 
+/**
+ * Fonts the production font picker should never show — test-only fixtures
+ * whose backing asset (e.g. a file under tests/fixtures/) doesn't exist
+ * outside the test run.
+ */
+const NON_PRODUCTION_CATEGORIES: ReadonlySet<RhinestoneFontDefinition['category']> = new Set(['Fixture']);
+
 export function listRhinestoneFonts(): readonly RhinestoneFontDefinition[] {
-  return RHINESTONE_FONT_REGISTRY;
+  return RHINESTONE_FONT_REGISTRY.filter((font) => !NON_PRODUCTION_CATEGORIES.has(font.category));
 }

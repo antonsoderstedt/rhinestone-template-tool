@@ -167,6 +167,29 @@ describe('generateFillPointsForClosedPolyline', () => {
     expect(offset.length).toBeGreaterThanOrEqual(grid.length - 1);
   });
 
+  it('offset-grid advances rows by the hexagonal close-pack pitch, not a full spacingMm', () => {
+    // Per docs/RHINESTONE_ENGINE_SPEC.md "Grid Generation": row pitch is
+    // spacingMm * sqrt(3)/2 so offset rows nest against their neighbors
+    // instead of leaving a gap — this is what makes fill coverage dense.
+    const spacingMm = 3;
+    const pts = generateFillPointsForClosedPolyline(RECT, { spacingMm, pattern: 'offset-grid' });
+    const rowYs = Array.from(new Set(pts.map((p) => p.y))).sort((a, b) => a - b);
+    expect(rowYs.length).toBeGreaterThan(1);
+    const expectedStep = spacingMm * (Math.sqrt(3) / 2);
+    for (let i = 1; i < rowYs.length; i++) {
+      expect(rowYs[i]! - rowYs[i - 1]!).toBeCloseTo(expectedStep, 3);
+    }
+  });
+
+  it('offset-grid packs rows more densely than a square grid pattern', () => {
+    const spacingMm = 2;
+    const grid = generateFillPointsForClosedPolyline(RECT, { spacingMm, pattern: 'grid' });
+    const offset = generateFillPointsForClosedPolyline(RECT, { spacingMm, pattern: 'offset-grid' });
+    const gridRows = new Set(grid.map((p) => p.y)).size;
+    const offsetRows = new Set(offset.map((p) => p.y)).size;
+    expect(offsetRows).toBeGreaterThan(gridRows);
+  });
+
   it('throws on spacing <= 0', () => {
     expect(() =>
       generateFillPointsForClosedPolyline(SQUARE, { spacingMm: 0 }),

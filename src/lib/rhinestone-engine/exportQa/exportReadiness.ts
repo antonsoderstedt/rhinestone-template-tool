@@ -65,7 +65,20 @@ export interface ExportReadinessOptions {
   minHeightMm?: number;
   /** Error if template has fewer than this many stones. */
   minStoneCount?: number;
+  /**
+   * Whether the export will include `<text>` labels (the editor's
+   * "Include labels" option). Cricut Design Space is not guaranteed to
+   * import raw SVG `<text>` reliably, so this surfaces a warning rather
+   * than silently reporting `ready: true` for a template that isn't
+   * actually Cricut-safe with labels on.
+   */
+  includeLabels?: boolean;
 }
+
+/** Shared with the UI so the warning shown next to the "Include labels" checkbox can never drift from the one `checkExportReadiness` emits. */
+export const TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE =
+  'Text labels are not guaranteed to import reliably in Cricut Design Space. ' +
+  'Verify the exported SVG opens correctly before cutting, or turn labels off for the safest result.';
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -222,6 +235,15 @@ export function checkExportReadiness(
           `hole size before production use.`,
       });
     }
+  }
+
+  // ── Text labels (Cricut Design Space compatibility) ──────────────────────
+  if (options.includeLabels) {
+    issues.push({
+      severity: 'warning',
+      code: 'TEXT_LABELS_NOT_CRICUT_SAFE',
+      message: TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
+    });
   }
 
   // ── Info: physical size ───────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
-import { EditorAction, EditorState, EditableStone } from './EditorState';
+import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
 import {
   calculateCanvasWorkspaceBounds,
   calculateDisplayedCanvasViewBox,
@@ -79,6 +79,10 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     lastPlacedX: number;
     lastPlacedY: number;
     pendingStones: EditableStone[];
+    mode: ManualDrawMode;
+    originX: number;
+    originY: number;
+    lockedAxis: 'x' | 'y' | null;
   } | null>(null);
   const [eraseState, setEraseState] = useState<{
     pointerId: number;
@@ -155,11 +159,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   );
   const manualAssistBrushRadiusMm = Math.max(state.manualTool.assistBrushSizeMm / 2, 1);
 
-  const resolveManualPlacement = (rawX: number, rawY: number, extraStones: readonly EditableStone[] = []) => {
+  const resolveManualPlacement = (
+    rawX: number,
+    rawY: number,
+    extraStones: readonly EditableStone[] = [],
+    snapOverride?: boolean,
+  ) => {
     let x = rawX;
     let y = rawY;
 
-    if (state.manualTool.snapToGrid) {
+    if (snapOverride ?? state.manualTool.snapToGrid) {
       x = snapToGrid(x, state.manualTool.gridSnapSize);
       y = snapToGrid(y, state.manualTool.gridSnapSize);
     }
@@ -206,6 +215,56 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     };
   };
 
+  // Row/column lock: once the drag has moved far enough from its origin,
+  // the stroke commits to whichever axis has the larger displacement, and
+  // every later point is pinned to that axis so the row/column comes out
+  // straight even if the pointer path wobbles.
+  const ROW_LOCK_THRESHOLD_MM = Math.max(manualDrawSpacingMm / 3, 0.75);
+
+  const resolveDrawPoint = (
+    rawX: number,
+    rawY: number,
+    extraStones: readonly EditableStone[],
+    mode: ManualDrawMode,
+    lockedAxis: 'x' | 'y' | null,
+    originX: number,
+    originY: number,
+  ) => {
+    let x = rawX;
+    let y = rawY;
+
+    if (mode === 'row' && lockedAxis === 'x') {
+      y = originY;
+    } else if (mode === 'row' && lockedAxis === 'y') {
+      x = originX;
+    }
+
+    if (mode === 'grid') {
+      // Hard grid snap: a stone that would collide is skipped rather than
+      // nudged off-grid, so placement stays exactly predictable.
+      return { ...resolveManualPlacement(x, y, extraStones, true), nudged: false };
+    }
+
+    if (mode === 'row') {
+      return { ...resolveManualPlacement(x, y, extraStones), nudged: false };
+    }
+
+    return resolveSmartManualPlacement(x, y, extraStones);
+  };
+
+  // Alignment-guide snap for the pen tool: nudges a freehand-mode point onto
+  // an existing stone's x/y center or the workspace centerline when close,
+  // and reports the dashed guide line(s) to draw. Only meaningful in
+  // freehand mode — grid mode already snaps to a fixed lattice, and row
+  // mode already locks to a straight line, so neither needs this.
+  const getPenAlignmentSnap = (x: number, y: number) => {
+    const workspaceCenter = {
+      x: workspaceBounds.x + workspaceBounds.width / 2,
+      y: workspaceBounds.y + workspaceBounds.height / 2,
+    };
+    return findSnapCandidates(x, y, stones.map((stone) => stone.center), workspaceCenter);
+  };
+
   const collectStoneIdsNearPoints = (points: readonly { x: number; y: number }[], existingIds: Set<string>, brushRadiusMm: number) => {
     const nextIds = new Set(existingIds);
     for (const point of points) {
@@ -219,8 +278,12 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     return nextIds;
   };
 
-  // Calculate canvas viewBox based on stones
-  const workspaceBounds = useMemo(() => calculateCanvasWorkspaceBounds(stones), [stones]);
+  // Calculate canvas viewBox based on stones.
+  // Not wrapped in useMemo: the React Compiler's own auto-memoization pass
+  // could not preserve a manual memo boundary here (bailed out of
+  // optimizing the whole component as a result) — calculateCanvasWorkspaceBounds
+  // is a cheap O(stones) bounding-box scan, so a plain call is fine either way.
+  const workspaceBounds = calculateCanvasWorkspaceBounds(stones);
   const viewBox = useMemo(
     () => calculateDisplayedCanvasViewBox(workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY),
     [workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY],
@@ -368,8 +431,32 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       const transform = getCanvasTransform();
       if (!svg || !transform) return;
 
-      const currentPos = screenToMm(e.clientX, e.clientY, svg, transform);
-      const resolvedCurrent = resolveSmartManualPlacement(currentPos.x, currentPos.y, drawState.pendingStones);
+      const rawPos = screenToMm(e.clientX, e.clientY, svg, transform);
+
+      // Row/column lock commits to an axis the first time the drag moves far
+      // enough from its origin; every point from then on stays pinned to it.
+      let lockedAxis = drawState.lockedAxis;
+      if (drawState.mode === 'row' && lockedAxis === null) {
+        const dx = rawPos.x - drawState.originX;
+        const dy = rawPos.y - drawState.originY;
+        if (Math.hypot(dx, dy) >= ROW_LOCK_THRESHOLD_MM) {
+          lockedAxis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+        }
+      }
+
+      const alignmentSnap = drawState.mode === 'freehand' ? getPenAlignmentSnap(rawPos.x, rawPos.y) : null;
+      setSnapGuides(alignmentSnap?.guides ?? []);
+      const currentPos = { x: alignmentSnap?.x ?? rawPos.x, y: alignmentSnap?.y ?? rawPos.y };
+
+      const resolvedCurrent = resolveDrawPoint(
+        currentPos.x,
+        currentPos.y,
+        drawState.pendingStones,
+        drawState.mode,
+        lockedAxis,
+        drawState.originX,
+        drawState.originY,
+      );
       setHoverPosition({ x: resolvedCurrent.x, y: resolvedCurrent.y });
       setHoverSuggestedFrom(resolvedCurrent.nudged ? { x: resolvedCurrent.desiredX, y: resolvedCurrent.desiredY } : null);
       setHoverCollision(resolvedCurrent.collides);
@@ -383,6 +470,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       );
 
       if (sampledPoints.length === 0) {
+        setDrawState({ ...drawState, lockedAxis });
         return;
       }
 
@@ -390,7 +478,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       let lastPlacedY = drawState.lastPlacedY;
       const pendingStones = [...drawState.pendingStones];
       for (const point of sampledPoints) {
-        const candidate = resolveSmartManualPlacement(point.x, point.y, pendingStones);
+        const candidate = resolveDrawPoint(point.x, point.y, pendingStones, drawState.mode, lockedAxis, drawState.originX, drawState.originY);
         const duplicate = pendingStones.some((stone) => stone.center.x === candidate.x && stone.center.y === candidate.y);
         if (candidate.collides || duplicate) {
           continue;
@@ -410,6 +498,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         lastPlacedX,
         lastPlacedY,
         pendingStones,
+        lockedAxis,
       });
       return;
     }
@@ -472,8 +561,13 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       if (!svg || !transform) return;
 
       const pos = screenToMm(e.clientX, e.clientY, svg, transform);
+      const showAlignmentSnap = state.manualTool.interactionMode === 'place' && state.manualTool.drawMode === 'freehand';
+      const alignmentSnap = showAlignmentSnap ? getPenAlignmentSnap(pos.x, pos.y) : null;
+      setSnapGuides(alignmentSnap?.guides ?? []);
+      const snappedX = alignmentSnap?.x ?? pos.x;
+      const snappedY = alignmentSnap?.y ?? pos.y;
       const resolved = state.manualTool.interactionMode === 'place'
-        ? resolveSmartManualPlacement(pos.x, pos.y)
+        ? resolveDrawPoint(snappedX, snappedY, [], state.manualTool.drawMode, null, snappedX, snappedY)
         : resolveManualPlacement(pos.x, pos.y);
 
       setHoverPosition({ x: resolved.x, y: resolved.y });
@@ -665,6 +759,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       setHoverPosition(null);
       setHoverSuggestedFrom(null);
       setHoverCollision(false);
+      setSnapGuides([]);
       return;
     }
 
@@ -766,9 +861,10 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     const startPos = screenToMm(e.clientX, e.clientY, svg, transform);
 
     if (state.activeTool === 'manual' && e.button === 0) {
-      const candidate = state.manualTool.interactionMode === 'place'
-        ? resolveSmartManualPlacement(startPos.x, startPos.y)
-        : resolveManualPlacement(startPos.x, startPos.y);
+      const drawMode = state.manualTool.drawMode;
+      const candidate = state.manualTool.interactionMode === 'erase'
+        ? resolveManualPlacement(startPos.x, startPos.y)
+        : resolveDrawPoint(startPos.x, startPos.y, [], drawMode, null, startPos.x, startPos.y);
       svg.setPointerCapture(e.pointerId);
 
       if (state.manualTool.interactionMode === 'erase') {
@@ -795,6 +891,10 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           lastPlacedX: candidate.x,
           lastPlacedY: candidate.y,
           pendingStones,
+          mode: drawMode,
+          originX: candidate.x,
+          originY: candidate.y,
+          lockedAxis: null,
         });
         setHoverPosition({ x: candidate.x, y: candidate.y });
         setHoverCollision(candidate.collides);
@@ -870,10 +970,14 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         dispatch({ type: 'COPY_STONES', stoneIds: Array.from(state.selectedStoneIds) });
       }
 
-      // Cmd/Ctrl+A: select all editable stones
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && state.editableTemplate.isEditable) {
+      // Cmd/Ctrl+A: select all editable stones. Always suppress the browser's
+      // native "select all page text" here, even when there's nothing
+      // editable to select yet.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault();
-        dispatch({ type: 'SET_SELECTED_STONES', ids: new Set(state.editableTemplate.stones.map((stone) => stone.id)) });
+        if (state.editableTemplate.isEditable) {
+          dispatch({ type: 'SET_SELECTED_STONES', ids: new Set(state.editableTemplate.stones.map((stone) => stone.id)) });
+        }
       }
       
       // Cmd/Ctrl+V: paste

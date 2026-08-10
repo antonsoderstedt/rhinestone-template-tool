@@ -137,6 +137,19 @@ describe('checkExportReadiness — warnings', () => {
     const r = checkExportReadiness(VALID_GRID, { requireCalibration: false });
     expect(r.issues.some((i) => i.code === 'PROVISIONAL_HOLE_PRESET')).toBe(false);
   });
+
+  it('includeLabels produces a TEXT_LABELS_NOT_CRICUT_SAFE warning, not an error', () => {
+    const r = checkExportReadiness(VALID_GRID, { requireCalibration: false, includeLabels: true });
+    expect(r.ready).toBe(true); // warns, but does not block export
+    expect(r.issues.some((i) => i.code === 'TEXT_LABELS_NOT_CRICUT_SAFE' && i.severity === 'warning')).toBe(true);
+  });
+
+  it('does not warn about labels when includeLabels is false or omitted', () => {
+    const withFalse = checkExportReadiness(VALID_GRID, { requireCalibration: false, includeLabels: false });
+    const omitted = checkExportReadiness(VALID_GRID, { requireCalibration: false });
+    expect(withFalse.issues.some((i) => i.code === 'TEXT_LABELS_NOT_CRICUT_SAFE')).toBe(false);
+    expect(omitted.issues.some((i) => i.code === 'TEXT_LABELS_NOT_CRICUT_SAFE')).toBe(false);
+  });
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

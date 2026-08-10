@@ -26,6 +26,15 @@ import {
 export interface SvgAlphabetGlyphLoader {
   /** Return the raw SVG text for one character, or null if unsupported. */
   loadGlyphSvg(alphabetId: SvgAlphabetId, character: string, targetStoneSizeId?: StoneSizeId): Promise<string | null>;
+  /**
+   * Optional: report whether the underlying asset library is reachable at
+   * all. When this resolves `false`, every `loadGlyphSvg` failure is a
+   * missing/unreachable library, not a genuine per-character coverage gap —
+   * `createSvgAlphabetTemplate` uses this to word its warning accordingly
+   * instead of implying the alphabet simply doesn't include those letters.
+   * Loaders that don't implement this are assumed always-available.
+   */
+  isLibraryAvailable?(): Promise<boolean> | boolean;
 }
 
 export interface CreateSvgAlphabetTemplateOptions {
@@ -117,6 +126,8 @@ export async function createSvgAlphabetTemplate(
     if (ch === ' ' || ch === '\n') continue;
     uniqueChars.add(ch);
   }
+
+  const libraryAvailable = glyphLoader.isLibraryAvailable ? await glyphLoader.isLibraryAvailable() : true;
 
   const normalizedByChar = new Map<string, NormalizedGlyph>();
   const unsupportedCharacters: string[] = [];
@@ -244,7 +255,10 @@ export async function createSvgAlphabetTemplate(
   const warnings: string[] = [];
   if (unsupportedCharacters.length > 0) {
     warnings.push(
-      `The following characters are not supported by ${definition.displayName}: ${unsupportedCharacters.join(', ')}`,
+      libraryAvailable
+        ? `The following characters are not supported by ${definition.displayName}: ${unsupportedCharacters.join(', ')}`
+        : `The SVG alphabet library is unavailable, so no glyphs could be loaded (affected: ${unsupportedCharacters.join(', ')}). ` +
+          'This is a missing/unreachable asset library, not a character-coverage gap — check that the alphabet library folder is present.',
     );
   }
 

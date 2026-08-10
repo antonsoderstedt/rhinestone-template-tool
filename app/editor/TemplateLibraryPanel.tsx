@@ -115,6 +115,7 @@ export default function TemplateLibraryPanel({
     <article key={entry.templateId} className="rounded-xl border border-border bg-surface-raised p-4">
       <div className="overflow-hidden rounded-lg border border-border bg-surface-sunken">
         {entry.previewRef ? (
+          // eslint-disable-next-line @next/next/no-img-element -- client-generated data: URI thumbnail, no network fetch for next/image to optimize
           <img src={entry.previewRef} alt={entry.name} className="h-28 w-full object-contain bg-surface-sunken" />
         ) : (
           <div className="flex h-28 items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.18),_transparent_45%),linear-gradient(135deg,_#18181b,_#09090b)] px-4 text-center text-xs text-ink-secondary">
@@ -304,6 +305,7 @@ export default function TemplateLibraryPanel({
                     <article className="rounded-xl border border-warning-500/20 bg-surface-raised p-4">
                       <div className="overflow-hidden rounded-lg border border-border bg-surface-sunken">
                         {visibleAutosaveEntry.previewRef ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- client-generated data: URI thumbnail, no network fetch for next/image to optimize
                           <img src={visibleAutosaveEntry.previewRef} alt={visibleAutosaveEntry.name} className="h-28 w-full object-contain bg-surface-sunken" />
                         ) : null}
                       </div>

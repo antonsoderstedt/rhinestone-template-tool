@@ -81,6 +81,7 @@ describe('editor UI rendering', () => {
         canUndo: false,
         canRedo: false,
         canExport: false,
+        canPreviewGarment: false,
         dispatch: vi.fn() as never,
         onNewProject: vi.fn(),
         onOpenProject: vi.fn(),
@@ -88,6 +89,7 @@ describe('editor UI rendering', () => {
         onExport: vi.fn(),
         onOpenSetup: vi.fn(),
         onOpenLibrary: vi.fn(),
+        onOpenGarmentPreview: vi.fn(),
       }),
     );
 

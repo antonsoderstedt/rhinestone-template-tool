@@ -24,7 +24,6 @@ export type GeneratorId =
   | 'outline-text'
   | 'dot-matrix-text'
   | 'manual-grid'
-  | 'polyline-logo'
   | 'svg-upload'
   | 'manual-editor'
   | 'rhinestone-font'
@@ -33,8 +32,6 @@ export type GeneratorId =
   | 'svg-alphabet'
   | 'letter-stencil'
   | 'template-import';
-
-export type PolylineDemoShape = 'diamond' | 'triangle' | 'rectangle' | 'zigzag';
 
 // ─── Per-generator saved state ────────────────────────────────────────────────
 
@@ -91,22 +88,6 @@ export interface ManualGridProjectState {
   paddingMm: number;
   densityPreset: DensityPreset;
   customSpacingMm: number;
-}
-
-export interface PolylineLogoProjectState {
-  generatorId: 'polyline-logo';
-  shape: PolylineDemoShape;
-  stoneSize: StoneSizeId;
-  targetWidthMm: number | null;
-  targetHeightMm: number | null;
-  preserveAspectRatio: boolean;
-  densityPreset: DensityPreset;
-  customSpacingMm: number;
-  fillMode: TemplateFillMode;
-  fillPattern: FillPattern;
-  includeGuideBox: boolean;
-  includeLabels: boolean;
-  paddingMm: number;
 }
 
 export interface SvgUploadProjectState {
@@ -247,7 +228,6 @@ export type GeneratorProjectState =
   | OutlineTextProjectState
   | DotMatrixTextProjectState
   | ManualGridProjectState
-  | PolylineLogoProjectState
   | SvgUploadProjectState
   | ManualEditorProjectState
   | RhinestoneFontProjectState
@@ -294,13 +274,11 @@ const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contou
 const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
 const VALID_PLACEMENT_PATTERNS = new Set(['default', 'hexagonal', 'radial']);
 const VALID_TEXT_ALIGNS = new Set(['left', 'center', 'right']);
-const VALID_DEMO_SHAPES = new Set(['diamond', 'triangle', 'rectangle', 'zigzag']);
 const VALID_UNITS = new Set(['mm', 'in']);
 const VALID_GENERATOR_IDS = new Set([
   'outline-text',
   'dot-matrix-text',
   'manual-grid',
-  'polyline-logo',
   'svg-upload',
   'manual-editor',
   'rhinestone-font',
@@ -463,25 +441,6 @@ function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
-  };
-}
-
-function validatePolylineLogo(s: UnknownRecord): PolylineLogoProjectState {
-  const ctx = 'generatorState';
-  return {
-    generatorId: 'polyline-logo',
-    shape: requireEnum<PolylineDemoShape>(s, 'shape', ctx, VALID_DEMO_SHAPES),
-    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
-    targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
-    targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),
-    preserveAspectRatio: requireBoolean(s, 'preserveAspectRatio', ctx),
-    densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
-    customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
-    fillMode: requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES),
-    fillPattern: requireEnum<FillPattern>(s, 'fillPattern', ctx, VALID_FILL_PATTERNS),
-    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
-    includeLabels: requireBoolean(s, 'includeLabels', ctx),
-    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
   };
 }
 
@@ -689,8 +648,6 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateDotMatrixText(s);
     case 'manual-grid':
       return validateManualGrid(s);
-    case 'polyline-logo':
-      return validatePolylineLogo(s);
     case 'svg-upload':
       return validateSvgUpload(s);
     case 'manual-editor':

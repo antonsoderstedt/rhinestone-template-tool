@@ -318,3 +318,14 @@ export function getVectorGlyph(character: string): VectorGlyph {
   if (upGlyph) return upGlyph;
   return font.glyphs[font.fallbackCharacter]!;
 }
+
+/**
+ * Returns true when `character` has a real glyph (direct or uppercased
+ * match) in the built-in vector font — i.e. `getVectorGlyph` would NOT need
+ * to fall back to '?'. Lets callers track which characters were silently
+ * substituted so that can be surfaced to the user instead of swallowed.
+ */
+export function isVectorGlyphSupported(character: string): boolean {
+  const font = BUILT_IN_VECTOR_FONT;
+  return character in font.glyphs || character.toUpperCase() in font.glyphs;
+}

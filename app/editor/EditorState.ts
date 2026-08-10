@@ -77,6 +77,9 @@ export interface TextToolState {
   radialSettings: RadialPlacementSettings;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
+
+  /** Characters in `text` with no real glyph in the current outline font (fell back to '?'). Legacy vector font only — bundled OpenType fonts have broad Unicode coverage. */
+  unsupportedCharacters: string[];
 }
 
 // ─── SVG Tool State ───────────────────────────────────────────────────────────
@@ -131,12 +134,25 @@ export interface GridToolState {
 
 // ─── Manual Tool State ────────────────────────────────────────────────────────
 
+/**
+ * Pen-tool draw modes.
+ * - `'freehand'`: current smart-assist behavior — stones follow the pointer
+ *   path and nudge away from collisions.
+ * - `'grid'`: every stone snaps hard to the grid (gridSnapSize); a stone that
+ *   would collide is skipped rather than nudged, so placement stays exactly
+ *   on-grid and predictable.
+ * - `'row'`: the stroke locks to a single row or column (whichever axis you
+ *   move further along first) so a dragged line comes out perfectly straight.
+ */
+export type ManualDrawMode = 'freehand' | 'grid' | 'row';
+
 export interface ManualToolState {
   addStoneSize: StoneSizeId;
   interactionMode: 'place' | 'erase';
   assistBrushSizeMm: number;
   snapToGrid: boolean;
   gridSnapSize: number; // mm
+  drawMode: ManualDrawMode;
 }
 
 // ─── Rhinestone Font Tool State ───────────────────────────────────────────────
@@ -217,6 +233,15 @@ export interface HistoryEntry {
 export interface EditHistory {
   past: HistoryEntry[];
   future: HistoryEntry[];
+}
+
+/** Undo history is capped so a long free-form editing session (manual/pen tool especially) can't grow memory without bound. */
+export const MAX_HISTORY_LENGTH = 100;
+
+/** Appends `entry` to `past`, evicting the oldest entry once MAX_HISTORY_LENGTH is exceeded. */
+function pushHistory(past: readonly HistoryEntry[], entry: HistoryEntry): HistoryEntry[] {
+  const next = [...past, entry];
+  return next.length > MAX_HISTORY_LENGTH ? next.slice(next.length - MAX_HISTORY_LENGTH) : next;
 }
 
 export interface ClipboardState {
@@ -309,6 +334,7 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   },
   densityPreset: 'standard',
   customSpacingMm: 4.0,
+  unsupportedCharacters: [],
 };
 
 function preferredTextCoverageForFont(fontId: string): TemplateFillMode {
@@ -549,6 +575,7 @@ export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
   assistBrushSizeMm: 12,
   snapToGrid: false,
   gridSnapSize: 2,
+  drawMode: 'freehand',
 };
 
 export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
@@ -684,6 +711,24 @@ export type EditorAction =
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
+/**
+ * Generates `count` deterministic `{prefix}-N` ids that don't collide with
+ * any id already present in `existingStones`. Same input always produces the
+ * same ids — no Date.now()/Math.random(), per the project's determinism rule.
+ */
+function generateSequentialStoneIds(existingStones: readonly EditableStone[], prefix: string, count: number): string[] {
+  const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+  let max = 0;
+  for (const stone of existingStones) {
+    const m = pattern.exec(stone.id);
+    if (m) {
+      const n = parseInt(m[1]!, 10);
+      if (n > max) max = n;
+    }
+  }
+  return Array.from({ length: count }, (_, i) => `${prefix}-${max + i + 1}`);
+}
+
 function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
   switch (state.activeTool) {
     case 'grid':
@@ -783,7 +828,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           sourceGenerator: inferEditableSourceGenerator(state),
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -853,7 +898,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: [...state.editableTemplate.stones, ...action.stones],
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -878,7 +923,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           [...state.selectedStoneIds].filter(id => !deleteIds.has(id))
         ),
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -913,7 +958,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           }),
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -951,7 +996,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           ),
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -995,13 +1040,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: nextEntry.selectedIds,
         history: {
-          past: [
-            ...state.history.past,
-            {
-              stones: state.editableTemplate.stones,
-              selectedIds: new Set(state.selectedStoneIds),
-            },
-          ],
+          past: pushHistory(state.history.past, {
+            stones: state.editableTemplate.stones,
+            selectedIds: new Set(state.selectedStoneIds),
+          }),
           future: state.history.future.slice(1),
         },
       };
@@ -1018,9 +1060,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       
       // Duplicate selected stones with offset
       const stonesToDuplicate = state.editableTemplate.stones.filter(s => action.stoneIds.includes(s.id));
-      const duplicatedStones = stonesToDuplicate.map(stone => ({
+      const duplicateIds = generateSequentialStoneIds(state.editableTemplate.stones, 'dup', stonesToDuplicate.length);
+      const duplicatedStones = stonesToDuplicate.map((stone, i) => ({
         ...stone,
-        id: `stone-${Date.now()}-${Math.random()}`,
+        id: duplicateIds[i]!,
         center: { x: stone.center.x + 5, y: stone.center.y + 5 }, // 5mm offset
       }));
       
@@ -1034,7 +1077,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: newSelectedIds,
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -1064,9 +1107,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
       
       // Paste with offset
-      const pastedStones = state.clipboard.stones.map(stone => ({
+      const pasteIds = generateSequentialStoneIds(state.editableTemplate.stones, 'paste', state.clipboard.stones.length);
+      const pastedStones = state.clipboard.stones.map((stone, i) => ({
         ...stone,
-        id: `stone-${Date.now()}-${Math.random()}`,
+        id: pasteIds[i]!,
         center: { x: stone.center.x + 10, y: stone.center.y + 10 }, // 10mm offset
       }));
       
@@ -1080,7 +1124,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: newSelectedIds,
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -1135,7 +1179,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: alignedStones,
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };
@@ -1202,7 +1246,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: distributedStones,
         },
         history: {
-          past: [...state.history.past, historyEntry],
+          past: pushHistory(state.history.past, historyEntry),
           future: [],
         },
       };

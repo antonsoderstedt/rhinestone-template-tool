@@ -19,10 +19,20 @@ import type { StoneSizeId } from '../types/index';
 function getLibraryRoots(): string[] {
   const roots = [
     process.env.RHINESTONE_FONT_LIBRARY_DIR,
-    join(homedir(), 'Desktop', 'LETTER UTVALDA'),
+    join(/* turbopackIgnore: true */ homedir(), 'Desktop', 'LETTER UTVALDA'),
     join(/* turbopackIgnore: true */ process.cwd(), 'public', 'fonts', 'rhinestone-library'),
   ];
   return roots.filter((root): root is string => typeof root === 'string' && root.length > 0);
+}
+
+/**
+ * True when at least one SVG alphabet library root directory actually exists
+ * on disk. Lets callers distinguish "this character genuinely isn't part of
+ * the alphabet" from "the whole asset library is missing/unreachable" —
+ * without this, a missing library makes every character look unsupported.
+ */
+export function isSvgAlphabetLibraryAvailable(): boolean {
+  return getLibraryRoots().some((root) => existsSync(root));
 }
 
 function classifyCharacter(character: string): SvgAlphabetCharacterClass | null {

@@ -23,9 +23,11 @@ export interface PolygonFillOptions {
   spacingMm: number;
   /**
    * Layout pattern.
-   * - `'grid'`: regular rows and columns.
-   * - `'offset-grid'`: every second row is shifted right by spacingMm / 2
-   *   for denser, more natural-looking coverage.
+   * - `'grid'`: regular rows and columns, row and column pitch both `spacingMm`.
+   * - `'offset-grid'`: hexagonal close-pack — every second row is shifted
+   *   right by spacingMm / 2, and rows advance by `spacingMm * sqrt(3) / 2`
+   *   (not a full `spacingMm`) so circles of diameter `spacingMm` nest
+   *   against their neighbors instead of leaving a gap between rows.
    * Default: `'offset-grid'`.
    */
   pattern?: FillPattern;
@@ -173,10 +175,16 @@ export function generateFillPointsForClosedPolyline(
   const endY = bounds.maxY - halfSpacing + 0.001;
   const endX = bounds.maxX - halfSpacing + 0.001;
 
+  // Hexagonal close-pack row pitch: rows advance by spacingMm * sqrt(3)/2
+  // (not a full spacingMm) so offset rows nest against their neighbors —
+  // see docs/RHINESTONE_ENGINE_SPEC.md "Grid Generation". A plain 'grid'
+  // keeps square row/column pitch.
+  const rowStepMm = pattern === 'offset-grid' ? spacingMm * (Math.sqrt(3) / 2) : spacingMm;
+
   const results: PolylinePoint[] = [];
   let rowIndex = 0;
 
-  for (let cy = startY; cy <= endY; cy = roundMm(cy + spacingMm)) {
+  for (let cy = startY; cy <= endY; cy = roundMm(cy + rowStepMm)) {
     // Offset-grid: every second row shifts x by half a spacing
     const xShift = pattern === 'offset-grid' && rowIndex % 2 === 1 ? halfSpacing : 0;
 

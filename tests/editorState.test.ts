@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_EDITOR_STATE,
   editorReducer,
+  MAX_HISTORY_LENGTH,
   type EditableStone,
   type EditorState,
 } from '../app/editor/EditorState';
@@ -242,6 +243,37 @@ describe('editorReducer', () => {
     state = editorReducer(state, { type: 'PASTE_STONES' });
     const pasted = state.editableTemplate.stones.find((item) => item.id !== 'a');
     expect(pasted?.center).toEqual({ x: 20, y: 20 });
+  });
+
+  it('generates deterministic, non-colliding ids for duplicate and paste (no Date.now()/Math.random())', () => {
+    let state = makeEditableState([stone('a', 10, 10), stone('b', 20, 20)]);
+    state = editorReducer(state, { type: 'DUPLICATE_STONES', stoneIds: ['a', 'b'] });
+    const idsAfterDuplicate = state.editableTemplate.stones.map((item) => item.id);
+    expect(new Set(idsAfterDuplicate).size).toBe(idsAfterDuplicate.length);
+    for (const id of idsAfterDuplicate) {
+      expect(id).toMatch(/^(?:[ab]|dup-\d+)$/);
+    }
+
+    // Re-running the same sequence of actions on a fresh, identical starting
+    // state must produce identical ids — determinism, not just uniqueness.
+    let replay = makeEditableState([stone('a', 10, 10), stone('b', 20, 20)]);
+    replay = editorReducer(replay, { type: 'DUPLICATE_STONES', stoneIds: ['a', 'b'] });
+    expect(replay.editableTemplate.stones.map((item) => item.id)).toEqual(idsAfterDuplicate);
+
+    state = editorReducer(state, { type: 'COPY_STONES', stoneIds: ['a', 'b'] });
+    state = editorReducer(state, { type: 'PASTE_STONES' });
+    const idsAfterPaste = state.editableTemplate.stones.map((item) => item.id);
+    expect(new Set(idsAfterPaste).size).toBe(idsAfterPaste.length);
+  });
+
+  it('caps undo history at MAX_HISTORY_LENGTH instead of growing without bound', () => {
+    let state = makeEditableState([stone('a', 10, 10)]);
+    for (let i = 0; i < MAX_HISTORY_LENGTH + 10; i++) {
+      state = editorReducer(state, { type: 'UPDATE_STONE', id: 'a', updates: { center: { x: 10 + i, y: 10 } } });
+    }
+    expect(state.history.past.length).toBe(MAX_HISTORY_LENGTH);
+    // Oldest entries are evicted first, not the most recent ones.
+    expect(state.editableTemplate.stones[0]?.center.x).toBe(10 + MAX_HISTORY_LENGTH + 9);
   });
 
   it('updates X/Y with history support', () => {

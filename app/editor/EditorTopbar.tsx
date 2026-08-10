@@ -1,6 +1,7 @@
 'use client';
 
-import { Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
 import { EditorAction } from './EditorState';
 
 interface EditorTopbarProps {
@@ -8,6 +9,7 @@ interface EditorTopbarProps {
   canUndo: boolean;
   canRedo: boolean;
   canExport: boolean;
+  canPreviewGarment: boolean;
   dispatch: React.Dispatch<EditorAction>;
   onNewProject: () => void;
   onOpenProject: () => void;
@@ -15,6 +17,7 @@ interface EditorTopbarProps {
   onOpenLibrary: () => void;
   onExport: () => void;
   onOpenSetup: () => void;
+  onOpenGarmentPreview: () => void;
 }
 
 export default function EditorTopbar({
@@ -22,6 +25,7 @@ export default function EditorTopbar({
   canUndo,
   canRedo,
   canExport,
+  canPreviewGarment,
   dispatch,
   onNewProject,
   onOpenProject,
@@ -29,6 +33,7 @@ export default function EditorTopbar({
   onOpenLibrary,
   onExport,
   onOpenSetup,
+  onOpenGarmentPreview,
 }: EditorTopbarProps) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-sunken px-5 py-3">
@@ -43,6 +48,12 @@ export default function EditorTopbar({
             <p className="text-xs text-ink-muted">Template Editor</p>
           </div>
         </div>
+        <Link
+          href="/htv"
+          className="hidden rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink md:inline-flex"
+        >
+          HTV Studio →
+        </Link>
         <div className="hidden h-5 w-px bg-surface-sunken lg:block" />
         <input
           type="text"
@@ -111,7 +122,19 @@ export default function EditorTopbar({
         </button>
         
         <div className="mx-1 h-6 w-px bg-surface-sunken" />
-        
+
+        <button
+          onClick={onOpenGarmentPreview}
+          disabled={!canPreviewGarment}
+          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-secondary transition hover:bg-surface-sunken hover:text-ink focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-30"
+          title={canPreviewGarment ? 'Preview this design on a t-shirt or hoodie' : 'Create or open a design before previewing'}
+        >
+          <Shirt className="h-4 w-4" />
+          Preview
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-surface-sunken" />
+
         <button
           onClick={onExport}
           disabled={!canExport}

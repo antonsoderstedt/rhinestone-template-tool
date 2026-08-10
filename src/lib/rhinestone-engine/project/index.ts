@@ -6,11 +6,9 @@
 
 export type {
   GeneratorId,
-  PolylineDemoShape,
   OutlineTextProjectState,
   DotMatrixTextProjectState,
   ManualGridProjectState,
-  PolylineLogoProjectState,
   SvgUploadProjectState,
   SavedStone,
   EditableTemplateState,

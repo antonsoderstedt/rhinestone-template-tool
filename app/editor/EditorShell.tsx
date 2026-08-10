@@ -41,6 +41,7 @@ import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
 import EditorToast from './EditorToast';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
+import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -51,7 +52,7 @@ import {
   buildProjectFileFromEditorState,
   savedStoneToEditableStone,
 } from './projectPersistence';
-import { decodeRasterImageDataUrl } from './rasterImageDecode';
+import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 
 export default function EditorShell() {
   const AUTOSAVE_STORAGE_KEY = 'rhinestone-template-library-autosave';
@@ -62,6 +63,7 @@ export default function EditorShell() {
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
   const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
   const [hasPromptedAutosaveRestore, setHasPromptedAutosaveRestore] = useState(false);
@@ -214,6 +216,18 @@ export default function EditorShell() {
                 });
                 if (requestId !== generationRequestRef.current) return;
                 setOutlineFontStatus({ status: 'idle', message: null, fontId: state.textTool.fontId });
+
+                // Legacy vector font only: characters with no real glyph
+                // silently fell back to '?' — surface that instead of
+                // swallowing it (metadata value is comma-joined; see
+                // outlineTextTemplate.ts for why it can't be a real array).
+                const rawUnsupported = template?.metadata?.['unsupportedCharacters'];
+                const unsupportedCharacters = typeof rawUnsupported === 'string' && rawUnsupported.length > 0
+                  ? rawUnsupported.split(',')
+                  : [];
+                if (JSON.stringify(state.textTool.unsupportedCharacters) !== JSON.stringify(unsupportedCharacters)) {
+                  dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { unsupportedCharacters } });
+                }
               } else {
                 template = createDotMatrixTextTemplate({
                   id: 'text-dotmatrix-preview',
@@ -605,9 +619,9 @@ export default function EditorShell() {
 
   const exportReady = useMemo(() => {
     if (!effectiveTemplate) return false;
-    const readiness = checkExportReadiness(effectiveTemplate);
+    const readiness = checkExportReadiness(effectiveTemplate, { includeLabels: state.includeLabels });
     return readiness.ready;
-  }, [effectiveTemplate]);
+  }, [effectiveTemplate, state.includeLabels]);
 
   const editorDispatch = useCallback((action: EditorAction) => {
     if (shouldPromptForGeneratorMutation(state, action)) {
@@ -876,8 +890,14 @@ export default function EditorShell() {
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'manual' });
         dispatch({ type: 'SET_TEMPLATE', template: null });
         break;
-      default:
-        throw new Error(`Project type "${project.generatorState.generatorId}" is not yet supported in this editor.`);
+      default: {
+        // Unreachable for any project that passed parseRhinestoneProject's
+        // schema validation — this switch is exhaustive over the current
+        // GeneratorProjectState union. Kept as defense-in-depth against a
+        // future schema member added here without a matching case.
+        const unhandled = project.generatorState as { generatorId: string };
+        throw new Error(`Project type "${unhandled.generatorId}" is not yet supported in this editor.`);
+      }
     }
 
     if (project.manualToolState) {
@@ -1133,6 +1153,7 @@ export default function EditorShell() {
         canUndo={state.history.past.length > 0}
         canRedo={state.history.future.length > 0}
         canExport={Boolean(effectiveTemplate)}
+        canPreviewGarment={Boolean(effectiveTemplate) && (effectiveTemplate?.stones.length ?? 0) > 0}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
@@ -1140,6 +1161,13 @@ export default function EditorShell() {
         onOpenLibrary={handleOpenLibrary}
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
+        onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
+      />
+
+      <GarmentPreviewPanel
+        open={garmentPreviewOpen}
+        template={effectiveTemplate}
+        onClose={() => setGarmentPreviewOpen(false)}
       />
 
       <TemplateLibraryPanel

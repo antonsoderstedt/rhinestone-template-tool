@@ -282,4 +282,9 @@ describe('font system', () => {
     expect(getSupportedRhinestoneFontStoneSizes('old-english-stone')).toEqual(['SS6', 'SS10']);
     expect(getPreferredRhinestoneFontStoneSize('bride-script')).toBe('SS10');
   });
+
+  it('excludes test-fixture fonts from the production font list', () => {
+    const ids = listRhinestoneFonts().map((font) => font.fontId);
+    expect(ids).not.toContain('test-fixture');
+  });
 });

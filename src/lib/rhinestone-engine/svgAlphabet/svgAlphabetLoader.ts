@@ -28,6 +28,24 @@ async function loadGlyphSvgOnce(alphabetId: SvgAlphabetId, character: string, ta
   return await response.text();
 }
 
+let libraryAvailableCache: Promise<boolean> | null = null;
+
+async function checkLibraryAvailableOnce(): Promise<boolean> {
+  if (typeof window === 'undefined') {
+    const { isSvgAlphabetLibraryAvailable } = await import('./svgAlphabetPath');
+    return isSvgAlphabetLibraryAvailable();
+  }
+
+  try {
+    const response = await fetch('/api/svg-alphabets/status');
+    if (!response.ok) return true; // fail open — don't claim "library missing" on an unrelated network error
+    const body = (await response.json()) as { available?: boolean };
+    return body.available ?? true;
+  } catch {
+    return true;
+  }
+}
+
 export const defaultSvgAlphabetGlyphLoader: SvgAlphabetGlyphLoader = {
   async loadGlyphSvg(alphabetId, character, targetStoneSizeId) {
     const cacheKey = `${alphabetId}::${targetStoneSizeId ?? 'default'}::${character}`;
@@ -37,8 +55,15 @@ export const defaultSvgAlphabetGlyphLoader: SvgAlphabetGlyphLoader = {
     glyphCache.set(cacheKey, promise);
     return promise;
   },
+  async isLibraryAvailable() {
+    if (!libraryAvailableCache) {
+      libraryAvailableCache = checkLibraryAvailableOnce();
+    }
+    return libraryAvailableCache;
+  },
 };
 
 export function clearSvgAlphabetGlyphCacheForTests() {
   glyphCache.clear();
+  libraryAvailableCache = null;
 }

@@ -11,8 +11,29 @@ These criteria define what "done" means for each phase. A phase is not complete 
 - [x] Project scaffold exists (Next.js, TypeScript, Tailwind)
 - [x] Folder structure matches the spec in `docs/TECHNICAL_SPEC.md`
 - [x] All documentation files exist in `/docs/`
-- [ ] `src/lib/rhinestone-engine/` folder exists with sub-folders
-- [ ] AGENTS.md contains project-specific rules
+- [x] `src/lib/rhinestone-engine/` folder exists with sub-folders
+- [x] AGENTS.md contains project-specific rules
+
+> **Note on document scope (added after a 2026-08 audit):** several major features shipped after this document was last kept current — the rhinestone-font system, the SVG-alphabet system, the letter-stencil generator, the template library, and most of the canvas editor (selection, drag, box-select, pen tool, undo/redo) — without corresponding phase entries below. Rather than retroactively fabricating detailed phase checklists for functionality this document's author didn't build, the current source of truth for those features is their own code and test files (see `tests/rhinestoneFontSystem.test.ts`, `tests/svgAlphabetSystem.test.ts`, `tests/letterStencilSystem.test.ts`, `tests/editorState.test.ts`, `tests/*.test.ts` generally) — all 964+ tests pass as of this note. Treat any phase below marked "(Implemented)" as accurate for the area it covers; treat the *absence* of a phase entry as "undocumented here," not "not built."
+
+---
+
+## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
+
+- [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
+- [x] Pen tool supports three draw modes — `freehand` (existing smart-assist), `grid` (hard snap, skips on collision instead of nudging), `row` (locks to a straight horizontal/vertical line from the drag's dominant axis)
+- [x] Pen tool's freehand mode shows Figma-style alignment guides against existing stones' x/y centers and the workspace centerline (reuses `alignmentGuides.ts`, previously only wired to single-stone drag)
+- [x] `react-hooks/preserve-manual-memoization` lint error in `EditorCanvas.tsx` resolved — `npm run lint` is clean
+- [x] Generator errors (`outlineFontStatus`) are surfaced in the rhinestone-font, svg-alphabet, and letter-stencil panels, not just the outline text tool
+- [x] Legacy vector outline font tracks and warns about characters with no real glyph instead of silently drawing `?`
+- [x] `test-fixture` rhinestone font (backing file doesn't exist outside the test run) excluded from the production font picker
+- [x] Ctrl/Cmd+A suppresses the browser's native select-all even when there's nothing editable to select yet
+- [x] Undo history capped at `MAX_HISTORY_LENGTH` (100 entries) — verified to evict oldest entries, not most recent
+- [x] Duplicate/paste stone IDs are deterministic (`generateSequentialStoneIds`, scans existing ids for `{prefix}-N`) — no `Date.now()`/`Math.random()`
+- [x] SVG-alphabet loader can report `isLibraryAvailable()`; when the asset library itself is unreachable, the warning says so instead of implying the alphabet doesn't include those characters
+- [x] `checkExportReadiness` warns (does not block) when `includeLabels` is on, since Cricut Design Space doesn't reliably import raw SVG `<text>`; same message shown next to the "Include labels" checkbox
+- [x] `polyline-logo` generator type removed from `projectFormat.ts` (schema, validation, serialization) — it was fully speced but no generator UI or template-building function was ever implemented for it
+- [x] `npm run build`, `typecheck`, `lint`, `test` all pass (964 tests)
 
 ---
 
@@ -47,7 +68,7 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 - [x] `BUILT_IN_VECTOR_FONT` covers A–Z, 0–9, space, `. , ! ? - _`
 - [x] `getVectorGlyph` maps lowercase to uppercase glyph
-- [x] `getVectorGlyph` returns `?` fallback for any unsupported character
+- [x] `getVectorGlyph` returns `?` fallback for any unsupported character; `isVectorGlyphSupported` and `createOutlineTextTemplate`'s `unsupportedCharacters` metadata let callers detect and surface this instead of it being silent (Phase 16)
 - [x] Space glyph has advance width but zero polylines
 - [x] All supported glyphs have at least 2 points per polyline
 - [x] All glyph coordinates are finite numbers
@@ -210,7 +231,8 @@ These criteria define what "done" means for each phase. A phase is not complete 
 - [x] `createPolylineRhinestoneTemplate` accepts `targetWidthMm`, `targetHeightMm`, `preserveAspectRatio`
 - [x] Scaled template passes `validateRhinestoneTemplate`
 - [x] Exported SVG width/height are in mm (not px)
-- [x] `SvgUploadGenerator` and `PolylineLogoGenerator` show estimated physical output size
+- [x] `SvgUploadGenerator` shows estimated physical output size
+  > `PolylineLogoGenerator`/`polyline-logo` was removed in the 2026-08 audit — it was fully speced in `projectFormat.ts` (schema, validation, serialization) but no generator UI or template-building function was ever built for it, so the editor threw on load for any saved project of that type. Physical-size display for polyline-based content now lives in `SvgUploadGenerator`.
 - [x] `npm run build`, `typecheck`, `lint`, `test` all pass
 
 ---

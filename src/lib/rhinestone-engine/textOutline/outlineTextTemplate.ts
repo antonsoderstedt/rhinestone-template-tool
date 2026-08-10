@@ -21,7 +21,7 @@ import type { DensityPreset } from '../spacing/density';
 import type { Polyline } from '../path/polyline';
 import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
-import { getVectorGlyph, BUILT_IN_VECTOR_FONT } from './vectorFont';
+import { getVectorGlyph, isVectorGlyphSupported, BUILT_IN_VECTOR_FONT } from './vectorFont';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
@@ -225,7 +225,13 @@ function resolveTextFillEdgeInsetMm(
   return 0;
 }
 
-function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): Polyline[] {
+interface LegacyVectorTextLayoutResult {
+  polylines: Polyline[];
+  /** Characters that had no real glyph and silently fell back to '?'. */
+  unsupportedCharacters: string[];
+}
+
+function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): LegacyVectorTextLayoutResult {
   const {
     text,
     fontSizeMm = 25,
@@ -238,6 +244,7 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
   const scale = fontSizeMm / font.unitsPerEm;
   const lines = text.split('\n');
   const lineAdvanceMm = fontSizeMm + lineSpacingMm;
+  const unsupportedCharacters = new Set<string>();
 
   interface LineGroup {
     polylines: Polyline[];
@@ -252,6 +259,9 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
     const chars = [...line];
 
     for (let ci = 0; ci < chars.length; ci++) {
+      if (!isVectorGlyphSupported(chars[ci]!)) {
+        unsupportedCharacters.add(chars[ci]!);
+      }
       const glyph = getVectorGlyph(chars[ci]);
 
       for (const pl of glyph.polylines) {
@@ -297,7 +307,10 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
     }
   }
 
-  return allPolylines.filter((pl) => pl.points.length >= 2);
+  return {
+    polylines: allPolylines.filter((pl) => pl.points.length >= 2),
+    unsupportedCharacters: Array.from(unsupportedCharacters),
+  };
 }
 
 function createOutlineTemplateFromPolylines(
@@ -537,10 +550,14 @@ export function createOutlineTextTemplate(
     );
   }
 
-  return createOutlineTemplateFromPolylines(normalized, layoutLegacyVectorTextPolylines(normalized), {
+  const layout = layoutLegacyVectorTextPolylines(normalized);
+
+  return createOutlineTemplateFromPolylines(normalized, layout.polylines, {
     fontMode: 'built-in-vector-outline-v1',
     fontFamily: fontDefinition.fontFamily,
     fontDisplayName: fontDefinition.displayName,
+    // Comma-joined because template metadata values are string|number|boolean only.
+    unsupportedCharacters: layout.unsupportedCharacters.join(','),
   });
 }
 

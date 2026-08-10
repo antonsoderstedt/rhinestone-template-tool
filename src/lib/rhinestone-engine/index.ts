@@ -170,7 +170,7 @@ export type {
   ExportReadinessResult,
   ExportReadinessOptions,
 } from './exportQa/exportReadiness';
-export { checkExportReadiness } from './exportQa/exportReadiness';
+export { checkExportReadiness, TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE } from './exportQa/exportReadiness';
 
 // Cricut Test Pack
 export type { CricutTestPackOptions, CricutTestPackItem, CricutTestPack } from './testPack/cricutTestPack';
@@ -197,6 +197,9 @@ export {
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
+export type { LoadedOutlineFont } from './textOutline/fontLoader';
+export type { OpenTypeTextLayoutOptions } from './textOutline/openTypeGeometry';
+export { layoutTextToOpenTypePolylines } from './textOutline/openTypeGeometry';
 export type { OutlineTextAlign, OutlineTextStyle, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
 
@@ -274,11 +277,9 @@ export {
 // Project save / load (schema v1)
 export type {
   GeneratorId,
-  PolylineDemoShape,
   OutlineTextProjectState,
   DotMatrixTextProjectState,
   ManualGridProjectState,
-  PolylineLogoProjectState,
   SvgUploadProjectState,
   SavedStone,
   EditableTemplateState,
@@ -373,3 +374,11 @@ export type {
   RasterArtworkTemplateResult,
 } from './image/rasterArtworkTemplate';
 export { createRasterArtworkTemplate } from './image/rasterArtworkTemplate';
+
+// Image → vector silhouette tracing (HTV Studio)
+export type {
+  TraceableImageData,
+  ImageTraceOptions,
+  ImageTraceResult,
+} from './imageTrace/imageTrace';
+export { traceImageSilhouette, signedPolygonArea } from './imageTrace/imageTrace';
