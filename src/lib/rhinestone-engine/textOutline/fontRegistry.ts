@@ -27,6 +27,7 @@ export type OutlineFontId =
 
 export interface OutlineFontDefinition {
   fontId: string;
+  sourceKind?: 'bundled' | 'workspace-installed' | 'browser-uploaded';
   displayName: string;
   category: OutlineFontCategory;
   fontFamily: string;
@@ -231,6 +232,7 @@ const FONT_MAP = new Map(OUTLINE_FONT_REGISTRY.map((font) => [font.fontId, font]
 interface UploadedWorkspaceFontRecord {
   fontId: string;
   name: string;
+  sourceKind?: 'browser-uploaded' | 'workspace-installed';
   category?: string;
   styleLabel?: string;
   previewFamily: string;
@@ -239,7 +241,9 @@ interface UploadedWorkspaceFontRecord {
   note?: string;
   preferredTextCoverageMode?: TemplateFillMode;
   supportedTextCoverageModes?: TemplateCoverageMode[];
-  sourceDataUrl: string;
+  sourceDataUrl?: string;
+  assetUrl?: string;
+  nodeFilePath?: string;
 }
 
 const VALID_UPLOAD_CATEGORIES: ReadonlySet<OutlineFontCategory> = new Set([
@@ -301,15 +305,16 @@ function createUploadedOutlineFontDefinition(record: UploadedWorkspaceFontRecord
 
   return {
     fontId: record.fontId,
+    sourceKind: record.sourceKind,
     displayName: record.name,
     category: resolveUploadedCategory(record.category),
     fontFamily: record.name,
     previewFontFamily: record.previewFamily,
     fontWeight: 400,
     fontStyle: 'normal',
-    assetUrl: record.sourceDataUrl,
-    nodeFilePath: null,
-    license: 'User uploaded in browser',
+    assetUrl: record.assetUrl ?? record.sourceDataUrl ?? null,
+    nodeFilePath: record.nodeFilePath ?? null,
+    license: record.sourceKind === 'workspace-installed' ? 'Imported local workspace font' : 'User uploaded in browser',
     licenseSource: record.licenseSource ?? `Workspace upload: ${record.name}`,
     packageName: null,
     isLegacy: false,

@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Archive, Gem, Search, Star, SwatchBook, Type, Upload } from 'lucide-react';
+import { Archive, ChevronDown, ChevronUp, Gem, RefreshCcw, Search, Star, SwatchBook, Type, Upload } from 'lucide-react';
 import { getOutlineFontFaceCss, listOutlineFonts } from '@/src/lib/rhinestone-engine/index';
 import {
   type FontPreference,
@@ -10,6 +10,7 @@ import {
   type WorkspaceVault,
   getFontPreference,
   makeWorkspaceId,
+  mergeInstalledWorkspaceFonts,
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
@@ -33,6 +34,7 @@ async function fileToUploadedFont(file: File): Promise<UploadedWorkspaceFont> {
     fileName: file.name,
     mimeType: file.type || 'font/woff',
     sizeBytes: file.size,
+    sourceKind: 'browser-uploaded',
     category: 'Display',
     styleLabel: 'Uploaded',
     tags: ['upload'],
@@ -57,6 +59,70 @@ const COVERAGE_DEFAULTS = [
   { value: 'outline-fill', label: 'Outline + fill default' },
 ] as const;
 
+type FontCatalogItem = {
+  key: string;
+  name: string;
+  familyName: string;
+  variantName: string;
+  importSourceLabel: string;
+  category: string;
+  styleLabel: string;
+  previewFamily: string;
+  source: 'bundled' | 'browser-uploaded' | 'workspace-installed';
+  favorite: boolean;
+  archived: boolean;
+  tags: string[];
+  canLaunch: boolean;
+  note: string;
+  previewText: string;
+  licenseSource: string;
+  preferredTextCoverageMode: UploadedWorkspaceFont['preferredTextCoverageMode'] | 'outline';
+  fileName: string | null;
+};
+
+interface InstalledFontManifestMeta {
+  generatedAt: string;
+  importedCount: number;
+  skippedCount: number;
+  zipArchiveCount: number;
+  sourceDirectory: string;
+}
+
+type InstalledFamilyItem = {
+  familyKey: string;
+  familyName: string;
+  category: string;
+  source: 'workspace-installed';
+  variantCount: number;
+  representative: FontCatalogItem;
+  variants: FontCatalogItem[];
+  tags: string[];
+  favoriteCount: number;
+  importSources: string[];
+};
+
+function compareInstalledVariants(left: FontCatalogItem, right: FontCatalogItem) {
+  return variantPriority(left.variantName) - variantPriority(right.variantName)
+    || left.variantName.localeCompare(right.variantName)
+    || left.name.localeCompare(right.name);
+}
+
+function variantPriority(variantName: string) {
+  const normalized = variantName.toLowerCase();
+  if (/regular|roman|normal|book/.test(normalized)) return 0;
+  if (/medium/.test(normalized)) return 1;
+  if (/semibold|semi bold/.test(normalized)) return 2;
+  if (/bold/.test(normalized)) return 3;
+  if (/black|heavy|extrabold|extra bold/.test(normalized)) return 4;
+  if (/light|thin|extra light/.test(normalized)) return 5;
+  if (/italic|oblique|slant/.test(normalized)) return 6;
+  return 10;
+}
+
+function pickRepresentativeVariant(variants: FontCatalogItem[]) {
+  return [...variants].sort(compareInstalledVariants)[0]!;
+}
+
 function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   setVault(nextVault);
   writeWorkspaceVault(nextVault);
@@ -65,21 +131,62 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
 export default function FontsPage() {
   const router = useRouter();
   const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [installedManifestMeta, setInstalledManifestMeta] = useState<InstalledFontManifestMeta | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState('Sulay 123');
   const [query, setQuery] = useState('');
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'built-in' | 'upload'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'bundled' | 'browser-uploaded' | 'workspace-installed'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'favorites'>('name');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [groupInstalledFamilies, setGroupInstalledFamilies] = useState(true);
+  const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>({});
 
-  const builtIns = useMemo(() => listOutlineFonts().map((font) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch('/fonts/workspace-installed/manifest.json', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = await response.json() as UploadedWorkspaceFont[] | { meta?: InstalledFontManifestMeta; fonts?: UploadedWorkspaceFont[] };
+        const manifest = Array.isArray(payload) ? payload : (Array.isArray(payload.fonts) ? payload.fonts : []);
+        if (cancelled) return;
+
+        if (!Array.isArray(payload) && payload.meta) {
+          setInstalledManifestMeta(payload.meta);
+        }
+
+        if (!Array.isArray(manifest)) return;
+
+        const currentVault = readWorkspaceVault();
+        const nextVault = mergeInstalledWorkspaceFonts(currentVault, manifest);
+        const same = JSON.stringify(nextVault.uploadedFonts) === JSON.stringify(currentVault.uploadedFonts);
+        if (!same) {
+          persistVault(nextVault, setVault);
+          setSyncMessage(`Synced ${manifest.length} installed fonts from the local zip import library.`);
+        }
+      } catch {
+        // No local import manifest yet.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const builtIns = useMemo<FontCatalogItem[]>(() => listOutlineFonts().filter((font) => font.sourceKind !== 'browser-uploaded' && font.sourceKind !== 'workspace-installed').map((font) => {
     const preference = getFontPreference(vault, font.fontId);
     return {
       key: font.fontId,
       name: font.displayName,
+      familyName: font.displayName,
+      variantName: font.category,
+      importSourceLabel: font.licenseSource,
       category: font.category,
       styleLabel: font.category,
       previewFamily: font.previewFontFamily,
-      source: 'built-in' as const,
+      source: 'bundled' as const,
       favorite: preference.favorite,
       archived: preference.archived,
       tags: preference.tags,
@@ -92,13 +199,16 @@ export default function FontsPage() {
     };
   }), [vault]);
 
-  const uploads = useMemo(() => vault.uploadedFonts.map((font) => ({
+  const uploads = useMemo<FontCatalogItem[]>(() => vault.uploadedFonts.map((font) => ({
     key: font.fontId,
     name: font.name,
+    familyName: font.familyName ?? font.name,
+    variantName: font.variantName ?? font.styleLabel,
+    importSourceLabel: font.importSourceLabel ?? font.licenseSource,
     category: font.category,
     styleLabel: font.styleLabel,
     previewFamily: font.previewFamily,
-    source: 'upload' as const,
+    source: font.sourceKind ?? 'browser-uploaded',
     favorite: font.favorite,
     archived: font.archived,
     tags: font.tags,
@@ -110,7 +220,36 @@ export default function FontsPage() {
     fileName: font.fileName,
   })), [vault.uploadedFonts]);
 
-  const catalog = useMemo(() => [...builtIns, ...uploads], [builtIns, uploads]);
+  const catalog = useMemo<FontCatalogItem[]>(() => [...builtIns, ...uploads], [builtIns, uploads]);
+
+  const installedFamilyItems = useMemo<InstalledFamilyItem[]>(() => {
+    const installedFonts = uploads.filter((font) => font.source === 'workspace-installed');
+    const byFamily = new Map<string, FontCatalogItem[]>();
+
+    for (const font of installedFonts) {
+      const familyKey = `${font.familyName}::${font.category}`;
+      const existing = byFamily.get(familyKey);
+      if (existing) existing.push(font);
+      else byFamily.set(familyKey, [font]);
+    }
+
+    return Array.from(byFamily.entries()).map(([familyKey, variants]) => {
+      const sortedVariants = [...variants].sort(compareInstalledVariants);
+      const representative = pickRepresentativeVariant(sortedVariants);
+      return {
+        familyKey,
+        familyName: representative.familyName,
+        category: representative.category,
+        source: 'workspace-installed' as const,
+        variantCount: sortedVariants.length,
+        representative,
+        variants: sortedVariants,
+        tags: Array.from(new Set(sortedVariants.flatMap((font) => font.tags))).sort((a, b) => a.localeCompare(b)),
+        favoriteCount: sortedVariants.filter((font) => font.favorite).length,
+        importSources: Array.from(new Set(sortedVariants.map((font) => font.importSourceLabel))).sort((a, b) => a.localeCompare(b)),
+      };
+    }).sort((left, right) => left.familyName.localeCompare(right.familyName));
+  }, [uploads]);
 
   const categories = useMemo(
     () => Array.from(new Set(catalog.map((font) => font.category))).sort((a, b) => a.localeCompare(b)),
@@ -141,6 +280,28 @@ export default function FontsPage() {
     return filtered;
   }, [catalog, categoryFilter, query, sortBy, sourceFilter]);
 
+  const visibleInstalledFamilies = useMemo(() => {
+    const loweredQuery = query.trim().toLowerCase();
+    return installedFamilyItems.filter((family) => {
+      if (sourceFilter !== 'all' && sourceFilter !== 'workspace-installed') return false;
+      if (categoryFilter !== 'all' && family.category !== categoryFilter) return false;
+      if (!loweredQuery) return true;
+      const haystack = [
+        family.familyName,
+        family.category,
+        ...family.tags,
+        ...family.variants.map((variant) => `${variant.name} ${variant.variantName} ${variant.fileName ?? ''}`),
+        ...family.importSources,
+      ].join(' ').toLowerCase();
+      return haystack.includes(loweredQuery);
+    });
+  }, [categoryFilter, installedFamilyItems, query, sourceFilter]);
+
+  const standaloneFonts = useMemo(
+    () => visibleFonts.filter((font) => !(groupInstalledFamilies && font.source === 'workspace-installed')),
+    [groupInstalledFamilies, visibleFonts],
+  );
+
   const uploadedFontFaceCss = useMemo(
     () => vault.uploadedFonts.map((font) => `
 @font-face {
@@ -170,6 +331,10 @@ export default function FontsPage() {
     persistVault(nextVault, setVault);
   };
 
+  const toggleFamilyExpanded = (familyKey: string) => {
+    setExpandedFamilies((current) => ({ ...current, [familyKey]: !current[familyKey] }));
+  };
+
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(124,77,255,0.16),transparent_24%),linear-gradient(180deg,#faf8f5_0%,#f7f1ea_100%)] px-4 py-8 md:px-6">
       <style>{`${getOutlineFontFaceCss()}\n${uploadedFontFaceCss}`}</style>
@@ -183,7 +348,7 @@ export default function FontsPage() {
               </div>
               <h1 className="mt-4 text-5xl font-semibold tracking-tight text-ink">Preview fonts the way customers actually buy</h1>
               <p className="mt-4 text-base leading-8 text-ink-secondary md:text-lg">
-                Compare every font on the exact same phrase, search fast, upload custom families in bulk, and jump straight into a studio with the right built-in font selected.
+                Compare every font on the exact same phrase, search fast, upload custom families in bulk, and jump straight into a studio with the right built-in or installed font selected.
               </p>
             </div>
 
@@ -204,6 +369,48 @@ export default function FontsPage() {
                 }}
               />
             </label>
+          </div>
+        </section>
+
+        {syncMessage && (
+          <section className="rounded-[1.5rem] border border-success-500/20 bg-success-50 px-5 py-4 text-sm text-success-600 shadow-sm">
+            {syncMessage}
+            <div className="mt-2 text-xs text-success-600/90">
+              For large zip libraries, run `npm run import:font-zips -- /Users/sulaysoderstedt/Desktop/FONTS` and then open this page once to sync them into the tool.
+            </div>
+          </section>
+        )}
+
+        <section className="rounded-[2rem] border border-border bg-surface-raised/90 p-5 shadow-lg shadow-sand-900/5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Imported Zip Library</div>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">Installed font families from your zip packs</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-ink-secondary">
+                This view is optimized for large imported font libraries. Group by family to avoid scrolling through thousands of weight and format variants one by one.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGroupInstalledFamilies((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-medium text-ink-secondary transition hover:text-ink"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              {groupInstalledFamilies ? 'Show every variant' : 'Group installed families'}
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-4">
+            <MetricCard label="Installed files" value={String(vault.uploadedFonts.filter((font) => font.sourceKind === 'workspace-installed').length)} />
+            <MetricCard label="Installed families" value={String(installedFamilyItems.length)} />
+            <MetricCard label="Zip archives" value={String(installedManifestMeta?.zipArchiveCount ?? '—')} />
+            <MetricCard label="Skipped by parser" value={String(installedManifestMeta?.skippedCount ?? '—')} />
+          </div>
+
+          <div className="mt-4 text-xs text-ink-muted">
+            {installedManifestMeta
+              ? `Last import: ${new Date(installedManifestMeta.generatedAt).toLocaleString()} · Source: ${installedManifestMeta.sourceDirectory}`
+              : 'No manifest metadata loaded yet.'}
           </div>
         </section>
 
@@ -229,8 +436,9 @@ export default function FontsPage() {
             </label>
             <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
               <option value="all">All sources</option>
-              <option value="built-in">Built-in</option>
-              <option value="upload">Uploads</option>
+              <option value="bundled">Bundled</option>
+              <option value="workspace-installed">Installed zip imports</option>
+              <option value="browser-uploaded">Browser uploads</option>
             </select>
             <div className="grid gap-3 md:grid-cols-2">
               <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
@@ -246,8 +454,101 @@ export default function FontsPage() {
           </div>
         </section>
 
+        {groupInstalledFamilies && visibleInstalledFamilies.length > 0 && (
+          <section className="grid gap-5 xl:grid-cols-2">
+            {visibleInstalledFamilies.map((family) => {
+              const expanded = expandedFamilies[family.familyKey] ?? false;
+              return (
+                <article key={family.familyKey} className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">{family.category} · installed zip imports</div>
+                      <h2 className="mt-2 text-2xl font-semibold text-ink">{family.familyName}</h2>
+                      <p className="mt-2 text-sm text-ink-secondary">{family.variantCount} variants · {family.importSources[0] ?? 'local import'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleFamilyExpanded(family.familyKey)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-ink-secondary transition hover:text-ink"
+                    >
+                      {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {expanded ? 'Hide variants' : 'Show variants'}
+                    </button>
+                  </div>
+
+                  <div className="mt-5 rounded-[1.5rem] border border-border bg-surface px-5 py-6">
+                    <p style={{ fontFamily: family.representative.previewFamily }} className="break-words text-[44px] leading-none text-ink md:text-[56px]">
+                      {previewText || family.representative.previewText || family.familyName}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-ink-muted">
+                    <span className="rounded-full border border-border px-3 py-1">Representative: {family.representative.variantName}</span>
+                    <span className="rounded-full border border-border px-3 py-1">{family.favoriteCount} favorites</span>
+                    <span className="rounded-full border border-border px-3 py-1">{family.variantCount} variants</span>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {family.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-accent-50 px-3 py-1 text-xs font-medium text-accent-700">{tag}</span>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid gap-2 md:grid-cols-2">
+                    <button
+                      onClick={() => router.push(`/rhinestone?font=${family.representative.key}&text=${encodeURIComponent(previewText || 'Sulay 123')}`)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent-300 hover:text-accent-600"
+                    >
+                      <Gem className="h-4 w-4" />
+                      Use representative in Rhinestone
+                    </button>
+                    <button
+                      onClick={() => router.push(`/htv?font=${family.representative.key}&text=${encodeURIComponent(previewText || 'Sulay 123')}`)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-brand-300 hover:text-brand-600"
+                    >
+                      <SwatchBook className="h-4 w-4" />
+                      Use representative in HTV
+                    </button>
+                  </div>
+
+                  {expanded && (
+                    <div className="mt-5 space-y-3 border-t border-border pt-5">
+                      {family.variants.map((font) => (
+                        <div key={font.key} className="rounded-2xl border border-border bg-surface px-4 py-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-ink">{font.variantName}</div>
+                              <div className="mt-1 text-xs text-ink-muted">{font.fileName ?? font.name}</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => updateUploadedFont(font.key, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }))}
+                                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${font.favorite ? 'bg-warning-50 text-warning-600' : 'bg-surface-raised text-ink-secondary hover:text-ink'}`}
+                              >
+                                <Star className="h-4 w-4" />
+                                {font.favorite ? 'Favorited' : 'Favorite'}
+                              </button>
+                              <button
+                                onClick={() => updateUploadedFont(font.key, (current) => ({ ...current, archived: !current.archived, updatedAt: new Date().toISOString() }))}
+                                className="inline-flex items-center gap-2 rounded-xl bg-surface-raised px-3 py-2 text-sm font-medium text-ink-secondary transition hover:text-ink"
+                              >
+                                <Archive className="h-4 w-4" />
+                                {font.archived ? 'Restore' : 'Archive'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
+
         <section className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-          {visibleFonts.map((font) => (
+          {standaloneFonts.map((font) => (
             <article key={font.key} className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -256,7 +557,7 @@ export default function FontsPage() {
                 </div>
                 <button
                   onClick={() => {
-                    if (font.source === 'upload') {
+                    if (font.source !== 'bundled') {
                       updateUploadedFont(font.key, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }));
                     } else {
                       updateFontPreference(font.key, (current) => ({ ...current, favorite: !current.favorite }));
@@ -289,7 +590,7 @@ export default function FontsPage() {
                   value={font.tags.join(', ')}
                   onChange={(event) => {
                     const tags = event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean);
-                    if (font.source === 'upload') {
+                    if (font.source !== 'bundled') {
                       updateUploadedFont(font.key, (current) => ({ ...current, tags, updatedAt: new Date().toISOString() }));
                     } else {
                       updateFontPreference(font.key, (current) => ({ ...current, tags }));
@@ -306,7 +607,7 @@ export default function FontsPage() {
                 ))}
               </div>
 
-              {font.source === 'upload' ? (
+              {font.source !== 'bundled' ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <label className="space-y-2 text-sm text-ink-secondary">
                     <span className="font-medium text-ink">Category</span>
@@ -388,7 +689,7 @@ export default function FontsPage() {
               <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
                 <button
                   onClick={() => {
-                    if (font.source === 'upload') {
+                    if (font.source !== 'bundled') {
                       updateUploadedFont(font.key, (current) => ({ ...current, archived: !current.archived, updatedAt: new Date().toISOString() }));
                     } else {
                       updateFontPreference(font.key, (current) => ({ ...current, archived: !current.archived }));
@@ -417,4 +718,13 @@ function coverageLabel(mode: UploadedWorkspaceFont['preferredTextCoverageMode'] 
     default:
       return 'Outline default';
   }
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">{label}</div>
+      <div className="mt-2 text-3xl font-semibold text-ink">{value}</div>
+    </div>
+  );
 }

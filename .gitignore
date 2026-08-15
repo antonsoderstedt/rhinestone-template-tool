@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+/public/fonts/workspace-installed/*
+!/public/fonts/workspace-installed/.gitkeep
 
 # debug
 npm-debug.log*

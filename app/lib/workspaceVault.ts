@@ -23,9 +23,13 @@ export interface WorkspaceAsset {
 export interface UploadedWorkspaceFont {
   fontId: string;
   name: string;
+  familyName?: string;
+  variantName?: string;
+  importSourceLabel?: string;
   fileName: string;
   mimeType: string;
   sizeBytes: number;
+  sourceKind?: 'browser-uploaded' | 'workspace-installed';
   category: string;
   styleLabel: string;
   tags: string[];
@@ -39,7 +43,9 @@ export interface UploadedWorkspaceFont {
   note: string;
   preferredTextCoverageMode: TemplateFillMode;
   supportedTextCoverageModes: TemplateCoverageMode[];
-  sourceDataUrl: string;
+  sourceDataUrl?: string;
+  assetUrl?: string;
+  nodeFilePath?: string;
 }
 
 export interface FontPreference {
@@ -137,6 +143,10 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
   const uploadedFonts: UploadedWorkspaceFont[] = Array.isArray(raw?.uploadedFonts)
     ? raw.uploadedFonts.map((font): UploadedWorkspaceFont => ({
         ...font,
+        familyName: typeof font.familyName === 'string' && font.familyName.length > 0 ? font.familyName : font.name,
+        variantName: typeof font.variantName === 'string' && font.variantName.length > 0 ? font.variantName : font.styleLabel,
+        importSourceLabel: typeof font.importSourceLabel === 'string' && font.importSourceLabel.length > 0 ? font.importSourceLabel : font.licenseSource,
+        sourceKind: font.sourceKind === 'workspace-installed' ? 'workspace-installed' : 'browser-uploaded',
         category: typeof font.category === 'string' && font.category.length > 0 ? font.category : 'Display',
         styleLabel: typeof font.styleLabel === 'string' && font.styleLabel.length > 0 ? font.styleLabel : 'Uploaded',
         previewText: typeof font.previewText === 'string' && font.previewText.length > 0 ? font.previewText : 'Sulay 123',
@@ -165,6 +175,44 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
       ...DEFAULT_WORKSPACE_SETTINGS,
       ...(raw?.settings ?? {}),
     },
+  };
+}
+
+export function mergeInstalledWorkspaceFonts(
+  vault: WorkspaceVault,
+  installedFonts: UploadedWorkspaceFont[],
+): WorkspaceVault {
+  const browserFonts = vault.uploadedFonts.filter((font) => font.sourceKind !== 'workspace-installed');
+  const existingInstalledById = new Map(
+    vault.uploadedFonts
+      .filter((font) => font.sourceKind === 'workspace-installed')
+      .map((font) => [font.fontId, font]),
+  );
+  const normalizedInstalledFonts = installedFonts.map((font) => {
+    const existing = existingInstalledById.get(font.fontId);
+    return {
+      ...font,
+      sourceKind: 'workspace-installed' as const,
+      sourceDataUrl: undefined,
+      favorite: existing?.favorite ?? font.favorite,
+      archived: existing?.archived ?? font.archived,
+      tags: existing?.tags ?? font.tags,
+      category: existing?.category ?? font.category,
+      styleLabel: existing?.styleLabel ?? font.styleLabel,
+      previewText: existing?.previewText ?? font.previewText,
+      note: existing?.note ?? font.note,
+      licenseSource: existing?.licenseSource ?? font.licenseSource,
+      preferredTextCoverageMode: existing?.preferredTextCoverageMode ?? font.preferredTextCoverageMode,
+      supportedTextCoverageModes: existing?.supportedTextCoverageModes ?? font.supportedTextCoverageModes,
+      familyName: existing?.familyName ?? font.familyName,
+      variantName: existing?.variantName ?? font.variantName,
+      importSourceLabel: existing?.importSourceLabel ?? font.importSourceLabel,
+      createdAt: existing?.createdAt ?? font.createdAt,
+    };
+  });
+  return {
+    ...vault,
+    uploadedFonts: [...browserFonts, ...normalizedInstalledFonts],
   };
 }
 
