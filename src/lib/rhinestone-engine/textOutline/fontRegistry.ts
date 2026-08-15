@@ -358,7 +358,7 @@ export function isAvailableOutlineFontId(fontId: string | undefined | null): boo
 }
 
 export function getOutlineFontFaceCss(): string {
-  return listOutlineFonts().filter((font) => !font.isLegacy && font.assetUrl).map((font) => `
+  return OUTLINE_FONT_REGISTRY.filter((font) => !font.isLegacy && font.assetUrl).map((font) => `
 @font-face {
   font-family: '${font.previewFontFamily}';
   src: url('${font.assetUrl}');

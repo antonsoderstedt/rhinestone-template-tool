@@ -306,7 +306,7 @@ export default function FontsPage() {
     () => vault.uploadedFonts.map((font) => `
 @font-face {
   font-family: '${font.previewFamily}';
-  src: url('${font.sourceDataUrl}');
+  src: url('${font.assetUrl ?? font.sourceDataUrl ?? ''}');
   font-display: swap;
 }
 `).join('\n'),
