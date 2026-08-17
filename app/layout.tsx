@@ -28,8 +28,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body suppressHydrationWarning className="min-h-full bg-surface text-ink">
-        <div className="flex min-h-screen flex-col">
+      <body suppressHydrationWarning className="h-full bg-surface text-ink">
+        <div className="flex h-screen flex-col">
           <GlobalTopNav />
           <main className="flex-1 min-h-0">{children}</main>
         </div>

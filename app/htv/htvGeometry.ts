@@ -7,6 +7,9 @@
 import type { Polyline, PolylinePoint } from '@/src/lib/rhinestone-engine/index';
 import type { HtvLayer } from './HtvState';
 
+/** Square design surface, mm — shared by the canvas view and alignment tools. */
+export const HTV_WORKSPACE_SIZE_MM = 320;
+
 export interface Bounds {
   minX: number;
   minY: number;
@@ -130,14 +133,13 @@ export function transformedLayerBounds(layer: HtvLayer): Bounds {
   };
 }
 
-export function computeDesignBounds(layers: readonly HtvLayer[]): Bounds | null {
-  const visible = layers.filter((l) => l.visible);
-  if (visible.length === 0) return null;
+export function computeBoundsForLayers(layers: readonly HtvLayer[]): Bounds | null {
+  if (layers.length === 0) return null;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const layer of visible) {
+  for (const layer of layers) {
     const b = transformedLayerBounds(layer);
     minX = Math.min(minX, b.minX);
     minY = Math.min(minY, b.minY);
@@ -145,4 +147,8 @@ export function computeDesignBounds(layers: readonly HtvLayer[]): Bounds | null 
     maxY = Math.max(maxY, b.maxY);
   }
   return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+export function computeDesignBounds(layers: readonly HtvLayer[]): Bounds | null {
+  return computeBoundsForLayers(layers.filter((l) => l.visible));
 }

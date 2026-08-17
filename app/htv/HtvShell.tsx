@@ -7,7 +7,9 @@ import {
   createHtvTextLayer,
   createHtvVectorLayer,
   htvReducer,
+  type HtvVectorLayer,
 } from './HtvState';
+import { combineVectorLayers, offsetVectorLayerPolylines } from './htvFormOps';
 import HtvTopbar from './HtvTopbar';
 import HtvToolsPanel from './HtvToolsPanel';
 import HtvCanvas from './HtvCanvas';
@@ -88,6 +90,43 @@ export default function HtvShell() {
     const layers = template.build(createLayerId, DEFAULT_TEXT_FONT_ID);
     dispatch({ type: 'ADD_LAYERS', layers });
   }, [createLayerId]);
+
+  const handleCombineLayers = useCallback((ids: string[]) => {
+    const layers = state.layers.filter((l): l is HtvVectorLayer => ids.includes(l.id) && l.type === 'vector');
+    if (layers.length < 2) return;
+    const { polylines, widthMm, heightMm } = combineVectorLayers(layers);
+    const newLayer = createHtvVectorLayer({
+      id: createLayerId('combine'),
+      name: 'Combined shape',
+      polylines,
+      naturalWidthMm: widthMm,
+      naturalHeightMm: heightMm,
+      sourceKind: 'library-asset',
+      colorId: layers[0]!.colorId,
+    });
+    dispatch({ type: 'DELETE_LAYERS', ids });
+    dispatch({ type: 'ADD_LAYERS', layers: [newLayer] });
+  }, [state.layers, createLayerId]);
+
+  const handleOffsetLayer = useCallback((id: string, offsetMm: number) => {
+    const layer = state.layers.find((l) => l.id === id);
+    if (!layer || layer.type !== 'vector') return;
+    const { polylines, widthMm, heightMm } = offsetVectorLayerPolylines(layer, offsetMm);
+    const newLayer = createHtvVectorLayer({
+      id: createLayerId('offset'),
+      name: `${layer.name} outline`,
+      polylines,
+      naturalWidthMm: widthMm,
+      naturalHeightMm: heightMm,
+      sourceKind: 'library-asset',
+      colorId: layer.colorId,
+      x: layer.x,
+      y: layer.y,
+      rotationDeg: layer.rotationDeg,
+      scale: layer.scale,
+    });
+    dispatch({ type: 'ADD_LAYERS', layers: [newLayer] });
+  }, [state.layers, createLayerId]);
 
   const handleImportFile = useCallback(async (file: File) => {
     const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
@@ -193,6 +232,16 @@ export default function HtvShell() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault();
         dispatch({ type: 'SET_SELECTED_LAYERS', ids: state.layers.map((l) => l.id) });
+      }
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && state.selectedLayerIds.size > 0) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        const updates = state.layers
+          .filter((l) => state.selectedLayerIds.has(l.id))
+          .map((l) => ({ id: l.id, updates: { x: l.x + dx, y: l.y + dy } }));
+        dispatch({ type: 'BATCH_UPDATE_LAYERS', updates });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -302,7 +351,12 @@ export default function HtvShell() {
         <HtvCanvas state={state} dispatch={dispatch} />
 
         <div className="w-[300px] shrink-0">
-          <HtvInspectorPanel state={state} dispatch={dispatch} />
+          <HtvInspectorPanel
+            state={state}
+            dispatch={dispatch}
+            onCombineLayers={handleCombineLayers}
+            onOffsetLayer={handleOffsetLayer}
+          />
         </div>
 
         {pendingImage && (

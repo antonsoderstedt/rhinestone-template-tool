@@ -1,18 +1,46 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp, Copy, Eye, EyeOff, GripVertical, Lock, Trash2, Unlock } from 'lucide-react';
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  ArrowDown,
+  ArrowUp,
+  Boxes,
+  ChevronsDown,
+  ChevronsUp,
+  Combine,
+  Copy,
+  Eye,
+  EyeOff,
+  FlipHorizontal2,
+  FlipVertical2,
+  GripVertical,
+  Layers2,
+  Lock,
+  StretchHorizontal,
+  StretchVertical,
+  Trash2,
+  Ungroup,
+  Unlock,
+} from 'lucide-react';
 import NumericInput from '../editor/controls/NumericInput';
-import type { HtvAction, HtvLayer, HtvState } from './HtvState';
+import { expandSelectionToGroups, type HtvAction, type HtvLayer, type HtvState } from './HtvState';
 import { HTV_COLORS, getHtvColor } from './htvMaterialCatalog';
 import { HTV_TEXT_PRESETS } from './htvTextPresets';
-import { computePolylinesBounds, polylinesToPathD } from './htvGeometry';
+import { computeBoundsForLayers, computePolylinesBounds, HTV_WORKSPACE_SIZE_MM, polylinesToPathD, transformedLayerBounds } from './htvGeometry';
 import { useHtvTextGeometry } from './useHtvTextGeometry';
 import { listOutlineFonts, type Polyline } from '@/src/lib/rhinestone-engine/index';
 
 interface HtvInspectorPanelProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
+  onCombineLayers: (ids: string[]) => void;
+  onOffsetLayer: (id: string, offsetMm: number) => void;
 }
 
 const SHAPE_SIZE_PRESETS: readonly { id: string; displayName: string; targetMm: number }[] = [
@@ -21,7 +49,7 @@ const SHAPE_SIZE_PRESETS: readonly { id: string; displayName: string; targetMm: 
   { id: 'large', displayName: 'L', targetMm: 100 },
 ];
 
-export default function HtvInspectorPanel({ state, dispatch }: HtvInspectorPanelProps) {
+export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, onOffsetLayer }: HtvInspectorPanelProps) {
   const selectedLayers = state.layers.filter((l) => state.selectedLayerIds.has(l.id));
   const singleLayer = selectedLayers.length === 1 ? selectedLayers[0]! : null;
 
@@ -39,6 +67,13 @@ export default function HtvInspectorPanel({ state, dispatch }: HtvInspectorPanel
 
             {singleLayer?.type === 'text' && <TextLayerControls layer={singleLayer} dispatch={dispatch} />}
             {singleLayer?.type === 'vector' && <ShapeLayerControls layer={singleLayer} dispatch={dispatch} />}
+            {singleLayer?.type === 'vector' && singleLayer.polylines.length > 1 && (
+              <ContourControls layer={singleLayer} dispatch={dispatch} />
+            )}
+
+            <FormOpsControls selected={selectedLayers} onCombineLayers={onCombineLayers} onOffsetLayer={onOffsetLayer} />
+
+            <ArrangeControls selected={selectedLayers} dispatch={dispatch} />
 
             <div className="grid grid-cols-2 gap-2">
               <NumericInput
@@ -250,6 +285,196 @@ function ShapeLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { ty
   );
 }
 
+function ContourControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'vector' }>; dispatch: React.Dispatch<HtvAction> }) {
+  const toggle = (index: number) => {
+    const excluded = new Set(layer.excludedContours);
+    if (excluded.has(index)) excluded.delete(index);
+    else excluded.add(index);
+    dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { excludedContours: [...excluded].sort((a, b) => a - b) } });
+  };
+
+  return (
+    <div className="space-y-1.5 rounded-xl border border-border bg-surface-sunken p-3">
+      <span className="text-xs font-medium text-ink-secondary">Contour</span>
+      <p className="text-[11px] text-ink-muted">Hide sub-paths you don&apos;t want cut, e.g. stray traced lines.</p>
+      <div className="space-y-1">
+        {layer.polylines.map((pl, i) => {
+          const hidden = layer.excludedContours.includes(i);
+          return (
+            <button
+              key={i}
+              onClick={() => toggle(i)}
+              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition ${hidden ? 'border-border bg-surface-raised text-ink-muted' : 'border-accent-400 bg-accent-50 text-ink'}`}
+            >
+              {hidden ? <EyeOff className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
+              <span>Sub-path {i + 1}</span>
+              <span className="ml-auto text-[10px] text-ink-muted">{pl.points.length} pts</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FormOpsControls({
+  selected,
+  onCombineLayers,
+  onOffsetLayer,
+}: {
+  selected: HtvLayer[];
+  onCombineLayers: (ids: string[]) => void;
+  onOffsetLayer: (id: string, offsetMm: number) => void;
+}) {
+  const [offsetMm, setOffsetMm] = useState(3);
+  const allVector = selected.length > 0 && selected.every((l) => l.type === 'vector');
+  if (!allVector) return null;
+
+  const canCombine = selected.length >= 2;
+  const canOffset = selected.length === 1;
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface-sunken p-3">
+      <span className="text-xs font-medium text-ink-secondary">Form operations</span>
+      <button
+        onClick={() => onCombineLayers(selected.map((l) => l.id))}
+        disabled={!canCombine}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+        title={canCombine ? 'Merge selected shapes into one layer' : 'Select 2+ shapes to combine'}
+      >
+        <Combine className="h-3.5 w-3.5" />
+        Combine ({selected.length})
+      </button>
+
+      <div className={`flex items-end gap-2 ${canOffset ? '' : 'opacity-40'}`}>
+        <NumericInput
+          label="Offset"
+          unit="mm"
+          value={offsetMm}
+          min={-15}
+          max={15}
+          step={0.5}
+          disabled={!canOffset}
+          onChange={(v) => setOffsetMm(typeof v === 'number' ? v : offsetMm)}
+        />
+        <button
+          onClick={() => canOffset && onOffsetLayer(selected[0]!.id, offsetMm)}
+          disabled={!canOffset}
+          className="mb-0.5 inline-flex h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-3 text-xs font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          title="Add a new outline layer offset from this shape"
+        >
+          <Layers2 className="h-3.5 w-3.5" />
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatch: React.Dispatch<HtvAction> }) {
+  const half = HTV_WORKSPACE_SIZE_MM / 2;
+  const bbox = selected.length >= 2
+    ? computeBoundsForLayers(selected)
+    : { minX: -half, minY: -half, maxX: half, maxY: half, width: HTV_WORKSPACE_SIZE_MM, height: HTV_WORKSPACE_SIZE_MM };
+
+  const align = (axis: 'x' | 'y', mode: 'start' | 'center' | 'end') => {
+    if (!bbox) return;
+    const updates = selected.map((layer) => {
+      const b = transformedLayerBounds(layer);
+      if (axis === 'x') {
+        const extent = (b.maxX - b.minX) / 2;
+        const x = mode === 'start' ? bbox.minX + extent : mode === 'end' ? bbox.maxX - extent : (bbox.minX + bbox.maxX) / 2;
+        return { id: layer.id, updates: { x } };
+      }
+      const extent = (b.maxY - b.minY) / 2;
+      const y = mode === 'start' ? bbox.minY + extent : mode === 'end' ? bbox.maxY - extent : (bbox.minY + bbox.maxY) / 2;
+      return { id: layer.id, updates: { y } };
+    });
+    dispatch({ type: 'BATCH_UPDATE_LAYERS', updates });
+  };
+
+  const distribute = (axis: 'x' | 'y') => {
+    if (selected.length < 3) return;
+    const sorted = [...selected].sort((a, b) => (axis === 'x' ? a.x - b.x : a.y - b.y));
+    const first = sorted[0]!;
+    const last = sorted[sorted.length - 1]!;
+    const firstVal = axis === 'x' ? first.x : first.y;
+    const lastVal = axis === 'x' ? last.x : last.y;
+    const step = (lastVal - firstVal) / (sorted.length - 1);
+    const updates = sorted.map((layer, i) => ({
+      id: layer.id,
+      updates: axis === 'x' ? { x: firstVal + step * i } : { y: firstVal + step * i },
+    }));
+    dispatch({ type: 'BATCH_UPDATE_LAYERS', updates });
+  };
+
+  const toggleFlipX = () => dispatch({ type: 'BATCH_UPDATE_LAYERS', updates: selected.map((l) => ({ id: l.id, updates: { flipX: !l.flipX } })) });
+  const toggleFlipY = () => dispatch({ type: 'BATCH_UPDATE_LAYERS', updates: selected.map((l) => ({ id: l.id, updates: { flipY: !l.flipY } })) });
+
+  const canGroup = selected.length >= 2;
+  const canUngroup = selected.some((l) => l.groupId !== null);
+  const group = () => dispatch({ type: 'UPDATE_LAYERS', ids: selected.map((l) => l.id), updates: { groupId: crypto.randomUUID() } });
+  const ungroup = () => dispatch({ type: 'UPDATE_LAYERS', ids: selected.map((l) => l.id), updates: { groupId: null } });
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface-sunken p-3">
+      <span className="text-xs font-medium text-ink-secondary">Arrange</span>
+
+      <div className="grid grid-cols-6 gap-1">
+        <ArrangeButton title="Align left" onClick={() => align('x', 'start')}><AlignStartVertical className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Align center (horizontal)" onClick={() => align('x', 'center')}><AlignCenterVertical className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Align right" onClick={() => align('x', 'end')}><AlignEndVertical className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Align top" onClick={() => align('y', 'start')}><AlignStartHorizontal className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Align middle (vertical)" onClick={() => align('y', 'center')}><AlignCenterHorizontal className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Align bottom" onClick={() => align('y', 'end')}><AlignEndHorizontal className="h-3.5 w-3.5" /></ArrangeButton>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1">
+        <ArrangeButton title="Flip horizontal" onClick={toggleFlipX}><FlipHorizontal2 className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Flip vertical" onClick={toggleFlipY}><FlipVertical2 className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Distribute horizontally" disabled={selected.length < 3} onClick={() => distribute('x')}><StretchHorizontal className="h-3.5 w-3.5" /></ArrangeButton>
+        <ArrangeButton title="Distribute vertically" disabled={selected.length < 3} onClick={() => distribute('y')}><StretchVertical className="h-3.5 w-3.5" /></ArrangeButton>
+      </div>
+
+      {(canGroup || canUngroup) && (
+        <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <button
+            onClick={group}
+            disabled={!canGroup}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-[11px] font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Boxes className="h-3.5 w-3.5" />
+            Group
+          </button>
+          <button
+            onClick={ungroup}
+            disabled={!canUngroup}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-[11px] font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Ungroup className="h-3.5 w-3.5" />
+            Ungroup
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArrangeButton({ title, onClick, disabled, children }: { title: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={disabled}
+      className="flex items-center justify-center rounded-lg border border-border bg-surface-raised py-1.5 text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
 function LayerList({ state, dispatch }: { state: HtvState; dispatch: React.Dispatch<HtvAction> }) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   // Display top-to-bottom in front-to-back order; state.layers is stored back-to-front.
@@ -279,6 +504,7 @@ function LayerList({ state, dispatch }: { state: HtvState; dispatch: React.Dispa
         <LayerRow
           key={layer.id}
           layer={layer}
+          allLayers={state.layers}
           selected={state.selectedLayerIds.has(layer.id)}
           dispatch={dispatch}
           dragging={draggedId === layer.id}
@@ -318,6 +544,7 @@ function PolylineThumbnail({ polylines }: { polylines: Polyline[] }) {
 
 function LayerRow({
   layer,
+  allLayers,
   selected,
   dispatch,
   dragging,
@@ -327,6 +554,7 @@ function LayerRow({
   onDragEnd,
 }: {
   layer: HtvLayer;
+  allLayers: HtvLayer[];
   selected: boolean;
   dispatch: React.Dispatch<HtvAction>;
   dragging: boolean;
@@ -343,7 +571,7 @@ function LayerRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      onClick={() => dispatch({ type: 'SET_SELECTED_LAYERS', ids: [layer.id] })}
+      onClick={() => dispatch({ type: 'SET_SELECTED_LAYERS', ids: expandSelectionToGroups(allLayers, [layer.id]) })}
       className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs transition cursor-pointer ${dragging ? 'opacity-40' : ''} ${selected ? 'border-accent-400 bg-accent-50' : 'border-border bg-surface-sunken hover:bg-surface-raised'}`}
     >
       <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-ink-muted" />

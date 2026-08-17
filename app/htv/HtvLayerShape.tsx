@@ -12,7 +12,9 @@ import { getHtvColor } from './htvMaterialCatalog';
 
 export default function HtvLayerShape({ layer }: { layer: HtvLayer }) {
   if (layer.type === 'text') return <HtvTextLayerShape layer={layer} />;
-  return <path d={polylinesToPathD(layer.polylines)} fill={getHtvColor(layer.colorId).hex} fillRule="nonzero" />;
+  const excluded = new Set(layer.excludedContours);
+  const visiblePolylines = excluded.size === 0 ? layer.polylines : layer.polylines.filter((_, i) => !excluded.has(i));
+  return <path d={polylinesToPathD(visiblePolylines)} fill={getHtvColor(layer.colorId).hex} fillRule="nonzero" />;
 }
 
 function HtvTextLayerShape({ layer }: { layer: Extract<HtvLayer, { type: 'text' }> }) {

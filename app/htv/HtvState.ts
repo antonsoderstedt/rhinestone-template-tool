@@ -34,6 +34,10 @@ interface HtvLayerBase {
   locked: boolean;
   /** HTV material color id — see htvMaterialCatalog.ts. */
   colorId: string;
+  flipX: boolean;
+  flipY: boolean;
+  /** Layers sharing a groupId move/select together; null = ungrouped. */
+  groupId: string | null;
 }
 
 export interface HtvTextLayer extends HtvLayerBase {
@@ -54,6 +58,8 @@ export interface HtvVectorLayer extends HtvLayerBase {
   polylines: Polyline[];
   naturalWidthMm: number;
   naturalHeightMm: number;
+  /** Indices into `polylines` hidden from render/export — the Contour tool for multi-subpath imports (traced silhouettes, letters with holes). */
+  excludedContours: number[];
 }
 
 export type HtvLayer = HtvTextLayer | HtvVectorLayer;
@@ -137,7 +143,8 @@ export type HtvAction =
   | { type: 'SET_PROJECT_NAME'; name: string }
   | { type: 'ADD_LAYERS'; layers: HtvLayer[] }
   | { type: 'UPDATE_LAYER'; id: string; updates: Partial<HtvLayer> }
-  | { type: 'UPDATE_LAYERS'; ids: string[]; updates: Partial<Pick<HtvLayer, 'x' | 'y' | 'rotationDeg' | 'scale' | 'colorId' | 'visible' | 'locked'>> }
+  | { type: 'UPDATE_LAYERS'; ids: string[]; updates: Partial<Pick<HtvLayer, 'x' | 'y' | 'rotationDeg' | 'scale' | 'colorId' | 'visible' | 'locked' | 'flipX' | 'flipY' | 'groupId'>> }
+  | { type: 'BATCH_UPDATE_LAYERS'; updates: { id: string; updates: Partial<HtvLayer> }[] }
   | { type: 'DELETE_LAYERS'; ids: string[] }
   | { type: 'DUPLICATE_LAYERS'; ids: string[] }
   | { type: 'REORDER_LAYER'; id: string; direction: 'up' | 'down' | 'front' | 'back' }
@@ -231,6 +238,17 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
       return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
     }
 
+    case 'BATCH_UPDATE_LAYERS': {
+      if (action.updates.length === 0) return state;
+      const updatesById = new Map(action.updates.map((u) => [u.id, u.updates] as const));
+      const historyEntry = snapshot(state);
+      const layers = state.layers.map((layer) => {
+        const updates = updatesById.get(layer.id);
+        return updates ? ({ ...layer, ...updates } as HtvLayer) : layer;
+      });
+      return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
+    }
+
     case 'SET_LAYER_ORDER': {
       const byId = new Map(state.layers.map((l) => [l.id, l] as const));
       const reordered = action.orderedIds.map((id) => byId.get(id)).filter((l): l is HtvLayer => l !== undefined);
@@ -309,6 +327,9 @@ export function createHtvTextLayer(overrides: Partial<HtvTextLayer> & Pick<HtvTe
     visible: true,
     locked: false,
     colorId: DEFAULT_HTV_COLOR_ID,
+    flipX: false,
+    flipY: false,
+    groupId: null,
     text: 'TEXT',
     fontId: '',
     fontSizeMm: 40,
@@ -330,6 +351,24 @@ export function createHtvVectorLayer(overrides: Partial<HtvVectorLayer> & Pick<H
     visible: true,
     locked: false,
     colorId: DEFAULT_HTV_COLOR_ID,
+    flipX: false,
+    flipY: false,
+    groupId: null,
+    excludedContours: [],
     ...overrides,
   };
+}
+
+/** Expands a selection so that picking any grouped layer selects its whole group. */
+export function expandSelectionToGroups(layers: readonly HtvLayer[], ids: readonly string[]): string[] {
+  const idSet = new Set(ids);
+  const groupIds = new Set(
+    layers.filter((l) => idSet.has(l.id) && l.groupId).map((l) => l.groupId!),
+  );
+  if (groupIds.size === 0) return [...ids];
+  const expanded = new Set(ids);
+  for (const layer of layers) {
+    if (layer.groupId && groupIds.has(layer.groupId)) expanded.add(layer.id);
+  }
+  return [...expanded];
 }

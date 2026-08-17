@@ -19,7 +19,9 @@ interface ResolvedLayer {
 
 async function resolveLayerGeometry(layer: HtvLayer): Promise<ResolvedLayer> {
   if (layer.type === 'vector') {
-    return { layer, polylines: layer.polylines };
+    const excluded = new Set(layer.excludedContours ?? []);
+    const polylines = excluded.size === 0 ? layer.polylines : layer.polylines.filter((_, i) => !excluded.has(i));
+    return { layer, polylines };
   }
   if (!layer.fontId || !layer.text.trim()) {
     return { layer, polylines: [] };
@@ -39,7 +41,7 @@ async function resolveLayerGeometry(layer: HtvLayer): Promise<ResolvedLayer> {
 }
 
 function transformPoint(point: PolylinePoint, layer: HtvLayer): PolylinePoint {
-  const scaled = { x: point.x * layer.scale, y: point.y * layer.scale };
+  const scaled = { x: point.x * layer.scale * (layer.flipX ? -1 : 1), y: point.y * layer.scale * (layer.flipY ? -1 : 1) };
   const theta = (layer.rotationDeg * Math.PI) / 180;
   const cos = Math.cos(theta);
   const sin = Math.sin(theta);
@@ -94,7 +96,7 @@ export async function createHtvSvgExport(layers: readonly HtvLayer[], projectNam
   const pathElements = drawable
     .map(({ layer, polylines }) => {
       const color = getHtvColor(layer.colorId).hex;
-      const transform = `translate(${(layer.x - originX).toFixed(3)} ${(layer.y - originY).toFixed(3)}) rotate(${layer.rotationDeg}) scale(${layer.scale})`;
+      const transform = `translate(${(layer.x - originX).toFixed(3)} ${(layer.y - originY).toFixed(3)}) rotate(${layer.rotationDeg}) scale(${layer.scale * (layer.flipX ? -1 : 1)} ${layer.scale * (layer.flipY ? -1 : 1)})`;
       return `<g transform="${transform}"><path d="${polylinesToPathD(polylines)}" fill="${color}" fill-rule="nonzero"/></g>`;
     })
     .join('\n  ');
