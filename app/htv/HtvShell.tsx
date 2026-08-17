@@ -16,6 +16,8 @@ import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
+import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
+import { getDesignTemplate, type HtvDesignTemplateId } from './htvDesignTemplates';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { listOutlineFonts, svgStringToPolylines, type TraceableImageData } from '@/src/lib/rhinestone-engine/index';
 import {
@@ -65,6 +67,26 @@ export default function HtvShell() {
   const handleAddText = useCallback(() => {
     const layer = createHtvTextLayer({ id: createLayerId('text'), fontId: DEFAULT_TEXT_FONT_ID, text: 'TEXT' });
     dispatch({ type: 'ADD_LAYERS', layers: [layer] });
+  }, [createLayerId]);
+
+  const handleAddShape = useCallback((shapeId: HtvShapeId) => {
+    const { polylines, widthMm, heightMm } = createShapePolylines(shapeId);
+    const layer = createHtvVectorLayer({
+      id: createLayerId('shape'),
+      name: getShapeDisplayName(shapeId),
+      polylines,
+      naturalWidthMm: widthMm,
+      naturalHeightMm: heightMm,
+      sourceKind: 'library-asset',
+    });
+    dispatch({ type: 'ADD_LAYERS', layers: [layer] });
+  }, [createLayerId]);
+
+  const handleAddTemplate = useCallback((templateId: HtvDesignTemplateId) => {
+    const template = getDesignTemplate(templateId);
+    if (!template) return;
+    const layers = template.build(createLayerId, DEFAULT_TEXT_FONT_ID);
+    dispatch({ type: 'ADD_LAYERS', layers });
   }, [createLayerId]);
 
   const handleImportFile = useCallback(async (file: File) => {
@@ -267,7 +289,14 @@ export default function HtvShell() {
 
       <div className="relative flex min-h-0 flex-1">
         <div className="w-[300px] shrink-0">
-          <HtvToolsPanel state={state} dispatch={dispatch} onAddText={handleAddText} onImportFile={handleImportFile} />
+          <HtvToolsPanel
+            state={state}
+            dispatch={dispatch}
+            onAddText={handleAddText}
+            onImportFile={handleImportFile}
+            onAddShape={handleAddShape}
+            onAddTemplate={handleAddTemplate}
+          />
         </div>
 
         <HtvCanvas state={state} dispatch={dispatch} />

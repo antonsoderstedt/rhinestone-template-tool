@@ -43,6 +43,8 @@ export interface HtvTextLayer extends HtvLayerBase {
   fontSizeMm: number;
   letterSpacingMm: number;
   align: 'left' | 'center' | 'right';
+  /** Arc-bend amount, -100 (frown) to 100 (smile), 0 = straight baseline. */
+  curveAmount: number;
 }
 
 export interface HtvVectorLayer extends HtvLayerBase {
@@ -139,6 +141,8 @@ export type HtvAction =
   | { type: 'DELETE_LAYERS'; ids: string[] }
   | { type: 'DUPLICATE_LAYERS'; ids: string[] }
   | { type: 'REORDER_LAYER'; id: string; direction: 'up' | 'down' | 'front' | 'back' }
+  | { type: 'SET_LAYER_ORDER'; orderedIds: string[] }
+  | { type: 'APPLY_COLOR_PALETTE'; colorIds: string[] }
   | { type: 'SET_SELECTED_LAYERS'; ids: string[] }
   | { type: 'UPDATE_CANVAS'; updates: Partial<HtvCanvasState> }
   | { type: 'UPDATE_GARMENT'; updates: Partial<HtvGarmentState> }
@@ -227,6 +231,24 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
       return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
     }
 
+    case 'SET_LAYER_ORDER': {
+      const byId = new Map(state.layers.map((l) => [l.id, l] as const));
+      const reordered = action.orderedIds.map((id) => byId.get(id)).filter((l): l is HtvLayer => l !== undefined);
+      if (reordered.length !== state.layers.length) return state;
+      const historyEntry = snapshot(state);
+      return { ...state, layers: reordered, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
+    }
+
+    case 'APPLY_COLOR_PALETTE': {
+      if (action.colorIds.length === 0 || state.layers.length === 0) return state;
+      const historyEntry = snapshot(state);
+      const layers = state.layers.map((layer, index) => ({
+        ...layer,
+        colorId: action.colorIds[index % action.colorIds.length]!,
+      }));
+      return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
+    }
+
     case 'SET_SELECTED_LAYERS':
       return { ...state, selectedLayerIds: new Set(action.ids) };
 
@@ -292,6 +314,7 @@ export function createHtvTextLayer(overrides: Partial<HtvTextLayer> & Pick<HtvTe
     fontSizeMm: 40,
     letterSpacingMm: 2,
     align: 'left',
+    curveAmount: 0,
     ...overrides,
   };
 }

@@ -47,6 +47,34 @@ export function centerPolylines(polylines: readonly Polyline[]): { polylines: Po
   return { polylines: centered, widthMm: bounds.width, heightMm: bounds.height };
 }
 
+/**
+ * Bends a set of (already centered) polylines along a circular arc, the
+ * same technique as a text "Curve"/"Arc" warp: each point's x becomes an
+ * angle around a circle whose radius is derived from curveAmount, and its
+ * y becomes the radial offset from that circle. curveAmount runs -100
+ * (frown) to 100 (smile); 0 leaves the geometry untouched.
+ */
+export function applyArcCurve(polylines: readonly Polyline[], curveAmount: number): Polyline[] {
+  if (curveAmount === 0) return [...polylines];
+  const bounds = computePolylinesBounds(polylines);
+  const halfWidth = Math.max(bounds.width / 2, 1);
+  const strength = Math.min(Math.abs(curveAmount), 100) / 100;
+  const direction = curveAmount > 0 ? 1 : -1;
+  const radius = (halfWidth / Math.max(strength, 0.02)) * direction;
+
+  return polylines.map((polyline) => ({
+    closed: polyline.closed,
+    points: polyline.points.map((p) => {
+      const angle = p.x / radius;
+      const r = radius - p.y;
+      return {
+        x: r * Math.sin(angle),
+        y: radius - r * Math.cos(angle),
+      };
+    }),
+  }));
+}
+
 function pointToStr(p: PolylinePoint): string {
   return `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
 }

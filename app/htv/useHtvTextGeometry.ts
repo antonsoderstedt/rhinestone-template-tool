@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { layoutTextToOpenTypePolylines, loadOutlineFont, type Polyline } from '@/src/lib/rhinestone-engine/index';
-import { centerPolylines } from './htvGeometry';
+import { applyArcCurve, centerPolylines } from './htvGeometry';
 import type { HtvTextLayer } from './HtvState';
 
 /**
@@ -32,13 +32,15 @@ export function useHtvTextGeometry(layer: HtvTextLayer): Polyline[] | null {
         letterSpacingMm: layer.letterSpacingMm,
       });
       if (cancelled) return;
-      setPolylines(centerPolylines(raw).polylines);
+      const centered = centerPolylines(raw).polylines;
+      const curved = applyArcCurve(centered, layer.curveAmount);
+      setPolylines(centerPolylines(curved).polylines);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [layer.fontId, layer.text, layer.fontSizeMm, layer.align, layer.letterSpacingMm]);
+  }, [layer.fontId, layer.text, layer.fontSizeMm, layer.align, layer.letterSpacingMm, layer.curveAmount]);
 
   return polylines;
 }

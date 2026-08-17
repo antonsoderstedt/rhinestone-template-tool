@@ -1,19 +1,26 @@
 'use client';
 
 import { useRef } from 'react';
-import { Layers, Shirt, Type, Upload } from 'lucide-react';
+import { Palette, Shapes, Shirt, Sparkles, Type, Upload } from 'lucide-react';
 import type { HtvAction, HtvState } from './HtvState';
 import { GARMENTS, GARMENT_COLORS, GARMENT_SIZES, getGarmentColor, type GarmentSize, type GarmentType } from '../components/garmentPreview/garmentCatalog';
 import { HTV_PLACEMENT_ZONES, type HtvPlacementZone } from './htvPlacementZones';
+import { HTV_SHAPES, type HtvShapeId } from './htvShapeLibrary';
+import { HTV_DESIGN_TEMPLATES, type HtvDesignTemplateId } from './htvDesignTemplates';
+import { HTV_COLOR_PALETTES } from './htvColorPalettes';
+import { getHtvColor } from './htvMaterialCatalog';
+import ShapeThumbnail from './ShapeThumbnail';
 
 interface HtvToolsPanelProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
   onAddText: () => void;
   onImportFile: (file: File) => void;
+  onAddShape: (shapeId: HtvShapeId) => void;
+  onAddTemplate: (templateId: HtvDesignTemplateId) => void;
 }
 
-export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile }: HtvToolsPanelProps) {
+export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile, onAddShape, onAddTemplate }: HtvToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -54,12 +61,70 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
 
       <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-ink-muted" />
-          <h3 className="text-sm font-semibold text-ink">Asset library</h3>
+          <Shapes className="h-4 w-4 text-ink-muted" />
+          <h3 className="text-sm font-semibold text-ink">Shapes</h3>
         </div>
-        <p className="text-xs text-ink-muted">
-          No assets yet — this library ships empty. Import your own SVGs above, or add clipart here once you have a set to bring in.
-        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {HTV_SHAPES.map((shape) => (
+            <button
+              key={shape.id}
+              onClick={() => onAddShape(shape.id)}
+              title={shape.displayName}
+              aria-label={shape.displayName}
+              className="flex aspect-square items-center justify-center rounded-lg border border-border bg-surface-sunken p-2 text-ink-secondary transition hover:border-border-strong hover:bg-surface-raised hover:text-ink"
+            >
+              <ShapeThumbnail shapeId={shape.id} className="h-full w-full" />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-ink-muted" />
+          <h3 className="text-sm font-semibold text-ink">Design templates</h3>
+        </div>
+        <div className="space-y-1.5">
+          {HTV_DESIGN_TEMPLATES.map((template) => (
+            <button
+              key={template.id}
+              onClick={() => onAddTemplate(template.id)}
+              className="w-full rounded-lg border border-border bg-surface-sunken px-2.5 py-2 text-left text-xs transition hover:border-border-strong hover:bg-surface-raised"
+            >
+              <div className="font-medium text-ink">{template.displayName}</div>
+              <div className="text-[10px] text-ink-muted">{template.description}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
+        <div className="flex items-center gap-2">
+          <Palette className="h-4 w-4 text-ink-muted" />
+          <h3 className="text-sm font-semibold text-ink">Color palettes</h3>
+        </div>
+        <p className="text-[11px] text-ink-muted">Applies across your layers in stack order.</p>
+        <div className="space-y-1.5">
+          {HTV_COLOR_PALETTES.map((palette) => (
+            <button
+              key={palette.id}
+              disabled={state.layers.length === 0}
+              onClick={() => dispatch({ type: 'APPLY_COLOR_PALETTE', colorIds: palette.colorIds })}
+              className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface-sunken px-2.5 py-2 text-left text-xs transition hover:border-border-strong hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <span className="flex shrink-0 -space-x-1">
+                {palette.colorIds.map((colorId, i) => (
+                  <span
+                    key={i}
+                    className="h-3.5 w-3.5 rounded-full border border-border"
+                    style={{ backgroundColor: getHtvColor(colorId).hex }}
+                  />
+                ))}
+              </span>
+              <span className="font-medium text-ink">{palette.displayName}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="space-y-3 rounded-2xl border border-border bg-surface-raised p-4">
