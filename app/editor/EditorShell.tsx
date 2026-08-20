@@ -47,7 +47,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
-import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
+import { EDITOR_TOOLS, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -1298,15 +1298,6 @@ export default function EditorShell() {
         </div>
 
         <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[#202024] lg:order-none lg:min-h-0">
-          <div className="border-b border-white/10 bg-[#232327] px-4 py-2">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">Canvas</h2>
-                <p className="text-xs text-zinc-500">{getCanvasHint(state.activeTool)}</p>
-              </div>
-            </div>
-          </div>
-
           <EditorCanvas
             state={state}
             dispatch={editorDispatch}

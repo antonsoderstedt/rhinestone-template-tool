@@ -14,7 +14,7 @@ interface AdvancedSectionProps {
 
 export default function AdvancedSection({ title = 'Advanced', children, defaultOpen = false }: AdvancedSectionProps) {
   return (
-    <Accordion title={title} defaultOpen={defaultOpen} className="rounded-2xl border border-border/80 bg-[rgba(255,255,255,0.82)] px-4 py-1 shadow-sm" >
+    <Accordion title={title} defaultOpen={defaultOpen} className="rounded-md border border-white/10 bg-[#202024] px-3 py-1 shadow-sm" >
       {children}
     </Accordion>
   );

@@ -6,7 +6,7 @@ import { EditorAction } from './EditorState';
 
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 border-l border-white/10 px-2 py-1.5 first:border-l-0">
+    <div className="flex items-center gap-1 border-l border-white/10 px-2 py-1 first:border-l-0">
       <div className="px-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-zinc-500">{label}</div>
       <div className="h-5 w-px bg-white/10" />
       <div className="flex flex-wrap items-center gap-1">{children}</div>
@@ -46,40 +46,22 @@ export default function EditorTopbar({
   onOpenGarmentPreview,
 }: EditorTopbarProps) {
   return (
-    <header className="border-b border-white/10 bg-[#202024] text-zinc-200">
-      <div className="flex flex-col gap-2 px-3 py-1.5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-white/10 bg-[#17171a] px-3 py-1.5 shadow-sm">
-            <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
-              Live editor
-            </span>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
-              aria-label="Project name"
-              className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-zinc-100 focus:border-violet-400/60 focus:bg-[#202024] focus:outline-none"
-              placeholder="Untitled Project"
-            />
-          </div>
-          <Link
-            href="/htv"
-            className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100 md:inline-flex"
-          >
-            HTV Studio
-          </Link>
-          <button
-            onClick={onOpenSetup}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Open calibration and setup"
-          >
-            <Settings2 className="h-4 w-4" />
-            Setup
-          </button>
-        </div>
+    <header className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#202024] px-3 py-1.5 text-zinc-200">
+      <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-white/10 bg-[#17171a] px-3 py-1 shadow-sm">
+        <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
+          Live editor
+        </span>
+        <input
+          type="text"
+          value={projectName}
+          onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
+          aria-label="Project name"
+          className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-zinc-100 focus:border-violet-400/60 focus:bg-[#202024] focus:outline-none"
+          placeholder="Untitled Project"
+        />
       </div>
 
-      <div className="flex flex-wrap items-center border-t border-white/10 px-3 py-1.5">
+      <div className="flex flex-wrap items-center">
         <ToolbarSection label="Project">
           <button
             onClick={onNewProject}
@@ -156,6 +138,21 @@ export default function EditorTopbar({
             Export
           </button>
         </ToolbarSection>
+
+        <Link
+          href="/htv"
+          className="ml-2 hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100 md:inline-flex"
+        >
+          HTV Studio
+        </Link>
+        <button
+          onClick={onOpenSetup}
+          className="ml-1 inline-flex items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          title="Open calibration and setup"
+        >
+          <Settings2 className="h-4 w-4" />
+          Setup
+        </button>
       </div>
     </header>
   );
