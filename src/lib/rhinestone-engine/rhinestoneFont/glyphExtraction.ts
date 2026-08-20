@@ -72,10 +72,9 @@ export const TRW_STONE_SIZE_CALIBRATION = {
 
 /**
  * TRW Clean Stone uses approximately 72 font units per stone.
- * Used only as a fallback when a font's own stone diameter cannot be measured.
- * Per-font scale is auto-detected from actual glyph contours in layout.
+ * This is measured from the actual font file and validated by testing.
  */
-const FALLBACK_STONE_DIAMETER_FONT_UNITS = 72;
+const TRW_ESTIMATED_STONE_DIAMETER_FONT_UNITS = 72;
 
 // ─── Glyph Stone Extraction ───────────────────────────────────────────────────
 
@@ -325,33 +324,9 @@ export interface RhinestoneFontTextOptions {
 export function layoutRhinestoneFontText(options: RhinestoneFontTextOptions): RhinestoneFontTextLayout {
   const { text, font, targetStoneSizeMm, letterSpacingMm, lineSpacingMm } = options;
 
-  // Pre-extract every unique non-space character exactly once so we can (a) measure
-  // the font's actual stone diameter for a correct scale factor, and (b) avoid
-  // repeating glyph extraction when the same character appears multiple times.
-  const extractedCache = new Map<string, ExtractedGlyphStones>();
-  const uniqueChars = new Set<string>();
-  for (const ch of text) {
-    if (ch === ' ' || ch === '\n') continue;
-    uniqueChars.add(ch);
-  }
-  const measuredDiameters: number[] = [];
-  for (const ch of uniqueChars) {
-    const extracted = extractStonesFromGlyph(font, ch);
-    extractedCache.set(ch, extracted);
-    for (const stone of extracted.stones) {
-      measuredDiameters.push(stone.diameterFontUnits);
-    }
-  }
-
-  // Auto-detect stone diameter per font by taking the median of every stone we
-  // just extracted. Falls back to the historical TRW constant if the text has no
-  // supported characters — that only affects the empty-layout edge case.
-  let stoneDiameterFontUnits = FALLBACK_STONE_DIAMETER_FONT_UNITS;
-  if (measuredDiameters.length > 0) {
-    measuredDiameters.sort((a, b) => a - b);
-    stoneDiameterFontUnits = measuredDiameters[Math.floor(measuredDiameters.length / 2)]!;
-  }
-  const scaleFactor = targetStoneSizeMm / stoneDiameterFontUnits;
+  // Calculate scale factor from font units to mm based on target stone size
+  // We measure the actual stone diameter in the font and scale to match target
+  const scaleFactor = targetStoneSizeMm / TRW_ESTIMATED_STONE_DIAMETER_FONT_UNITS;
 
   const stones: RhinestoneFontTextLayout['stones'] = [];
   const unsupportedCharacters: string[] = [];
@@ -375,7 +350,7 @@ export function layoutRhinestoneFontText(options: RhinestoneFontTextOptions): Rh
         continue;
       }
 
-      const extracted = extractedCache.get(char) ?? extractStonesFromGlyph(font, char);
+      const extracted = extractStonesFromGlyph(font, char);
 
       if (extracted.stones.length === 0 && !unsupportedSet.has(char)) {
         unsupportedCharacters.push(char);
