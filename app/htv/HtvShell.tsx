@@ -349,6 +349,8 @@ export default function HtvShell() {
             onImportFile={handleImportFile}
             onAddShape={handleAddShape}
             onAddTemplate={handleAddTemplate}
+            designSurface={designSurface}
+            onToggleDesignSurface={setDesignSurface}
           />
         </div>
 

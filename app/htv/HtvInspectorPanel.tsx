@@ -69,12 +69,12 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
     <aside className="htv-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
       <PanelSection title="Inspector">
         {selectedLayers.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-surface px-3 py-4 text-xs leading-6 text-ink-muted">
+          <div className="rounded-md border border-dashed border-white/15 bg-[#17171a] px-3 py-4 text-xs leading-6 text-zinc-500">
             Select a layer to edit its position, color, and other properties.
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-xs text-ink-muted">
+            <p className="text-xs text-zinc-500">
               {selectedLayers.length === 1 ? singleLayer!.name : `${selectedLayers.length} layers selected`}
             </p>
 
@@ -165,7 +165,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
 
       <PanelSection title="Layers">
         {state.layers.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-surface px-3 py-4 text-xs leading-6 text-ink-muted">
+          <div className="rounded-md border border-dashed border-white/15 bg-[#17171a] px-3 py-4 text-xs leading-6 text-zinc-500">
             No layers yet. Add text or import artwork to get started.
           </div>
         ) : (
@@ -180,22 +180,22 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
   const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), []);
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-surface-sunken p-3">
+    <div className="space-y-3 rounded-md border border-white/10 bg-[#17171a] p-3">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Text</span>
+        <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Text</span>
         <textarea
           value={layer.text}
           onChange={(e) => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { text: e.target.value } })}
           rows={2}
-          className="rounded border border-border bg-surface-raised px-2 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className="rounded-md border border-white/10 bg-[#202024] px-2 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-400"
         />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Font</span>
+        <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Font</span>
         <select
           value={layer.fontId}
           onChange={(e) => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { fontId: e.target.value } })}
-          className="rounded border border-border bg-surface-raised px-2 py-2 text-sm text-ink"
+          className="rounded-md border border-white/10 bg-[#202024] px-2 py-2 text-sm text-zinc-100"
         >
           {outlineFonts.map((font) => (
             <option key={font.fontId} value={font.fontId}>
@@ -206,7 +206,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
       </label>
 
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Style presets</span>
+        <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Style presets</span>
         <div className="grid grid-cols-2 gap-1.5">
           {HTV_TEXT_PRESETS.map((preset) => (
             <button
@@ -221,7 +221,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
                   align: preset.align,
                 },
               })}
-              className="rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-left text-[11px] font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink"
+              className="rounded-lg border border-white/10 bg-[#202024] px-2 py-1.5 text-left text-[11px] font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100"
             >
               {preset.displayName}
             </button>
@@ -248,9 +248,9 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
       />
 
       <label className="flex flex-col gap-1.5">
-        <span className="flex items-center justify-between text-xs font-medium text-ink-secondary">
+        <span className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
           <span>Curve</span>
-          <span className="text-ink-muted">{layer.curveAmount}</span>
+          <span className="text-zinc-500">{layer.curveAmount}</span>
         </span>
         <input
           type="range"
@@ -268,7 +268,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
           <button
             key={align}
             onClick={() => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { align } })}
-            className={`rounded-lg border px-2 py-1.5 text-xs capitalize transition ${layer.align === align ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-raised text-ink-secondary'}`}
+            className={`rounded-lg border px-2 py-1.5 text-xs capitalize transition ${layer.align === align ? 'border-violet-400/70 bg-violet-500/20 text-white' : 'border-white/10 bg-[#202024] text-zinc-400 hover:bg-[#25252b] hover:text-zinc-100'}`}
           >
             {align}
           </button>
@@ -281,14 +281,14 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
 function ShapeLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'vector' }>; dispatch: React.Dispatch<HtvAction> }) {
   const baseSizeMm = Math.max(layer.naturalWidthMm, layer.naturalHeightMm, 0.001);
   return (
-    <div className="space-y-1.5 rounded-xl border border-border bg-surface-sunken p-3">
-      <span className="text-xs font-medium text-ink-secondary">Size presets</span>
+    <div className="space-y-1.5 rounded-md border border-white/10 bg-[#17171a] p-3">
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Size presets</span>
       <div className="grid grid-cols-3 gap-1.5">
         {SHAPE_SIZE_PRESETS.map((preset) => (
           <button
             key={preset.id}
             onClick={() => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { scale: preset.targetMm / baseSizeMm } })}
-            className="rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-xs font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink"
+            className="rounded-lg border border-white/10 bg-[#202024] px-2 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100"
             title={`${preset.targetMm}mm`}
           >
             {preset.displayName}
@@ -308,9 +308,9 @@ function ContourControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type:
   };
 
   return (
-    <div className="space-y-1.5 rounded-xl border border-border bg-surface-sunken p-3">
-      <span className="text-xs font-medium text-ink-secondary">Contour</span>
-      <p className="text-[11px] text-ink-muted">Hide sub-paths you don&apos;t want cut, e.g. stray traced lines.</p>
+    <div className="space-y-1.5 rounded-md border border-white/10 bg-[#17171a] p-3">
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Contour</span>
+      <p className="text-[11px] text-zinc-500">Hide sub-paths you don&apos;t want cut, e.g. stray traced lines.</p>
       <div className="space-y-1">
         {layer.polylines.map((pl, i) => {
           const hidden = layer.excludedContours.includes(i);
@@ -318,11 +318,11 @@ function ContourControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type:
             <button
               key={i}
               onClick={() => toggle(i)}
-              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition ${hidden ? 'border-border bg-surface-raised text-ink-muted' : 'border-accent-400 bg-accent-50 text-ink'}`}
+              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition ${hidden ? 'border-white/10 bg-[#202024] text-zinc-500' : 'border-violet-400/70 bg-violet-500/20 text-white'}`}
             >
               {hidden ? <EyeOff className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
               <span>Sub-path {i + 1}</span>
-              <span className="ml-auto text-[10px] text-ink-muted">{pl.points.length} pts</span>
+              <span className="ml-auto text-[10px] text-zinc-500">{pl.points.length} pts</span>
             </button>
           );
         })}
@@ -348,12 +348,12 @@ function FormOpsControls({
   const canOffset = selected.length === 1;
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface-sunken p-3">
-      <span className="text-xs font-medium text-ink-secondary">Form operations</span>
+    <div className="space-y-2 rounded-md border border-white/10 bg-[#17171a] p-3">
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Form operations</span>
       <button
         onClick={() => onCombineLayers(selected.map((l) => l.id))}
         disabled={!canCombine}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-[#202024] px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
         title={canCombine ? 'Merge selected shapes into one layer' : 'Select 2+ shapes to combine'}
       >
         <Combine className="h-3.5 w-3.5" />
@@ -374,7 +374,7 @@ function FormOpsControls({
         <button
           onClick={() => canOffset && onOffsetLayer(selected[0]!.id, offsetMm)}
           disabled={!canOffset}
-          className="mb-0.5 inline-flex h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-3 text-xs font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="mb-0.5 inline-flex h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-[#202024] px-3 text-xs font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
           title="Add a new outline layer offset from this shape"
         >
           <Layers2 className="h-3.5 w-3.5" />
@@ -431,8 +431,8 @@ function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatc
   const ungroup = () => dispatch({ type: 'UPDATE_LAYERS', ids: selected.map((l) => l.id), updates: { groupId: null } });
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface-sunken p-3">
-      <span className="text-xs font-medium text-ink-secondary">Arrange</span>
+    <div className="space-y-2 rounded-md border border-white/10 bg-[#17171a] p-3">
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Arrange</span>
 
       <div className="grid grid-cols-6 gap-1">
         <ArrangeButton title="Align left" onClick={() => align('x', 'start')}><AlignStartVertical className="h-3.5 w-3.5" /></ArrangeButton>
@@ -455,7 +455,7 @@ function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatc
           <button
             onClick={group}
             disabled={!canGroup}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-[11px] font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-[#202024] px-2 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Boxes className="h-3.5 w-3.5" />
             Group
@@ -463,7 +463,7 @@ function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatc
           <button
             onClick={ungroup}
             disabled={!canUngroup}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-[11px] font-medium text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-[#202024] px-2 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Ungroup className="h-3.5 w-3.5" />
             Ungroup
@@ -482,7 +482,7 @@ function ArrangeButton({ title, onClick, disabled, children }: { title: string; 
       aria-label={title}
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center justify-center rounded-lg border border-border bg-surface-raised py-1.5 text-ink-secondary transition hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex items-center justify-center rounded-lg border border-white/10 bg-[#202024] py-1.5 text-zinc-300 transition hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>
@@ -586,28 +586,28 @@ function LayerRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       onClick={() => dispatch({ type: 'SET_SELECTED_LAYERS', ids: expandSelectionToGroups(allLayers, [layer.id]) })}
-      className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs transition cursor-pointer ${dragging ? 'opacity-40' : ''} ${selected ? 'border-accent-400 bg-accent-50' : 'border-border bg-surface-sunken hover:bg-surface-raised'}`}
+      className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs transition cursor-pointer ${dragging ? 'opacity-40' : ''} ${selected ? 'border-violet-400/70 bg-violet-500/20' : 'border-white/10 bg-[#17171a] hover:bg-[#202024]'}`}
     >
-      <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-ink-muted" />
+      <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-zinc-500" />
       <LayerThumbnail layer={layer} />
       <span className="h-3 w-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: color.hex }} />
-      <span className="min-w-0 flex-1 truncate text-ink">{layer.type === 'text' ? layer.text || 'Text' : layer.name}</span>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { visible: !layer.visible } }); }} className="text-ink-muted hover:text-ink" title={layer.visible ? 'Hide' : 'Show'}>
+      <span className="min-w-0 flex-1 truncate text-zinc-100">{layer.type === 'text' ? layer.text || 'Text' : layer.name}</span>
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { visible: !layer.visible } }); }} className="text-zinc-500 hover:text-zinc-100" title={layer.visible ? 'Hide' : 'Show'}>
         {layer.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
       </button>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { locked: !layer.locked } }); }} className="text-ink-muted hover:text-ink" title={layer.locked ? 'Unlock' : 'Lock'}>
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { locked: !layer.locked } }); }} className="text-zinc-500 hover:text-zinc-100" title={layer.locked ? 'Unlock' : 'Lock'}>
         {layer.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
       </button>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'front' }); }} className="text-ink-muted hover:text-ink" title="Bring to front">
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'front' }); }} className="text-zinc-500 hover:text-zinc-100" title="Bring to front">
         <ChevronsUp className="h-3.5 w-3.5" />
       </button>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'up' }); }} className="text-ink-muted hover:text-ink" title="Move up">
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'up' }); }} className="text-zinc-500 hover:text-zinc-100" title="Move up">
         <ArrowUp className="h-3.5 w-3.5" />
       </button>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'down' }); }} className="text-ink-muted hover:text-ink" title="Move down">
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'down' }); }} className="text-zinc-500 hover:text-zinc-100" title="Move down">
         <ArrowDown className="h-3.5 w-3.5" />
       </button>
-      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'back' }); }} className="text-ink-muted hover:text-ink" title="Send to back">
+      <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_LAYER', id: layer.id, direction: 'back' }); }} className="text-zinc-500 hover:text-zinc-100" title="Send to back">
         <ChevronsDown className="h-3.5 w-3.5" />
       </button>
     </li>
