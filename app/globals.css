@@ -32,22 +32,22 @@
   --color-border: var(--color-sand-200);
   --color-border-strong: var(--color-sand-300);
 
-  /* ─── Brand pair: warm coral primary + violet secondary ────────────────── */
-  --color-brand-50: #fff1ea;
-  --color-brand-100: #ffdfcc;
-  --color-brand-300: #ffb385;
-  --color-brand-400: #ff9466;
-  --color-brand-500: #ff6b3d;
-  --color-brand-600: #e24e22;
-  --color-brand-700: #b93a16;
+  /* ─── Brand pair: copper primary + steel blue secondary ────────────────── */
+  --color-brand-50: #fbf1ea;
+  --color-brand-100: #f4dfcf;
+  --color-brand-300: #ddb390;
+  --color-brand-400: #c88d5f;
+  --color-brand-500: #b46835;
+  --color-brand-600: #944f22;
+  --color-brand-700: #743b16;
 
-  --color-accent-50: #f1edff;
-  --color-accent-100: #e1d8ff;
-  --color-accent-300: #b7a0ff;
-  --color-accent-400: #9b7cff;
-  --color-accent-500: #7c4dff;
-  --color-accent-600: #6633e6;
-  --color-accent-700: #5024be;
+  --color-accent-50: #ebf3fb;
+  --color-accent-100: #d7e8f8;
+  --color-accent-300: #8eb8e4;
+  --color-accent-400: #5f96d7;
+  --color-accent-500: #2f6fae;
+  --color-accent-600: #23588c;
+  --color-accent-700: #1a446d;
 
   /* ─── Semantic states ───────────────────────────────────────────────────── */
   --color-success-50: #e7f7ee;
@@ -88,7 +88,9 @@ html {
 }
 
 body {
-  background: var(--color-surface);
+  background:
+    radial-gradient(circle at top, rgba(47, 111, 174, 0.08), transparent 32%),
+    linear-gradient(180deg, #f8f5f1 0%, #f4efe8 100%);
   color: var(--color-ink);
 }
 

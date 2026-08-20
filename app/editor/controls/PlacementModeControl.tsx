@@ -6,6 +6,13 @@ import type {
   TemplateCoverageMode,
 } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
+import {
+  editorFieldLabelClassName,
+  editorSegmentActiveClassName,
+  editorSegmentBaseClassName,
+  editorSegmentIdleClassName,
+  editorSelectClassName,
+} from './controlStyles';
 
 interface PlacementModeControlProps {
   coverageMode: TemplateCoverageMode;
@@ -60,7 +67,7 @@ export default function PlacementModeControl({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <span className="text-xs font-medium text-ink-secondary">Coverage</span>
+        <span className={editorFieldLabelClassName}>Coverage</span>
         <div className="grid gap-2 sm:grid-cols-2">
           {visibleCoverage.map((option) => (
             <button
@@ -68,7 +75,7 @@ export default function PlacementModeControl({
               type="button"
               onClick={() => onCoverageModeChange(option.value)}
               aria-pressed={coverageMode === option.value}
-              className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${coverageMode === option.value ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+              className={`${editorSegmentBaseClassName} ${coverageMode === option.value ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
               title={option.help}
             >
               <div className="text-sm font-medium">{option.label}</div>
@@ -80,7 +87,7 @@ export default function PlacementModeControl({
 
       {usesFillPattern && visiblePatterns.length > 0 && (
         <div className="space-y-2">
-          <span className="text-xs font-medium text-ink-secondary">Placement pattern</span>
+          <span className={editorFieldLabelClassName}>Placement pattern</span>
           <div className="grid gap-2 sm:grid-cols-3">
             {visiblePatterns.map((option) => (
               <button
@@ -88,7 +95,7 @@ export default function PlacementModeControl({
                 type="button"
                 onClick={() => onPlacementPatternChange(option.value)}
                 aria-pressed={placementPattern === option.value}
-                className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${placementPattern === option.value ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+                className={`${editorSegmentBaseClassName} ${placementPattern === option.value ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
                 title={option.help}
               >
                 <div className="text-sm font-medium">{option.label}</div>
@@ -100,8 +107,8 @@ export default function PlacementModeControl({
       )}
 
       {usesContour && (
-        <div className="space-y-3 rounded-xl border border-border bg-surface-sunken px-3 py-3">
-          <div className="text-xs font-medium text-ink-secondary">Contour rows</div>
+        <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
+          <div className={editorFieldLabelClassName}>Contour rows</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
               label="Rows"
@@ -122,11 +129,11 @@ export default function PlacementModeControl({
             />
           </div>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-ink-secondary">Direction</span>
+            <span className={editorFieldLabelClassName}>Direction</span>
             <select
               value={contourSettings.direction}
               onChange={(event) => onContourSettingsChange({ ...contourSettings, direction: event.target.value as ContourDirection })}
-              className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+              className={editorSelectClassName}
             >
               {CONTOUR_DIRECTIONS.map((direction) => (
                 <option key={direction.value} value={direction.value}>{direction.label}</option>
@@ -137,8 +144,8 @@ export default function PlacementModeControl({
       )}
 
       {usesRadial && (
-        <div className="space-y-3 rounded-xl border border-border bg-surface-sunken px-3 py-3">
-          <div className="text-xs font-medium text-ink-secondary">Radial placement</div>
+        <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
+          <div className={editorFieldLabelClassName}>Radial placement</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
               label="Ring spacing"
@@ -154,7 +161,7 @@ export default function PlacementModeControl({
                 type="checkbox"
                 checked={radialSettings.includeCenterStone}
                 onChange={(event) => onRadialSettingsChange({ ...radialSettings, includeCenterStone: event.target.checked })}
-                className="h-4 w-4 rounded border-border bg-surface-raised"
+                className="h-4 w-4 rounded border-border bg-surface"
               />
               Include center stone
             </label>

@@ -15,6 +15,8 @@ interface NumericInputProps {
   disabled?: boolean;
 }
 
+import { editorFieldLabelClassName, editorInputClassName } from './controlStyles';
+
 export default function NumericInput({
   label,
   value,
@@ -41,7 +43,7 @@ export default function NumericInput({
 
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-ink-secondary">{label}</span>
+      <span className={editorFieldLabelClassName}>{label}</span>
       <div className="relative">
         <input
           type="number"
@@ -52,15 +54,15 @@ export default function NumericInput({
           step={step}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full rounded border border-border bg-surface-sunken px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-ink-muted"
+          className={`${editorInputClassName} ${unit ? 'pr-12' : ''}`}
         />
         {unit && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted pointer-events-none">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
             {unit}
           </span>
         )}
       </div>
-      {helpText && <span className="text-xs text-ink-muted">{helpText}</span>}
+      {helpText && <span className="text-xs leading-6 text-ink-muted">{helpText}</span>}
     </label>
   );
 }

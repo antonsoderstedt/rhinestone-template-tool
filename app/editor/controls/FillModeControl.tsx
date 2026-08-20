@@ -3,6 +3,7 @@
  */
 
 import type { TemplateFillMode, FillPattern } from '@/src/lib/rhinestone-engine/index';
+import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
 interface FillModeControlProps {
   fillMode: TemplateFillMode;
@@ -39,11 +40,11 @@ export default function FillModeControl({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Fill Mode</span>
+        <span className={editorFieldLabelClassName}>Fill Mode</span>
         <select
           value={fillMode}
           onChange={(e) => onFillModeChange(e.target.value as TemplateFillMode)}
-          className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className={editorSelectClassName}
         >
           {visibleModes.map((mode) => (
             <option key={mode.value} value={mode.value}>
@@ -55,11 +56,11 @@ export default function FillModeControl({
 
       {showPatternControl && (
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-secondary">Fill Pattern</span>
+          <span className={editorFieldLabelClassName}>Fill Pattern</span>
           <select
             value={fillPattern}
             onChange={(e) => onFillPatternChange(e.target.value as FillPattern)}
-            className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+            className={editorSelectClassName}
           >
             {visiblePatterns.map((pattern) => (
               <option key={pattern.value} value={pattern.value}>

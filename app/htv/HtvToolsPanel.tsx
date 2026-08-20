@@ -20,11 +20,26 @@ interface HtvToolsPanelProps {
   onAddTemplate: (templateId: HtvDesignTemplateId) => void;
 }
 
+function PanelSection({ title, icon, children, defaultOpen = true }: { title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
+  return (
+    <details open={defaultOpen} className="group rounded-[1.1rem] border border-border/80 bg-[rgba(255,255,255,0.88)] shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 marker:hidden [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          {icon}
+          {title}
+        </span>
+        <span className="text-xs font-semibold text-ink-muted transition group-open:rotate-180">⌄</span>
+      </summary>
+      <div className="space-y-3 border-t border-border/60 px-3 py-3">{children}</div>
+    </details>
+  );
+}
+
 export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile, onAddShape, onAddTemplate }: HtvToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <aside className="flex h-full w-full flex-col gap-4 overflow-y-auto border-r border-border bg-surface-raised/90 p-4">
+    <aside className="flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-border/80 bg-[rgba(244,239,232,0.76)] p-3 backdrop-blur-xl">
       <input
         ref={fileInputRef}
         type="file"
@@ -37,8 +52,7 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
         }}
       />
 
-      <section className="space-y-3 rounded-2xl border border-border bg-surface-raised p-4">
-        <h3 className="text-sm font-semibold text-ink">Add to design</h3>
+      <PanelSection title="Add to design">
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onAddText}
@@ -57,13 +71,9 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             <span className="text-[11px] text-ink-muted">SVG, PNG, or JPEG</span>
           </button>
         </div>
-      </section>
+      </PanelSection>
 
-      <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
-        <div className="flex items-center gap-2">
-          <Shapes className="h-4 w-4 text-ink-muted" />
-          <h3 className="text-sm font-semibold text-ink">Shapes</h3>
-        </div>
+      <PanelSection title="Shapes" icon={<Shapes className="h-4 w-4 text-ink-muted" />}>
         <div className="grid grid-cols-4 gap-2">
           {HTV_SHAPES.map((shape) => (
             <button
@@ -77,13 +87,9 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             </button>
           ))}
         </div>
-      </section>
+      </PanelSection>
 
-      <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-ink-muted" />
-          <h3 className="text-sm font-semibold text-ink">Design templates</h3>
-        </div>
+      <PanelSection title="Design templates" icon={<Sparkles className="h-4 w-4 text-ink-muted" />} defaultOpen={false}>
         <div className="space-y-1.5">
           {HTV_DESIGN_TEMPLATES.map((template) => (
             <button
@@ -96,13 +102,9 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             </button>
           ))}
         </div>
-      </section>
+      </PanelSection>
 
-      <section className="space-y-2 rounded-2xl border border-border bg-surface-raised p-4">
-        <div className="flex items-center gap-2">
-          <Palette className="h-4 w-4 text-ink-muted" />
-          <h3 className="text-sm font-semibold text-ink">Color palettes</h3>
-        </div>
+      <PanelSection title="Color palettes" icon={<Palette className="h-4 w-4 text-ink-muted" />} defaultOpen={false}>
         <p className="text-[11px] text-ink-muted">Applies across your layers in stack order.</p>
         <div className="space-y-1.5">
           {HTV_COLOR_PALETTES.map((palette) => (
@@ -125,13 +127,9 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             </button>
           ))}
         </div>
-      </section>
+      </PanelSection>
 
-      <section className="space-y-3 rounded-2xl border border-border bg-surface-raised p-4">
-        <div className="flex items-center gap-2">
-          <Shirt className="h-4 w-4 text-ink-muted" />
-          <h3 className="text-sm font-semibold text-ink">Garment &amp; placement</h3>
-        </div>
+      <PanelSection title="Garment & placement" icon={<Shirt className="h-4 w-4 text-ink-muted" />} defaultOpen={false}>
 
         <div className="grid grid-cols-2 gap-2">
           {GARMENTS.map((garment) => (
@@ -192,7 +190,7 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             ))}
           </div>
         </div>
-      </section>
+      </PanelSection>
     </aside>
   );
 }

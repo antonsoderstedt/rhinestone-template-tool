@@ -3,6 +3,7 @@
  */
 
 import NumericInput from './NumericInput';
+import { editorFieldLabelClassName } from './controlStyles';
 
 interface PhysicalDimensionsControlProps {
   widthMm: number | '';
@@ -24,15 +25,15 @@ export default function PhysicalDimensionsControl({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-ink-secondary">Target Dimensions</span>
+        <span className={editorFieldLabelClassName}>Target Dimensions</span>
         <label className="flex items-center gap-1.5 ml-auto">
           <input
             type="checkbox"
             checked={preserveAspectRatio}
             onChange={(e) => onPreserveAspectRatioChange(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border bg-surface-sunken text-accent-600 focus:ring-1 focus:ring-accent-400"
+            className="h-4 w-4 rounded border-border bg-surface text-accent-600 focus:ring-2 focus:ring-accent-100"
           />
-          <span className="text-xs text-ink-secondary">Lock ratio</span>
+          <span className="text-xs font-medium text-ink-secondary">Lock ratio</span>
         </label>
       </div>
 

@@ -336,8 +336,8 @@ export default function HtvShell() {
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
       />
 
-      <div className="relative flex min-h-0 flex-1">
-        <div className="w-[300px] shrink-0">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface lg:flex-row lg:overflow-hidden">
+        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden lg:order-none lg:h-full lg:max-h-none lg:w-[272px]">
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
@@ -348,9 +348,11 @@ export default function HtvShell() {
           />
         </div>
 
-        <HtvCanvas state={state} dispatch={dispatch} />
+        <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
+          <HtvCanvas state={state} dispatch={dispatch} />
+        </div>
 
-        <div className="w-[300px] shrink-0">
+        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden lg:order-none lg:h-full lg:max-h-none lg:w-[288px]">
           <HtvInspectorPanel
             state={state}
             dispatch={dispatch}

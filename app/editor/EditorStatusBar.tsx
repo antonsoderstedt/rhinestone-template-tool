@@ -36,29 +36,17 @@ export default function EditorStatusBar({
     : '0×0 mm';
 
   return (
-    <footer className="flex items-center justify-between gap-6 border-t border-border bg-surface-sunken px-5 py-3 text-xs">
-      {/* Left: Design stats */}
-      <div className="flex items-center gap-4 text-ink-secondary">
-        <span>
-          <span className="font-medium text-ink-secondary">{stoneCount}</span> stone{stoneCount !== 1 && 's'}
-        </span>
-        <span className="text-ink-muted">|</span>
-        <span>
-          Size: <span className="font-mono text-ink-secondary">{physicalSize}</span>
-        </span>
-        <span className="text-ink-muted">|</span>
-        <span className={`flex items-center gap-2 rounded-full border px-3 py-1 ${isEditable ? 'border-info-500/30 bg-info-500/15 text-info-700' : 'border-accent-300 bg-accent-50 text-accent-700'}`} title={statusCopy.actionHint}>
+    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#17171a] px-4 py-1.5 text-[11px] text-zinc-400">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="font-medium">{stoneCount} stone{stoneCount !== 1 && 's'}</span>
+        <span className="font-mono">{physicalSize}</span>
+        <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${isEditable ? 'border-info-500/30 bg-info-500/15 text-info-700' : 'border-accent-300 bg-accent-50 text-accent-700'}`} title={statusCopy.actionHint}>
           {isEditable ? <PenSquare className="h-3.5 w-3.5" /> : <WandSparkles className="h-3.5 w-3.5" />}
           <span className="font-medium">{statusCopy.label}</span>
         </span>
       </div>
 
-      {/* Center: Export readiness */}
-      <div className="flex min-w-[280px] items-center justify-center gap-3 text-ink-secondary">
-        <div className="hidden text-center lg:block">
-          <p className="font-medium text-ink">{statusCopy.description}</p>
-          <p className="text-[11px] text-ink-muted">{statusCopy.actionHint}</p>
-        </div>
+      <div className="flex items-center gap-3">
         {exportReady ? (
           <div className="flex items-center gap-1.5 text-success-600">
             <CheckCircle2 className="h-4 w-4" />
@@ -74,31 +62,18 @@ export default function EditorStatusBar({
         )}
       </div>
 
-      {/* Right: Canvas info */}
-      <div className="flex items-center gap-4 text-ink-secondary">
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-border bg-surface-raised text-ink-secondary'}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-white/10 bg-white/5 text-zinc-400'}`}>
           <Clock3 className="h-3.5 w-3.5" />
           <span>{autosaveLabel}</span>
         </span>
-        <span className="text-ink-muted">|</span>
-        <span>
-          Library: <span className="font-medium text-ink-secondary">{activeLibraryName ?? 'Local draft'}</span>
-        </span>
-        <span className="text-ink-muted">|</span>
-        <span>
-          Zoom: <span className="font-mono text-ink-secondary">{Math.round(canvas.zoom * 100)}%</span>
-        </span>
+        <span>Library: <span className="font-medium text-zinc-300">{activeLibraryName ?? 'Local draft'}</span></span>
+        <span>Zoom: <span className="font-mono text-zinc-300">{Math.round(canvas.zoom * 100)}%</span></span>
         {canvas.showGrid && (
-          <>
-            <span className="text-ink-muted">|</span>
-            <span className="text-ink-muted">Grid: {canvas.gridSizeMm}mm</span>
-          </>
+          <span className="text-ink-muted">Grid: {canvas.gridSizeMm}mm</span>
         )}
         {canvas.showRulers && (
-          <>
-            <span className="text-ink-muted">|</span>
-            <span className="text-ink-muted">Rulers on</span>
-          </>
+          <span className="text-ink-muted">Rulers on</span>
         )}
       </div>
     </footer>

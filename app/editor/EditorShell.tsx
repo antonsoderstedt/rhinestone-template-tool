@@ -47,7 +47,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
-import { getCanvasHint, getSourcePanelTool } from './editorUi';
+import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -1210,7 +1210,7 @@ export default function EditorShell() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-surface">
+    <div className="h-full min-h-0 flex flex-col bg-[#1f1f22] text-zinc-100">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}
@@ -1290,16 +1290,20 @@ export default function EditorShell() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 bg-surface">
-        <div className="h-full min-h-0 w-[clamp(260px,22vw,320px)] shrink-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#1f1f22] lg:flex-row lg:overflow-hidden">
+        <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
+
+        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
         </div>
 
-        <main className="flex min-w-0 flex-1 flex-col bg-surface">
-          <div className="border-b border-border px-4 py-3">
-            <div>
-              <h2 className="text-sm font-semibold text-ink">Canvas workspace</h2>
-              <p className="text-xs text-ink-muted">{getCanvasHint(state.activeTool)}</p>
+        <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[#202024] lg:order-none lg:min-h-0">
+          <div className="border-b border-white/10 bg-[#232327] px-4 py-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">Canvas</h2>
+                <p className="text-xs text-zinc-500">{getCanvasHint(state.activeTool)}</p>
+              </div>
             </div>
           </div>
 
@@ -1310,7 +1314,7 @@ export default function EditorShell() {
           />
         </main>
 
-        <div className="h-full min-h-0 w-[clamp(260px,23vw,336px)] shrink-0 overflow-hidden">
+        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
         </div>
       </div>
@@ -1324,5 +1328,28 @@ export default function EditorShell() {
         activeLibraryName={activeLibraryEntry?.name ?? null}
       />
     </div>
+  );
+}
+
+function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_EDITOR_STATE.activeTool; dispatch: React.Dispatch<EditorAction> }) {
+  return (
+    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-white/10 bg-[#151518] px-2 py-2 lg:order-none lg:h-full lg:w-[52px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
+      {EDITOR_TOOLS.map((tool) => {
+        const Icon = tool.icon;
+        const active = activeTool === tool.id;
+        return (
+          <button
+            key={tool.id}
+            onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
+            title={tool.description}
+            aria-label={tool.label}
+            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-[10px] transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-zinc-400 hover:bg-white/10 hover:text-zinc-100'}`}
+          >
+            <Icon className="h-4 w-4" />
+            <span className="mt-1 truncate">{tool.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }

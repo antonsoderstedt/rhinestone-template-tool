@@ -9,6 +9,14 @@ import {
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
+import {
+  WorkspaceHero,
+  WorkspaceMetricCard,
+  WorkspacePage,
+  WorkspaceSurface,
+  workspaceInputClassName,
+  workspaceTextAreaClassName,
+} from '../components/workspace/WorkspaceChrome';
 
 function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   const nextVault = { ...vault, settings: nextSettings };
@@ -28,21 +36,27 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(124,77,255,0.12),transparent_26%),linear-gradient(180deg,#faf8f5_0%,#f6f1e8_100%)] px-4 py-8 md:px-6">
+    <WorkspacePage tone="accent">
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
-        <section className="rounded-[2.5rem] border border-border bg-surface-raised/90 p-8 shadow-xl shadow-sand-900/5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent-500/15 bg-accent-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent-700">
-            <Settings2 className="h-3.5 w-3.5" />
-            Settings
-          </div>
-          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-ink">Operational defaults for the whole workspace</h1>
-          <p className="mt-4 max-w-4xl text-base leading-8 text-ink-secondary md:text-lg">
-            Keep your machine, material, stone, and output preferences together so the rest of the product can become faster, safer, and more predictable over time.
-          </p>
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-success-50 px-4 py-2 text-sm font-medium text-success-600">
-            <CheckCircle2 className="h-4 w-4" />
-            {savedAt ? `Saved locally at ${savedAt}` : 'Changes save to this browser immediately'}
-          </div>
+        <WorkspaceHero
+          eyebrow={<><Settings2 className="h-3.5 w-3.5" /> Settings</>}
+          title="Operational defaults for the whole workspace"
+          description="Keep machine, material, stone, and output preferences together so the rest of the product can become faster, safer, and more predictable over time."
+          tone="accent"
+          aside={(
+            <WorkspaceSurface className="p-5">
+              <div className="inline-flex items-center gap-2 rounded-full bg-success-50 px-4 py-2 text-sm font-medium text-success-600">
+                <CheckCircle2 className="h-4 w-4" />
+                {savedAt ? `Saved locally at ${savedAt}` : 'Changes save to this browser immediately'}
+              </div>
+            </WorkspaceSurface>
+          )}
+        />
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <WorkspaceMetricCard label="Machine" value={settings.machineModel || 'Unset'} />
+          <WorkspaceMetricCard label="Default stone" value={settings.defaultStoneSize || 'Unset'} />
+          <WorkspaceMetricCard label="Spacing" value={`${settings.defaultRhinestoneSpacingMm} mm`} />
         </section>
 
         <section className="grid gap-5 xl:grid-cols-2">
@@ -78,16 +92,16 @@ export default function SettingsPage() {
           </FormCard>
         </section>
       </div>
-    </div>
+    </WorkspacePage>
   );
 }
 
 function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
+    <WorkspaceSurface className="p-6">
       <h2 className="text-2xl font-semibold text-ink">{title}</h2>
       <div className="mt-5 space-y-4">{children}</div>
-    </section>
+    </WorkspaceSurface>
   );
 }
 
@@ -110,13 +124,13 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+          className={workspaceTextAreaClassName}
         />
       ) : (
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+          className={workspaceInputClassName}
         />
       )}
     </label>

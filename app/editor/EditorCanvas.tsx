@@ -59,7 +59,7 @@ function buildRulerTickValues(start: number, end: number, stepMm: number): numbe
 function getStoneCanvasColor(stone: EditableStone): string {
   if (typeof stone.metadata?.fill === 'string') return stone.metadata.fill;
   if (typeof stone.metadata?.stroke === 'string') return stone.metadata.stroke;
-  return '#7c4dff';
+  return '#8b5cf6';
 }
 
 export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvasProps) {
@@ -1093,9 +1093,18 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
     };
   }, [spacePressed]);
 
+  const hasCanvasContent = stones.length > 0 || cutShapes.length > 0;
+
   return (
-    <div ref={containerRef} className="relative flex-1 overflow-hidden bg-sand-100">
-      <div className="absolute right-4 top-4 z-10 flex flex-col gap-1 rounded-2xl border border-border bg-surface-raised/95 p-1.5 shadow-md backdrop-blur-sm">
+    <div ref={containerRef} className="relative flex-1 overflow-hidden bg-[#202024]">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">Canvas</div>
+        <div className="mt-1 text-xs text-zinc-400">
+          {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
+        </div>
+      </div>
+
+      <div className="absolute right-4 top-4 z-10 flex gap-1 rounded-md border border-white/10 bg-[#17171a]/90 p-1 shadow-md backdrop-blur-sm lg:flex-col lg:p-1.5">
         <IconButton onClick={handleZoomIn} title="Zoom in" aria-label="Zoom in">
           <Plus className="h-4 w-4" />
         </IconButton>
@@ -1108,7 +1117,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         <IconButton onClick={handleFitToScreen} title="Fit the design to the current canvas view" aria-label="Fit to screen">
           <Expand className="h-4 w-4" />
         </IconButton>
-        <div className="my-1 h-px bg-border" />
+        <div className="mx-1 w-px bg-border lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
         <IconButton
           onClick={toggleGrid}
           intent={state.canvas.showGrid ? 'active' : 'default'}
@@ -1120,9 +1129,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       </div>
 
       {/* SVG Canvas */}
-      <div className="h-full w-full p-6">
+      <div className="h-full w-full p-4 lg:p-8">
         <div
-          className="grid h-full w-full overflow-hidden rounded-2xl border border-border bg-surface-raised shadow-sm"
+          className="grid h-full w-full overflow-hidden rounded-lg border border-white/20 bg-[#050506] shadow-2xl shadow-black/30"
           style={{
             gridTemplateColumns: state.canvas.showRulers ? `${RULER_BAND_PX}px 1fr` : '1fr',
             gridTemplateRows: state.canvas.showRulers ? `${RULER_BAND_PX}px 1fr` : '1fr',
@@ -1130,9 +1139,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         >
           {state.canvas.showRulers && (
             <>
-              <div className="border-b border-r border-border bg-sand-100" style={{ gridColumn: 1, gridRow: 1 }} />
+              <div className="border-b border-r border-white/10 bg-[#101013]" style={{ gridColumn: 1, gridRow: 1 }} />
               <div
-                className="relative overflow-hidden border-b border-border bg-sand-50"
+                className="relative overflow-hidden border-b border-white/10 bg-[#101013]"
                 style={{ gridColumn: 2, gridRow: 1 }}
               >
                 {buildRulerTickValues(viewBox.x, viewBox.x + viewBox.width, rulerTickStepMm).map((tick) => (
@@ -1141,9 +1150,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                     className="pointer-events-none absolute inset-y-0"
                     style={{ left: mmToRulerPercent(tick, viewBox.x, viewBox.width) }}
                   >
-                    <div className={`w-px bg-sand-400 ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
+                    <div className={`w-px bg-zinc-700 ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted">
+                      <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-zinc-500">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -1151,7 +1160,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 ))}
               </div>
               <div
-                className="relative overflow-hidden border-r border-border bg-sand-50"
+                className="relative overflow-hidden border-r border-white/10 bg-[#101013]"
                 style={{ gridColumn: 1, gridRow: 2 }}
               >
                 {buildRulerTickValues(viewBox.y, viewBox.y + viewBox.height, rulerTickStepMm).map((tick) => (
@@ -1160,9 +1169,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                     className="pointer-events-none absolute inset-x-0"
                     style={{ top: mmToRulerPercent(tick, viewBox.y, viewBox.height) }}
                   >
-                    <div className={`h-px bg-sand-400 ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
+                    <div className={`h-px bg-zinc-700 ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-ink-muted">
+                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-zinc-500">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -1179,7 +1188,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             <svg
               ref={svgRef}
               viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-              className="h-full w-full bg-white"
+              className="h-full w-full bg-[#050506]"
               style={{
                 width: '100%',
                 height: '100%',
@@ -1207,8 +1216,8 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 <path
                   d={`M ${state.canvas.gridSizeMm} 0 L 0 0 0 ${state.canvas.gridSizeMm}`}
                   fill="none"
-                  stroke="#e8dfd3"
-                  strokeWidth="0.45"
+                  stroke="#2f2f36"
+                  strokeWidth="0.35"
                 />
               </pattern>
               <pattern
@@ -1220,8 +1229,8 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 <path
                   d={`M ${state.canvas.gridSizeMm * 5} 0 L 0 0 0 ${state.canvas.gridSizeMm * 5}`}
                   fill="none"
-                  stroke="#d8cbb8"
-                  strokeWidth="0.9"
+                  stroke="#45454e"
+                  strokeWidth="0.65"
                 />
               </pattern>
             </defs>
@@ -1509,19 +1518,19 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                 x={viewBox.x + viewBox.width / 2}
                 y={viewBox.y + viewBox.height / 2 - 20}
                 textAnchor="middle"
-                className="fill-ink-secondary"
+                fill="#a1a1aa"
                 style={{ fontSize: '14px', fontWeight: 600 }}
               >
-                Ready when you are
+                Ready canvas
               </text>
               <text
                 x={viewBox.x + viewBox.width / 2}
                 y={viewBox.y + viewBox.height / 2}
                 textAnchor="middle"
-                className="fill-ink-muted"
+                fill="#71717a"
                 style={{ fontSize: '11px' }}
               >
-                Choose a tool on the left to start designing
+                Text, artwork, grid, or pen tools are available in Source controls
               </text>
             </g>
           )}
@@ -1531,13 +1540,13 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       </div>
 
       {/* Zoom Indicator */}
-      <div className="absolute bottom-4 right-4 rounded-lg border border-border bg-surface-raised/95 px-2.5 py-1 text-xs font-medium tabular-nums text-ink-secondary shadow-sm backdrop-blur-sm">
+      <div className="absolute bottom-3 right-3 rounded-md border border-white/10 bg-[#17171a]/90 px-2.5 py-1 text-xs font-medium tabular-nums text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4">
         {Math.round(state.canvas.zoom * 100)}%
       </div>
 
       {/* Manual Tool Status */}
       {state.activeTool === 'manual' && (
-        <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-surface-raised/95 px-3 py-2 text-xs text-ink-secondary shadow-sm backdrop-blur-sm">
+        <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 text-xs text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           <div>Click to place {state.manualTool.addStoneSize} stone</div>
           {state.manualTool.snapToGrid && (
             <div className="mt-1 text-ink-muted">Snap: {state.manualTool.gridSnapSize}mm grid</div>
@@ -1555,7 +1564,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
       {/* Select Tool Status */}
       {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
-        <div className="absolute bottom-4 left-4 rounded-lg border border-border bg-surface-raised/95 px-3 py-2 text-xs text-ink-secondary shadow-sm backdrop-blur-sm">
+        <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 text-xs text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
           <div className="mt-1 text-ink-muted">Delete or drag to move</div>
         </div>

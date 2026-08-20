@@ -7,6 +7,7 @@ import {
   getOutlineFontDefinition,
   listOutlineFonts,
 } from '@/src/lib/rhinestone-engine/index';
+import { editorFieldLabelClassName, editorInputClassName } from './controlStyles';
 
 export interface OutlineFontStatus {
   status: 'idle' | 'loading' | 'error';
@@ -95,7 +96,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
     <div className="space-y-2">
       <style dangerouslySetInnerHTML={{ __html: getOutlineFontFaceCss() }} />
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-ink-secondary">Font</span>
+        <span className={editorFieldLabelClassName}>Font</span>
         <div className="flex items-center gap-2 text-[11px] text-ink-muted">
           <span>{selectedFont.category}</span>
           <span className="rounded-full border border-border px-2 py-0.5 uppercase tracking-wide">
@@ -112,7 +113,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
           aria-label="Choose outline font"
           onClick={() => (open ? setOpen(false) : openPicker())}
           onKeyDown={handleButtonKeyDown}
-          className="flex w-full items-center justify-between rounded-xl border border-border bg-surface-sunken px-3 py-3 text-left text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400"
+          className={`${editorInputClassName} flex items-center justify-between text-left`}
         >
           <div className="min-w-0">
             <p className="font-medium">{selectedFont.displayName}</p>
@@ -129,7 +130,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
             aria-label="Outline font options"
             tabIndex={-1}
             onKeyDown={handleListKeyDown}
-            className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-80 overflow-y-auto rounded-2xl border border-border bg-surface-sunken p-2 shadow-2xl"
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-80 overflow-y-auto rounded-2xl border border-border/80 bg-[rgba(250,248,245,0.98)] p-2 shadow-2xl backdrop-blur-xl"
           >
             {fonts.map((font, index) => {
               const selected = font.fontId === value;
@@ -140,7 +141,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
                     role="option"
                     aria-selected={selected}
                     onClick={() => handleSelect(font.fontId)}
-                    className={`flex w-full items-start justify-between rounded-xl px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${selected ? 'bg-accent-50 text-ink' : 'text-ink-secondary hover:bg-surface-raised'}`}
+                    className={`flex w-full items-start justify-between rounded-xl px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${selected ? 'bg-accent-50 text-ink shadow-sm' : 'text-ink-secondary hover:bg-surface-raised'}`}
                   >
                     <div className="min-w-0 pr-3">
                       <div className="flex items-center gap-2">

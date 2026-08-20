@@ -14,6 +14,17 @@ import {
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
+import {
+  WorkspaceEmptyState,
+  WorkspaceHero,
+  WorkspaceMetricCard,
+  WorkspacePage,
+  WorkspaceSurface,
+  WorkspaceTag,
+  workspaceInputClassName,
+  workspaceSelectClassName,
+  workspaceTextAreaClassName,
+} from '../components/workspace/WorkspaceChrome';
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -336,23 +347,17 @@ export default function FontsPage() {
   };
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(124,77,255,0.16),transparent_24%),linear-gradient(180deg,#faf8f5_0%,#f7f1ea_100%)] px-4 py-8 md:px-6">
+    <WorkspacePage tone="accent">
       <style>{`${getOutlineFontFaceCss()}\n${uploadedFontFaceCss}`}</style>
 
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
-        <section className="rounded-[2.5rem] border border-border bg-surface-raised/90 p-8 shadow-xl shadow-sand-900/5">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent-500/15 bg-accent-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent-700">
-                Fonts
-              </div>
-              <h1 className="mt-4 text-5xl font-semibold tracking-tight text-ink">Preview fonts the way customers actually buy</h1>
-              <p className="mt-4 text-base leading-8 text-ink-secondary md:text-lg">
-                Compare every font on the exact same phrase, search fast, upload custom families in bulk, and jump straight into a studio with the right built-in or installed font selected.
-              </p>
-            </div>
-
-            <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,var(--color-accent-500),var(--color-brand-500))] px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-accent-500/20 transition hover:brightness-105">
+        <WorkspaceHero
+          eyebrow="Fonts"
+          title="Preview fonts the way customers actually buy"
+          description="Compare every face on the same phrase, keep imported families organized, and launch directly into the right studio with the right font context already selected."
+          tone="accent"
+          actions={(
+            <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
               <Upload className="h-4 w-4" />
               Bulk upload fonts
               <input
@@ -369,19 +374,27 @@ export default function FontsPage() {
                 }}
               />
             </label>
-          </div>
-        </section>
+          )}
+          aside={(
+            <WorkspaceSurface className="p-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Catalog rule</div>
+              <p className="mt-3 text-sm leading-7 text-ink-secondary">
+                The page is optimized for fast comparison and launch, not for treating fonts like loose files with no business context.
+              </p>
+            </WorkspaceSurface>
+          )}
+        />
 
         {syncMessage && (
-          <section className="rounded-[1.5rem] border border-success-500/20 bg-success-50 px-5 py-4 text-sm text-success-600 shadow-sm">
+          <WorkspaceSurface className="border-success-500/20 bg-success-50 px-5 py-4 text-sm text-success-600">
             {syncMessage}
             <div className="mt-2 text-xs text-success-600/90">
               For large zip libraries, run `npm run import:font-zips -- /Users/sulaysoderstedt/Desktop/FONTS` and then open this page once to sync them into the tool.
             </div>
-          </section>
+          </WorkspaceSurface>
         )}
 
-        <section className="rounded-[2rem] border border-border bg-surface-raised/90 p-5 shadow-lg shadow-sand-900/5">
+        <WorkspaceSurface className="p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Imported Zip Library</div>
@@ -401,10 +414,10 @@ export default function FontsPage() {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-4">
-            <MetricCard label="Installed files" value={String(vault.uploadedFonts.filter((font) => font.sourceKind === 'workspace-installed').length)} />
-            <MetricCard label="Installed families" value={String(installedFamilyItems.length)} />
-            <MetricCard label="Zip archives" value={String(installedManifestMeta?.zipArchiveCount ?? '—')} />
-            <MetricCard label="Skipped by parser" value={String(installedManifestMeta?.skippedCount ?? '—')} />
+            <WorkspaceMetricCard label="Installed files" value={String(vault.uploadedFonts.filter((font) => font.sourceKind === 'workspace-installed').length)} />
+            <WorkspaceMetricCard label="Installed families" value={String(installedFamilyItems.length)} />
+            <WorkspaceMetricCard label="Zip archives" value={String(installedManifestMeta?.zipArchiveCount ?? '—')} />
+            <WorkspaceMetricCard label="Skipped by parser" value={String(installedManifestMeta?.skippedCount ?? '—')} />
           </div>
 
           <div className="mt-4 text-xs text-ink-muted">
@@ -412,54 +425,54 @@ export default function FontsPage() {
               ? `Last import: ${new Date(installedManifestMeta.generatedAt).toLocaleString()} · Source: ${installedManifestMeta.sourceDirectory}`
               : 'No manifest metadata loaded yet.'}
           </div>
-        </section>
+        </WorkspaceSurface>
 
-        <section className="rounded-[2rem] border border-border bg-surface-raised/90 p-5 shadow-lg shadow-sand-900/5">
+        <WorkspaceSurface className="p-5">
           <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr_1fr_1fr]">
-            <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+            <label className="flex items-center gap-3">
               <Type className="h-4 w-4 text-ink-muted" />
               <input
                 value={previewText}
                 onChange={(event) => setPreviewText(event.target.value)}
                 placeholder="Type your preview text"
-                className="w-full bg-transparent text-sm text-ink outline-none"
+                className={workspaceInputClassName}
               />
             </label>
-            <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+            <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search fonts"
-                className="w-full bg-transparent text-sm text-ink outline-none"
+                className={workspaceInputClassName}
               />
             </label>
-            <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)} className={workspaceSelectClassName}>
               <option value="all">All sources</option>
               <option value="bundled">Bundled</option>
               <option value="workspace-installed">Installed zip imports</option>
               <option value="browser-uploaded">Browser uploads</option>
             </select>
             <div className="grid gap-3 md:grid-cols-2">
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={workspaceSelectClassName}>
                 <option value="all">All categories</option>
                 {categories.map((category) => <option key={category} value={category}>{category}</option>)}
               </select>
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
                 <option value="name">Name</option>
                 <option value="category">Category</option>
                 <option value="favorites">Favorites first</option>
               </select>
             </div>
           </div>
-        </section>
+        </WorkspaceSurface>
 
         {groupInstalledFamilies && visibleInstalledFamilies.length > 0 && (
           <section className="grid gap-5 xl:grid-cols-2">
             {visibleInstalledFamilies.map((family) => {
               const expanded = expandedFamilies[family.familyKey] ?? false;
               return (
-                <article key={family.familyKey} className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
+                <article key={family.familyKey} className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.92)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">{family.category} · installed zip imports</div>
@@ -490,7 +503,7 @@ export default function FontsPage() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {family.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-accent-50 px-3 py-1 text-xs font-medium text-accent-700">{tag}</span>
+                      <WorkspaceTag key={tag}>{tag}</WorkspaceTag>
                     ))}
                   </div>
 
@@ -514,7 +527,7 @@ export default function FontsPage() {
                   {expanded && (
                     <div className="mt-5 space-y-3 border-t border-border pt-5">
                       {family.variants.map((font) => (
-                        <div key={font.key} className="rounded-2xl border border-border bg-surface px-4 py-4">
+                        <div key={font.key} className="rounded-2xl border border-border/80 bg-surface px-4 py-4 shadow-sm">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <div className="text-sm font-semibold text-ink">{font.variantName}</div>
@@ -549,7 +562,7 @@ export default function FontsPage() {
 
         <section className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
           {standaloneFonts.map((font) => (
-            <article key={font.key} className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
+            <article key={font.key} className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.92)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">{font.category} · {font.source}</div>
@@ -597,13 +610,13 @@ export default function FontsPage() {
                     }
                   }}
                   placeholder="wedding, chrome, mascot"
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                  className={workspaceInputClassName}
                 />
               </label>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {font.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-accent-50 px-3 py-1 text-xs font-medium text-accent-700">{tag}</span>
+                  <WorkspaceTag key={tag}>{tag}</WorkspaceTag>
                 ))}
               </div>
 
@@ -614,7 +627,7 @@ export default function FontsPage() {
                     <select
                       value={font.category}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, category: event.target.value, updatedAt: new Date().toISOString() }))}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink"
+                      className={workspaceSelectClassName}
                     >
                       {UPLOAD_FONT_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
                     </select>
@@ -624,7 +637,7 @@ export default function FontsPage() {
                     <input
                       value={font.styleLabel}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, styleLabel: event.target.value, updatedAt: new Date().toISOString() }))}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                      className={workspaceInputClassName}
                     />
                   </label>
                   <label className="space-y-2 text-sm text-ink-secondary">
@@ -632,7 +645,7 @@ export default function FontsPage() {
                     <select
                       value={font.preferredTextCoverageMode}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, preferredTextCoverageMode: event.target.value as UploadedWorkspaceFont['preferredTextCoverageMode'], updatedAt: new Date().toISOString() }))}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink"
+                      className={workspaceSelectClassName}
                     >
                       {COVERAGE_DEFAULTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                     </select>
@@ -642,7 +655,7 @@ export default function FontsPage() {
                     <input
                       value={font.previewText}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, previewText: event.target.value, updatedAt: new Date().toISOString() }))}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                      className={workspaceInputClassName}
                     />
                   </label>
                   <label className="space-y-2 text-sm text-ink-secondary md:col-span-2">
@@ -650,7 +663,7 @@ export default function FontsPage() {
                     <input
                       value={font.licenseSource}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, licenseSource: event.target.value, updatedAt: new Date().toISOString() }))}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                      className={workspaceInputClassName}
                     />
                   </label>
                   <label className="space-y-2 text-sm text-ink-secondary md:col-span-2">
@@ -659,12 +672,12 @@ export default function FontsPage() {
                       value={font.note}
                       onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, note: event.target.value, updatedAt: new Date().toISOString() }))}
                       rows={3}
-                      className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                      className={workspaceTextAreaClassName}
                     />
                   </label>
                 </div>
               ) : (
-                <div className="mt-4 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink-secondary">
+                <div className="mt-4 rounded-2xl border border-border/80 bg-surface px-4 py-3 text-sm text-ink-secondary">
                   {font.licenseSource}
                 </div>
               )}
@@ -704,8 +717,15 @@ export default function FontsPage() {
             </article>
           ))}
         </section>
+
+        {visibleInstalledFamilies.length === 0 && standaloneFonts.length === 0 && (
+          <WorkspaceEmptyState
+            title="No fonts match the current filters"
+            description="Clear the search, change source or category filters, or upload additional font files to broaden the catalog."
+          />
+        )}
       </div>
-    </div>
+    </WorkspacePage>
   );
 }
 
@@ -718,13 +738,4 @@ function coverageLabel(mode: UploadedWorkspaceFont['preferredTextCoverageMode'] 
     default:
       return 'Outline default';
   }
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-ink">{value}</div>
-    </div>
-  );
 }

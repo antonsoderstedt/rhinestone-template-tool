@@ -3,6 +3,7 @@
  */
 
 import type { StoneSizeId } from '@/src/lib/rhinestone-engine/index';
+import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
 interface StoneProfileControlProps {
   value: StoneSizeId;
@@ -19,11 +20,11 @@ export default function StoneProfileControl({
 }: StoneProfileControlProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-ink-secondary">{label}</span>
+      <span className={editorFieldLabelClassName}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as StoneSizeId)}
-        className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+        className={editorSelectClassName}
       >
         {STONE_SIZES.map((size) => (
           <option key={size} value={size}>

@@ -112,7 +112,7 @@ export default function TemplateLibraryPanel({
   if (!open) return null;
 
   const renderEntry = (entry: TemplateLibraryEntry) => (
-    <article key={entry.templateId} className="rounded-xl border border-border bg-surface-raised p-4">
+    <article key={entry.templateId} className="rounded-[1.4rem] border border-border/80 bg-[rgba(255,255,255,0.92)] p-4 shadow-sm transition hover:border-border-strong hover:shadow-md">
       <div className="overflow-hidden rounded-lg border border-border bg-surface-sunken">
         {entry.previewRef ? (
           // eslint-disable-next-line @next/next/no-img-element -- client-generated data: URI thumbnail, no network fetch for next/image to optimize
@@ -157,7 +157,7 @@ export default function TemplateLibraryPanel({
         </div>
         <button
           onClick={() => onFavorite(entry.templateId, !entry.favorite)}
-          className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface-sunken hover:text-ink"
+          className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface hover:text-ink"
           title={entry.favorite ? 'Remove favorite' : 'Favorite'}
         >
           {entry.favorite ? <Heart className="h-4 w-4 fill-current text-rose-300" /> : <HeartOff className="h-4 w-4" />}
@@ -201,27 +201,32 @@ export default function TemplateLibraryPanel({
 
   return (
     <div className="absolute inset-0 z-20 flex justify-end bg-black/40 backdrop-blur-sm">
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-border bg-surface-sunken shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+      <aside className="flex h-full w-full max-w-md flex-col border-l border-border/80 bg-[linear-gradient(180deg,rgba(250,248,245,0.98),rgba(243,238,231,0.98))] shadow-2xl">
+        <div className="border-b border-border/80 px-5 py-4">
+          <div className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-warning-600">
+            Browser library
+          </div>
+          <div className="mt-3 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 text-ink">
               <LibraryBig className="h-4 w-4 text-warning-600" />
-              <h2 className="text-sm font-semibold">Template Library</h2>
+              <h2 className="text-base font-semibold">Template Library</h2>
             </div>
-            <p className="mt-1 text-xs text-ink-muted">Save and reopen designs directly in the browser.</p>
+            <p className="mt-1 text-sm leading-6 text-ink-secondary">Save and reopen designs directly in the browser.</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-sm text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+            className="rounded-xl px-3 py-2 text-sm text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
           >
             Close
           </button>
+          </div>
         </div>
 
         <div className="border-b border-border px-5 py-4">
           <button
             onClick={onSaveCurrent}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-warning-500 px-3 py-2 text-sm font-medium text-ink-inverse transition hover:bg-warning-600"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-3 py-3 text-sm font-medium text-ink-inverse transition hover:bg-sand-800"
           >
             <Save className="h-4 w-4" />
             Save Current Design
@@ -235,7 +240,7 @@ export default function TemplateLibraryPanel({
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search names, tags, sizes..."
-              className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-warning-500 focus:outline-none"
+              className="w-full rounded-xl border border-border/80 bg-surface-raised px-3.5 py-3 text-sm text-ink placeholder:text-ink-muted shadow-sm focus:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-50"
             />
 
             <div className="flex flex-wrap gap-2">
@@ -248,7 +253,7 @@ export default function TemplateLibraryPanel({
                 <button
                   key={value}
                   onClick={() => setFilterMode(value)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${filterMode === value ? 'bg-warning-500 text-ink-inverse' : 'bg-surface-raised text-ink-secondary hover:bg-surface-sunken hover:text-ink'}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${filterMode === value ? 'bg-ink text-ink-inverse' : 'bg-surface-raised text-ink-secondary hover:bg-surface hover:text-ink'}`}
                 >
                   {label}
                 </button>
@@ -260,7 +265,7 @@ export default function TemplateLibraryPanel({
                 <button
                   key={tag}
                   onClick={() => setSelectedTag((current) => current === tag ? null : tag)}
-                  className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition ${selectedTag === tag ? 'bg-success-500 text-ink-inverse' : 'bg-surface-raised text-ink-muted hover:bg-surface-sunken hover:text-ink'}`}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition ${selectedTag === tag ? 'bg-success-500 text-ink-inverse' : 'bg-surface-raised text-ink-muted hover:bg-surface hover:text-ink'}`}
                 >
                   {tag}
                 </button>
@@ -272,7 +277,7 @@ export default function TemplateLibraryPanel({
               <select
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as 'recent' | 'name' | 'stones')}
-                className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs text-ink focus:border-warning-500 focus:outline-none"
+                className="rounded-xl border border-border/80 bg-surface-raised px-3 py-2 text-xs text-ink focus:border-warning-500 focus:outline-none"
               >
                 <option value="recent">Most recent</option>
                 <option value="name">Name</option>
@@ -284,14 +289,16 @@ export default function TemplateLibraryPanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {builtInEntries.length === 0 && userEntries.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-surface-raised/50 px-4 py-8 text-center">
-              <p className="text-sm text-ink">No saved designs yet.</p>
-              <p className="mt-2 text-xs text-ink-muted">Save the current canvas to start building a reusable design library.</p>
+            <div className="rounded-[1.4rem] border border-dashed border-border/80 bg-surface-raised/60 px-4 py-10 text-center">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Empty workspace</div>
+              <p className="mt-3 text-sm font-medium text-ink">No saved designs yet.</p>
+              <p className="mt-2 text-xs leading-6 text-ink-muted">Save the current canvas to start building a reusable design library.</p>
             </div>
           ) : totalVisibleEntries === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-surface-raised/50 px-4 py-8 text-center">
-              <p className="text-sm text-ink">No designs match the current filters.</p>
-              <p className="mt-2 text-xs text-ink-muted">Try a different search term or switch the active filter.</p>
+            <div className="rounded-[1.4rem] border border-dashed border-border/80 bg-surface-raised/60 px-4 py-10 text-center">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">No results</div>
+              <p className="mt-3 text-sm font-medium text-ink">No designs match the current filters.</p>
+              <p className="mt-2 text-xs leading-6 text-ink-muted">Try a different search term or switch the active filter.</p>
             </div>
           ) : (
             <div className="space-y-6">

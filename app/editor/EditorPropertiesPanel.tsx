@@ -25,6 +25,15 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import PlacementModeControl from './controls/PlacementModeControl';
+import {
+  editorFieldLabelClassName,
+  editorNoteClassName,
+  editorSegmentActiveClassName,
+  editorSegmentBaseClassName,
+  editorSegmentIdleClassName,
+  editorSelectClassName,
+  editorTextareaClassName,
+} from './controls/controlStyles';
 import { EDITOR_TOOLS, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
@@ -42,15 +51,30 @@ interface ToolPropertiesProps {
   outlineFontStatus?: OutlineFontStatus;
 }
 
-function PanelSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function PanelSection({ title, description, children, defaultOpen = true }: { title: string; description?: string; children: React.ReactNode; defaultOpen?: boolean }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-border bg-surface-raised p-4">
-      <div>
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
-        {description && <p className="mt-1 text-xs text-ink-muted">{description}</p>}
+    <details open={defaultOpen} className="group rounded-[1.1rem] border border-border/80 bg-[rgba(255,255,255,0.86)] shadow-sm">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-2.5 marker:hidden [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="block text-sm font-semibold text-zinc-100">{title}</span>
+          {description && <span className="mt-1 block text-xs leading-5 text-zinc-400">{description}</span>}
+        </span>
+        <span className="mt-1 text-xs font-semibold text-zinc-500 transition group-open:rotate-180">⌄</span>
+      </summary>
+      <div className="space-y-3 border-t border-white/10 px-3 py-3">{children}</div>
+    </details>
+  );
+}
+
+function PanelHeader({ title, description, mode }: { title: string; description: string; mode: 'source' | 'inspector' }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-[#202024] p-3 shadow-sm">
+      <div className="inline-flex rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
+        {mode === 'source' ? 'Source controls' : 'Inspector'}
       </div>
-      {children}
-    </section>
+      <h2 className="mt-2 text-base font-semibold text-zinc-100">{title}</h2>
+      <p className="mt-1 text-xs leading-5 text-zinc-400">{description}</p>
+    </div>
   );
 }
 
@@ -80,12 +104,15 @@ function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activ
           <button
             key={tool.id}
             onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
-            className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${activeTool === tool.id ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border-strong hover:bg-sand-50'}`}
+            className={`${editorSegmentBaseClassName} ${activeTool === tool.id ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
             title={tool.description}
           >
-            <div className="flex items-center gap-2">
-              <Icon className="h-4 w-4" />
-              <span className="text-sm font-medium">{tool.label}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{tool.label}</span>
+              </div>
+              {activeTool === tool.id ? <span className="h-2 w-2 rounded-full bg-accent-500" /> : null}
             </div>
             <p className="mt-2 text-[11px] text-ink-muted">{tool.description}</p>
           </button>
@@ -100,10 +127,18 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="flex h-full w-full flex-col gap-4 overflow-y-auto overscroll-contain border-r border-border bg-surface-raised/90 p-4">
+      <aside className="flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-r border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
+        <PanelHeader
+          title="Design source"
+          description="Choose the generator, adjust the baseline settings, and keep the design system readable while you work."
+          mode="source"
+        />
+
+        <div className="lg:hidden">
         <PanelSection title="Tools" description="Choose how you want to work with this design.">
           <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
         </PanelSection>
+        </div>
 
         {state.activeTool === 'select' ? (
           <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
@@ -111,8 +146,8 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
           </PanelSection>
         ) : (
           <>
-            <PanelSection title={statusCopy.label} description={statusCopy.description}>
-              <div className={`rounded-xl border px-3 py-3 ${state.editableTemplate.isEditable ? 'border-info-500/30 bg-info-50 text-info-600' : 'border-accent-300 bg-accent-50 text-accent-700'}`}>
+            <PanelSection title={statusCopy.label} description={statusCopy.description} defaultOpen={false}>
+              <div className={`rounded-xl border px-3 py-3 shadow-sm ${state.editableTemplate.isEditable ? 'border-info-500/30 bg-info-50 text-info-600' : 'border-accent-300 bg-accent-50 text-accent-700'}`}>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   {state.editableTemplate.isEditable ? <PenLine className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                   <span>{statusCopy.label}</span>
@@ -139,28 +174,34 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
   if (mode === 'inspector') {
     return (
-      <aside className="flex h-full w-full flex-col gap-4 overflow-y-auto overscroll-contain border-l border-border bg-surface-raised/90 p-4">
+      <aside className="flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-l border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
+        <PanelHeader
+          title="Selection and export"
+          description="Work on the current selection, repair layout details, and control what leaves the canvas."
+          mode="inspector"
+        />
+
         <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
 
-        <PanelSection title="Export Settings" description="These options affect only the exported SVG output.">
-          <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <PanelSection title="Export Settings" description="These options affect only the exported SVG output." defaultOpen={false}>
+          <label className="flex items-center gap-2 rounded-xl border border-border/80 bg-surface px-3.5 py-3 text-sm text-ink-secondary">
             <input
               type="checkbox"
               checked={state.includeGuideBox}
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: e.target.checked } })}
-              className="h-4 w-4 rounded border-border bg-surface-sunken"
+              className="h-4 w-4 rounded border-border bg-surface"
             />
             Include guide box
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-ink-secondary">
+          <label className="flex items-center gap-2 rounded-xl border border-border/80 bg-surface px-3.5 py-3 text-sm text-ink-secondary">
             <input
               type="checkbox"
               checked={state.includeLabels}
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: e.target.checked } })}
-              className="h-4 w-4 rounded border-border bg-surface-sunken"
+              className="h-4 w-4 rounded border-border bg-surface"
             />
             Include labels
           </label>
@@ -232,20 +273,20 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
       <div className="flex gap-2">
         <button
           onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { mode: 'outline' } })}
-          className={`flex-1 px-3 py-2 text-xs font-medium rounded transition ${
+          className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
             textTool.mode === 'outline'
-              ? 'bg-accent-500 text-ink-inverse'
-              : 'bg-surface-sunken text-ink-secondary hover:bg-sand-200'
+              ? 'bg-ink text-ink-inverse shadow-sm'
+              : 'bg-surface text-ink-secondary hover:bg-surface-raised'
           }`}
         >
           Outline
         </button>
         <button
           onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { mode: 'dot-matrix' } })}
-          className={`flex-1 px-3 py-2 text-xs font-medium rounded transition ${
+          className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
             textTool.mode === 'dot-matrix'
-              ? 'bg-accent-500 text-ink-inverse'
-              : 'bg-surface-sunken text-ink-secondary hover:bg-sand-200'
+              ? 'bg-ink text-ink-inverse shadow-sm'
+              : 'bg-surface text-ink-secondary hover:bg-surface-raised'
           }`}
         >
           Dot Matrix
@@ -254,13 +295,13 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
       {/* Text Input */}
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Text</span>
+        <span className={editorFieldLabelClassName}>Text</span>
         <textarea
           value={textTool.text}
           onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: e.target.value } })}
           rows={3}
           placeholder="Enter text..."
-          className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent-400 resize-none"
+          className={`${editorTextareaClassName} resize-none font-mono`}
         />
       </label>
 
@@ -282,16 +323,12 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
       {textTool.mode === 'outline' && (
         <div className="space-y-2">
-          <span className="text-xs font-medium text-ink-secondary">Text style</span>
+          <span className={editorFieldLabelClassName}>Text style</span>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { outlineTextStyle: 'outline' } })}
-              className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${
-                textTool.outlineTextStyle === 'outline'
-                  ? 'border-accent-400 bg-accent-50 text-ink'
-                  : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'
-              }`}
+              className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'outline' ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
             >
               <div className="text-sm font-medium">Outline text</div>
               <p className="mt-1 text-[11px] text-ink-muted">Follow the letter contours only.</p>
@@ -300,11 +337,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { outlineTextStyle: 'filled-typography' } })}
               disabled={!fillModes.includes('fill')}
-              className={`rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${
-                textTool.outlineTextStyle === 'filled-typography'
-                  ? 'border-accent-400 bg-accent-50 text-ink'
-                  : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'
-              } ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-border hover:bg-surface-sunken' : ''}`}
+              className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'filled-typography' ? editorSegmentActiveClassName : editorSegmentIdleClassName} ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-border hover:bg-surface' : ''}`}
             >
               <div className="text-sm font-medium">Filled typography</div>
               <p className="mt-1 text-[11px] text-ink-muted">Fill thicker letters with a stone pattern.</p>
@@ -339,11 +372,11 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           />
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-ink-secondary">Alignment</span>
+            <span className={editorFieldLabelClassName}>Alignment</span>
             <select
               value={textTool.align}
               onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { align: e.target.value as 'left' | 'center' | 'right' } })}
-              className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+              className={editorSelectClassName}
             >
               <option value="left">Left</option>
               <option value="center">Center</option>
@@ -464,7 +497,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
+      <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs leading-6 text-accent-700">
         {modeCopy}
       </div>
 
@@ -482,7 +515,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
               stoneSize: getPreferredRhinestoneFontStoneSize(e.target.value),
             },
           })}
-          className="rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink"
+          className={editorSelectClassName}
         >
           {availableFonts.map((font) => (
             <option key={font.fontId} value={font.fontId}>
@@ -496,7 +529,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Text</span>
+        <span className={editorFieldLabelClassName}>Text</span>
         <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
           <span>Suggested sample: {selectedFontDefinition.suggestedText}</span>
           <button
@@ -519,12 +552,12 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
           })}
           rows={3}
           placeholder={selectedFontDefinition.suggestedText}
-          className="resize-y rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className={`${editorTextareaClassName} resize-y`}
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Stone size</span>
+        <span className={editorFieldLabelClassName}>Stone size</span>
         <select
           aria-label="Rhinestone font stone size"
           value={rhinestoneFontTool.stoneSize}
@@ -532,7 +565,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
             type: 'UPDATE_RHINESTONE_FONT_TOOL',
             updates: { stoneSize: e.target.value as typeof rhinestoneFontTool.stoneSize },
           })}
-          className="rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink"
+          className={editorSelectClassName}
         >
           {supportedStoneSizes.map((size) => (
             <option key={size} value={size}>
@@ -614,14 +647,14 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
+      <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs leading-6 text-accent-700">
         Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. The engine reuses the letters as-is — no fill or outline pass runs.
       </div>
 
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Alphabet</span>
+        <span className={editorFieldLabelClassName}>Alphabet</span>
         <select
           aria-label="SVG alphabet"
           value={svgAlphabetTool.svgAlphabetId}
@@ -635,7 +668,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
               },
             });
           }}
-          className="rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink"
+          className={editorSelectClassName}
         >
           {availableAlphabets.map((alphabet) => (
             <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
@@ -649,7 +682,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Text</span>
+        <span className={editorFieldLabelClassName}>Text</span>
         <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
           <span>Suggested sample: {selectedAlphabet.suggestedText}</span>
           <button
@@ -672,12 +705,12 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
           })}
           rows={3}
           placeholder={selectedAlphabet.suggestedText}
-          className="resize-y rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className={`${editorTextareaClassName} resize-y`}
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Stone size</span>
+        <span className={editorFieldLabelClassName}>Stone size</span>
         <select
           aria-label="SVG alphabet stone size"
           value={svgAlphabetTool.stoneSize}
@@ -685,7 +718,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
             type: 'UPDATE_SVG_ALPHABET_TOOL',
             updates: { stoneSize: e.target.value as typeof svgAlphabetTool.stoneSize },
           })}
-          className="rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink"
+          className={editorSelectClassName}
         >
           {supportedStoneSizes.map((size) => (
             <option key={size} value={size}>
@@ -1868,15 +1901,15 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
             <ScanSearch className="h-4 w-4 text-accent-600" />
             {emptyState.title}
           </div>
-          <p className="mt-2 text-sm text-ink-secondary">{emptyState.description}</p>
-          <ul className="mt-3 space-y-2 text-xs text-ink-muted">
+          <p className="mt-2 text-sm leading-6 text-ink-secondary">{emptyState.description}</p>
+          <ul className="mt-3 space-y-2 text-xs leading-6 text-ink-muted">
             {emptyState.tips.map((tip) => (
               <li key={tip}>• {tip}</li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface-sunken px-4 py-3">
+        <div className="rounded-xl border border-border/80 bg-surface px-4 py-3 shadow-sm">
           <p className="text-sm font-medium text-ink">{selectedCount} stone{selectedCount > 1 ? 's' : ''} selected</p>
           <p className="mt-1 text-xs text-ink-muted">Selection actions only affect the highlighted stones.</p>
         </div>

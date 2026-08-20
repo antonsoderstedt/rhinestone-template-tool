@@ -12,6 +12,16 @@ import {
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
+import {
+  WorkspaceEmptyState,
+  WorkspaceHero,
+  WorkspaceMetricCard,
+  WorkspacePage,
+  WorkspaceSurface,
+  WorkspaceTag,
+  workspaceInputClassName,
+  workspaceSelectClassName,
+} from '../components/workspace/WorkspaceChrome';
 
 type StudioFilter = 'all' | 'rhinestone' | 'htv';
 
@@ -112,60 +122,56 @@ export default function DesignsPage() {
   };
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(255,107,61,0.14),transparent_26%),linear-gradient(180deg,#faf8f5_0%,#f6f1e8_100%)] px-4 py-8 md:px-6">
+    <WorkspacePage tone="neutral">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
-        <section className="rounded-[2.5rem] border border-border bg-surface-raised/90 p-8 shadow-xl shadow-sand-900/5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/15 bg-brand-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
-            My Designs
-          </div>
-          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-ink">Everything you have already made, still usable</h1>
-          <p className="mt-4 max-w-4xl text-base leading-8 text-ink-secondary md:text-lg">
-            Reopen saved rhinestone templates, continue HTV layouts, favorite the winners, archive the old versions, and keep names and tags clean enough to find what you need under pressure.
-          </p>
-        </section>
+        <WorkspaceHero
+          eyebrow="My Designs"
+          title="Everything you have already made, still usable"
+          description="Reopen saved rhinestone templates, continue HTV layouts, favorite the winners, archive old variants, and keep names tidy enough to find under pressure."
+          tone="neutral"
+          aside={(
+            <WorkspaceSurface className="p-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Recovery cue</div>
+              <p className="mt-3 text-sm leading-7 text-ink-secondary">
+                This page is optimized for returning to production work fast, not for browsing a gallery without context.
+              </p>
+            </WorkspaceSurface>
+          )}
+        />
 
         <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Total saved</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{rhinestoneDesigns.length + vault.htvDesigns.length}</div>
-          </div>
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Rhinestone</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{rhinestoneDesigns.length}</div>
-          </div>
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">HTV</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{vault.htvDesigns.length}</div>
-          </div>
+          <WorkspaceMetricCard label="Total saved" value={rhinestoneDesigns.length + vault.htvDesigns.length} />
+          <WorkspaceMetricCard label="Rhinestone" value={rhinestoneDesigns.length} />
+          <WorkspaceMetricCard label="HTV" value={vault.htvDesigns.length} />
         </section>
 
-        <section className="rounded-[2rem] border border-border bg-surface-raised/90 p-5 shadow-lg shadow-sand-900/5">
+        <WorkspaceSurface className="p-5">
           <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr]">
-            <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+            <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by name or tag"
-                className="w-full bg-transparent text-sm text-ink outline-none"
+                className={workspaceInputClassName}
               />
             </label>
-            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className={workspaceSelectClassName}>
               <option value="all">All studios</option>
               <option value="rhinestone">Rhinestone</option>
               <option value="htv">HTV</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName}>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All statuses</option>
             </select>
           </div>
-        </section>
+        </WorkspaceSurface>
 
         <section className="grid gap-5 xl:grid-cols-2">
           {visibleDesigns.map((design) => (
-            <article key={`${design.studio}:${design.id}`} className="rounded-[2rem] border border-border bg-surface-raised p-6 shadow-lg shadow-sand-900/5">
+            <article key={`${design.studio}:${design.id}`} className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.92)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">
@@ -204,7 +210,7 @@ export default function DesignsPage() {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {design.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-accent-50 px-3 py-1 text-xs font-medium text-accent-700">{tag}</span>
+                  <WorkspaceTag key={tag}>{tag}</WorkspaceTag>
                 ))}
               </div>
 
@@ -265,7 +271,14 @@ export default function DesignsPage() {
             </article>
           ))}
         </section>
+
+        {visibleDesigns.length === 0 && (
+          <WorkspaceEmptyState
+            title="No designs match the current filters"
+            description="Switch studio or status filters, or clear the search term to bring saved and archived work back into view."
+          />
+        )}
       </div>
-    </div>
+    </WorkspacePage>
   );
 }

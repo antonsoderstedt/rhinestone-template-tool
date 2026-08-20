@@ -10,6 +10,16 @@ import {
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
+import {
+  WorkspaceEmptyState,
+  WorkspaceHero,
+  WorkspaceMetricCard,
+  WorkspacePage,
+  WorkspaceSurface,
+  WorkspaceTag,
+  workspaceInputClassName,
+  workspaceSelectClassName,
+} from '../components/workspace/WorkspaceChrome';
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -105,21 +115,15 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(255,107,61,0.12),transparent_26%),linear-gradient(180deg,#faf8f5_0%,#f6f0e6_100%)] px-4 py-8 md:px-6">
+    <WorkspacePage tone="brand">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
-        <section className="rounded-[2.5rem] border border-border bg-surface-raised/90 p-8 shadow-xl shadow-sand-900/5">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/15 bg-brand-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
-                Library
-              </div>
-              <h1 className="mt-4 text-5xl font-semibold tracking-tight text-ink">Your asset command center</h1>
-              <p className="mt-4 text-base leading-8 text-ink-secondary md:text-lg">
-                Bulk upload artwork, clean up naming, tag everything that matters, and launch the right asset straight into Rhinestone or HTV Studio.
-              </p>
-            </div>
-
-            <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-brand-500/20 transition hover:brightness-105">
+        <WorkspaceHero
+          eyebrow="Library"
+          title="Asset command center"
+          description="Upload artwork in bulk, keep naming and tags clean, and launch the right vector or raster source into the right studio without hunting through folders."
+          tone="brand"
+          actions={(
+            <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
               <Upload className="h-4 w-4" />
               Bulk upload assets
               <input
@@ -133,60 +137,59 @@ export default function LibraryPage() {
                 }}
               />
             </label>
-          </div>
-        </section>
+          )}
+          aside={(
+            <WorkspaceSurface className="p-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace behavior</div>
+              <p className="mt-3 text-sm leading-7 text-ink-secondary">
+                Vector files stay easy to route into Rhinestone. Raster files stay visible for HTV tracing and silhouette cleanup.
+              </p>
+            </WorkspaceSurface>
+          )}
+        />
 
         <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Assets</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{vault.assets.length}</div>
-          </div>
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Vectors</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{vault.assets.filter((asset) => asset.kind === 'svg').length}</div>
-          </div>
-          <div className="rounded-[1.75rem] border border-border bg-surface-raised px-5 py-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Favorited</div>
-            <div className="mt-3 text-4xl font-semibold text-ink">{vault.assets.filter((asset) => asset.favorite).length}</div>
-          </div>
+          <WorkspaceMetricCard label="Assets" value={vault.assets.length} />
+          <WorkspaceMetricCard label="Vectors" value={vault.assets.filter((asset) => asset.kind === 'svg').length} />
+          <WorkspaceMetricCard label="Favorited" value={vault.assets.filter((asset) => asset.favorite).length} />
         </section>
 
-        <section className="rounded-[2rem] border border-border bg-surface-raised/90 p-5 shadow-lg shadow-sand-900/5">
+        <WorkspaceSurface className="p-5">
           <div className="grid gap-3 lg:grid-cols-[1.8fr_repeat(4,minmax(0,1fr))]">
-            <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+            <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by name, filename, or tag"
-                className="w-full bg-transparent text-sm text-ink outline-none"
+                className={workspaceInputClassName}
               />
             </label>
-            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName}>
               <option value="all">All kinds</option>
               <option value="svg">SVG only</option>
               <option value="image">Image only</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName}>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All statuses</option>
             </select>
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName}>
               <option value="all">All tags</option>
               {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
             </select>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink">
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
               <option value="recent">Recently updated</option>
               <option value="name">Name</option>
               <option value="favorites">Favorites first</option>
             </select>
           </div>
-        </section>
+        </WorkspaceSurface>
 
         <section className="grid gap-5 xl:grid-cols-2">
           {visibleAssets.map((asset) => (
-            <article key={asset.assetId} className="overflow-hidden rounded-[2rem] border border-border bg-surface-raised shadow-lg shadow-sand-900/5">
+            <article key={asset.assetId} className="group overflow-hidden rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.92)] shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
               <div className="flex min-h-[280px] items-center justify-center bg-[linear-gradient(180deg,#ffffff,#f7f2ea)] p-5">
                 {asset.kind === 'image' ? (
                   // eslint-disable-next-line @next/next/no-img-element -- asset previews are client-side data URLs, not remote media
@@ -228,7 +231,7 @@ export default function LibraryPage() {
 
                 <div className="flex flex-wrap gap-2">
                   {asset.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-accent-50 px-3 py-1 text-xs font-medium text-accent-700">{tag}</span>
+                    <WorkspaceTag key={tag}>{tag}</WorkspaceTag>
                   ))}
                 </div>
 
@@ -252,14 +255,14 @@ export default function LibraryPage() {
                 <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                   <button
                     onClick={() => updateAsset(asset.assetId, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }))}
-                    className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${asset.favorite ? 'bg-warning-50 text-warning-600' : 'bg-surface text-ink-secondary hover:text-ink'}`}
+                    className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${asset.favorite ? 'bg-warning-50 text-warning-600' : 'bg-surface text-ink-secondary hover:bg-surface-raised hover:text-ink'}`}
                   >
                     <Star className="h-4 w-4" />
                     {asset.favorite ? 'Favorited' : 'Favorite'}
                   </button>
                   <button
                     onClick={() => updateAsset(asset.assetId, (current) => ({ ...current, archived: !current.archived, updatedAt: new Date().toISOString() }))}
-                    className="inline-flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-sm font-medium text-ink-secondary transition hover:text-ink"
+                    className="inline-flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
                   >
                     <Archive className="h-4 w-4" />
                     {asset.archived ? 'Restore' : 'Archive'}
@@ -278,14 +281,12 @@ export default function LibraryPage() {
         </section>
 
         {visibleAssets.length === 0 && (
-          <section className="rounded-[2rem] border border-dashed border-border-strong bg-surface-raised/80 px-8 py-16 text-center shadow-sm">
-            <h2 className="text-2xl font-semibold text-ink">No assets match the current filters</h2>
-            <p className="mt-3 text-sm leading-7 text-ink-secondary">
-              Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view.
-            </p>
-          </section>
+          <WorkspaceEmptyState
+            title="No assets match the current filters"
+            description="Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view."
+          />
         )}
       </div>
-    </div>
+    </WorkspacePage>
   );
 }

@@ -4,6 +4,7 @@
 
 import type { DensityPreset } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
+import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
 interface DensityControlProps {
   densityPreset: DensityPreset;
@@ -29,11 +30,11 @@ export default function DensityControl({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Density</span>
+        <span className={editorFieldLabelClassName}>Density</span>
         <select
           value={densityPreset}
           onChange={(e) => onDensityChange(e.target.value as DensityPreset)}
-          className="bg-surface-sunken border border-border rounded px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className={editorSelectClassName}
         >
           {DENSITY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
