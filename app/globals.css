@@ -163,3 +163,63 @@ body {
 .rhinestone-dark-panel select {
   color-scheme: dark;
 }
+
+.htv-dark-panel {
+  color: #e4e4e7;
+}
+
+.htv-dark-panel .bg-surface,
+.htv-dark-panel .bg-surface-sunken,
+.htv-dark-panel .bg-surface-raised,
+.htv-dark-panel .bg-white,
+.htv-dark-panel .bg-accent-50,
+.htv-dark-panel .bg-info-50,
+.htv-dark-panel .bg-success-50,
+.htv-dark-panel .bg-warning-50,
+.htv-dark-panel .bg-danger-50 {
+  background-color: #17171a !important;
+}
+
+.htv-dark-panel .text-ink,
+.htv-dark-panel .text-ink-secondary,
+.htv-dark-panel .text-accent-700,
+.htv-dark-panel .text-info-600,
+.htv-dark-panel .text-info-700,
+.htv-dark-panel .text-success-600,
+.htv-dark-panel .text-warning-600,
+.htv-dark-panel .text-danger-600 {
+  color: #e4e4e7 !important;
+}
+
+.htv-dark-panel .text-ink-muted {
+  color: #a1a1aa !important;
+}
+
+.htv-dark-panel .border-border,
+.htv-dark-panel .border-border\/80,
+.htv-dark-panel .border-border-strong,
+.htv-dark-panel .border-accent-300,
+.htv-dark-panel .border-accent-400,
+.htv-dark-panel .border-info-500\/20,
+.htv-dark-panel .border-info-500\/30,
+.htv-dark-panel .border-success-500\/20,
+.htv-dark-panel .border-warning-500\/30,
+.htv-dark-panel .border-danger-500\/20,
+.htv-dark-panel .border-danger-500\/30 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.htv-dark-panel .bg-accent-500,
+.htv-dark-panel .hover\:bg-accent-600:hover,
+.htv-dark-panel .hover\:bg-info-500\/15:hover,
+.htv-dark-panel .hover\:bg-success-500\/15:hover,
+.htv-dark-panel .hover\:bg-danger-500\/15:hover {
+  background-color: #8b5cf6 !important;
+  color: #ffffff !important;
+}
+
+.htv-dark-panel input,
+.htv-dark-panel textarea,
+.htv-dark-panel select {
+  color-scheme: dark;
+}

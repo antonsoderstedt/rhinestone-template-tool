@@ -16,6 +16,7 @@ import HtvCanvas from './HtvCanvas';
 import HtvInspectorPanel from './HtvInspectorPanel';
 import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
+import HtvGarmentStage from './HtvGarmentStage';
 import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
@@ -38,6 +39,7 @@ export default function HtvShell() {
   const [state, dispatch] = useReducer(htvReducer, DEFAULT_HTV_STATE);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
+  const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
   const nextLayerIdRef = useRef(0);
@@ -323,21 +325,23 @@ export default function HtvShell() {
   }, [createLayerId, searchParams]);
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-surface">
+    <div className="h-full min-h-0 flex flex-col bg-[#1f1f22] text-zinc-100">
       <HtvTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
         canRedo={state.history.future.length > 0}
         canExport={hasLayers}
         canPreviewGarment={hasLayers}
+        designSurface={designSurface}
         dispatch={dispatch}
         onSaveDesign={handleSaveDesign}
         onExport={handleExport}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
+        onToggleDesignSurface={setDesignSurface}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface lg:flex-row lg:overflow-hidden">
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden lg:order-none lg:h-full lg:max-h-none lg:w-[272px]">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#1f1f22] lg:flex-row lg:overflow-hidden">
+        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0">
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
@@ -349,10 +353,10 @@ export default function HtvShell() {
         </div>
 
         <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
-          <HtvCanvas state={state} dispatch={dispatch} />
+          {designSurface === 'garment' ? <HtvGarmentStage state={state} /> : <HtvCanvas state={state} dispatch={dispatch} />}
         </div>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden lg:order-none lg:h-full lg:max-h-none lg:w-[288px]">
+        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
           <HtvInspectorPanel
             state={state}
             dispatch={dispatch}
@@ -375,7 +379,7 @@ export default function HtvShell() {
 
       {toast && (
         <div
-          className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-lg px-4 py-2 text-sm font-medium shadow-lg ${
+          className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
             toast.tone === 'success' ? 'bg-success-500 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-500 text-ink-inverse' : 'bg-danger-500 text-ink-inverse'
           }`}
         >

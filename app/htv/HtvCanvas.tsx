@@ -166,10 +166,10 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
     state.selectedLayerIds.size === 1 ? state.layers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
   return (
-    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-sand-100">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-xl border border-border/80 bg-surface-raised/95 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">HTV canvas</div>
-        <div className="mt-1 text-xs text-ink-secondary">
+    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[#202024]">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">HTV canvas</div>
+        <div className="mt-1 text-xs text-zinc-400">
           {state.layers.length > 0 ? `${state.layers.length} layer${state.layers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>
       </div>
@@ -181,8 +181,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         onPointerUp={handlePointerUp}
         onPointerDown={handleBackgroundPointerDown}
       >
-        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} fill="#f5f1ea" />
-        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill="#ffffff" stroke="rgba(0,0,0,0.08)" />
+        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} fill="#202024" />
+        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill="#2a2b31" stroke="rgba(255,255,255,0.08)" />
 
         {state.layers.map((layer) => {
           if (!layer.visible) return null;
@@ -215,8 +215,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
             y={Math.min(interaction.startMmY, interaction.curMmY)}
             width={Math.abs(interaction.curMmX - interaction.startMmX)}
             height={Math.abs(interaction.curMmY - interaction.startMmY)}
-            fill="rgba(124,77,255,0.1)"
-            stroke="#7c4dff"
+            fill="rgba(139,92,246,0.16)"
+            stroke="#8b5cf6"
             strokeWidth={1 / state.canvas.zoom}
             pointerEvents="none"
           />
@@ -224,28 +224,28 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
 
         {state.layers.length === 0 && (
           <g pointerEvents="none">
-            <text x={0} y={-8} textAnchor="middle" fill="#756757" style={{ fontSize: '12px', fontWeight: 700 }}>
+            <text x={0} y={-8} textAnchor="middle" fill="#d4d4d8" style={{ fontSize: '12px', fontWeight: 700 }}>
               Empty HTV workspace
             </text>
-            <text x={0} y={10} textAnchor="middle" fill="#96876f" style={{ fontSize: '9px' }}>
+            <text x={0} y={10} textAnchor="middle" fill="#a1a1aa" style={{ fontSize: '9px' }}>
               Add text, import artwork, or start from a shape
             </text>
           </g>
         )}
       </svg>
 
-      <div className="absolute bottom-3 right-3 flex gap-1 rounded-xl border border-border bg-surface-raised/95 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-lg p-2 text-ink-secondary hover:bg-surface-sunken hover:text-ink" title="Zoom in">
+      <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-white/10 bg-[#17171a]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
+        <button onClick={zoomIn} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom in">
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-lg p-2 text-ink-secondary hover:bg-surface-sunken hover:text-ink" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom out">
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-lg p-2 text-ink-secondary hover:bg-surface-sunken hover:text-ink" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Reset view">
           <Scan className="h-4 w-4" />
         </button>
       </div>
-      <div className="absolute bottom-3 left-3 rounded-lg border border-border bg-surface-raised/95 px-2 py-1 text-xs text-ink-muted shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
+      <div className="absolute bottom-3 left-3 rounded-md border border-white/10 bg-[#17171a]/90 px-2 py-1 text-xs text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
         {Math.round(state.canvas.zoom * 100)}%
       </div>
     </div>

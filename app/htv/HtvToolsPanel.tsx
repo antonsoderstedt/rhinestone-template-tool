@@ -22,15 +22,15 @@ interface HtvToolsPanelProps {
 
 function PanelSection({ title, icon, children, defaultOpen = true }: { title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
   return (
-    <details open={defaultOpen} className="group rounded-[1.1rem] border border-border/80 bg-[rgba(255,255,255,0.88)] shadow-sm">
+    <details open={defaultOpen} className="group rounded-md border border-white/10 bg-[#202024] shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 marker:hidden [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <span className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
           {icon}
           {title}
         </span>
-        <span className="text-xs font-semibold text-ink-muted transition group-open:rotate-180">⌄</span>
+        <span className="text-xs font-semibold text-zinc-500 transition group-open:rotate-180">⌄</span>
       </summary>
-      <div className="space-y-3 border-t border-border/60 px-3 py-3">{children}</div>
+      <div className="space-y-3 border-t border-white/10 px-3 py-3">{children}</div>
     </details>
   );
 }
@@ -39,7 +39,7 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <aside className="flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-border/80 bg-[rgba(244,239,232,0.76)] p-3 backdrop-blur-xl">
+    <aside className="htv-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
       <input
         ref={fileInputRef}
         type="file"
