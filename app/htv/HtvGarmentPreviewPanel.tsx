@@ -10,12 +10,12 @@
 import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { Shirt } from 'lucide-react';
-import GarmentSilhouette from '../components/garmentPreview/GarmentSilhouette';
 import { getGarmentColor } from '../components/garmentPreview/garmentCatalog';
 import { getPlacementViewForZone, getPlacementZoneBox } from './htvPlacementZones';
 import { computeDesignBounds } from './htvGeometry';
 import HtvLayerShape from './HtvLayerShape';
 import type { HtvState } from './HtvState';
+import { getHtvMockupView, HTV_MOCKUP_IMAGE_SIZE } from './htvMockupRegistry';
 
 interface HtvGarmentPreviewPanelProps {
   open: boolean;
@@ -28,8 +28,9 @@ const FIT_MARGIN = 0.92;
 export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarmentPreviewPanelProps) {
   const { garment, layers } = state;
   const color = getGarmentColor(garment.colorId);
-  const zoneBox = getPlacementZoneBox(garment.type, garment.placementZone);
   const view = getPlacementViewForZone(garment.placementZone);
+  const mockupView = getHtvMockupView(garment.type, view);
+  const zoneBox = mockupView.placements[garment.placementZone] ?? getPlacementZoneBox(garment.type, garment.placementZone);
 
   const overlayTransform = useMemo(() => {
     const bounds = computeDesignBounds(layers);
@@ -63,8 +64,21 @@ export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarm
         </div>
 
         <div className="flex min-h-[320px] flex-1 items-center justify-center p-6">
-          <div className="h-full max-h-full w-full max-w-sm">
-            <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} view={view} guideBox={zoneBox} showPrintAreaGuide={!overlayTransform}>
+          <div className="relative h-full max-h-full w-full max-w-sm overflow-hidden rounded-md border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_35%),linear-gradient(180deg,#2a2b31,#1b1c21)]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- local static mockup asset */}
+            <img src={mockupView.imageSrc} alt={`${garment.type} ${view} preview`} className="absolute inset-0 h-full w-full object-contain" />
+            <svg viewBox={`0 0 ${HTV_MOCKUP_IMAGE_SIZE} ${HTV_MOCKUP_IMAGE_SIZE}`} className="absolute inset-0 h-full w-full">
+              <rect
+                x={zoneBox.x}
+                y={zoneBox.y}
+                width={zoneBox.width}
+                height={zoneBox.height}
+                fill="none"
+                stroke="rgba(236,72,153,0.9)"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+                rx="4"
+              />
               {overlayTransform &&
                 layers.filter((l) => l.visible).map((layer) => (
                   <g
@@ -74,7 +88,7 @@ export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarm
                     <HtvLayerShape layer={layer} />
                   </g>
                 ))}
-            </GarmentSilhouette>
+            </svg>
           </div>
         </div>
 

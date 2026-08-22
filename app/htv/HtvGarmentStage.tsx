@@ -1,20 +1,21 @@
 'use client';
 
 import { Shirt } from 'lucide-react';
-import GarmentSilhouette from '../components/garmentPreview/GarmentSilhouette';
 import { getGarmentColor } from '../components/garmentPreview/garmentCatalog';
 import { getPlacementViewForZone, getPlacementZoneBox } from './htvPlacementZones';
 import { computeDesignBounds } from './htvGeometry';
 import HtvLayerShape from './HtvLayerShape';
 import type { HtvState } from './HtvState';
+import { getHtvMockupView, HTV_MOCKUP_IMAGE_SIZE } from './htvMockupRegistry';
 
 const FIT_MARGIN = 0.9;
 
 export default function HtvGarmentStage({ state }: { state: HtvState }) {
   const { garment, layers } = state;
   const color = getGarmentColor(garment.colorId);
-  const zoneBox = getPlacementZoneBox(garment.type, garment.placementZone);
   const view = getPlacementViewForZone(garment.placementZone);
+  const mockupView = getHtvMockupView(garment.type, view);
+  const zoneBox = mockupView.placements[garment.placementZone] ?? getPlacementZoneBox(garment.type, garment.placementZone);
   const bounds = computeDesignBounds(layers);
 
   const transform = bounds && bounds.width > 0 && bounds.height > 0
@@ -42,8 +43,27 @@ export default function HtvGarmentStage({ state }: { state: HtvState }) {
           <Shirt className="h-4 w-4 text-violet-300" />
           <span>{garment.type === 'tshirt' ? 'T-shirt' : 'Hoodie'} · {garment.size} · {color.name} · {view}</span>
         </div>
-        <div className="aspect-[5/6] w-full overflow-hidden rounded-md border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_35%),linear-gradient(180deg,#2a2b31,#1b1c21)]">
-          <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} view={view} guideBox={zoneBox} showPrintAreaGuide={!transform}>
+        <div className="relative aspect-[1/1] w-full overflow-hidden rounded-md border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_35%),linear-gradient(180deg,#2a2b31,#1b1c21)]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local static mockup asset */}
+          <img
+            src={mockupView.imageSrc}
+            alt={`${garment.type} ${view} mockup`}
+            className="absolute inset-0 h-full w-full object-contain"
+          />
+
+          <svg viewBox={`0 0 ${HTV_MOCKUP_IMAGE_SIZE} ${HTV_MOCKUP_IMAGE_SIZE}`} className="absolute inset-0 h-full w-full">
+            <rect
+              x={zoneBox.x}
+              y={zoneBox.y}
+              width={zoneBox.width}
+              height={zoneBox.height}
+              fill="none"
+              stroke="rgba(236,72,153,0.9)"
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+              rx="4"
+            />
+
             {transform && layers.filter((layer) => layer.visible).map((layer) => (
               <g
                 key={layer.id}
@@ -52,7 +72,7 @@ export default function HtvGarmentStage({ state }: { state: HtvState }) {
                 <HtvLayerShape layer={layer} />
               </g>
             ))}
-          </GarmentSilhouette>
+          </svg>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
           {garment.activePlacementZones.map((zone) => (
