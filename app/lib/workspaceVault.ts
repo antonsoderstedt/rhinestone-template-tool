@@ -261,12 +261,20 @@ export function serializeHtvState(state: HtvState): SerializedHtvState {
 }
 
 export function deserializeHtvState(snapshot: SerializedHtvState): HtvState {
+  const placementZone = snapshot.garment.placementZone ?? 'full-front';
+  const activePlacementZones = Array.isArray((snapshot.garment as Partial<typeof snapshot.garment> & { activePlacementZones?: string[] }).activePlacementZones)
+    ? (snapshot.garment as Partial<typeof snapshot.garment> & { activePlacementZones?: string[] }).activePlacementZones!.filter((value): value is HtvState['garment']['placementZone'] => typeof value === 'string')
+    : [placementZone];
   return {
     projectName: snapshot.projectName,
     layers: structuredClone(snapshot.layers),
     selectedLayerIds: new Set(snapshot.selectedLayerIds),
     canvas: structuredClone(snapshot.canvas),
-    garment: structuredClone(snapshot.garment),
+    garment: {
+      ...structuredClone(snapshot.garment),
+      placementZone,
+      activePlacementZones: activePlacementZones.length > 0 ? activePlacementZones : [placementZone],
+    },
     history: {
       past: snapshot.history.past.map((entry) => ({
         layers: structuredClone(entry.layers),
@@ -297,7 +305,7 @@ export function buildHtvDesignEntry(state: HtvState, existing?: HtvDesignEntry |
     updatedAt: now,
     previewText,
     layerCount: state.layers.length,
-    garmentLabel: `${state.garment.type} · ${state.garment.size} · ${state.garment.placementZone}`,
+    garmentLabel: `${state.garment.type} · ${state.garment.size} · ${state.garment.activePlacementZones.length} placement${state.garment.activePlacementZones.length === 1 ? '' : 's'}`,
     snapshot: serializeHtvState(state),
   };
 }

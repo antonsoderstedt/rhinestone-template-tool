@@ -98,6 +98,7 @@ export interface HtvGarmentState {
   size: GarmentSize;
   colorId: string;
   placementZone: HtvPlacementZone;
+  activePlacementZones: HtvPlacementZone[];
 }
 
 // ─── Canvas ─────────────────────────────────────────────────────────────────
@@ -125,7 +126,8 @@ export const DEFAULT_HTV_GARMENT_STATE: HtvGarmentState = {
   type: 'tshirt',
   size: 'M',
   colorId: 'white',
-  placementZone: 'center-chest',
+  placementZone: 'full-front',
+  activePlacementZones: ['full-front'],
 };
 
 export const DEFAULT_HTV_STATE: HtvState = {

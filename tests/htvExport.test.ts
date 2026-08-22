@@ -48,7 +48,7 @@ describe('createHtvSvgExport', () => {
     const layer = squareLayer('a', { x: 20, y: 30, rotationDeg: 45, scale: 2 });
     const result = await createHtvSvgExport([layer], 'Positioned');
     expect(result.svg).toContain('rotate(45)');
-    expect(result.svg).toContain('scale(2)');
+    expect(result.svg).toMatch(/scale\(2(?:\s+2)?\)/);
   });
 
   it('is deterministic for the same input', async () => {

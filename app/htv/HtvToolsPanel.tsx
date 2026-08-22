@@ -40,16 +40,23 @@ function PanelSection({ title, icon, children, defaultOpen = true }: { title: st
 export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile, onAddShape, onAddTemplate, designSurface, onToggleDesignSurface }: HtvToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeGarmentColor = getGarmentColor(state.garment.colorId);
-  const garmentColorsByFinish = useMemo(() => {
-    return HTV_FINISHES.map((finish) => ({
-      finish,
-      colors: GARMENT_COLORS.filter((swatch) => {
-        if (finish.id === 'metallic') return swatch.id === 'gold' || swatch.id === 'heather-gray';
-        if (finish.id === 'glitter') return swatch.id === 'purple-glitter' || swatch.id === 'royal-blue';
-        return finish.id === 'standard';
-      }),
-    }));
-  }, []);
+  const placementDefinitions = useMemo(() => HTV_PLACEMENT_ZONES, []);
+
+  const togglePlacement = (zone: HtvPlacementZone) => {
+    const active = new Set(state.garment.activePlacementZones);
+    if (active.has(zone)) {
+      if (active.size === 1) {
+        dispatch({ type: 'UPDATE_GARMENT', updates: { placementZone: zone } });
+        return;
+      }
+      active.delete(zone);
+      const nextSelected = state.garment.placementZone === zone ? [...active][0] ?? 'full-front' : state.garment.placementZone;
+      dispatch({ type: 'UPDATE_GARMENT', updates: { activePlacementZones: [...active], placementZone: nextSelected } });
+      return;
+    }
+    active.add(zone);
+    dispatch({ type: 'UPDATE_GARMENT', updates: { activePlacementZones: [...active], placementZone: zone } });
+  };
 
   return (
     <aside className="htv-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
@@ -181,6 +188,32 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
               {garment.displayName}
             </button>
           ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Print placements</span>
+          <div className="space-y-2">
+            {placementDefinitions.map((zone) => {
+              const enabled = state.garment.activePlacementZones.includes(zone.id);
+              const selected = state.garment.placementZone === zone.id;
+              return (
+                <button
+                  key={zone.id}
+                  type="button"
+                  onClick={() => togglePlacement(zone.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${selected ? 'border-violet-400/70 bg-violet-500/20 text-white' : enabled ? 'border-fuchsia-400/30 bg-fuchsia-500/10 text-zinc-100' : 'border-white/10 bg-[#17171a] text-zinc-400 hover:bg-[#1d1d22] hover:text-zinc-100'}`}
+                >
+                  <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${enabled ? 'bg-fuchsia-500 text-white' : 'bg-white/5 text-zinc-500'}`}>
+                    {enabled ? '✓' : '+'}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium uppercase tracking-[0.12em]">{zone.displayName}</span>
+                    <span className="block text-[10px] opacity-80">{zone.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-1.5">

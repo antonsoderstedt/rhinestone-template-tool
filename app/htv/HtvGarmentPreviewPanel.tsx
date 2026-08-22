@@ -12,7 +12,7 @@ import { X } from 'lucide-react';
 import { Shirt } from 'lucide-react';
 import GarmentSilhouette from '../components/garmentPreview/GarmentSilhouette';
 import { getGarmentColor } from '../components/garmentPreview/garmentCatalog';
-import { getPlacementZoneBox } from './htvPlacementZones';
+import { getPlacementViewForZone, getPlacementZoneBox } from './htvPlacementZones';
 import { computeDesignBounds } from './htvGeometry';
 import HtvLayerShape from './HtvLayerShape';
 import type { HtvState } from './HtvState';
@@ -29,6 +29,7 @@ export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarm
   const { garment, layers } = state;
   const color = getGarmentColor(garment.colorId);
   const zoneBox = getPlacementZoneBox(garment.type, garment.placementZone);
+  const view = getPlacementViewForZone(garment.placementZone);
 
   const overlayTransform = useMemo(() => {
     const bounds = computeDesignBounds(layers);
@@ -52,7 +53,7 @@ export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarm
             <div>
               <h2 className="text-sm font-semibold">Garment preview</h2>
               <p className="mt-0.5 text-xs text-ink-muted">
-                {garment.type === 'tshirt' ? 'T-shirt' : 'Hoodie'} · {garment.size} · {color.name}
+                {garment.type === 'tshirt' ? 'T-shirt' : 'Hoodie'} · {garment.size} · {color.name} · {view}
               </p>
             </div>
           </div>
@@ -63,7 +64,7 @@ export default function HtvGarmentPreviewPanel({ open, state, onClose }: HtvGarm
 
         <div className="flex min-h-[320px] flex-1 items-center justify-center p-6">
           <div className="h-full max-h-full w-full max-w-sm">
-            <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} showPrintAreaGuide={!overlayTransform}>
+            <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} view={view} guideBox={zoneBox} showPrintAreaGuide={!overlayTransform}>
               {overlayTransform &&
                 layers.filter((l) => l.visible).map((layer) => (
                   <g

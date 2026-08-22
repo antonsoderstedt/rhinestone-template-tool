@@ -90,15 +90,90 @@ interface GarmentSilhouetteProps {
   garmentId: GarmentType;
   color: GarmentColorSwatch;
   size: GarmentSize;
+  view?: 'front' | 'back' | 'left' | 'right';
   showPrintAreaGuide?: boolean;
+  guideBox?: { x: number; y: number; width: number; height: number } | null;
   children?: React.ReactNode;
 }
 
-export default function GarmentSilhouette({ garmentId, color, size, showPrintAreaGuide = true, children }: GarmentSilhouetteProps) {
+function TshirtBack({ id, fill }: { id: string; fill: string }) {
+  return (
+    <path
+      id={id}
+      d="M 112 42 Q 200 72 288 42 L 348 90 Q 356 99 349 112 L 306 150 L 300 450 L 100 450 L 94 150 L 51 112 Q 44 99 52 90 Z"
+      fill={fill}
+      stroke="rgba(0,0,0,0.18)"
+      strokeWidth={1.5}
+    />
+  );
+}
+
+function TshirtSide({ id, fill, mirror = false }: { id: string; fill: string; mirror?: boolean }) {
+  const path = (
+    <path
+      id={id}
+      d="M 170 44 Q 195 38 220 56 L 248 84 L 266 156 L 266 440 L 174 440 L 160 152 L 156 98 Q 156 56 170 44 Z"
+      fill={fill}
+      stroke="rgba(0,0,0,0.18)"
+      strokeWidth={1.5}
+    />
+  );
+  return mirror ? <g transform="translate(400 0) scale(-1 1)">{path}</g> : path;
+}
+
+function HoodieBack({ id, fill }: { id: string; fill: string }) {
+  return (
+    <>
+      <path
+        d="M 126 36 Q 200 4 274 36 L 310 96 Q 200 110 90 96 Z"
+        fill={fill}
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth={1.5}
+      />
+      <path
+        id={id}
+        d="M 130 62 Q 200 100 270 62 L 355 100 Q 368 112 358 128 L 300 190 L 296 450 L 104 450 L 100 190 L 42 128 Q 32 112 45 100 Z"
+        fill={fill}
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth={1.5}
+      />
+    </>
+  );
+}
+
+function HoodieSide({ id, fill, mirror = false }: { id: string; fill: string; mirror?: boolean }) {
+  const content = (
+    <>
+      <path
+        d="M 175 34 Q 208 28 236 58 L 276 112 L 274 164 L 272 446 L 176 446 L 162 180 L 156 112 Q 156 58 175 34 Z"
+        fill={fill}
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth={1.5}
+      />
+      <path id={id} d="M 175 34 Q 208 28 236 58" fill="none" />
+    </>
+  );
+  return mirror ? <g transform="translate(400 0) scale(-1 1)">{content}</g> : content;
+}
+
+export default function GarmentSilhouette({ garmentId, color, size, view = 'front', showPrintAreaGuide = true, guideBox, children }: GarmentSilhouetteProps) {
   const clipId = `garment-clip-${garmentId}`;
   const bodyId = `garment-body-${garmentId}`;
-  const printArea = getPrintAreaBox(garmentId, size);
+  const printArea = guideBox ?? getPrintAreaBox(garmentId, size);
   const shadingFill = color.shade === 'light' ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,1)';
+
+  const body = (() => {
+    if (garmentId === 'tshirt') {
+      if (view === 'back') return <TshirtBack id={bodyId} fill={color.hex} />;
+      if (view === 'left') return <TshirtSide id={bodyId} fill={color.hex} />;
+      if (view === 'right') return <TshirtSide id={bodyId} fill={color.hex} mirror />;
+      return <TshirtBody id={bodyId} fill={color.hex} />;
+    }
+    if (view === 'back') return <HoodieBack id={bodyId} fill={color.hex} />;
+    if (view === 'left') return <HoodieSide id={bodyId} fill={color.hex} />;
+    if (view === 'right') return <HoodieSide id={bodyId} fill={color.hex} mirror />;
+    return <HoodieBody id={bodyId} fill={color.hex} />;
+  })();
 
   return (
     <svg
@@ -118,7 +193,7 @@ export default function GarmentSilhouette({ garmentId, color, size, showPrintAre
         </radialGradient>
       </defs>
 
-      {garmentId === 'tshirt' ? <TshirtBody id={bodyId} fill={color.hex} /> : <HoodieBody id={bodyId} fill={color.hex} />}
+      {body}
 
       <g clipPath={`url(#${clipId})`}>
         <path d="M 40 40 L 200 40 L 120 460 L 40 460 Z" fill={shadingFill} opacity={0.05} />

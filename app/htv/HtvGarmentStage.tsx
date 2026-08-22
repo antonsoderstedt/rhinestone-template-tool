@@ -3,7 +3,7 @@
 import { Shirt } from 'lucide-react';
 import GarmentSilhouette from '../components/garmentPreview/GarmentSilhouette';
 import { getGarmentColor } from '../components/garmentPreview/garmentCatalog';
-import { getPlacementZoneBox } from './htvPlacementZones';
+import { getPlacementViewForZone, getPlacementZoneBox } from './htvPlacementZones';
 import { computeDesignBounds } from './htvGeometry';
 import HtvLayerShape from './HtvLayerShape';
 import type { HtvState } from './HtvState';
@@ -14,6 +14,7 @@ export default function HtvGarmentStage({ state }: { state: HtvState }) {
   const { garment, layers } = state;
   const color = getGarmentColor(garment.colorId);
   const zoneBox = getPlacementZoneBox(garment.type, garment.placementZone);
+  const view = getPlacementViewForZone(garment.placementZone);
   const bounds = computeDesignBounds(layers);
 
   const transform = bounds && bounds.width > 0 && bounds.height > 0
@@ -39,10 +40,10 @@ export default function HtvGarmentStage({ state }: { state: HtvState }) {
       <div className="w-full max-w-[780px] rounded-lg border border-white/10 bg-[#17171a] p-4 shadow-2xl shadow-black/30 lg:p-6">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-300">
           <Shirt className="h-4 w-4 text-violet-300" />
-          <span>{garment.type === 'tshirt' ? 'T-shirt' : 'Hoodie'} · {garment.size} · {color.name}</span>
+          <span>{garment.type === 'tshirt' ? 'T-shirt' : 'Hoodie'} · {garment.size} · {color.name} · {view}</span>
         </div>
         <div className="aspect-[5/6] w-full overflow-hidden rounded-md border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_35%),linear-gradient(180deg,#2a2b31,#1b1c21)]">
-          <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} showPrintAreaGuide={!transform}>
+          <GarmentSilhouette garmentId={garment.type} color={color} size={garment.size} view={view} guideBox={zoneBox} showPrintAreaGuide={!transform}>
             {transform && layers.filter((layer) => layer.visible).map((layer) => (
               <g
                 key={layer.id}
@@ -52,6 +53,13 @@ export default function HtvGarmentStage({ state }: { state: HtvState }) {
               </g>
             ))}
           </GarmentSilhouette>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
+          {garment.activePlacementZones.map((zone) => (
+            <span key={zone} className={`rounded-full border px-2.5 py-1 ${zone === garment.placementZone ? 'border-violet-400/60 bg-violet-500/15 text-violet-100' : 'border-white/10 bg-white/5 text-zinc-400'}`}>
+              {zone}
+            </span>
+          ))}
         </div>
       </div>
     </div>
