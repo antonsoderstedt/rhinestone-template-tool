@@ -7,6 +7,7 @@ import {
   createHtvVectorLayer,
   type HtvState,
 } from '../app/htv/HtvState';
+import { deserializeHtvState, serializeHtvState } from '../app/lib/workspaceVault';
 
 function vectorLayer(id: string, x = 0, y = 0) {
   return createHtvVectorLayer({
@@ -113,6 +114,64 @@ describe('htvReducer', () => {
     state = htvReducer(state, { type: 'UPDATE_CANVAS', updates: { zoom: 2 } });
     expect(state.canvas.zoom).toBe(2);
   });
+
+  it('applies color palettes only to layers on the active placement', () => {
+    let state = htvReducer(freshState(), {
+      type: 'ADD_LAYERS',
+      layers: [
+        vectorLayer('front-a'),
+        createHtvVectorLayer({
+          id: 'back-a',
+          placementId: 'full-back',
+          polylines: [{ points: [{ x: -5, y: -5 }, { x: 5, y: -5 }, { x: 5, y: 5 }, { x: -5, y: 5 }], closed: true }],
+          naturalWidthMm: 10,
+          naturalHeightMm: 10,
+          sourceKind: 'svg-upload',
+        }),
+        createHtvVectorLayer({
+          id: 'back-b',
+          placementId: 'full-back',
+          polylines: [{ points: [{ x: -5, y: -5 }, { x: 5, y: -5 }, { x: 5, y: 5 }, { x: -5, y: 5 }], closed: true }],
+          naturalWidthMm: 10,
+          naturalHeightMm: 10,
+          sourceKind: 'svg-upload',
+        }),
+      ],
+    });
+
+    state = htvReducer(state, {
+      type: 'UPDATE_GARMENT',
+      updates: { placementZone: 'full-back', activePlacementZones: ['full-front', 'full-back'] },
+    });
+    state = htvReducer(state, { type: 'APPLY_COLOR_PALETTE', colorIds: ['red', 'blue'] });
+
+    expect(state.layers.map((layer) => [layer.id, layer.colorId])).toEqual([
+      ['front-a', 'black'],
+      ['back-a', 'red'],
+      ['back-b', 'blue'],
+    ]);
+  });
+
+  it('supports partial layer ordering without disturbing other placement stacks', () => {
+    let state = htvReducer(freshState(), {
+      type: 'ADD_LAYERS',
+      layers: [
+        vectorLayer('front-a'),
+        createHtvVectorLayer({
+          id: 'back-a',
+          placementId: 'full-back',
+          polylines: [{ points: [{ x: -5, y: -5 }, { x: 5, y: -5 }, { x: 5, y: 5 }, { x: -5, y: 5 }], closed: true }],
+          naturalWidthMm: 10,
+          naturalHeightMm: 10,
+          sourceKind: 'svg-upload',
+        }),
+        vectorLayer('front-b'),
+      ],
+    });
+
+    state = htvReducer(state, { type: 'SET_LAYER_ORDER', orderedIds: ['front-b', 'front-a'] });
+    expect(state.layers.map((layer) => layer.id)).toEqual(['front-b', 'back-a', 'front-a']);
+  });
 });
 
 describe('createHtvTextLayer', () => {
@@ -123,5 +182,18 @@ describe('createHtvTextLayer', () => {
     expect(layer.visible).toBe(true);
     expect(layer.locked).toBe(false);
     expect(layer.scale).toBe(1);
+  });
+
+  it('normalizes legacy tshirt garment state to the tee profile when deserializing', () => {
+    const serialized = serializeHtvState({
+      ...freshState(),
+      garment: {
+        ...freshState().garment,
+        type: 'tshirt',
+      },
+    });
+
+    const restored = deserializeHtvState(serialized);
+    expect(restored.garment.type).toBe('tee');
   });
 });

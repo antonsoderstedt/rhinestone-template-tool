@@ -34,7 +34,7 @@ import { HTV_COLORS, getHtvColor } from './htvMaterialCatalog';
 import { HTV_TEXT_PRESETS } from './htvTextPresets';
 import { computeBoundsForLayers, computePolylinesBounds, HTV_WORKSPACE_SIZE_MM, polylinesToPathD, transformedLayerBounds } from './htvGeometry';
 import { useHtvTextGeometry } from './useHtvTextGeometry';
-import { listOutlineFonts, type Polyline } from '@/src/lib/rhinestone-engine/index';
+import { getOutlineFontDefinition, getOutlineFontFaceCss, listOutlineFonts, type Polyline } from '@/src/lib/rhinestone-engine/index';
 
 interface HtvInspectorPanelProps {
   state: HtvState;
@@ -62,15 +62,21 @@ function PanelSection({ title, children, defaultOpen = true }: { title: string; 
 }
 
 export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, onOffsetLayer }: HtvInspectorPanelProps) {
-  const selectedLayers = state.layers.filter((l) => state.selectedLayerIds.has(l.id));
+  const placementLayers = state.layers.filter((l) => l.placementId === state.garment.placementZone);
+  const selectedLayers = placementLayers.filter((l) => state.selectedLayerIds.has(l.id));
   const singleLayer = selectedLayers.length === 1 ? selectedLayers[0]! : null;
+  const otherPlacementLayerCount = state.layers.filter((l) => l.placementId !== state.garment.placementZone).length;
 
   return (
     <aside className="htv-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
       <PanelSection title="Inspector">
         {selectedLayers.length === 0 ? (
           <div className="rounded-md border border-dashed border-white/15 bg-[#17171a] px-3 py-4 text-xs leading-6 text-zinc-500">
-            Select a layer to edit its position, color, and other properties.
+            {placementLayers.length > 0
+              ? 'Select a layer to edit its position, color, and other properties.'
+              : otherPlacementLayerCount > 0
+                ? 'This placement is empty. Switch placement or enable another zone to edit those layers.'
+                : 'Select a layer to edit its position, color, and other properties.'}
           </div>
         ) : (
           <div className="space-y-4">
@@ -164,12 +170,12 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
       </PanelSection>
 
       <PanelSection title="Layers">
-        {state.layers.length === 0 ? (
+        {placementLayers.length === 0 ? (
           <div className="rounded-md border border-dashed border-white/15 bg-[#17171a] px-3 py-4 text-xs leading-6 text-zinc-500">
             No layers yet. Add text or import artwork to get started.
           </div>
         ) : (
-          <LayerList state={state} dispatch={dispatch} />
+          <LayerList state={state} layers={placementLayers} dispatch={dispatch} />
         )}
       </PanelSection>
     </aside>
@@ -178,9 +184,12 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
 
 function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'text' }>; dispatch: React.Dispatch<HtvAction> }) {
   const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), []);
+  const previewText = layer.text.trim() || 'Sulay 123';
+  const selectedFont = getOutlineFontDefinition(layer.fontId);
 
   return (
     <div className="space-y-3 rounded-md border border-white/10 bg-[#17171a] p-3">
+      <style dangerouslySetInnerHTML={{ __html: getOutlineFontFaceCss() }} />
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Text</span>
         <textarea
@@ -190,20 +199,39 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
           className="rounded-md border border-white/10 bg-[#202024] px-2 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-400"
         />
       </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Font</span>
-        <select
-          value={layer.fontId}
-          onChange={(e) => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { fontId: e.target.value } })}
-          className="rounded-md border border-white/10 bg-[#202024] px-2 py-2 text-sm text-zinc-100"
-        >
-          {outlineFonts.map((font) => (
-            <option key={font.fontId} value={font.fontId}>
-              {font.displayName}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="space-y-2 rounded-md border border-white/10 bg-[#202024] p-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Font</span>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">{selectedFont.category}</span>
+        </div>
+        <div className="rounded-md border border-white/10 bg-[#17171a] px-3 py-2">
+          <div className="text-xs font-medium text-zinc-200">{selectedFont.displayName}</div>
+          <div className="mt-1 truncate text-lg text-zinc-100" style={{ fontFamily: selectedFont.previewFontFamily }}>
+            {previewText}
+          </div>
+        </div>
+        <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
+          {outlineFonts.map((font) => {
+            const selected = font.fontId === layer.fontId;
+            return (
+              <button
+                key={font.fontId}
+                type="button"
+                onClick={() => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { fontId: font.fontId } })}
+                className={`w-full rounded-lg border px-3 py-2 text-left transition ${selected ? 'border-violet-400/70 bg-violet-500/18 text-white' : 'border-white/10 bg-[#17171a] text-zinc-300 hover:border-white/20 hover:bg-[#1d1d22]'}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{font.displayName}</span>
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{font.category}</span>
+                </div>
+                <div className="mt-1 truncate text-base leading-tight" style={{ fontFamily: font.previewFontFamily }}>
+                  {previewText}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="space-y-1.5">
         <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Style presets</span>
@@ -489,10 +517,9 @@ function ArrangeButton({ title, onClick, disabled, children }: { title: string; 
   );
 }
 
-function LayerList({ state, dispatch }: { state: HtvState; dispatch: React.Dispatch<HtvAction> }) {
+function LayerList({ state, layers, dispatch }: { state: HtvState; layers: HtvLayer[]; dispatch: React.Dispatch<HtvAction> }) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  // Display top-to-bottom in front-to-back order; state.layers is stored back-to-front.
-  const displayLayers = [...state.layers].reverse();
+  const displayLayers = [...layers].reverse();
 
   const handleDrop = (targetId: string) => {
     if (!draggedId || draggedId === targetId) {
@@ -518,7 +545,7 @@ function LayerList({ state, dispatch }: { state: HtvState; dispatch: React.Dispa
         <LayerRow
           key={layer.id}
           layer={layer}
-          allLayers={state.layers}
+          allLayers={layers}
           selected={state.selectedLayerIds.has(layer.id)}
           dispatch={dispatch}
           dragging={draggedId === layer.id}

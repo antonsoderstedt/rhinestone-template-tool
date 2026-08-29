@@ -31,6 +31,7 @@ type Interaction =
 export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
+  const placementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
 
   const viewBoxSize = WORKSPACE_SIZE_MM / state.canvas.zoom;
   const viewBoxX = -viewBoxSize / 2 + state.canvas.panX;
@@ -58,14 +59,14 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
     if (event.shiftKey) {
       nextSelection = alreadySelected
         ? [...state.selectedLayerIds].filter((id) => id !== layer.id)
-        : expandSelectionToGroups(state.layers, [...state.selectedLayerIds, layer.id]);
+        : expandSelectionToGroups(placementLayers, [...state.selectedLayerIds, layer.id]);
     } else {
-      nextSelection = alreadySelected ? [...state.selectedLayerIds] : expandSelectionToGroups(state.layers, [layer.id]);
+      nextSelection = alreadySelected ? [...state.selectedLayerIds] : expandSelectionToGroups(placementLayers, [layer.id]);
     }
     dispatch({ type: 'SET_SELECTED_LAYERS', ids: nextSelection });
 
     const originalPositions = new Map<string, { x: number; y: number }>();
-    for (const l of state.layers) {
+    for (const l of placementLayers) {
       if (nextSelection.includes(l.id)) originalPositions.set(l.id, { x: l.x, y: l.y });
     }
 
@@ -137,14 +138,14 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         const maxX = Math.max(interaction.startMmX, interaction.curMmX);
         const minY = Math.min(interaction.startMmY, interaction.curMmY);
         const maxY = Math.max(interaction.startMmY, interaction.curMmY);
-        const hits = state.layers
+        const hits = placementLayers
           .filter((l) => l.visible && !l.locked)
           .filter((l) => {
             const b = transformedLayerBounds(l);
             return b.minX <= maxX && b.maxX >= minX && b.minY <= maxY && b.maxY >= minY;
           })
           .map((l) => l.id);
-        dispatch({ type: 'SET_SELECTED_LAYERS', ids: expandSelectionToGroups(state.layers, hits) });
+        dispatch({ type: 'SET_SELECTED_LAYERS', ids: expandSelectionToGroups(placementLayers, hits) });
       } else if (state.selectedLayerIds.size > 0) {
         dispatch({ type: 'SET_SELECTED_LAYERS', ids: [] });
       }
@@ -163,14 +164,14 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const resetView = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
 
   const singleSelectedLayer =
-    state.selectedLayerIds.size === 1 ? state.layers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
+    state.selectedLayerIds.size === 1 ? placementLayers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
   return (
     <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[#202024]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 shadow-md backdrop-blur-sm">
         <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">HTV canvas</div>
         <div className="mt-1 text-xs text-zinc-400">
-          {state.layers.length > 0 ? `${state.layers.length} layer${state.layers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
+          {placementLayers.length > 0 ? `${placementLayers.length} layer${placementLayers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>
       </div>
       <svg
@@ -184,7 +185,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} fill="#202024" />
         <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill="#2a2b31" stroke="rgba(255,255,255,0.08)" />
 
-        {state.layers.map((layer) => {
+        {placementLayers.map((layer) => {
           if (!layer.visible) return null;
           const selected = state.selectedLayerIds.has(layer.id);
           return (
@@ -222,7 +223,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
           />
         )}
 
-        {state.layers.length === 0 && (
+        {placementLayers.length === 0 && (
           <g pointerEvents="none">
             <text x={0} y={-8} textAnchor="middle" fill="#d4d4d8" style={{ fontSize: '12px', fontWeight: 700 }}>
               Empty HTV workspace

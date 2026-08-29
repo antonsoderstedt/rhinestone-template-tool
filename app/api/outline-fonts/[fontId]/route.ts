@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { getOutlineFontDefinition, isKnownOutlineFontId } from '@/src/lib/rhinestone-engine/index';
+
+function contentTypeForFontFile(filePath: string): string {
+  return path.extname(filePath).toLowerCase() === '.woff2' ? 'font/woff2' : 'font/woff';
+}
 
 export async function GET(
   _request: Request,
@@ -20,7 +25,7 @@ export async function GET(
   const fileBuffer = await readFile(definition.nodeFilePath);
   return new NextResponse(fileBuffer, {
     headers: {
-      'Content-Type': 'font/woff',
+      'Content-Type': contentTypeForFontFile(definition.nodeFilePath),
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });

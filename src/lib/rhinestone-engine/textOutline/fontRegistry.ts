@@ -200,7 +200,7 @@ export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
     fontWeight: 400,
     fontStyle: 'normal',
     assetUrl: localFontAssetUrl('fredoka-one'),
-    nodeFilePath: 'node_modules/@fontsource/fredoka-one/files/fredoka-one-latin-400-normal.woff',
+    nodeFilePath: 'node_modules/@fontsource/fredoka-one/files/fredoka-one-latin-400-normal.woff2',
     license: 'OFL-1.1',
     licenseSource: '@fontsource/fredoka-one / Google Fonts',
     packageName: '@fontsource/fredoka-one',

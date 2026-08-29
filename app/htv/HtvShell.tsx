@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import type { WorkspaceAsset } from '../lib/workspaceVault';
 import {
   DEFAULT_HTV_STATE,
   createHtvTextLayer,
@@ -21,6 +22,7 @@ import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
 import { getDesignTemplate, type HtvDesignTemplateId } from './htvDesignTemplates';
+import { getPlacementsForGarmentType } from './htvPlacementZones';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { listOutlineFonts, svgStringToPolylines, type TraceableImageData } from '@/src/lib/rhinestone-engine/index';
 import {
@@ -40,8 +42,10 @@ export default function HtvShell() {
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
+  const [placementOverlayMode, setPlacementOverlayMode] = useState<'active-only' | 'all-active'>('all-active');
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
+  const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>(() => readWorkspaceVault().assets.filter((asset) => !asset.archived));
   const nextLayerIdRef = useRef(0);
   const handledQueryRef = useRef<string | null>(null);
 
@@ -69,9 +73,9 @@ export default function HtvShell() {
   }, []);
 
   const handleAddText = useCallback(() => {
-    const layer = createHtvTextLayer({ id: createLayerId('text'), fontId: DEFAULT_TEXT_FONT_ID, text: 'TEXT' });
+    const layer = createHtvTextLayer({ id: createLayerId('text'), fontId: DEFAULT_TEXT_FONT_ID, text: 'TEXT', placementId: state.garment.placementZone });
     dispatch({ type: 'ADD_LAYERS', layers: [layer] });
-  }, [createLayerId]);
+  }, [createLayerId, state.garment.placementZone]);
 
   const handleAddShape = useCallback((shapeId: HtvShapeId) => {
     const { polylines, widthMm, heightMm } = createShapePolylines(shapeId);
@@ -81,10 +85,11 @@ export default function HtvShell() {
       polylines,
       naturalWidthMm: widthMm,
       naturalHeightMm: heightMm,
+      placementId: state.garment.placementZone,
       sourceKind: 'library-asset',
     });
     dispatch({ type: 'ADD_LAYERS', layers: [layer] });
-  }, [createLayerId]);
+  }, [createLayerId, state.garment.placementZone]);
 
   const handleAddTemplate = useCallback((templateId: HtvDesignTemplateId) => {
     const template = getDesignTemplate(templateId);
@@ -147,6 +152,7 @@ export default function HtvShell() {
           polylines,
           naturalWidthMm: widthMm,
           naturalHeightMm: heightMm,
+          placementId: state.garment.placementZone,
           sourceKind: 'svg-upload',
         });
         dispatch({ type: 'ADD_LAYERS', layers: [layer] });
@@ -164,7 +170,61 @@ export default function HtvShell() {
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Could not import this file.', tone: 'error' });
     }
-  }, [createLayerId]);
+  }, [createLayerId, state.garment.placementZone]);
+
+  const refreshLibraryAssets = useCallback(() => {
+    const vault = readWorkspaceVault();
+    setLibraryAssets(vault.assets.filter((asset) => !asset.archived).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
+  }, []);
+
+  useEffect(() => {
+    refreshLibraryAssets();
+    const handleFocus = () => refreshLibraryAssets();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [refreshLibraryAssets]);
+
+  const insertWorkspaceAsset = useCallback(async (asset: WorkspaceAsset) => {
+    dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
+    if (asset.kind === 'svg' && asset.svgText) {
+      const raw = svgStringToPolylines(asset.svgText);
+      if (raw.length === 0) {
+        setToast({ message: 'This library SVG had no readable shapes.', tone: 'warning' });
+        return;
+      }
+      const { polylines, widthMm, heightMm } = centerPolylines(raw);
+      dispatch({
+        type: 'ADD_LAYERS',
+        layers: [createHtvVectorLayer({
+          id: createLayerId('svg'),
+          name: asset.name,
+          polylines,
+          naturalWidthMm: widthMm,
+          naturalHeightMm: heightMm,
+          placementId: state.garment.placementZone,
+          sourceKind: 'svg-upload',
+        })],
+      });
+      return;
+    }
+
+    const image = await decodeRasterImageDataUrl(asset.sourceDataUrl);
+    setPendingImage({ image, previewDataUrl: asset.sourceDataUrl });
+  }, [createLayerId, state.garment.placementZone]);
+
+  const handleAddLibraryAsset = useCallback(async (assetId: string) => {
+    const asset = findAssetById(assetId);
+    if (!asset) {
+      setToast({ message: 'That library asset could not be found.', tone: 'warning' });
+      refreshLibraryAssets();
+      return;
+    }
+    await insertWorkspaceAsset(asset);
+  }, [insertWorkspaceAsset, refreshLibraryAssets]);
 
   const handleApplySilhouette = useCallback((result: { polylines: ReturnType<typeof centerPolylines>['polylines']; widthMm: number; heightMm: number }) => {
     const layer = createHtvVectorLayer({
@@ -173,11 +233,12 @@ export default function HtvShell() {
       polylines: result.polylines,
       naturalWidthMm: result.widthMm,
       naturalHeightMm: result.heightMm,
+      placementId: state.garment.placementZone,
       sourceKind: 'silhouette-trace',
     });
     dispatch({ type: 'ADD_LAYERS', layers: [layer] });
     setPendingImage(null);
-  }, [createLayerId]);
+  }, [createLayerId, state.garment.placementZone]);
 
   const handleSaveDesign = useCallback(() => {
     const vault = readWorkspaceVault();
@@ -196,7 +257,8 @@ export default function HtvShell() {
 
   const handleExport = useCallback(async () => {
     try {
-      const result = await createHtvSvgExport(state.layers, state.projectName);
+      const exportLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+      const result = await createHtvSvgExport(exportLayers, state.projectName);
       const blob = new Blob([result.svg], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -208,7 +270,7 @@ export default function HtvShell() {
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Export failed.', tone: 'error' });
     }
-  }, [state.layers, state.projectName]);
+  }, [state.garment.placementZone, state.layers, state.projectName]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -251,6 +313,23 @@ export default function HtvShell() {
   }, [state.selectedLayerIds, state.layers]);
 
   const hasLayers = state.layers.length > 0;
+  const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+
+  useEffect(() => {
+    const activePlacements = getPlacementsForGarmentType(state.garment.type).map((item) => item.id);
+    if (!activePlacements.includes(state.garment.placementZone)) {
+      const fallback = activePlacements[0] ?? 'full-front';
+      dispatch({ type: 'UPDATE_GARMENT', updates: { placementZone: fallback, activePlacementZones: [fallback], size: state.garment.type === 'tote' ? 'OS' : state.garment.size === 'OS' ? 'M' : state.garment.size } });
+    }
+  }, [state.garment.type, state.garment.placementZone, state.garment.size]);
+
+  useEffect(() => {
+    const placementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+    const selectionForPlacement = [...state.selectedLayerIds].filter((id) => placementLayers.some((layer) => layer.id === id));
+    if (selectionForPlacement.length !== state.selectedLayerIds.size) {
+      dispatch({ type: 'SET_SELECTED_LAYERS', ids: selectionForPlacement });
+    }
+  }, [state.garment.placementZone, state.layers, state.selectedLayerIds]);
 
   useEffect(() => {
     syncNextLayerId(state.layers);
@@ -281,27 +360,7 @@ export default function HtvShell() {
       if (assetId) {
         const asset = findAssetById(assetId);
         if (asset) {
-          dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
-          if (asset.kind === 'svg' && asset.svgText) {
-            const raw = svgStringToPolylines(asset.svgText);
-            if (raw.length > 0) {
-              const { polylines, widthMm, heightMm } = centerPolylines(raw);
-              dispatch({
-                type: 'ADD_LAYERS',
-                layers: [createHtvVectorLayer({
-                  id: createLayerId('svg'),
-                  name: asset.name,
-                  polylines,
-                  naturalWidthMm: widthMm,
-                  naturalHeightMm: heightMm,
-                  sourceKind: 'svg-upload',
-                })],
-              });
-            }
-          } else if (asset.kind === 'image') {
-            const image = await decodeRasterImageDataUrl(asset.sourceDataUrl);
-            setPendingImage({ image, previewDataUrl: asset.sourceDataUrl });
-          }
+          await insertWorkspaceAsset(asset);
           handledQueryRef.current = queryKey;
           return;
         }
@@ -315,6 +374,7 @@ export default function HtvShell() {
             id: createLayerId('text'),
             text: launchText ?? 'Sulay 123',
             fontId,
+            placementId: state.garment.placementZone,
           })],
         });
         handledQueryRef.current = queryKey;
@@ -330,8 +390,8 @@ export default function HtvShell() {
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
         canRedo={state.history.future.length > 0}
-        canExport={hasLayers}
-        canPreviewGarment={hasLayers}
+        canExport={activePlacementLayers.length > 0}
+        canPreviewGarment={activePlacementLayers.length > 0}
         designSurface={designSurface}
         dispatch={dispatch}
         onSaveDesign={handleSaveDesign}
@@ -345,17 +405,21 @@ export default function HtvShell() {
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
+            libraryAssets={libraryAssets}
             onAddText={handleAddText}
             onImportFile={handleImportFile}
             onAddShape={handleAddShape}
             onAddTemplate={handleAddTemplate}
+            onAddLibraryAsset={handleAddLibraryAsset}
             designSurface={designSurface}
             onToggleDesignSurface={setDesignSurface}
+            placementOverlayMode={placementOverlayMode}
+            onTogglePlacementOverlayMode={setPlacementOverlayMode}
           />
         </div>
 
         <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
-          {designSurface === 'garment' ? <HtvGarmentStage state={state} /> : <HtvCanvas state={state} dispatch={dispatch} />}
+          {designSurface === 'garment' ? <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} /> : <HtvCanvas state={state} dispatch={dispatch} />}
         </div>
 
         <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
@@ -376,7 +440,7 @@ export default function HtvShell() {
           />
         )}
 
-        <HtvGarmentPreviewPanel open={garmentPreviewOpen} state={state} onClose={() => setGarmentPreviewOpen(false)} />
+        <HtvGarmentPreviewPanel open={garmentPreviewOpen} state={state} showAllPlacementOverlays={placementOverlayMode === 'all-active'} onClose={() => setGarmentPreviewOpen(false)} />
       </div>
 
       {toast && (

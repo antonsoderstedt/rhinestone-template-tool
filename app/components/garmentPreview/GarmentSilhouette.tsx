@@ -9,13 +9,17 @@
  */
 
 import type { GarmentColorSwatch, GarmentSize, GarmentType } from './garmentCatalog';
-import { GARMENTS } from './garmentCatalog';
+import { GARMENTS, getGarmentDefinition, normalizeGarmentType } from './garmentCatalog';
 
 export const GARMENT_VIEWBOX = { width: 400, height: 480 };
 
 const REFERENCE_BOX_BY_GARMENT: Record<GarmentType, { x: number; y: number; width: number; height: number }> = {
+  tee: { x: 140, y: 140, width: 120, height: 160 },
+  'oversized-tee': { x: 136, y: 146, width: 130, height: 166 },
+  'cropped-tee': { x: 144, y: 124, width: 110, height: 116 },
   tshirt: { x: 140, y: 140, width: 120, height: 160 },
   hoodie: { x: 140, y: 128, width: 120, height: 148 },
+  tote: { x: 112, y: 146, width: 176, height: 182 },
 };
 
 /**
@@ -25,8 +29,9 @@ const REFERENCE_BOX_BY_GARMENT: Record<GarmentType, { x: number; y: number; widt
  * on the same anchor point so it reads as "the same spot, bigger/smaller."
  */
 export function getPrintAreaBox(garmentId: GarmentType, size: GarmentSize) {
-  const definition = GARMENTS.find((g) => g.id === garmentId)!;
-  const reference = REFERENCE_BOX_BY_GARMENT[garmentId];
+  const normalizedGarmentId = normalizeGarmentType(garmentId);
+  const definition = GARMENTS.find((g) => g.id === normalizedGarmentId)!;
+  const reference = REFERENCE_BOX_BY_GARMENT[normalizedGarmentId];
   const mSize = definition.printAreaMmBySize.M;
   const thisSize = definition.printAreaMmBySize[size];
   const scale = thisSize.widthMm / mSize.widthMm;
@@ -156,18 +161,43 @@ function HoodieSide({ id, fill, mirror = false }: { id: string; fill: string; mi
   return mirror ? <g transform="translate(400 0) scale(-1 1)">{content}</g> : content;
 }
 
+function ToteBody({ id, fill }: { id: string; fill: string }) {
+  return (
+    <>
+      <path
+        d="M 128 146 Q 146 92 200 92 Q 254 92 272 146"
+        fill="none"
+        stroke="rgba(0,0,0,0.2)"
+        strokeWidth={12}
+        strokeLinecap="round"
+      />
+      <path
+        id={id}
+        d="M 108 144 L 292 144 L 270 430 Q 268 446 252 446 L 148 446 Q 132 446 130 430 Z"
+        fill={fill}
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth={1.5}
+      />
+    </>
+  );
+}
+
 export default function GarmentSilhouette({ garmentId, color, size, view = 'front', showPrintAreaGuide = true, guideBox, children }: GarmentSilhouetteProps) {
+  const definition = getGarmentDefinition(garmentId);
   const clipId = `garment-clip-${garmentId}`;
   const bodyId = `garment-body-${garmentId}`;
   const printArea = guideBox ?? getPrintAreaBox(garmentId, size);
   const shadingFill = color.shade === 'light' ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,1)';
 
   const body = (() => {
-    if (garmentId === 'tshirt') {
+    if (definition.family === 'tee') {
       if (view === 'back') return <TshirtBack id={bodyId} fill={color.hex} />;
       if (view === 'left') return <TshirtSide id={bodyId} fill={color.hex} />;
       if (view === 'right') return <TshirtSide id={bodyId} fill={color.hex} mirror />;
       return <TshirtBody id={bodyId} fill={color.hex} />;
+    }
+    if (definition.family === 'tote') {
+      return <ToteBody id={bodyId} fill={color.hex} />;
     }
     if (view === 'back') return <HoodieBack id={bodyId} fill={color.hex} />;
     if (view === 'left') return <HoodieSide id={bodyId} fill={color.hex} />;
@@ -180,7 +210,7 @@ export default function GarmentSilhouette({ garmentId, color, size, view = 'fron
       viewBox={`0 0 ${GARMENT_VIEWBOX.width} ${GARMENT_VIEWBOX.height}`}
       className="h-full w-full"
       role="img"
-      aria-label={`${garmentId === 'tshirt' ? 'T-shirt' : 'Hoodie'} mockup preview, size ${size}`}
+      aria-label={`${definition.displayName} mockup preview, size ${size}`}
     >
       <defs>
         <clipPath id={clipId}>

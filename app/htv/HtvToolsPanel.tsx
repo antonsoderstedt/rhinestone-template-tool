@@ -1,25 +1,31 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useRef } from 'react';
-import { Palette, Shapes, Shirt, Sparkles, Type, Upload } from 'lucide-react';
+import { LibraryBig, Palette, Shapes, Shirt, Sparkles, Type, Upload } from 'lucide-react';
 import type { HtvAction, HtvState } from './HtvState';
-import { GARMENTS, GARMENT_COLORS, GARMENT_SIZES, getGarmentColor, type GarmentSize, type GarmentType } from '../components/garmentPreview/garmentCatalog';
-import { HTV_PLACEMENT_ZONES, type HtvPlacementZone } from './htvPlacementZones';
+import { GARMENTS, GARMENT_COLORS, getGarmentColor, type GarmentSize, type GarmentType } from '../components/garmentPreview/garmentCatalog';
+import { getPlacementsForGarmentType, type HtvPlacementZone } from './htvPlacementZones';
 import { HTV_SHAPES, type HtvShapeId } from './htvShapeLibrary';
 import { HTV_DESIGN_TEMPLATES, type HtvDesignTemplateId } from './htvDesignTemplates';
 import { HTV_COLOR_PALETTES } from './htvColorPalettes';
-import { getHtvColor, HTV_FINISHES } from './htvMaterialCatalog';
+import { getHtvColor } from './htvMaterialCatalog';
 import ShapeThumbnail from './ShapeThumbnail';
+import type { WorkspaceAsset } from '../lib/workspaceVault';
 
 interface HtvToolsPanelProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
+  libraryAssets: WorkspaceAsset[];
   onAddText: () => void;
   onImportFile: (file: File) => void;
   onAddShape: (shapeId: HtvShapeId) => void;
   onAddTemplate: (templateId: HtvDesignTemplateId) => void;
+  onAddLibraryAsset: (assetId: string) => void;
   designSurface: 'canvas' | 'garment';
   onToggleDesignSurface: (surface: 'canvas' | 'garment') => void;
+  placementOverlayMode: 'active-only' | 'all-active';
+  onTogglePlacementOverlayMode: (mode: 'active-only' | 'all-active') => void;
 }
 
 function PanelSection({ title, icon, children, defaultOpen = true }: { title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -37,10 +43,12 @@ function PanelSection({ title, icon, children, defaultOpen = true }: { title: st
   );
 }
 
-export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile, onAddShape, onAddTemplate, designSurface, onToggleDesignSurface }: HtvToolsPanelProps) {
+export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeGarmentColor = getGarmentColor(state.garment.colorId);
-  const placementDefinitions = useMemo(() => HTV_PLACEMENT_ZONES, []);
+  const placementDefinitions = useMemo(() => getPlacementsForGarmentType(state.garment.type), [state.garment.type]);
+  const garmentDefinition = useMemo(() => GARMENTS.find((garment) => garment.id === state.garment.type) ?? GARMENTS[0]!, [state.garment.type]);
+  const recentLibraryAssets = useMemo(() => libraryAssets.slice(0, 6), [libraryAssets]);
 
   const togglePlacement = (zone: HtvPlacementZone) => {
     const active = new Set(state.garment.activePlacementZones);
@@ -91,6 +99,40 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
             <span className="text-[11px] text-zinc-500">SVG, PNG, or JPEG</span>
           </button>
         </div>
+      </PanelSection>
+
+      <PanelSection title="Workspace library" icon={<LibraryBig className="h-4 w-4 text-zinc-500" />}>
+        {recentLibraryAssets.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-white/10 bg-[#17171a] px-3 py-3 text-xs leading-6 text-zinc-500">
+            No library assets yet. Upload assets in Library and they will appear here.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {recentLibraryAssets.map((asset) => (
+              <button
+                key={asset.assetId}
+                type="button"
+                onClick={() => onAddLibraryAsset(asset.assetId)}
+                className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#17171a] px-2.5 py-2 text-left transition hover:border-white/20 hover:bg-[#1d1d22]"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-white/5">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- asset previews come from local workspace data URLs */}
+                  <img src={asset.previewDataUrl} alt="" aria-hidden="true" className="h-full w-full object-contain" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-zinc-100">{asset.name}</div>
+                  <div className="mt-0.5 truncate text-[11px] text-zinc-500">{asset.kind === 'svg' ? 'Vector' : 'Raster'} · add to {state.garment.placementZone}</div>
+                </div>
+              </button>
+            ))}
+            <Link
+              href="/library"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-[#232327] px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-[#2a2a30] hover:text-white"
+            >
+              Open full library
+            </Link>
+          </div>
+        )}
       </PanelSection>
 
       <PanelSection title="Shapes" icon={<Shapes className="h-4 w-4 text-zinc-500" />}>
@@ -176,13 +218,46 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
           <div className="text-[11px] leading-5 text-zinc-500">
             {designSurface === 'garment' ? 'Design directly on the garment preview with placement context.' : 'Design on the neutral cut canvas for shape-first work.'}
           </div>
+          {designSurface === 'garment' && (
+            <div className="space-y-1.5 border-t border-white/10 pt-3">
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">Garment overlays</span>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => onTogglePlacementOverlayMode('active-only')}
+                  className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition ${placementOverlayMode === 'active-only' ? 'bg-violet-500/35 text-white' : 'bg-[#202024] text-zinc-400 hover:bg-white/10 hover:text-zinc-100'}`}
+                >
+                  Only active
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTogglePlacementOverlayMode('all-active')}
+                  className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition ${placementOverlayMode === 'all-active' ? 'bg-violet-500/35 text-white' : 'bg-[#202024] text-zinc-400 hover:bg-white/10 hover:text-zinc-100'}`}
+                >
+                  Show all active
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           {GARMENTS.map((garment) => (
             <button
               key={garment.id}
-              onClick={() => dispatch({ type: 'UPDATE_GARMENT', updates: { type: garment.id as GarmentType } })}
+              onClick={() => {
+                const nextPlacements = getPlacementsForGarmentType(garment.id as GarmentType);
+                const firstPlacement = nextPlacements[0]?.id ?? 'full-front';
+                dispatch({
+                  type: 'UPDATE_GARMENT',
+                  updates: {
+                    type: garment.id as GarmentType,
+                    size: garment.availableSizes[0] ?? 'M',
+                    placementZone: firstPlacement,
+                    activePlacementZones: [firstPlacement],
+                  },
+                });
+              }}
               className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${state.garment.type === garment.id ? 'border-violet-400/70 bg-violet-500/20 text-white' : 'border-white/10 bg-[#17171a] text-zinc-400 hover:bg-[#1d1d22] hover:text-zinc-100'}`}
             >
               {garment.displayName}
@@ -244,7 +319,7 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
         <div className="space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Size</span>
           <div className="grid grid-cols-5 gap-1">
-            {GARMENT_SIZES.map((size) => (
+            {garmentDefinition.availableSizes.map((size) => (
               <button
                 key={size}
                 onClick={() => dispatch({ type: 'UPDATE_GARMENT', updates: { size: size as GarmentSize } })}
@@ -259,7 +334,7 @@ export default function HtvToolsPanel({ state, dispatch, onAddText, onImportFile
         <div className="space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Placement</span>
           <div className="space-y-1">
-            {HTV_PLACEMENT_ZONES.map((zone) => (
+            {placementDefinitions.map((zone) => (
               <button
                 key={zone.id}
                 onClick={() => dispatch({ type: 'UPDATE_GARMENT', updates: { placementZone: zone.id as HtvPlacementZone } })}

@@ -23,6 +23,7 @@ export type HtvVectorSourceKind = 'svg-upload' | 'silhouette-trace' | 'library-a
 
 interface HtvLayerBase {
   id: string;
+  placementId: HtvPlacementZone;
   name: string;
   /** Center position on the design canvas, mm. */
   x: number;
@@ -123,7 +124,7 @@ export interface HtvState {
 export const DEFAULT_HTV_CANVAS_STATE: HtvCanvasState = { zoom: 1, panX: 0, panY: 0 };
 
 export const DEFAULT_HTV_GARMENT_STATE: HtvGarmentState = {
-  type: 'tshirt',
+  type: 'tee',
   size: 'M',
   colorId: 'white',
   placementZone: 'full-front',
@@ -254,18 +255,25 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
     case 'SET_LAYER_ORDER': {
       const byId = new Map(state.layers.map((l) => [l.id, l] as const));
       const reordered = action.orderedIds.map((id) => byId.get(id)).filter((l): l is HtvLayer => l !== undefined);
-      if (reordered.length !== state.layers.length) return state;
       const historyEntry = snapshot(state);
-      return { ...state, layers: reordered, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
+      if (reordered.length === state.layers.length) {
+        return { ...state, layers: reordered, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
+      }
+      const subsetIds = new Set(action.orderedIds);
+      if (reordered.length !== subsetIds.size) return state;
+      let cursor = 0;
+      const layers = state.layers.map((layer) => (subsetIds.has(layer.id) ? reordered[cursor++]! : layer));
+      return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
     }
 
     case 'APPLY_COLOR_PALETTE': {
       if (action.colorIds.length === 0 || state.layers.length === 0) return state;
       const historyEntry = snapshot(state);
-      const layers = state.layers.map((layer, index) => ({
-        ...layer,
-        colorId: action.colorIds[index % action.colorIds.length]!,
-      }));
+      const placementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+      const nextColorById = new Map(
+        placementLayers.map((layer, index) => [layer.id, action.colorIds[index % action.colorIds.length]!] as const),
+      );
+      const layers = state.layers.map((layer) => nextColorById.has(layer.id) ? { ...layer, colorId: nextColorById.get(layer.id)! } : layer);
       return { ...state, layers, history: { past: pushHtvHistory(state.history.past, historyEntry), future: [] } };
     }
 
@@ -275,8 +283,13 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
     case 'UPDATE_CANVAS':
       return { ...state, canvas: { ...state.canvas, ...action.updates } };
 
-    case 'UPDATE_GARMENT':
-      return { ...state, garment: { ...state.garment, ...action.updates } };
+    case 'UPDATE_GARMENT': {
+      const nextGarment = { ...state.garment, ...action.updates };
+      if (!nextGarment.activePlacementZones.includes(nextGarment.placementZone)) {
+        nextGarment.activePlacementZones = [...nextGarment.activePlacementZones, nextGarment.placementZone];
+      }
+      return { ...state, garment: nextGarment };
+    }
 
     case 'LOAD_STATE':
       return action.state;
@@ -321,6 +334,7 @@ export function htvReducer(state: HtvState, action: HtvAction): HtvState {
 export function createHtvTextLayer(overrides: Partial<HtvTextLayer> & Pick<HtvTextLayer, 'id'>): HtvTextLayer {
   return {
     type: 'text',
+    placementId: 'full-front',
     name: 'Text',
     x: 0,
     y: 0,
@@ -345,6 +359,7 @@ export function createHtvTextLayer(overrides: Partial<HtvTextLayer> & Pick<HtvTe
 export function createHtvVectorLayer(overrides: Partial<HtvVectorLayer> & Pick<HtvVectorLayer, 'id' | 'polylines' | 'naturalWidthMm' | 'naturalHeightMm' | 'sourceKind'>): HtvVectorLayer {
   return {
     type: 'vector',
+    placementId: 'full-front',
     name: 'Shape',
     x: 0,
     y: 0,

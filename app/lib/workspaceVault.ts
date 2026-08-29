@@ -1,4 +1,5 @@
 import type { TemplateCoverageMode, TemplateFillMode } from '@/src/lib/rhinestone-engine/index';
+import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
 
 export const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
@@ -261,6 +262,7 @@ export function serializeHtvState(state: HtvState): SerializedHtvState {
 }
 
 export function deserializeHtvState(snapshot: SerializedHtvState): HtvState {
+  const normalizedType = normalizeGarmentType(snapshot.garment.type);
   const placementZone = snapshot.garment.placementZone ?? 'full-front';
   const activePlacementZones = Array.isArray((snapshot.garment as Partial<typeof snapshot.garment> & { activePlacementZones?: string[] }).activePlacementZones)
     ? (snapshot.garment as Partial<typeof snapshot.garment> & { activePlacementZones?: string[] }).activePlacementZones!.filter((value): value is HtvState['garment']['placementZone'] => typeof value === 'string')
@@ -272,6 +274,7 @@ export function deserializeHtvState(snapshot: SerializedHtvState): HtvState {
     canvas: structuredClone(snapshot.canvas),
     garment: {
       ...structuredClone(snapshot.garment),
+      type: normalizedType,
       placementZone,
       activePlacementZones: activePlacementZones.length > 0 ? activePlacementZones : [placementZone],
     },

@@ -8,8 +8,10 @@
  * illustrations.
  */
 
-export type GarmentType = 'tshirt' | 'hoodie';
-export type GarmentSize = 'S' | 'M' | 'L' | 'XL' | 'XXL';
+export type GarmentType = 'tshirt' | 'tee' | 'oversized-tee' | 'cropped-tee' | 'hoodie' | 'tote';
+export type SelectableGarmentType = Exclude<GarmentType, 'tshirt'>;
+export type GarmentFamily = 'tee' | 'hoodie' | 'tote';
+export type GarmentSize = 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'OS';
 
 export interface GarmentColorSwatch {
   id: string;
@@ -25,12 +27,14 @@ export interface PrintAreaMm {
 }
 
 export interface GarmentDefinition {
-  id: GarmentType;
+  id: SelectableGarmentType;
+  family: GarmentFamily;
   displayName: string;
+  availableSizes: readonly GarmentSize[];
   printAreaMmBySize: Record<GarmentSize, PrintAreaMm>;
 }
 
-export const GARMENT_SIZES: readonly GarmentSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
+export const GARMENT_SIZES: readonly GarmentSize[] = ['S', 'M', 'L', 'XL', 'XXL', 'OS'];
 
 export const GARMENT_COLORS: readonly GarmentColorSwatch[] = [
   { id: 'white', name: 'White', hex: '#f7f6f3', shade: 'light' },
@@ -49,6 +53,25 @@ const TSHIRT_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
   L: { widthMm: 320, heightMm: 420 },
   XL: { widthMm: 340, heightMm: 440 },
   XXL: { widthMm: 360, heightMm: 460 },
+  OS: { widthMm: 300, heightMm: 400 },
+};
+
+const OVERSIZED_TEE_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
+  S: { widthMm: 300, heightMm: 380 },
+  M: { widthMm: 320, heightMm: 400 },
+  L: { widthMm: 340, heightMm: 420 },
+  XL: { widthMm: 360, heightMm: 440 },
+  XXL: { widthMm: 380, heightMm: 460 },
+  OS: { widthMm: 320, heightMm: 400 },
+};
+
+const CROPPED_TEE_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
+  S: { widthMm: 240, heightMm: 260 },
+  M: { widthMm: 255, heightMm: 275 },
+  L: { widthMm: 270, heightMm: 290 },
+  XL: { widthMm: 285, heightMm: 305 },
+  XXL: { widthMm: 300, heightMm: 320 },
+  OS: { widthMm: 255, heightMm: 275 },
 };
 
 const HOODIE_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
@@ -57,15 +80,32 @@ const HOODIE_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
   L: { widthMm: 300, heightMm: 380 },
   XL: { widthMm: 320, heightMm: 400 },
   XXL: { widthMm: 340, heightMm: 420 },
+  OS: { widthMm: 280, heightMm: 360 },
+};
+
+const TOTE_PRINT_AREA_MM: Record<GarmentSize, PrintAreaMm> = {
+  S: { widthMm: 290, heightMm: 300 },
+  M: { widthMm: 290, heightMm: 300 },
+  L: { widthMm: 290, heightMm: 300 },
+  XL: { widthMm: 290, heightMm: 300 },
+  XXL: { widthMm: 290, heightMm: 300 },
+  OS: { widthMm: 290, heightMm: 300 },
 };
 
 export const GARMENTS: readonly GarmentDefinition[] = [
-  { id: 'tshirt', displayName: 'T-shirt', printAreaMmBySize: TSHIRT_PRINT_AREA_MM },
-  { id: 'hoodie', displayName: 'Hoodie', printAreaMmBySize: HOODIE_PRINT_AREA_MM },
+  { id: 'tee', family: 'tee', displayName: 'Tee', availableSizes: ['S', 'M', 'L', 'XL', 'XXL'], printAreaMmBySize: TSHIRT_PRINT_AREA_MM },
+  { id: 'oversized-tee', family: 'tee', displayName: 'Oversized tee', availableSizes: ['S', 'M', 'L', 'XL', 'XXL'], printAreaMmBySize: OVERSIZED_TEE_PRINT_AREA_MM },
+  { id: 'cropped-tee', family: 'tee', displayName: 'Cropped tee', availableSizes: ['S', 'M', 'L', 'XL', 'XXL'], printAreaMmBySize: CROPPED_TEE_PRINT_AREA_MM },
+  { id: 'hoodie', family: 'hoodie', displayName: 'Hoodie', availableSizes: ['S', 'M', 'L', 'XL', 'XXL'], printAreaMmBySize: HOODIE_PRINT_AREA_MM },
+  { id: 'tote', family: 'tote', displayName: 'Canvas tote', availableSizes: ['OS'], printAreaMmBySize: TOTE_PRINT_AREA_MM },
 ];
 
+export function normalizeGarmentType(id: GarmentType): SelectableGarmentType {
+  return id === 'tshirt' ? 'tee' : id;
+}
+
 export function getGarmentDefinition(id: GarmentType): GarmentDefinition {
-  const found = GARMENTS.find((g) => g.id === id);
+  const found = GARMENTS.find((g) => g.id === normalizeGarmentType(id));
   if (!found) throw new Error(`Unknown garment type: ${id}`);
   return found;
 }
