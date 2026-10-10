@@ -7,8 +7,6 @@ import type {
   OutlineTextProjectState,
   RhinestoneFontProjectState,
   RhinestoneProjectFile,
-  SvgAlphabetProjectState,
-  LetterStencilProjectState,
   SvgUploadProjectState,
   TemplateImportProjectState,
 } from '@/src/lib/rhinestone-engine/index';
@@ -67,9 +65,7 @@ export function getEditableSourceGenerator(state: Pick<EditorState, 'activeTool'
     case 'svg':
       return 'svg-upload';
     case 'rhinestone-font':
-      return state.editableTemplate.isEditable && state.editableTemplate.sourceGenerator
-        ? state.editableTemplate.sourceGenerator
-        : 'rhinestone-font';
+      return 'rhinestone-font';
     case 'svg-alphabet':
       return 'svg-alphabet';
     case 'letter-stencil':
@@ -148,15 +144,15 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
       }
       return {
         generatorId: 'svg-upload',
-        assetKind: state.svgTool.assetKind,
         uploadedSvgText: state.svgTool.uploadedSvgText,
+        assetKind: state.svgTool.assetKind,
         uploadedImageDataUrl: state.svgTool.uploadedImageDataUrl,
         imageFileName: state.svgTool.imageFileName,
         renderMode: state.svgTool.renderMode,
+        dimensionUnit: state.svgTool.dimensionUnit,
         stoneSize: state.svgTool.stoneSize,
         targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : null,
         targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : null,
-        dimensionUnit: state.svgTool.dimensionUnit,
         preserveAspectRatio: state.svgTool.preserveAspectRatio,
         coverageMode: state.svgTool.coverageMode,
         fillMode: state.svgTool.fillMode,
@@ -186,24 +182,56 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         state.rhinestoneFontTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
       ];
       if (!calibration) return null;
+
+      const generatorId = state.rhinestoneFontTool.presentationMode === 'line'
+        ? 'rhinestone-font-line'
+        : state.rhinestoneFontTool.presentationMode === 'digits'
+          ? 'rhinestone-font-digits'
+          : 'rhinestone-font';
+
       return {
-        generatorId: state.rhinestoneFontTool.presentationMode === 'line'
-          ? 'rhinestone-font-line'
-          : state.rhinestoneFontTool.presentationMode === 'digits'
-            ? 'rhinestone-font-digits'
-            : 'rhinestone-font',
-        presentationMode: state.rhinestoneFontTool.presentationMode,
+        generatorId,
         text: state.rhinestoneFontTool.text,
         stoneSize: state.rhinestoneFontTool.stoneSize,
         rhinestoneFontId: state.rhinestoneFontTool.rhinestoneFontId,
         targetStoneSizeMm: calibration.diameterMm,
         letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : 0,
         lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : 0,
+        presentationMode: state.rhinestoneFontTool.presentationMode,
         includeGuideBox: state.includeGuideBox,
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
       } satisfies RhinestoneFontProjectState;
     }
+    case 'svg-alphabet':
+      return {
+        generatorId: 'svg-alphabet',
+        text: state.svgAlphabetTool.text,
+        stoneSize: state.svgAlphabetTool.stoneSize,
+        svgAlphabetId: state.svgAlphabetTool.svgAlphabetId,
+        letterSpacingMm: typeof state.svgAlphabetTool.letterSpacingMm === 'number' ? state.svgAlphabetTool.letterSpacingMm : 0,
+        lineSpacingMm: typeof state.svgAlphabetTool.lineSpacingMm === 'number' ? state.svgAlphabetTool.lineSpacingMm : 0,
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      };
+    case 'letter-stencil':
+      return {
+        generatorId: 'letter-stencil',
+        sourceType: state.letterStencilTool.sourceType,
+        text: state.letterStencilTool.text,
+        svgAlphabetId: state.letterStencilTool.svgAlphabetId,
+        rhinestoneFontId: state.letterStencilTool.rhinestoneFontId,
+        stoneSize: state.letterStencilTool.stoneSize,
+        cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 0,
+        cardCornerRadiusMm: typeof state.letterStencilTool.cardCornerRadiusMm === 'number' ? state.letterStencilTool.cardCornerRadiusMm : 0,
+        minCardWidthMm: typeof state.letterStencilTool.minCardWidthMm === 'number' ? state.letterStencilTool.minCardWidthMm : 0,
+        layoutMode: state.letterStencilTool.layoutMode,
+        cutSheetGapMm: typeof state.letterStencilTool.cutSheetGapMm === 'number' ? state.letterStencilTool.cutSheetGapMm : 0,
+        includeGuideBox: state.includeGuideBox,
+        includeLabels: state.includeLabels,
+        paddingMm: state.paddingMm,
+      };
     case 'template-import':
       if (!state.templateImportTool.uploadedSvgText) return null;
       return {
@@ -221,47 +249,6 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
       } satisfies TemplateImportProjectState;
-    case 'svg-alphabet': {
-      const calibration = TRW_STONE_SIZE_CALIBRATION[
-        state.svgAlphabetTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
-      ];
-      if (!calibration) return null;
-      return {
-        generatorId: 'svg-alphabet',
-        text: state.svgAlphabetTool.text,
-        svgAlphabetId: state.svgAlphabetTool.svgAlphabetId,
-        stoneSize: state.svgAlphabetTool.stoneSize,
-        targetStoneSizeMm: calibration.diameterMm,
-        letterSpacingMm: typeof state.svgAlphabetTool.letterSpacingMm === 'number' ? state.svgAlphabetTool.letterSpacingMm : 2,
-        lineSpacingMm: typeof state.svgAlphabetTool.lineSpacingMm === 'number' ? state.svgAlphabetTool.lineSpacingMm : 0,
-        includeGuideBox: state.includeGuideBox,
-        includeLabels: state.includeLabels,
-        paddingMm: state.paddingMm,
-      } satisfies SvgAlphabetProjectState;
-    }
-    case 'letter-stencil': {
-      const calibration = TRW_STONE_SIZE_CALIBRATION[
-        state.letterStencilTool.stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION
-      ];
-      if (!calibration) return null;
-      return {
-        generatorId: 'letter-stencil',
-        sourceType: state.letterStencilTool.sourceType,
-        text: state.letterStencilTool.text,
-        svgAlphabetId: state.letterStencilTool.svgAlphabetId,
-        rhinestoneFontId: state.letterStencilTool.rhinestoneFontId,
-        stoneSize: state.letterStencilTool.stoneSize,
-        targetStoneSizeMm: calibration.diameterMm,
-        cardPaddingMm: typeof state.letterStencilTool.cardPaddingMm === 'number' ? state.letterStencilTool.cardPaddingMm : 3,
-        cardCornerRadiusMm: typeof state.letterStencilTool.cardCornerRadiusMm === 'number' ? state.letterStencilTool.cardCornerRadiusMm : 2,
-        minCardWidthMm: typeof state.letterStencilTool.minCardWidthMm === 'number' ? state.letterStencilTool.minCardWidthMm : 12,
-        layoutMode: state.letterStencilTool.layoutMode,
-        cutSheetGapMm: typeof state.letterStencilTool.cutSheetGapMm === 'number' ? state.letterStencilTool.cutSheetGapMm : 3,
-        includeGuideBox: state.includeGuideBox,
-        includeLabels: state.includeLabels,
-        paddingMm: state.paddingMm,
-      } satisfies LetterStencilProjectState;
-    }
     case 'manual-editor':
       return {
         generatorId: 'manual-editor',
@@ -302,8 +289,6 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
       snapToGrid: state.manualTool.snapToGrid,
       gridSnapSize: state.manualTool.gridSnapSize,
       addStoneSize: state.manualTool.addStoneSize,
-      interactionMode: state.manualTool.interactionMode,
-      assistBrushSizeMm: state.manualTool.assistBrushSizeMm,
     },
   };
 }

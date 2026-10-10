@@ -17,11 +17,11 @@ export type {
   Circle,
   Stone,
   StoneSizeProfile,
-  MaterialProfile,
-  HolePresetStatus,
   HolePreset,
+  MaterialProfile,
   MachineRecommendation,
   RhinestoneTemplate,
+  CutShape,
   ExportOptions,
 } from './types/index';
 
@@ -35,18 +35,14 @@ export {
 // Material profiles
 export {
   MATERIAL_PROFILES,
-  MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
   MAGIC_FLOCK_HOLE_PRESETS,
   MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
+  MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
   getMaterialProfile,
   getDefaultMaterialProfile,
+  getHolePreset,
   getRecommendedHoleDiameter,
   getRecommendedCenterDistance,
-  getHolePreset,
-  getCalibrationSeries,
-  isHolePresetProvisional,
-  getMinimumEdgeSpacingMm,
-  getMinimumCenterDistance,
 } from './profiles/materialProfiles';
 
 // Geometry utilities
@@ -59,6 +55,34 @@ export { roundMm } from './geometry/rounding';
 
 // SVG export
 export { createBasicSvgExport } from './export/svgExport';
+
+// Raster artwork / SVG alphabet generation
+export type {
+  RasterArtworkImageData,
+  CreateRasterArtworkTemplateOptions,
+  RasterArtworkTemplateResult,
+} from './image/rasterArtworkTemplate';
+export { createRasterArtworkTemplate } from './image/rasterArtworkTemplate';
+export type {
+  SvgAlphabetCharacterClass,
+  SvgAlphabetCombinedSource,
+  SvgAlphabetId,
+  SvgAlphabetCategory,
+  SvgAlphabetStyle,
+  SvgAlphabetDefinition,
+} from './svgAlphabet/svgAlphabetRegistry';
+export {
+  DEFAULT_SVG_ALPHABET_ID,
+  SVG_ALPHABET_REGISTRY,
+  listSvgAlphabets,
+  getSvgAlphabetDefinition,
+  isKnownSvgAlphabetId,
+} from './svgAlphabet/svgAlphabetRegistry';
+export type { SvgAlphabetGlyphLoader } from './svgAlphabet/svgAlphabetTemplate';
+export { createSvgAlphabetTemplate } from './svgAlphabet/svgAlphabetTemplate';
+export { defaultSvgAlphabetGlyphLoader, clearSvgAlphabetGlyphCacheForTests } from './svgAlphabet/svgAlphabetLoader';
+export type { TraceableImageData, ImageTraceOptions, ImageTraceResult } from './imageTrace/imageTrace';
+export { traceImageSilhouette } from './imageTrace/imageTrace';
 
 // Calibration
 export type { CalibrationSheetOptions } from './calibration/calibrationSheet';
@@ -76,6 +100,12 @@ export {
   getCalibratedHoleDiameter,
   applyCalibrationOverridesToTemplate,
 } from './calibration/calibrationOverrides';
+export {
+  getCalibrationSeries,
+  isHolePresetProvisional,
+  getMinimumEdgeSpacingMm,
+  getMinimumCenterDistance,
+} from './profiles/materialProfiles';
 
 // Template creation
 export type { CreateRhinestoneTemplateInput } from './template/createTemplate';
@@ -131,17 +161,17 @@ export {
 } from './path/polylineCleanup';
 
 // SVG upload (v2 — curves + transforms, no raw SVG rendering)
-export type { ParsedSvgElement, SvgSafetyResult, SvgUploadSuggestedMode } from './svg/svgParser';
+export type { ParsedSvgElement, SvgSafetyResult } from './svg/svgParser';
 export {
   parseSvgAttributes,
   validateSafeSvgInput,
   extractSvgElements,
-  suggestSvgUploadMode,
 } from './svg/svgParser';
 export type { SvgToPolylineOptions } from './svg/svgToPolyline';
 export { svgStringToPolylines } from './svg/svgToPolyline';
 export type { SvgViewBox, SvgRootAttributes } from './svg/svgUnits';
 export { parseSvgViewBox, getSvgRootAttributes } from './svg/svgUnits';
+export { suggestSvgUploadMode } from './svg/svgParser';
 
 // Physical size controls
 export type { PolylineBounds, ScalePolylinesToFitOptions } from './sizing/scalePolylines';
@@ -190,20 +220,17 @@ export {
   DEFAULT_OUTLINE_FONT_ID,
   LEGACY_OUTLINE_FONT_ID,
   listOutlineFonts,
-  listUploadedOutlineFonts,
   getOutlineFontDefinition,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
   isKnownOutlineFontId,
-  isAvailableOutlineFontId,
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
-export type { LoadedOutlineFont } from './textOutline/fontLoader';
-export type { OpenTypeTextLayoutOptions } from './textOutline/openTypeGeometry';
-export { layoutTextToOpenTypePolylines } from './textOutline/openTypeGeometry';
 export type { OutlineTextAlign, OutlineTextStyle, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
+export type { OpenTypeTextLayoutOptions } from './textOutline/openTypeGeometry';
+export { layoutTextToOpenTypePolylines } from './textOutline/openTypeGeometry';
 
 // Generator capability foundation
 export type {
@@ -229,11 +256,7 @@ export type {
 } from './templateLibrary/model';
 export { deepCloneProjectSnapshot, createTemplateLibraryEntry } from './templateLibrary/model';
 export type { TemplateLibraryRepository } from './templateLibrary/repository';
-export {
-  DEFAULT_TEMPLATE_LIBRARY_STORAGE_KEY,
-  InMemoryTemplateLibraryRepository,
-  LocalStorageTemplateLibraryRepository,
-} from './templateLibrary/repository';
+export { LocalStorageTemplateLibraryRepository, InMemoryTemplateLibraryRepository } from './templateLibrary/repository';
 
 // Fill Mode v1 — outline, fill, outline-fill
 export type { FillPattern, PolygonFillOptions, PolygonBounds } from './fill/polygonFill';
@@ -279,16 +302,16 @@ export {
 // Project save / load (schema v1)
 export type {
   GeneratorId,
+  PolylineDemoShape,
   OutlineTextProjectState,
   DotMatrixTextProjectState,
   ManualGridProjectState,
+  PolylineLogoProjectState,
   SvgUploadProjectState,
   SavedStone,
   EditableTemplateState,
   ManualEditorProjectState,
   RhinestoneFontProjectState,
-  SvgAlphabetProjectState,
-  LetterStencilProjectState,
   TemplateImportProjectState,
   GeneratorProjectState,
   RhinestoneProjectFile,
@@ -299,17 +322,16 @@ export {
 } from './project/projectFormat';
 
 // Rhinestone Font System
-export type { RhinestoneFontId, RhinestoneFontCategory, RhinestoneFontStyle, RhinestoneFontDefinition } from './rhinestoneFont/rhinestoneFontRegistry';
+export type { RhinestoneFontId, RhinestoneFontCategory, RhinestoneFontDefinition } from './rhinestoneFont/rhinestoneFontRegistry';
 export {
   TRW_CLEAN_STONE_FONT_ID,
   DEFAULT_RHINESTONE_FONT_ID,
   RHINESTONE_FONT_REGISTRY,
   getRhinestoneFontDefinition,
-  getRhinestoneFontStyle,
-  getSupportedRhinestoneFontStoneSizes,
   getPreferredRhinestoneFontStoneSize,
   isKnownRhinestoneFontId,
   listRhinestoneFonts,
+  getSupportedRhinestoneFontStoneSizes,
 } from './rhinestoneFont/rhinestoneFontRegistry';
 export type { LoadedRhinestoneFont } from './rhinestoneFont/rhinestoneFontLoader';
 export {
@@ -340,47 +362,5 @@ export { estimateStoneSizeId, importRhinestoneTemplate } from './templateImport/
 export type { CreateImportedTemplateOptions, ImportedTemplateResult } from './templateImport/importedTemplate';
 export { createImportedTemplate } from './templateImport/importedTemplate';
 
-// SVG Alphabet System
-export type { SvgAlphabetId, SvgAlphabetCategory, SvgAlphabetStyle, SvgAlphabetDefinition } from './svgAlphabet/svgAlphabetRegistry';
-export {
-  DEFAULT_SVG_ALPHABET_ID,
-  SVG_ALPHABET_REGISTRY,
-  getSvgAlphabetDefinition,
-  isKnownSvgAlphabetId,
-  listSvgAlphabets,
-} from './svgAlphabet/svgAlphabetRegistry';
-export type {
-  SvgAlphabetGlyphLoader,
-  CreateSvgAlphabetTemplateOptions,
-  SvgAlphabetTemplateResult,
-} from './svgAlphabet/svgAlphabetTemplate';
-export { createSvgAlphabetTemplate } from './svgAlphabet/svgAlphabetTemplate';
-export {
-  defaultSvgAlphabetGlyphLoader,
-  clearSvgAlphabetGlyphCacheForTests,
-} from './svgAlphabet/svgAlphabetLoader';
-
-// Letter Stencil System
-export type {
-  StencilLayoutMode,
-  CreateLetterStencilOptions,
-  LetterStencilCardMetadata,
-  LetterStencilResult,
-} from './letterStencil/letterStencilTemplate';
+export type { LetterStencilSource, StencilLayoutMode, CreateLetterStencilOptions, LetterStencilCardMetadata, LetterStencilResult } from './letterStencil/letterStencilTemplate';
 export { createLetterStencilTemplate } from './letterStencil/letterStencilTemplate';
-
-// Raster artwork / image upload
-export type {
-  RasterArtworkImageData,
-  CreateRasterArtworkTemplateOptions,
-  RasterArtworkTemplateResult,
-} from './image/rasterArtworkTemplate';
-export { createRasterArtworkTemplate } from './image/rasterArtworkTemplate';
-
-// Image → vector silhouette tracing (HTV Studio)
-export type {
-  TraceableImageData,
-  ImageTraceOptions,
-  ImageTraceResult,
-} from './imageTrace/imageTrace';
-export { traceImageSilhouette, signedPolygonArea } from './imageTrace/imageTrace';

@@ -11,6 +11,7 @@ import {
   type HtvVectorLayer,
 } from './HtvState';
 import { combineVectorLayers, offsetVectorLayerPolylines } from './htvFormOps';
+import { useStudioTheme } from '../lib/studioTheme';
 import HtvTopbar from './HtvTopbar';
 import HtvToolsPanel from './HtvToolsPanel';
 import HtvCanvas from './HtvCanvas';
@@ -18,6 +19,7 @@ import HtvInspectorPanel from './HtvInspectorPanel';
 import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import HtvGarmentStage from './HtvGarmentStage';
+import HtvGarment3D from './HtvGarment3D';
 import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
@@ -37,15 +39,16 @@ import {
 const DEFAULT_TEXT_FONT_ID = listOutlineFonts().find((f) => !f.isLegacy)?.fontId ?? '';
 
 export default function HtvShell() {
+  const { theme, toggleTheme } = useStudioTheme();
   const searchParams = useSearchParams();
   const [state, dispatch] = useReducer(htvReducer, DEFAULT_HTV_STATE);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
-  const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
+  const [designSurface, setDesignSurface] = useState<'canvas' | 'garment' | '3d'>('canvas');
   const [placementOverlayMode, setPlacementOverlayMode] = useState<'active-only' | 'all-active'>('all-active');
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
-  const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>(() => readWorkspaceVault().assets.filter((asset) => !asset.archived));
+  const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>(() => readWorkspaceVault().assets.filter((asset) => !asset.archived).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
   const nextLayerIdRef = useRef(0);
   const handledQueryRef = useRef<string | null>(null);
 
@@ -178,7 +181,6 @@ export default function HtvShell() {
   }, []);
 
   useEffect(() => {
-    refreshLibraryAssets();
     const handleFocus = () => refreshLibraryAssets();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
@@ -312,7 +314,6 @@ export default function HtvShell() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [state.selectedLayerIds, state.layers]);
 
-  const hasLayers = state.layers.length > 0;
   const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
 
   useEffect(() => {
@@ -382,10 +383,10 @@ export default function HtvShell() {
     };
 
     void applyQueryIntent();
-  }, [createLayerId, searchParams]);
+  }, [createLayerId, searchParams, insertWorkspaceAsset, state.garment.placementZone]);
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-[#1f1f22] text-zinc-100">
+    <div data-theme={theme} className="h-full min-h-0 flex flex-col bg-[var(--studio-bg)] text-[var(--studio-ink)]">
       <HtvTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -398,10 +399,12 @@ export default function HtvShell() {
         onExport={handleExport}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
         onToggleDesignSurface={setDesignSurface}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#1f1f22] lg:flex-row lg:overflow-hidden">
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
+        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0">
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
@@ -419,10 +422,16 @@ export default function HtvShell() {
         </div>
 
         <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
-          {designSurface === 'garment' ? <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} /> : <HtvCanvas state={state} dispatch={dispatch} />}
+          {designSurface === 'garment' ? (
+            <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
+          ) : designSurface === '3d' ? (
+            <HtvGarment3D state={state} />
+          ) : (
+            <HtvCanvas state={state} dispatch={dispatch} />
+          )}
         </div>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
+        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
           <HtvInspectorPanel
             state={state}
             dispatch={dispatch}

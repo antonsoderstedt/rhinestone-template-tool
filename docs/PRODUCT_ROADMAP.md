@@ -1,6 +1,8 @@
 # Product Roadmap — Rhinestone Template Tool
 
-> Last updated: 2026-07-12
+> Last updated: 2026-08-30
+
+> **Note on scope (added 2026-08-30):** This document predates HTV Studio (`/htv`) entirely — a second, fully separate studio for heat-transfer-vinyl garment design, with its own state, canvas, garment mockup photos (tee/oversized/cropped tee/hoodie/tote, front/back/left/right), placement zones, and image-trace engine. See `MEMORY.md`-linked project notes or `app/htv/` directly; this roadmap only tracks Rhinestone Studio's modules below. Sections G and C were also corrected during this pass — check the module tables directly rather than assuming parity with this date.
 
 ---
 
@@ -34,12 +36,14 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 | ✅ Done | Built-in Vector Outline Text (stroke font, A–Z, 0–9) |
 | ✅ Done | Outline / fill / outline-fill modes |
 | ✅ Done | Multiline, letter spacing, line spacing, alignment, scaling |
-| 🔜 Planned | Real font outline extraction from glyph contours |
-| 🔜 Planned | TTF/OTF font upload (drag-and-drop) |
-| 🔜 Planned | Font picker (system fonts or uploaded) |
-| 🔜 Planned | Curved / warped text (arc, wave) |
+| ✅ Done | Real font outline extraction from glyph contours — bundled OpenType fonts (`loadOutlineFont`, `layoutTextToOpenTypePolylines`), real filled letterforms, not just the legacy stroke font |
+| ✅ Done | TTF/OTF/WOFF/WOFF2 font upload — `app/fonts/page.tsx` "Bulk upload fonts" (file picker, `accept=".woff,.woff2,.ttf,.otf"`); 3,694 fonts synced from local zip imports at last check |
+| ✅ Done | Font picker — `FontPicker.tsx`, multiple licensed families (Archivo Black, Oswald, Black Ops One, Lilita One, Bitter, more), each with license/source metadata |
+| ✅ Done | Curved / warped text (arc/dome/valley) — `warpPolylinesOnArc`, `src/lib/rhinestone-engine/geometry/textArc.ts`, added 2026-08-30, wired into both studios |
 | 🔜 Planned | Centerline mode (single stroke down glyph centre) |
 | 🔜 Planned | Better kerning and pair-adjustment tables |
+
+> **Corrected 2026-08-30:** the four items above were all marked "🔜 Planned" while fully built and working — verified against source and the running Fonts page (`/fonts`), not assumed from this document.
 
 ### B. Logo/SVG-to-Rhinestones
 
@@ -63,15 +67,14 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 
 | Status | Feature |
 |---|---|
-| ❌ Not started | PNG/JPG upload |
-| ❌ Not started | Threshold / silhouette mode |
-| ❌ Not started | Edge detection |
-| ❌ Not started | Vectorization pipeline |
-| ❌ Not started | Fill sampling from image regions |
+| ✅ Done | PNG/JPG/WEBP/BMP/GIF upload — Rhinestone Studio's own "Artwork" tool, not just HTV Studio |
+| ✅ Done | Threshold / silhouette mode (`imageThreshold`, `imageInvert` in `EditorState.ts`'s `svgTool`) |
+| ✅ Done | Fill sampling from image regions, incl. multi-color (1–4 colors with a palette) — `createRasterArtworkTemplate`, `src/lib/rhinestone-engine/image/rasterArtworkTemplate.ts`, unit-tested (`tests/rasterArtworkTemplate.test.ts`) |
+| ✅ Done (HTV Studio) | Separate edge-detection/vectorization path for silhouettes (marching-squares contour tracer, `src/lib/rhinestone-engine/imageTrace/imageTrace.ts`, unit-tested) — HTV-only; conceptually distinct from Rhinestone Studio's color/luminance-sampling approach above, not a gap to "wire up" |
 | ❌ Not started | Background removal |
 | ❌ Not started | Manual correction after vectorization |
 
-> **Note:** Image-to-rhinestones is a distinct feature track. Do not begin until the SVG/text pipeline is physically validated.
+> **Corrected 2026-08-30:** this section previously said image-to-rhinestones was entirely unbuilt, then (still wrong) that it was HTV-only. In fact Rhinestone Studio has had its own complete, tested raster pipeline (`createRasterArtworkTemplate`) the whole time — verified live via the "Artwork" tool. Checked directly against source and the running app this time, not assumed from an older note.
 
 ### D. Manual Editor
 
@@ -81,17 +84,19 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 | ✅ Done | Undo / redo history |
 | ✅ Done | Stone list with click-to-select |
 | ✅ Done | Add stone by typing X/Y mm coordinates |
-| 🔜 Planned | Click-on-preview canvas to add stone at position |
-| 🔜 Planned | Drag / move stones on canvas |
-| 🔜 Planned | Multi-select (shift-click or marquee) |
-| 🔜 Planned | Delete selected stones |
-| 🔜 Planned | Duplicate / clone selection |
-| 🔜 Planned | Snap to grid |
-| 🔜 Planned | Align tools (centre, distribute) |
-| 🔜 Planned | Brush mode (paint-add, paint-remove) |
-| 🔜 Planned | Collision warning highlights while editing |
-| 🔜 Planned | Zoom / pan canvas |
-| 🔜 Planned | Keyboard shortcuts |
+| ✅ Done | Click-on-canvas to add a stone (Pen tool, freehand/grid/row modes) |
+| ✅ Done | Drag / move stones on canvas (Select tool, verified 2026-08-30) |
+| ✅ Done | Multi-select (marquee drag and shift-click) |
+| ✅ Done | Delete selected stones |
+| ✅ Done | Duplicate / clone selection (Cmd/Ctrl+D), copy/paste (Cmd/Ctrl+C/V) |
+| ✅ Done | Snap to grid (grid toggle, visible as a Pen-tool guide) |
+| ✅ Done | Align tools (centre horizontal/vertical) and distribute (horizontal/vertical) |
+| ✅ Done | Zoom / pan canvas |
+| ✅ Done | Keyboard shortcuts (undo/redo, select-all, duplicate, copy/paste, delete, escape) |
+| 🔜 Planned | Brush mode as a distinct paint-add/paint-remove mode (today's Pen tool covers add; a dedicated erase-brush is still open) |
+| 🔜 Planned | Persistent collision warning highlights while editing (readiness panel surfaces warnings, but not a live highlight on the offending stones) |
+
+> Corrected 2026-08-30: this entire section was marked "🔜 Planned" here while actually fully implemented behind the "Make Editable" toggle — verified live (marquee-select, single-stone drag, Pen-tool click-to-add all confirmed working). Don't trust this document's status column over the running app; when in doubt, click "Make Editable" and try it.
 
 ### E. Calibration + Material Profiles
 
@@ -127,15 +132,15 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 
 | Status | Feature |
 |---|---|
-| ❌ Not started | Save / open projects |
-| ❌ Not started | Project JSON import/export |
-| ❌ Not started | Browser localStorage persistence |
-| ❌ Not started | Template library |
-| ❌ Not started | Duplicate project |
-| ❌ Not started | Export history |
+| ✅ Done | Save / open projects ("My Designs" page, both studios) |
+| ✅ Done | Browser localStorage persistence (`app/lib/workspaceVault.ts`) |
+| 🔜 Planned | Project JSON import/export (portable file, not just browser storage) |
+| 🔜 Planned | Template library (curated starting points, distinct from saved designs) |
+| 🔜 Planned | Duplicate project |
+| 🔜 Planned | Export history |
 | ❌ Not started | Cloud saved projects (requires auth) |
 
-> Start with browser localStorage or project JSON download — no auth needed.
+> Browser localStorage persistence shipped ahead of this document (see `app/lib/workspaceVault.ts` and `app/designs/page.tsx`). Portable JSON export/import is still open.
 
 ### H. SaaS / Commercial Features
 

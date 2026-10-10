@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { Download, RotateCcw, RotateCw, Save, Settings2, Shirt } from 'lucide-react';
 import type { HtvAction } from './HtvState';
+import type { StudioTheme } from '../lib/studioTheme';
+import StudioThemeToggle from '../components/StudioThemeToggle';
 
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 border-l border-white/10 px-2 py-1 first:border-l-0">
-      <div className="px-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-zinc-500">{label}</div>
-      <div className="h-5 w-px bg-white/10" />
+    <div className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
+      <div className="px-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-[var(--studio-ink-subtle)]">{label}</div>
+      <div className="h-5 w-px bg-[var(--studio-hover-overlay)]" />
       <div className="flex flex-wrap items-center gap-1">{children}</div>
     </div>
   );
@@ -20,12 +22,14 @@ interface HtvTopbarProps {
   canRedo: boolean;
   canExport: boolean;
   canPreviewGarment: boolean;
-  designSurface: 'canvas' | 'garment';
+  designSurface: 'canvas' | 'garment' | '3d';
   dispatch: React.Dispatch<HtvAction>;
   onSaveDesign: () => void;
   onExport: () => void;
   onOpenGarmentPreview: () => void;
-  onToggleDesignSurface: (surface: 'canvas' | 'garment') => void;
+  onToggleDesignSurface: (surface: 'canvas' | 'garment' | '3d') => void;
+  theme: StudioTheme;
+  onToggleTheme: () => void;
 }
 
 export default function HtvTopbar({
@@ -40,11 +44,13 @@ export default function HtvTopbar({
   onExport,
   onOpenGarmentPreview,
   onToggleDesignSurface,
+  theme,
+  onToggleTheme,
 }: HtvTopbarProps) {
   return (
-    <header className="border-b border-white/10 bg-[#202024] text-zinc-200">
+    <header className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
       <div className="flex flex-wrap items-center gap-2 px-3 py-1.5">
-        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-white/10 bg-[#17171a] px-3 py-1 shadow-sm">
+        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
           <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
             Layer editor
           </span>
@@ -53,7 +59,7 @@ export default function HtvTopbar({
             value={projectName}
             onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
             aria-label="Project name"
-            className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-zinc-100 focus:border-violet-400/60 focus:bg-[#202024] focus:outline-none"
+            className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:border-violet-400/60 focus:bg-[var(--studio-surface)] focus:outline-none"
             placeholder="Untitled HTV Design"
           />
         </div>
@@ -63,7 +69,7 @@ export default function HtvTopbar({
             onClick={() => dispatch({ type: 'UNDO' })}
             disabled={!canUndo}
             aria-label="Undo"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
             title="Undo (Cmd/Ctrl+Z)"
           >
             <RotateCcw className="h-4 w-4" />
@@ -72,7 +78,7 @@ export default function HtvTopbar({
             onClick={() => dispatch({ type: 'REDO' })}
             disabled={!canRedo}
             aria-label="Redo"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
             title="Redo (Cmd/Ctrl+Shift+Z)"
           >
             <RotateCw className="h-4 w-4" />
@@ -83,7 +89,7 @@ export default function HtvTopbar({
           <button
             onClick={onOpenGarmentPreview}
             disabled={!canPreviewGarment}
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
             title={canPreviewGarment ? 'Preview this design on a t-shirt or hoodie' : 'Add a layer before previewing'}
           >
             <Shirt className="h-4 w-4" />
@@ -91,7 +97,7 @@ export default function HtvTopbar({
           </button>
           <button
             onClick={onSaveDesign}
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
             title="Save this HTV design to My Designs"
           >
             <Save className="h-4 w-4" />
@@ -100,7 +106,7 @@ export default function HtvTopbar({
           <button
             onClick={onExport}
             disabled={!canExport}
-            className="inline-flex items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-zinc-500"
+            className="inline-flex items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:bg-[var(--studio-hover-overlay)] disabled:text-[var(--studio-ink-subtle)]"
             title={canExport ? 'Export the current design as a vector SVG cut file' : 'Add a layer before exporting'}
           >
             <Download className="h-4 w-4" />
@@ -109,13 +115,13 @@ export default function HtvTopbar({
         </ToolbarSection>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="inline-flex rounded-md border border-white/10 bg-[#17171a] p-1">
-            {(['canvas', 'garment'] as const).map((surface) => (
+          <div className="inline-flex rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] p-1">
+            {(['canvas', 'garment', '3d'] as const).map((surface) => (
               <button
                 key={surface}
                 type="button"
                 onClick={() => onToggleDesignSurface(surface)}
-                className={`rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-zinc-400 hover:bg-white/10 hover:text-zinc-100'}`}
+                className={`rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
               >
                 {surface}
               </button>
@@ -123,18 +129,19 @@ export default function HtvTopbar({
           </div>
           <Link
             href="/rhinestone"
-            className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100 md:inline-flex"
+            className="hidden rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] md:inline-flex"
           >
             Rhinestone
           </Link>
           <button
             onClick={onOpenGarmentPreview}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
             title="Open large garment preview"
           >
             <Settings2 className="h-4 w-4" />
             View
           </button>
+          <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
       </div>
     </header>

@@ -303,10 +303,10 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
       : null;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#202024] p-4 lg:p-8">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">Garment canvas</div>
-        <div className="mt-1 text-xs text-zinc-400">
+    <div className="relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden bg-[var(--studio-surface)] p-4 lg:p-8">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Garment canvas</div>
+        <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {activePlacementLayers.length > 0
             ? `${activePlacementLayers.length} layer${activePlacementLayers.length === 1 ? '' : 's'} on ${garment.type} · ${garment.placementZone}`
             : otherVisiblePlacementLayerCount > 0
@@ -315,12 +315,12 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
         </div>
       </div>
 
-      <div className="w-full max-w-[780px] rounded-lg border border-white/10 bg-[#17171a] p-4 shadow-2xl shadow-black/30 lg:p-6">
-        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-300">
+      <div className="w-full max-w-[780px] rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] p-4 shadow-2xl shadow-black/30 lg:p-6">
+        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[var(--studio-ink-secondary)]">
           <Shirt className="h-4 w-4 text-violet-300" />
           <span>{garmentDefinition.displayName} · {garment.size} · {color.name} · {view}</span>
         </div>
-        <div className="relative aspect-[1/1] w-full overflow-hidden rounded-md border border-white/10" style={{ backgroundImage: sceneBackground }}>
+        <div className="relative aspect-[1/1] w-full overflow-hidden rounded-md border border-[var(--studio-border)]" style={{ backgroundImage: sceneBackground }}>
           <div className="absolute inset-0 transition-transform duration-150" style={{ transform: `scale(${state.canvas.zoom})`, transformOrigin: 'center center' }}>
             <HtvMockupImage imageSrc={mockupView.imageSrc} alt={`${garment.type} ${view} mockup`} color={color} />
 
@@ -390,27 +390,27 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
             </svg>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--studio-ink-subtle)]">
           {garment.activePlacementZones.map((zone) => (
-            <span key={zone} className={`rounded-full border px-2.5 py-1 ${zone === garment.placementZone ? 'border-violet-400/60 bg-violet-500/15 text-violet-100' : 'border-white/10 bg-white/5 text-zinc-400'}`}>
+            <span key={zone} className={`rounded-full border px-2.5 py-1 ${zone === garment.placementZone ? 'border-violet-400/60 bg-violet-500/15 text-violet-100' : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]'}`}>
               {zone}
             </span>
           ))}
         </div>
       </div>
 
-      <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-white/10 bg-[#17171a]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom in">
+      <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
+        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom in">
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom out">
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
           <Scan className="h-4 w-4" />
         </button>
       </div>
-      <div className="absolute bottom-3 left-3 rounded-md border border-white/10 bg-[#17171a]/90 px-2 py-1 text-xs text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
+      <div className="absolute bottom-3 left-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2 py-1 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
         {Math.round(state.canvas.zoom * 100)}%
       </div>
     </div>

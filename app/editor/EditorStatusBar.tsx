@@ -36,7 +36,7 @@ export default function EditorStatusBar({
     : '0×0 mm';
 
   return (
-    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#17171a] px-4 py-1.5 text-[11px] text-zinc-400">
+    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-[11px] text-[var(--studio-ink-muted)]">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-medium">{stoneCount} stone{stoneCount !== 1 && 's'}</span>
         <span className="font-mono">{physicalSize}</span>
@@ -63,12 +63,12 @@ export default function EditorStatusBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-white/10 bg-white/5 text-zinc-400'}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]'}`}>
           <Clock3 className="h-3.5 w-3.5" />
           <span>{autosaveLabel}</span>
         </span>
-        <span>Library: <span className="font-medium text-zinc-300">{activeLibraryName ?? 'Local draft'}</span></span>
-        <span>Zoom: <span className="font-mono text-zinc-300">{Math.round(canvas.zoom * 100)}%</span></span>
+        <span>Library: <span className="font-medium text-[var(--studio-ink-secondary)]">{activeLibraryName ?? 'Local draft'}</span></span>
+        <span>Zoom: <span className="font-mono text-[var(--studio-ink-secondary)]">{Math.round(canvas.zoom * 100)}%</span></span>
         {canvas.showGrid && (
           <span className="text-ink-muted">Grid: {canvas.gridSizeMm}mm</span>
         )}

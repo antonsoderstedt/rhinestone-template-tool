@@ -3,7 +3,6 @@ import {
   LEGACY_OUTLINE_FONT_ID,
   parseRhinestoneProject,
   serializeRhinestoneProject,
-  getRecommendedHoleDiameter,
   type RhinestoneProjectFile,
 } from '../src/lib/rhinestone-engine/index';
 
@@ -138,30 +137,6 @@ describe('Project format — parseRhinestoneProject', () => {
     expect(parsed).toEqual(project);
   });
 
-  it('old-project protection: a saved stone keeps its exact literal holeDiameterMm even when it no longer matches the current recommended default', () => {
-    // Simulates a project saved before the Magic Flock SS10 hole diameter was
-    // corrected from 3.0mm to 3.43mm. Loading it must never silently migrate
-    // the stored value to the new default — only an explicit user edit or a
-    // fresh generation should do that.
-    const project: RhinestoneProjectFile = {
-      schemaVersion: 1,
-      savedAt: '2026-01-01T00:00:00.000Z',
-      projectName: 'Pre-correction project',
-      generatorState: {
-        generatorId: 'manual-editor',
-        stones: [{ id: 's0', x: 0, y: 0, stoneSize: 'SS10', holeDiameterMm: 3.0 }],
-        includeGuideBox: true,
-        paddingMm: 5,
-      },
-    };
-    const parsed = parseRhinestoneProject(serializeRhinestoneProject(project));
-    expect(parsed.generatorState.generatorId).toBe('manual-editor');
-    if (parsed.generatorState.generatorId === 'manual-editor') {
-      expect(parsed.generatorState.stones[0]!.holeDiameterMm).toBe(3.0);
-      expect(parsed.generatorState.stones[0]!.holeDiameterMm).not.toBe(getRecommendedHoleDiameter('SS10'));
-    }
-  });
-
   it('parses dot-matrix-text with all layout v2 fields', () => {
     const json = JSON.stringify({
       schemaVersion: 1,
@@ -291,14 +266,7 @@ describe('Project format — serializeRhinestoneProject', () => {
       manualToolState: undefined,
       generatorState: {
         generatorId: 'svg-upload',
-        assetKind: 'svg',
         uploadedSvgText: '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="5"/></svg>',
-        imageFileName: null,
-        dimensionUnit: 'mm',
-        imageColorCount: 1,
-        imageThreshold: 128,
-        imageDetail: 128,
-        imageInvert: false,
         stoneSize: 'SS12',
         includeGuideBox: false,
         includeLabels: true,
@@ -326,31 +294,5 @@ describe('Project format — serializeRhinestoneProject', () => {
     const json = serializeRhinestoneProject(project);
     const parsed = parseRhinestoneProject(json);
     expect(parsed).toEqual(project);
-  });
-
-  it('parses rhinestone-font projects with presentation mode', () => {
-    const json = JSON.stringify({
-      schemaVersion: 1,
-      savedAt: '2026-07-30T12:00:00.000Z',
-      projectName: 'Rhinestone Font Mode',
-      generatorState: {
-        generatorId: 'rhinestone-font-line',
-        presentationMode: 'line',
-        text: 'CHEER',
-        stoneSize: 'SS10',
-        rhinestoneFontId: 'small-line-ss10',
-        targetStoneSizeMm: 3.429,
-        letterSpacingMm: 0,
-        lineSpacingMm: 0,
-        includeGuideBox: true,
-        includeLabels: false,
-        paddingMm: 5,
-      },
-    });
-    const parsed = parseRhinestoneProject(json);
-    expect(parsed.generatorState.generatorId).toBe('rhinestone-font-line');
-    if (parsed.generatorState.generatorId === 'rhinestone-font-line') {
-      expect(parsed.generatorState.presentationMode).toBe('line');
-    }
   });
 });

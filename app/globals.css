@@ -2,7 +2,11 @@
 
 /*
  * Rhinestone Template Tool — design tokens.
- * One warm, light theme. No dark mode — see AGENTS.md / product decision.
+ * The marketing/shell chrome (Start, Library, Fonts, Settings, My Designs)
+ * stays a single warm light theme — no toggle there, it's just static
+ * content pages. The two studios (Rhinestone Studio, HTV Studio) are a
+ * working canvas and get a real light/dark toggle — see the
+ * --studio-* custom properties and [data-theme] blocks below.
  */
 @theme {
   /* ─── Neutrals: warm sand scale (not cold zinc/slate) ─────────────────── */
@@ -104,122 +108,152 @@ body {
   scrollbar-width: thin;
 }
 
-.rhinestone-dark-panel {
-  color: #e4e4e7;
+/*
+ * Studio theme tokens — light/dark toggle for Rhinestone Studio and HTV
+ * Studio. Defined at :root so they exist immediately (no flash before JS
+ * sets [data-theme]); dark matches the studios' original always-dark look
+ * exactly, so a user who never touches the toggle sees zero change.
+ */
+:root {
+  --studio-bg: #17171a;
+  --studio-surface: #202024;
+  --studio-surface-2: #1d1d22;
+  --studio-surface-hover: #2a2a30;
+  --studio-well: #17171a;
+  --studio-ink: #f4f4f5;
+  --studio-ink-secondary: #d4d4d8;
+  --studio-ink-muted: #a1a1aa;
+  --studio-ink-subtle: #71717a;
+  --studio-border: rgba(255, 255, 255, 0.1);
+  --studio-border-strong: rgba(255, 255, 255, 0.2);
+  --studio-hover-overlay: rgba(255, 255, 255, 0.1);
+  --studio-hover-overlay-soft: rgba(255, 255, 255, 0.05);
 }
 
-.rhinestone-dark-panel .bg-surface,
-.rhinestone-dark-panel .bg-surface-sunken,
-.rhinestone-dark-panel .bg-surface-raised,
-.rhinestone-dark-panel .bg-white,
-.rhinestone-dark-panel .bg-accent-50,
-.rhinestone-dark-panel .bg-info-50,
-.rhinestone-dark-panel .bg-success-50,
-.rhinestone-dark-panel .bg-warning-50,
-.rhinestone-dark-panel .bg-danger-50 {
-  background-color: #17171a !important;
+[data-theme='light'] {
+  --studio-bg: #f7f4ee;
+  --studio-surface: #ffffff;
+  --studio-surface-2: #f3eee7;
+  --studio-surface-hover: #ece5d9;
+  --studio-well: #faf8f5;
+  --studio-ink: #241f17;
+  --studio-ink-secondary: #3a3226;
+  --studio-ink-muted: #756757;
+  --studio-ink-subtle: #96876f;
+  --studio-border: rgba(36, 31, 23, 0.1);
+  --studio-border-strong: rgba(36, 31, 23, 0.18);
+  --studio-hover-overlay: rgba(36, 31, 23, 0.06);
+  --studio-hover-overlay-soft: rgba(36, 31, 23, 0.04);
+  color-scheme: light;
 }
 
-.rhinestone-dark-panel .text-ink,
-.rhinestone-dark-panel .text-ink-secondary,
-.rhinestone-dark-panel .text-accent-700,
-.rhinestone-dark-panel .text-info-600,
-.rhinestone-dark-panel .text-info-700,
-.rhinestone-dark-panel .text-success-600,
-.rhinestone-dark-panel .text-warning-600,
-.rhinestone-dark-panel .text-danger-600 {
-  color: #e4e4e7 !important;
+[data-theme='dark'] {
+  color-scheme: dark;
 }
 
-.rhinestone-dark-panel .text-ink-muted {
-  color: #a1a1aa !important;
+/*
+ * .rhinestone-studio-panel / .htv-studio-panel (formerly *-dark-panel,
+ * renamed since they now follow the toggle in both directions): the
+ * inspector/tools <aside> panels embed shared components authored against
+ * the light-only --color-* tokens (bg-surface, text-ink, ...). These
+ * overrides repoint that fixed light palette at the current --studio-*
+ * theme variable instead of a hardcoded hex, so those shared components
+ * still look correct whichever theme the studio is in.
+ */
+.rhinestone-studio-panel,
+.htv-studio-panel {
+  color: var(--studio-ink);
 }
 
-.rhinestone-dark-panel .border-border,
-.rhinestone-dark-panel .border-border\/80,
-.rhinestone-dark-panel .border-border-strong,
-.rhinestone-dark-panel .border-accent-300,
-.rhinestone-dark-panel .border-accent-400,
-.rhinestone-dark-panel .border-info-500\/20,
-.rhinestone-dark-panel .border-info-500\/30,
-.rhinestone-dark-panel .border-success-500\/20,
-.rhinestone-dark-panel .border-warning-500\/30,
-.rhinestone-dark-panel .border-danger-500\/20,
-.rhinestone-dark-panel .border-danger-500\/30 {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+.rhinestone-studio-panel .bg-surface,
+.rhinestone-studio-panel .bg-surface-sunken,
+.rhinestone-studio-panel .bg-surface-raised,
+.rhinestone-studio-panel .bg-white,
+.rhinestone-studio-panel .bg-accent-50,
+.rhinestone-studio-panel .bg-info-50,
+.rhinestone-studio-panel .bg-success-50,
+.rhinestone-studio-panel .bg-warning-50,
+.rhinestone-studio-panel .bg-danger-50,
+.htv-studio-panel .bg-surface,
+.htv-studio-panel .bg-surface-sunken,
+.htv-studio-panel .bg-surface-raised,
+.htv-studio-panel .bg-white,
+.htv-studio-panel .bg-accent-50,
+.htv-studio-panel .bg-info-50,
+.htv-studio-panel .bg-success-50,
+.htv-studio-panel .bg-warning-50,
+.htv-studio-panel .bg-danger-50 {
+  background-color: var(--studio-well) !important;
 }
 
-.rhinestone-dark-panel .bg-accent-500,
-.rhinestone-dark-panel .hover\:bg-accent-600:hover,
-.rhinestone-dark-panel .hover\:bg-info-500\/15:hover,
-.rhinestone-dark-panel .hover\:bg-success-500\/15:hover,
-.rhinestone-dark-panel .hover\:bg-danger-500\/15:hover {
+.rhinestone-studio-panel .text-ink,
+.rhinestone-studio-panel .text-ink-secondary,
+.rhinestone-studio-panel .text-accent-700,
+.rhinestone-studio-panel .text-info-600,
+.rhinestone-studio-panel .text-info-700,
+.rhinestone-studio-panel .text-success-600,
+.rhinestone-studio-panel .text-warning-600,
+.rhinestone-studio-panel .text-danger-600,
+.htv-studio-panel .text-ink,
+.htv-studio-panel .text-ink-secondary,
+.htv-studio-panel .text-accent-700,
+.htv-studio-panel .text-info-600,
+.htv-studio-panel .text-info-700,
+.htv-studio-panel .text-success-600,
+.htv-studio-panel .text-warning-600,
+.htv-studio-panel .text-danger-600 {
+  color: var(--studio-ink) !important;
+}
+
+.rhinestone-studio-panel .text-ink-muted,
+.htv-studio-panel .text-ink-muted {
+  color: var(--studio-ink-muted) !important;
+}
+
+.rhinestone-studio-panel .border-border,
+.rhinestone-studio-panel .border-border\/80,
+.rhinestone-studio-panel .border-border-strong,
+.rhinestone-studio-panel .border-accent-300,
+.rhinestone-studio-panel .border-accent-400,
+.rhinestone-studio-panel .border-info-500\/20,
+.rhinestone-studio-panel .border-info-500\/30,
+.rhinestone-studio-panel .border-success-500\/20,
+.rhinestone-studio-panel .border-warning-500\/30,
+.rhinestone-studio-panel .border-danger-500\/20,
+.rhinestone-studio-panel .border-danger-500\/30,
+.htv-studio-panel .border-border,
+.htv-studio-panel .border-border\/80,
+.htv-studio-panel .border-border-strong,
+.htv-studio-panel .border-accent-300,
+.htv-studio-panel .border-accent-400,
+.htv-studio-panel .border-info-500\/20,
+.htv-studio-panel .border-info-500\/30,
+.htv-studio-panel .border-success-500\/20,
+.htv-studio-panel .border-warning-500\/30,
+.htv-studio-panel .border-danger-500\/20,
+.htv-studio-panel .border-danger-500\/30 {
+  border-color: var(--studio-border-strong) !important;
+}
+
+.rhinestone-studio-panel .bg-accent-500,
+.rhinestone-studio-panel .hover\:bg-accent-600:hover,
+.rhinestone-studio-panel .hover\:bg-info-500\/15:hover,
+.rhinestone-studio-panel .hover\:bg-success-500\/15:hover,
+.rhinestone-studio-panel .hover\:bg-danger-500\/15:hover,
+.htv-studio-panel .bg-accent-500,
+.htv-studio-panel .hover\:bg-accent-600:hover,
+.htv-studio-panel .hover\:bg-info-500\/15:hover,
+.htv-studio-panel .hover\:bg-success-500\/15:hover,
+.htv-studio-panel .hover\:bg-danger-500\/15:hover {
   background-color: #8b5cf6 !important;
   color: #ffffff !important;
 }
 
-.rhinestone-dark-panel input,
-.rhinestone-dark-panel textarea,
-.rhinestone-dark-panel select {
-  color-scheme: dark;
-}
-
-.htv-dark-panel {
-  color: #e4e4e7;
-}
-
-.htv-dark-panel .bg-surface,
-.htv-dark-panel .bg-surface-sunken,
-.htv-dark-panel .bg-surface-raised,
-.htv-dark-panel .bg-white,
-.htv-dark-panel .bg-accent-50,
-.htv-dark-panel .bg-info-50,
-.htv-dark-panel .bg-success-50,
-.htv-dark-panel .bg-warning-50,
-.htv-dark-panel .bg-danger-50 {
-  background-color: #17171a !important;
-}
-
-.htv-dark-panel .text-ink,
-.htv-dark-panel .text-ink-secondary,
-.htv-dark-panel .text-accent-700,
-.htv-dark-panel .text-info-600,
-.htv-dark-panel .text-info-700,
-.htv-dark-panel .text-success-600,
-.htv-dark-panel .text-warning-600,
-.htv-dark-panel .text-danger-600 {
-  color: #e4e4e7 !important;
-}
-
-.htv-dark-panel .text-ink-muted {
-  color: #a1a1aa !important;
-}
-
-.htv-dark-panel .border-border,
-.htv-dark-panel .border-border\/80,
-.htv-dark-panel .border-border-strong,
-.htv-dark-panel .border-accent-300,
-.htv-dark-panel .border-accent-400,
-.htv-dark-panel .border-info-500\/20,
-.htv-dark-panel .border-info-500\/30,
-.htv-dark-panel .border-success-500\/20,
-.htv-dark-panel .border-warning-500\/30,
-.htv-dark-panel .border-danger-500\/20,
-.htv-dark-panel .border-danger-500\/30 {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-.htv-dark-panel .bg-accent-500,
-.htv-dark-panel .hover\:bg-accent-600:hover,
-.htv-dark-panel .hover\:bg-info-500\/15:hover,
-.htv-dark-panel .hover\:bg-success-500\/15:hover,
-.htv-dark-panel .hover\:bg-danger-500\/15:hover {
-  background-color: #8b5cf6 !important;
-  color: #ffffff !important;
-}
-
-.htv-dark-panel input,
-.htv-dark-panel textarea,
-.htv-dark-panel select {
-  color-scheme: dark;
+.rhinestone-studio-panel input,
+.rhinestone-studio-panel textarea,
+.rhinestone-studio-panel select,
+.htv-studio-panel input,
+.htv-studio-panel textarea,
+.htv-studio-panel select {
+  color-scheme: inherit;
 }

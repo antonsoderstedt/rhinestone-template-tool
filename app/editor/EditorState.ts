@@ -8,7 +8,6 @@
 import {
   RhinestoneTemplate,
   StoneSizeId,
-  Unit,
   DensityPreset,
   TemplateFillMode,
   TemplateCoverageMode,
@@ -20,28 +19,23 @@ import {
   Stone,
   type GeneratorId,
   LEGACY_OUTLINE_FONT_ID,
-  getRhinestoneFontDefinition,
-  getRhinestoneFontStyle,
-  getPreferredRhinestoneFontStoneSize,
-  getSupportedRhinestoneFontStoneSizes,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
-  suggestSvgUploadMode,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
 export type EditorTool =
-  | 'select'       // Select and move stones
-  | 'text'         // Text (outline or dot-matrix)
-  | 'svg'          // SVG import
-  | 'grid'         // Grid generator
-  | 'rhinestone-font'  // Rhinestone font text
-  | 'svg-alphabet'     // SVG alphabet text (per-letter curated glyphs)
-  | 'letter-stencil'   // Reusable per-letter stencil cards
-  | 'template-import'  // Import pre-placed stones from SVG
-  | 'manual';      // Add individual stones
+  | 'select'          // Select and move stones
+  | 'text'            // Text (outline or dot-matrix)
+  | 'svg'             // SVG import
+  | 'grid'            // Grid generator
+  | 'rhinestone-font' // Rhinestone font text
+  | 'svg-alphabet'    // Compose text from a per-letter SVG alphabet
+  | 'letter-stencil'  // Reusable per-letter stencil cards
+  | 'template-import' // Import pre-placed stones from SVG
+  | 'manual';         // Add individual stones
 
 // ─── Text Tool State ──────────────────────────────────────────────────────────
 
@@ -54,17 +48,20 @@ export interface TextToolState {
   text: string;
   stoneSize: StoneSizeId;
   fontId: string;
-  
+  unsupportedCharacters: string[];
+  warnings: string[];
+
   // Outline-specific
   fontSizeMm: number | '';
   align: OutlineTextAlign;
   letterSpacingMm: number | '';
   lineSpacingMm: number | '';
-  
+  curveAmount: number;
+
   // Dot-matrix-specific
   letterSpacingColumns: number;
   lineSpacingRows: number;
-  
+
   // Shared
   targetWidthMm: number | '';
   targetHeightMm: number | '';
@@ -77,26 +74,25 @@ export interface TextToolState {
   radialSettings: RadialPlacementSettings;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
-
-  /** Characters in `text` with no real glyph in the current outline font (fell back to '?'). Legacy vector font only — bundled OpenType fonts have broad Unicode coverage. */
-  unsupportedCharacters: string[];
 }
 
 // ─── SVG Tool State ───────────────────────────────────────────────────────────
 
+export type SvgAssetKind = 'svg' | 'image';
 export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
+export type SvgDimensionUnit = 'mm' | 'in';
 
 export interface SvgToolState {
-  assetKind: 'svg' | 'image';
   uploadedSvgText: string | null;
   svgFileName: string | null;
+  assetKind: SvgAssetKind;
   uploadedImageDataUrl: string | null;
   imageFileName: string | null;
   renderMode: SvgRenderMode;
+  dimensionUnit: SvgDimensionUnit;
   stoneSize: StoneSizeId;
   targetWidthMm: number | '';
   targetHeightMm: number | '';
-  dimensionUnit: Unit;
   preserveAspectRatio: boolean;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
@@ -134,41 +130,32 @@ export interface GridToolState {
 
 // ─── Manual Tool State ────────────────────────────────────────────────────────
 
-/**
- * Pen-tool draw modes.
- * - `'freehand'`: current smart-assist behavior — stones follow the pointer
- *   path and nudge away from collisions.
- * - `'grid'`: every stone snaps hard to the grid (gridSnapSize); a stone that
- *   would collide is skipped rather than nudged, so placement stays exactly
- *   on-grid and predictable.
- * - `'row'`: the stroke locks to a single row or column (whichever axis you
- *   move further along first) so a dragged line comes out perfectly straight.
- */
+export type ManualInteractionMode = 'place' | 'erase';
 export type ManualDrawMode = 'freehand' | 'grid' | 'row';
 
 export interface ManualToolState {
   addStoneSize: StoneSizeId;
-  interactionMode: 'place' | 'erase';
-  assistBrushSizeMm: number;
   snapToGrid: boolean;
   gridSnapSize: number; // mm
+  interactionMode: ManualInteractionMode;
   drawMode: ManualDrawMode;
+  assistBrushSizeMm: number;
 }
 
 // ─── Rhinestone Font Tool State ───────────────────────────────────────────────
 
+export type RhinestoneFontPresentationMode = 'stones' | 'line' | 'digits';
+
 export interface RhinestoneFontToolState {
-  presentationMode: 'stones' | 'line' | 'digits';
   text: string;
   rhinestoneFontId: string;
   stoneSize: StoneSizeId;
   letterSpacingMm: number | '';
   lineSpacingMm: number | '';
+  presentationMode: RhinestoneFontPresentationMode;
   unsupportedCharacters: string[];
   warnings: string[];
 }
-
-// ─── SVG Alphabet Tool State ──────────────────────────────────────────────────
 
 export interface SvgAlphabetToolState {
   text: string;
@@ -180,10 +167,11 @@ export interface SvgAlphabetToolState {
   warnings: string[];
 }
 
-// ─── Letter Stencil Tool State ────────────────────────────────────────────────
+export type LetterStencilSourceType = 'svg-alphabet' | 'rhinestone-font';
+export type LetterStencilLayoutMode = 'preview' | 'cut-sheet';
 
 export interface LetterStencilToolState {
-  sourceType: 'svg-alphabet' | 'rhinestone-font';
+  sourceType: LetterStencilSourceType;
   text: string;
   svgAlphabetId: string;
   rhinestoneFontId: string;
@@ -191,7 +179,7 @@ export interface LetterStencilToolState {
   cardPaddingMm: number | '';
   cardCornerRadiusMm: number | '';
   minCardWidthMm: number | '';
-  layoutMode: 'preview' | 'cut-sheet';
+  layoutMode: LetterStencilLayoutMode;
   cutSheetGapMm: number | '';
   unsupportedCharacters: string[];
   warnings: string[];
@@ -233,15 +221,6 @@ export interface HistoryEntry {
 export interface EditHistory {
   past: HistoryEntry[];
   future: HistoryEntry[];
-}
-
-/** Undo history is capped so a long free-form editing session (manual/pen tool especially) can't grow memory without bound. */
-export const MAX_HISTORY_LENGTH = 100;
-
-/** Appends `entry` to `past`, evicting the oldest entry once MAX_HISTORY_LENGTH is exceeded. */
-function pushHistory(past: readonly HistoryEntry[], entry: HistoryEntry): HistoryEntry[] {
-  const next = [...past, entry];
-  return next.length > MAX_HISTORY_LENGTH ? next.slice(next.length - MAX_HISTORY_LENGTH) : next;
 }
 
 export interface ClipboardState {
@@ -308,10 +287,13 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   text: 'SMOOCH',
   stoneSize: 'SS10',
   fontId: LEGACY_OUTLINE_FONT_ID,
+  unsupportedCharacters: [],
+  warnings: [],
   fontSizeMm: 25,
   align: 'left',
   letterSpacingMm: 2,
   lineSpacingMm: 8,
+  curveAmount: 0,
   letterSpacingColumns: 1,
   lineSpacingRows: 1,
   targetWidthMm: '',
@@ -334,7 +316,6 @@ export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   },
   densityPreset: 'standard',
   customSpacingMm: 4.0,
-  unsupportedCharacters: [],
 };
 
 function preferredTextCoverageForFont(fontId: string): TemplateFillMode {
@@ -399,60 +380,6 @@ function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextTo
 
 function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolState>): SvgToolState {
   const next: SvgToolState = { ...current, ...updates };
-  const usingDefaultSize = current.targetWidthMm === 100 && current.targetHeightMm === '';
-
-  if (typeof updates.uploadedImageDataUrl === 'string') {
-    next.assetKind = 'image';
-    next.uploadedSvgText = null;
-    next.svgFileName = null;
-    next.renderMode = 'artwork-dots';
-    next.coverageMode = 'fill';
-    next.fillMode = 'fill';
-    next.placementPattern = 'hexagonal';
-    if (updates.targetWidthMm === undefined && usingDefaultSize) {
-      next.targetWidthMm = 203.2;
-    }
-  }
-
-  if (typeof updates.uploadedSvgText === 'string' && updates.coverageMode === undefined && updates.fillMode === undefined) {
-    next.assetKind = 'svg';
-    next.uploadedImageDataUrl = null;
-    next.imageFileName = null;
-    const suggestedMode = suggestSvgUploadMode(updates.uploadedSvgText);
-    if (suggestedMode === 'outline-fill') {
-      next.renderMode = 'artwork-dots';
-      next.coverageMode = 'fill';
-      next.fillMode = 'fill';
-      next.placementPattern = 'hexagonal';
-      next.densityPreset = 'dense';
-      if (updates.targetWidthMm === undefined && usingDefaultSize) {
-        next.targetWidthMm = 280;
-      }
-    } else {
-      next.renderMode = 'vector-layout';
-      next.coverageMode = 'outline';
-      next.fillMode = 'outline';
-      next.placementPattern = 'default';
-    }
-  }
-
-  if (updates.renderMode === 'artwork-dots') {
-    if (updates.coverageMode === undefined) next.coverageMode = 'fill';
-    if (updates.fillMode === undefined) next.fillMode = 'fill';
-    if (updates.placementPattern === undefined) next.placementPattern = 'hexagonal';
-    if (updates.densityPreset === undefined && current.densityPreset === 'standard') {
-      next.densityPreset = 'dense';
-    }
-    if (updates.targetWidthMm === undefined && usingDefaultSize) {
-      next.targetWidthMm = 280;
-    }
-  } else if (updates.renderMode === 'vector-layout') {
-    if (updates.coverageMode === undefined && updates.fillMode === undefined) {
-      next.coverageMode = 'outline-fill';
-      next.fillMode = 'outline-fill';
-    }
-    if (updates.placementPattern === undefined) next.placementPattern = 'default';
-  }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
     next.fillMode = updates.coverageMode;
@@ -463,73 +390,17 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
   return next;
 }
 
-function getDefaultRhinestoneFontSpacing(presentationMode: RhinestoneFontToolState['presentationMode']): {
-  letterSpacingMm: number;
-  lineSpacingMm: number;
-} {
-  if (presentationMode === 'line' || presentationMode === 'digits') {
-    return { letterSpacingMm: 0, lineSpacingMm: 0 };
-  }
-
-  return { letterSpacingMm: 1, lineSpacingMm: 0 };
-}
-
-function normalizeRhinestoneFontToolUpdate(
-  current: RhinestoneFontToolState,
-  updates: Partial<RhinestoneFontToolState>,
-): RhinestoneFontToolState {
-  const next: RhinestoneFontToolState = { ...current, ...updates };
-  const fontChanged = updates.rhinestoneFontId !== undefined && updates.rhinestoneFontId !== current.rhinestoneFontId;
-
-  if (fontChanged && updates.text === undefined) {
-    const previousDefinition = getRhinestoneFontDefinition(current.rhinestoneFontId as never);
-    const nextDefinition = getRhinestoneFontDefinition(next.rhinestoneFontId as never);
-    const currentText = current.text.trim();
-    if (currentText.length === 0 || current.text === previousDefinition.suggestedText) {
-      next.text = nextDefinition.suggestedText;
-    }
-  }
-
-  const supportedSizes = getSupportedRhinestoneFontStoneSizes(next.rhinestoneFontId);
-  if (!supportedSizes.includes(next.stoneSize)) {
-    next.stoneSize = getPreferredRhinestoneFontStoneSize(next.rhinestoneFontId);
-  }
-  const fontStyle = getRhinestoneFontStyle(next.rhinestoneFontId);
-  next.presentationMode = fontStyle === 'Line'
-    ? 'line'
-    : fontStyle === 'Digits'
-      ? 'digits'
-      : 'stones';
-
-  if (fontChanged && updates.letterSpacingMm === undefined && updates.lineSpacingMm === undefined) {
-    const previousDefaults = getDefaultRhinestoneFontSpacing(current.presentationMode);
-    const currentLetterSpacing = typeof current.letterSpacingMm === 'number' ? current.letterSpacingMm : previousDefaults.letterSpacingMm;
-    const currentLineSpacing = typeof current.lineSpacingMm === 'number' ? current.lineSpacingMm : previousDefaults.lineSpacingMm;
-
-    if (
-      currentLetterSpacing === previousDefaults.letterSpacingMm &&
-      currentLineSpacing === previousDefaults.lineSpacingMm
-    ) {
-      const nextDefaults = getDefaultRhinestoneFontSpacing(next.presentationMode);
-      next.letterSpacingMm = nextDefaults.letterSpacingMm;
-      next.lineSpacingMm = nextDefaults.lineSpacingMm;
-    }
-  }
-
-  return next;
-}
-
 export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
-  assetKind: 'svg',
   uploadedSvgText: null,
   svgFileName: null,
+  assetKind: 'svg',
   uploadedImageDataUrl: null,
   imageFileName: null,
   renderMode: 'vector-layout',
+  dimensionUnit: 'mm',
   stoneSize: 'SS10',
   targetWidthMm: 100,
   targetHeightMm: '',
-  dimensionUnit: 'mm',
   preserveAspectRatio: true,
   densityPreset: 'standard',
   customSpacingMm: 4.0,
@@ -538,7 +409,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   imageDetail: 128,
   imageInvert: false,
   cleanupEnabled: true,
-  cleanupSimplify: true,
+  cleanupSimplify: false,
   cleanupSimplifyTol: 0.25,
   cleanupRemoveTiny: true,
   cleanupMinLength: 1,
@@ -571,27 +442,27 @@ export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
 
 export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
   addStoneSize: 'SS10',
+  snapToGrid: true,
+  gridSnapSize: 5, // 5mm grid
   interactionMode: 'place',
-  assistBrushSizeMm: 12,
-  snapToGrid: false,
-  gridSnapSize: 2,
   drawMode: 'freehand',
+  assistBrushSizeMm: 12,
 };
 
 export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
-  presentationMode: 'stones',
   text: 'Sulay',
   rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
   letterSpacingMm: 1,
   lineSpacingMm: 0,
+  presentationMode: 'stones',
   unsupportedCharacters: [],
   warnings: [],
 };
 
 export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
-  text: 'SCORE 2026',
-  svgAlphabetId: 'scoreboard-block',
+  text: 'SULAY',
+  svgAlphabetId: 'default',
   stoneSize: 'SS10',
   letterSpacingMm: 2,
   lineSpacingMm: 0,
@@ -601,8 +472,8 @@ export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
 
 export const DEFAULT_LETTER_STENCIL_TOOL_STATE: LetterStencilToolState = {
   sourceType: 'svg-alphabet',
-  text: 'NAME',
-  svgAlphabetId: 'scoreboard-block',
+  text: 'SULAY',
+  svgAlphabetId: 'default',
   rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
   cardPaddingMm: 3,
@@ -650,7 +521,7 @@ export const DEFAULT_CANVAS_STATE: CanvasState = {
   panY: 0,
   showGrid: true,
   gridSizeMm: 10,
-  showRulers: true,
+  showRulers: false,
 };
 
 export const DEFAULT_EDITOR_STATE: EditorState = {
@@ -711,24 +582,6 @@ export type EditorAction =
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
-/**
- * Generates `count` deterministic `{prefix}-N` ids that don't collide with
- * any id already present in `existingStones`. Same input always produces the
- * same ids — no Date.now()/Math.random(), per the project's determinism rule.
- */
-function generateSequentialStoneIds(existingStones: readonly EditableStone[], prefix: string, count: number): string[] {
-  const pattern = new RegExp(`^${prefix}-(\\d+)$`);
-  let max = 0;
-  for (const stone of existingStones) {
-    const m = pattern.exec(stone.id);
-    if (m) {
-      const n = parseInt(m[1]!, 10);
-      if (n > max) max = n;
-    }
-  }
-  return Array.from({ length: count }, (_, i) => `${prefix}-${max + i + 1}`);
-}
-
 function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
   switch (state.activeTool) {
     case 'grid':
@@ -738,15 +591,7 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
     case 'svg':
       return 'svg-upload';
     case 'rhinestone-font':
-      return state.rhinestoneFontTool.presentationMode === 'line'
-        ? 'rhinestone-font-line'
-        : state.rhinestoneFontTool.presentationMode === 'digits'
-          ? 'rhinestone-font-digits'
-          : 'rhinestone-font';
-    case 'svg-alphabet':
-      return 'svg-alphabet';
-    case 'letter-stencil':
-      return 'letter-stencil';
+      return 'rhinestone-font';
     case 'template-import':
       return 'template-import';
     case 'manual':
@@ -759,16 +604,6 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
-      if (action.tool === 'manual' && state.activeTool !== 'manual') {
-        const looksLikeOldCoarseSnapDefault = state.manualTool.snapToGrid && state.manualTool.gridSnapSize === 5;
-        return {
-          ...state,
-          activeTool: action.tool,
-          manualTool: looksLikeOldCoarseSnapDefault
-            ? { ...state.manualTool, snapToGrid: false, gridSnapSize: 2 }
-            : state.manualTool,
-        };
-      }
       return { ...state, activeTool: action.tool };
     
     case 'SET_PROJECT_NAME':
@@ -787,11 +622,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
-      return { ...state, rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates) };
-
+      return { ...state, rhinestoneFontTool: { ...state.rhinestoneFontTool, ...action.updates } };
+    
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };
-
+    
     case 'UPDATE_LETTER_STENCIL_TOOL':
       return { ...state, letterStencilTool: { ...state.letterStencilTool, ...action.updates } };
     
@@ -828,7 +663,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           sourceGenerator: inferEditableSourceGenerator(state),
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -898,7 +733,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: [...state.editableTemplate.stones, ...action.stones],
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -923,7 +758,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           [...state.selectedStoneIds].filter(id => !deleteIds.has(id))
         ),
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -958,7 +793,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           }),
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -996,7 +831,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           ),
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -1040,10 +875,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: nextEntry.selectedIds,
         history: {
-          past: pushHistory(state.history.past, {
-            stones: state.editableTemplate.stones,
-            selectedIds: new Set(state.selectedStoneIds),
-          }),
+          past: [
+            ...state.history.past,
+            {
+              stones: state.editableTemplate.stones,
+              selectedIds: new Set(state.selectedStoneIds),
+            },
+          ],
           future: state.history.future.slice(1),
         },
       };
@@ -1060,10 +898,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       
       // Duplicate selected stones with offset
       const stonesToDuplicate = state.editableTemplate.stones.filter(s => action.stoneIds.includes(s.id));
-      const duplicateIds = generateSequentialStoneIds(state.editableTemplate.stones, 'dup', stonesToDuplicate.length);
-      const duplicatedStones = stonesToDuplicate.map((stone, i) => ({
+      const duplicatedStones = stonesToDuplicate.map(stone => ({
         ...stone,
-        id: duplicateIds[i]!,
+        id: `stone-${Date.now()}-${Math.random()}`,
         center: { x: stone.center.x + 5, y: stone.center.y + 5 }, // 5mm offset
       }));
       
@@ -1077,7 +914,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: newSelectedIds,
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -1107,10 +944,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
       
       // Paste with offset
-      const pasteIds = generateSequentialStoneIds(state.editableTemplate.stones, 'paste', state.clipboard.stones.length);
-      const pastedStones = state.clipboard.stones.map((stone, i) => ({
+      const pastedStones = state.clipboard.stones.map(stone => ({
         ...stone,
-        id: pasteIds[i]!,
+        id: `stone-${Date.now()}-${Math.random()}`,
         center: { x: stone.center.x + 10, y: stone.center.y + 10 }, // 10mm offset
       }));
       
@@ -1124,7 +960,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         },
         selectedStoneIds: newSelectedIds,
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -1179,7 +1015,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: alignedStones,
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };
@@ -1246,7 +1082,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           stones: distributedStones,
         },
         history: {
-          past: pushHistory(state.history.past, historyEntry),
+          past: [...state.history.past, historyEntry],
           future: [],
         },
       };

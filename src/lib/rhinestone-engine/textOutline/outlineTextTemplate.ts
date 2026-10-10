@@ -21,11 +21,12 @@ import type { DensityPreset } from '../spacing/density';
 import type { Polyline } from '../path/polyline';
 import { createPolylineRhinestoneTemplate } from '../path/pathTemplate';
 import { scalePolylinesToFit } from '../sizing/scalePolylines';
-import { getVectorGlyph, isVectorGlyphSupported, BUILT_IN_VECTOR_FONT } from './vectorFont';
+import { warpPolylinesOnArc } from '../geometry/textArc';
+import { getVectorGlyph, BUILT_IN_VECTOR_FONT } from './vectorFont';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
-import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isAvailableOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
+import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
 import { loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
@@ -62,6 +63,8 @@ export interface CreateOutlineTextTemplateOptions {
   preserveAspectRatio?: boolean;
   /** Horizontal alignment for multiline text. Default: 'left'. */
   align?: OutlineTextAlign;
+  /** Bend strength for arc-warped text. 0 keeps the text straight. */
+  curveAmount?: number;
   /**
    * Extra horizontal gap between adjacent glyphs (mm).
    * Added after each character advance width except the last character in a line.
@@ -156,7 +159,7 @@ function validateOutlineOptions(options: NormalizedOutlineTextTemplateOptions) {
   if (options.fillEdgeInsetMm !== undefined && (!isFinite(options.fillEdgeInsetMm) || options.fillEdgeInsetMm < 0)) {
     throw new Error(`createOutlineTextTemplate: "fillEdgeInsetMm" must be a non-negative finite number, got ${options.fillEdgeInsetMm}.`);
   }
-  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isAvailableOutlineFontId(options.fontId)) {
+  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && !isKnownOutlineFontId(options.fontId)) {
     throw new Error(`Unknown outline fontId: ${options.fontId}`);
   }
 }
@@ -225,13 +228,7 @@ function resolveTextFillEdgeInsetMm(
   return 0;
 }
 
-interface LegacyVectorTextLayoutResult {
-  polylines: Polyline[];
-  /** Characters that had no real glyph and silently fell back to '?'. */
-  unsupportedCharacters: string[];
-}
-
-function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): LegacyVectorTextLayoutResult {
+function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateOptions): Polyline[] {
   const {
     text,
     fontSizeMm = 25,
@@ -244,7 +241,6 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
   const scale = fontSizeMm / font.unitsPerEm;
   const lines = text.split('\n');
   const lineAdvanceMm = fontSizeMm + lineSpacingMm;
-  const unsupportedCharacters = new Set<string>();
 
   interface LineGroup {
     polylines: Polyline[];
@@ -259,9 +255,6 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
     const chars = [...line];
 
     for (let ci = 0; ci < chars.length; ci++) {
-      if (!isVectorGlyphSupported(chars[ci]!)) {
-        unsupportedCharacters.add(chars[ci]!);
-      }
       const glyph = getVectorGlyph(chars[ci]);
 
       for (const pl of glyph.polylines) {
@@ -307,10 +300,7 @@ function layoutLegacyVectorTextPolylines(options: NormalizedOutlineTextTemplateO
     }
   }
 
-  return {
-    polylines: allPolylines.filter((pl) => pl.points.length >= 2),
-    unsupportedCharacters: Array.from(unsupportedCharacters),
-  };
+  return allPolylines.filter((pl) => pl.points.length >= 2);
 }
 
 function createOutlineTemplateFromPolylines(
@@ -360,6 +350,9 @@ function createOutlineTemplateFromPolylines(
       originYmm: 10,
     });
   }
+  if (typeof options.curveAmount === 'number' && isFinite(options.curveAmount)) {
+    finalPolylines = warpPolylinesOnArc(finalPolylines, { curveAmount: options.curveAmount });
+  }
 
   const metadata: Record<string, string | number | boolean> = {
     generatedBy: 'createOutlineTextTemplate',
@@ -370,6 +363,7 @@ function createOutlineTemplateFromPolylines(
     align: options.align ?? 'left',
     letterSpacingMm: options.letterSpacingMm ?? 2,
     lineSpacingMm: options.lineSpacingMm ?? 8,
+    curveAmount: options.curveAmount ?? 0,
     fontId: options.fontId,
     ...metadataOverrides,
   };
@@ -550,14 +544,10 @@ export function createOutlineTextTemplate(
     );
   }
 
-  const layout = layoutLegacyVectorTextPolylines(normalized);
-
-  return createOutlineTemplateFromPolylines(normalized, layout.polylines, {
+  return createOutlineTemplateFromPolylines(normalized, layoutLegacyVectorTextPolylines(normalized), {
     fontMode: 'built-in-vector-outline-v1',
     fontFamily: fontDefinition.fontFamily,
     fontDisplayName: fontDefinition.displayName,
-    // Comma-joined because template metadata values are string|number|boolean only.
-    unsupportedCharacters: layout.unsupportedCharacters.join(','),
   });
 }
 

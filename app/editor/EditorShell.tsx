@@ -35,6 +35,7 @@ import type {
   TemplateLibraryRecord,
   TemplateLibraryRepository,
 } from '@/src/lib/rhinestone-engine/index';
+import { useStudioTheme } from '../lib/studioTheme';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -57,6 +58,7 @@ import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { findAssetById } from '../lib/workspaceVault';
 
 export default function EditorShell() {
+  const { theme, toggleTheme } = useStudioTheme();
   const searchParams = useSearchParams();
   const AUTOSAVE_STORAGE_KEY = 'rhinestone-template-library-autosave';
   const [state, dispatch] = useReducer(editorReducer, DEFAULT_EDITOR_STATE);
@@ -206,6 +208,7 @@ export default function EditorShell() {
                   align: state.textTool.align,
                   letterSpacingMm: typeof state.textTool.letterSpacingMm === 'number' ? state.textTool.letterSpacingMm : 0,
                   lineSpacingMm: typeof state.textTool.lineSpacingMm === 'number' ? state.textTool.lineSpacingMm : 10,
+                  curveAmount: state.textTool.curveAmount,
                   targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
                   targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
                   preserveAspectRatio: state.textTool.preserveAspectRatio,
@@ -1210,7 +1213,7 @@ export default function EditorShell() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-[#1f1f22] text-zinc-100">
+    <div data-theme={theme} className="h-full min-h-0 flex flex-col bg-[var(--studio-bg)] text-[var(--studio-ink)]">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}
@@ -1234,6 +1237,8 @@ export default function EditorShell() {
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <GarmentPreviewPanel
@@ -1290,14 +1295,14 @@ export default function EditorShell() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#1f1f22] lg:flex-row lg:overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
+        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
         </div>
 
-        <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[#202024] lg:order-none lg:min-h-0">
+        <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
           <EditorCanvas
             state={state}
             dispatch={editorDispatch}
@@ -1305,7 +1310,7 @@ export default function EditorShell() {
           />
         </main>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-white/10 lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
+        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
           <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
         </div>
       </div>
@@ -1324,7 +1329,7 @@ export default function EditorShell() {
 
 function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_EDITOR_STATE.activeTool; dispatch: React.Dispatch<EditorAction> }) {
   return (
-    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-white/10 bg-[#151518] px-2 py-2 lg:order-none lg:h-full lg:w-[52px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
+    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-2 lg:order-none lg:h-full lg:w-[52px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
       {EDITOR_TOOLS.map((tool) => {
         const Icon = tool.icon;
         const active = activeTool === tool.id;
@@ -1334,7 +1339,7 @@ function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_E
             onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
             title={tool.description}
             aria-label={tool.label}
-            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-[10px] transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-zinc-400 hover:bg-white/10 hover:text-zinc-100'}`}
+            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-[10px] transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
             <Icon className="h-4 w-4" />
             <span className="mt-1 truncate">{tool.label}</span>

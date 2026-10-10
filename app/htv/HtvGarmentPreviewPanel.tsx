@@ -79,7 +79,7 @@ export default function HtvGarmentPreviewPanel({ open, state, showAllPlacementOv
         </div>
 
         <div className="flex min-h-[320px] flex-1 items-center justify-center p-6">
-          <div className="relative h-full max-h-full w-full max-w-sm overflow-hidden rounded-md border border-white/10" style={{ backgroundImage: sceneBackground }}>
+          <div className="relative h-full max-h-full w-full max-w-sm overflow-hidden rounded-md border border-[var(--studio-border)]" style={{ backgroundImage: sceneBackground }}>
             <HtvMockupImage imageSrc={mockupView.imageSrc} alt={`${garment.type} ${view} preview`} color={color} />
             <svg viewBox={`0 0 ${HTV_MOCKUP_IMAGE_SIZE} ${HTV_MOCKUP_IMAGE_SIZE}`} className="absolute inset-0 h-full w-full">
               {placementOverlays.map((placement) => (

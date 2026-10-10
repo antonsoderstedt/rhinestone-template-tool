@@ -27,7 +27,6 @@ import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import PlacementModeControl from './controls/PlacementModeControl';
 import {
   editorFieldLabelClassName,
-  editorNoteClassName,
   editorSegmentActiveClassName,
   editorSegmentBaseClassName,
   editorSegmentIdleClassName,
@@ -53,27 +52,27 @@ interface ToolPropertiesProps {
 
 function PanelSection({ title, description, children, defaultOpen = true }: { title: string; description?: string; children: React.ReactNode; defaultOpen?: boolean }) {
   return (
-    <details open={defaultOpen} className="group rounded-md border border-white/10 bg-[#202024] shadow-sm">
+    <details open={defaultOpen} className="group rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-sm">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-2.5 marker:hidden [&::-webkit-details-marker]:hidden">
         <span>
-          <span className="block text-sm font-semibold text-zinc-100">{title}</span>
-          {description && <span className="mt-1 block text-xs leading-5 text-zinc-400">{description}</span>}
+          <span className="block text-sm font-semibold text-[var(--studio-ink)]">{title}</span>
+          {description && <span className="mt-1 block text-xs leading-5 text-[var(--studio-ink-muted)]">{description}</span>}
         </span>
-        <span className="mt-1 text-xs font-semibold text-zinc-500 transition group-open:rotate-180">⌄</span>
+        <span className="mt-1 text-xs font-semibold text-[var(--studio-ink-subtle)] transition group-open:rotate-180">⌄</span>
       </summary>
-      <div className="space-y-3 border-t border-white/10 px-3 py-3">{children}</div>
+      <div className="space-y-3 border-t border-[var(--studio-border)] px-3 py-3">{children}</div>
     </details>
   );
 }
 
 function PanelHeader({ title, description, mode }: { title: string; description: string; mode: 'source' | 'inspector' }) {
   return (
-    <div className="rounded-md border border-white/10 bg-[#202024] p-3 shadow-sm">
+    <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 shadow-sm">
       <div className="inline-flex rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
         {mode === 'source' ? 'Source controls' : 'Inspector'}
       </div>
-      <h2 className="mt-2 text-base font-semibold text-zinc-100">{title}</h2>
-      <p className="mt-1 text-xs leading-5 text-zinc-400">{description}</p>
+      <h2 className="mt-2 text-base font-semibold text-[var(--studio-ink)]">{title}</h2>
+      <p className="mt-1 text-xs leading-5 text-[var(--studio-ink-muted)]">{description}</p>
     </div>
   );
 }
@@ -127,7 +126,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="rhinestone-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-r border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
+      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         <PanelHeader
           title="Design source"
           description="Choose the generator, adjust the baseline settings, and keep the design system readable while you work."
@@ -142,7 +141,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
         {state.activeTool === 'select' ? (
           <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
-            <p className="text-xs text-zinc-400">Fine-tune the selection — position, alignment, and export options — in the Inspector panel on the right.</p>
+            <p className="text-xs text-[var(--studio-ink-muted)]">Fine-tune the selection — position, alignment, and export options — in the Inspector panel on the right.</p>
           </PanelSection>
         ) : (
           <>
@@ -152,7 +151,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
                   {state.editableTemplate.isEditable ? <PenLine className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                   <span>{statusCopy.label}</span>
                 </div>
-                <p className="mt-2 text-xs text-zinc-400">{statusCopy.actionHint}</p>
+                <p className="mt-2 text-xs text-[var(--studio-ink-muted)]">{statusCopy.actionHint}</p>
               </div>
             </PanelSection>
 
@@ -174,7 +173,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
   if (mode === 'inspector') {
     return (
-      <aside className="rhinestone-dark-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-l border-white/10 bg-[#252529] p-3 backdrop-blur-xl">
+      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-l border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         <PanelHeader
           title="Selection and export"
           description="Work on the current selection, repair layout details, and control what leaves the canvas."
@@ -186,22 +185,22 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
         </PanelSection>
 
         <PanelSection title="Export Settings" description="These options affect only the exported SVG output." defaultOpen={false}>
-          <label className="flex items-center gap-2 rounded-md border border-white/10 bg-[#17171a] px-3 py-2 text-sm text-zinc-300">
+          <label className="flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
               checked={state.includeGuideBox}
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: e.target.checked } })}
-              className="h-4 w-4 rounded border-white/20 bg-[#17171a]"
+              className="h-4 w-4 rounded border-[var(--studio-border-strong)] bg-[var(--studio-well)]"
             />
             Include guide box
           </label>
 
-          <label className="flex items-center gap-2 rounded-md border border-white/10 bg-[#17171a] px-3 py-2 text-sm text-zinc-300">
+          <label className="flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
               checked={state.includeLabels}
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: e.target.checked } })}
-              className="h-4 w-4 rounded border-white/20 bg-[#17171a]"
+              className="h-4 w-4 rounded border-[var(--studio-border-strong)] bg-[var(--studio-well)]"
             />
             Include labels
           </label>
@@ -402,6 +401,16 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
             min={0}
             max={100}
             step={1}
+          />
+
+          <NumericInput
+            label="Curve"
+            value={textTool.curveAmount}
+            onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { curveAmount: typeof val === 'number' ? val : 0 } })}
+            min={-1}
+            max={1}
+            step={0.05}
+            helpText="0 is straight. Positive bows text into a dome, negative into a valley."
           />
         </>
       )}
@@ -1896,22 +1905,22 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
   return (
     <div className="space-y-4">
       {selectedCount === 0 ? (
-        <div className="rounded-md border border-dashed border-white/15 bg-[#17171a] px-4 py-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-zinc-100">
+        <div className="rounded-md border border-dashed border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-[var(--studio-ink)]">
             <ScanSearch className="h-4 w-4 text-violet-300" />
             {emptyState.title}
           </div>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">{emptyState.description}</p>
-          <ul className="mt-3 space-y-2 text-xs leading-6 text-zinc-500">
+          <p className="mt-2 text-sm leading-6 text-[var(--studio-ink-muted)]">{emptyState.description}</p>
+          <ul className="mt-3 space-y-2 text-xs leading-6 text-[var(--studio-ink-subtle)]">
             {emptyState.tips.map((tip) => (
               <li key={tip}>• {tip}</li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="rounded-md border border-white/10 bg-[#17171a] px-4 py-3 shadow-sm">
-          <p className="text-sm font-medium text-zinc-100">{selectedCount} stone{selectedCount > 1 ? 's' : ''} selected</p>
-          <p className="mt-1 text-xs text-zinc-400">Selection actions only affect the highlighted stones.</p>
+        <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-3 shadow-sm">
+          <p className="text-sm font-medium text-[var(--studio-ink)]">{selectedCount} stone{selectedCount > 1 ? 's' : ''} selected</p>
+          <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Selection actions only affect the highlighted stones.</p>
         </div>
       )}
       
@@ -2102,7 +2111,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
             <Hand className="h-4 w-4" />
             Make Editable
           </button>
-          <p className="mt-2 text-xs text-zinc-400">
+          <p className="mt-2 text-xs text-[var(--studio-ink-muted)]">
             Generated output is still driven by the source settings. Make Editable unlocks per-stone editing while keeping the original generator available.
           </p>
         </div>

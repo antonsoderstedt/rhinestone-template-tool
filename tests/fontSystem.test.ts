@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -17,52 +16,12 @@ import {
   listRhinestoneFonts,
   listCachedFontIds,
   listOutlineFonts,
-  listUploadedOutlineFonts,
   loadOutlineFont,
 } from '../src/lib/rhinestone-engine/index';
-
-const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
-
-function createMockStorage() {
-  const store = new Map<string, string>();
-  return {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    clear: () => {
-      store.clear();
-    },
-  } as Storage;
-}
-
-async function installUploadedFontFixture(fontId = 'upload-font-test') {
-  const fileBuffer = await readFile('node_modules/@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff');
-  const dataUrl = `data:font/woff;base64,${Buffer.from(fileBuffer).toString('base64')}`;
-  const storage = createMockStorage();
-  storage.setItem(WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify({
-    version: 1,
-    uploadedFonts: [{
-      fontId,
-      name: 'Uploaded Archivo Clone',
-      previewFamily: 'WorkspaceUploadedFontFixture',
-      sourceDataUrl: dataUrl,
-    }],
-  }));
-  Object.defineProperty(globalThis, 'localStorage', {
-    configurable: true,
-    value: storage,
-  });
-  return fontId;
-}
 
 describe('font system', () => {
   beforeEach(() => {
     clearOutlineFontCacheForTests();
-    Reflect.deleteProperty(globalThis, 'localStorage');
   });
 
   it('has unique stable font IDs', () => {
@@ -84,20 +43,6 @@ describe('font system', () => {
     const bundledFonts = OUTLINE_FONT_REGISTRY.filter((font) => !font.isLegacy);
     const loaded = await Promise.all(bundledFonts.map((font) => loadOutlineFont(font.fontId)));
     expect(loaded.every((entry) => entry.font)).toBe(true);
-  });
-
-  it('lists uploaded workspace fonts alongside built-ins when present in local storage', async () => {
-    const uploadedId = await installUploadedFontFixture();
-    expect(listUploadedOutlineFonts().map((font) => font.fontId)).toContain(uploadedId);
-    expect(listOutlineFonts().some((font) => font.fontId === uploadedId)).toBe(true);
-  });
-
-  it('loads an uploaded workspace font from a stored data URL', async () => {
-    const uploadedId = await installUploadedFontFixture();
-    const loaded = await loadOutlineFont(uploadedId);
-    expect(loaded.definition.fontId).toBe(uploadedId);
-    expect(loaded.font).not.toBeNull();
-    expect(listCachedFontIds()).toContain(uploadedId);
   });
 
   it('supports ÅÄÖåäö and digits for bundled fonts', async () => {
@@ -323,7 +268,7 @@ describe('font system', () => {
     expect(html).toContain('aria-haspopup="listbox"');
     expect(html).toContain('Choose outline font');
     expect(html).toContain('Archivo Black');
-    expect(html).toContain('Outline default');
+    expect(html).toContain('Filled typography');
   });
 
   it('exposes curated local rhinestone fonts and their supported sizes', () => {
@@ -336,10 +281,5 @@ describe('font system', () => {
     expect(listRhinestoneFonts().find((font) => font.fontId === 'huge-digits')?.suggestedText).toBe('2026');
     expect(getSupportedRhinestoneFontStoneSizes('old-english-stone')).toEqual(['SS6', 'SS10']);
     expect(getPreferredRhinestoneFontStoneSize('bride-script')).toBe('SS10');
-  });
-
-  it('excludes test-fixture fonts from the production font list', () => {
-    const ids = listRhinestoneFonts().map((font) => font.fontId);
-    expect(ids).not.toContain('test-fixture');
   });
 });

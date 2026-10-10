@@ -167,10 +167,10 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
     state.selectedLayerIds.size === 1 ? placementLayers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
   return (
-    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[#202024]">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-white/10 bg-[#17171a]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">HTV canvas</div>
-        <div className="mt-1 text-xs text-zinc-400">
+    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
+        <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {placementLayers.length > 0 ? `${placementLayers.length} layer${placementLayers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>
       </div>
@@ -235,18 +235,18 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         )}
       </svg>
 
-      <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-white/10 bg-[#17171a]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom in">
+      <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
+        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom in">
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom out">
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-md p-2 text-zinc-400 hover:bg-white/10 hover:text-zinc-100" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
           <Scan className="h-4 w-4" />
         </button>
       </div>
-      <div className="absolute bottom-3 left-3 rounded-md border border-white/10 bg-[#17171a]/90 px-2 py-1 text-xs text-zinc-400 shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
+      <div className="absolute bottom-3 left-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2 py-1 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
         {Math.round(state.canvas.zoom * 100)}%
       </div>
     </div>

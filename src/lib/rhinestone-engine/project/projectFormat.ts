@@ -9,7 +9,7 @@
  * UI download / upload logic lives in components.
  */
 
-import type { StoneSizeId, Unit } from '../types/index';
+import type { StoneSizeId } from '../types/index';
 import type { DensityPreset } from '../spacing/density';
 import type { OutlineTextAlign } from '../textOutline/outlineTextTemplate';
 import type { TemplateCoverageMode, TemplateFillMode, ContourCoverageSettings } from '../fill/fillTemplate';
@@ -24,6 +24,7 @@ export type GeneratorId =
   | 'outline-text'
   | 'dot-matrix-text'
   | 'manual-grid'
+  | 'polyline-logo'
   | 'svg-upload'
   | 'manual-editor'
   | 'rhinestone-font'
@@ -32,6 +33,8 @@ export type GeneratorId =
   | 'svg-alphabet'
   | 'letter-stencil'
   | 'template-import';
+
+export type PolylineDemoShape = 'diamond' | 'triangle' | 'rectangle' | 'zigzag';
 
 // ─── Per-generator saved state ────────────────────────────────────────────────
 
@@ -90,24 +93,40 @@ export interface ManualGridProjectState {
   customSpacingMm: number;
 }
 
+export interface PolylineLogoProjectState {
+  generatorId: 'polyline-logo';
+  shape: PolylineDemoShape;
+  stoneSize: StoneSizeId;
+  targetWidthMm: number | null;
+  targetHeightMm: number | null;
+  preserveAspectRatio: boolean;
+  densityPreset: DensityPreset;
+  customSpacingMm: number;
+  fillMode: TemplateFillMode;
+  fillPattern: FillPattern;
+  includeGuideBox: boolean;
+  includeLabels: boolean;
+  paddingMm: number;
+}
+
 export interface SvgUploadProjectState {
   generatorId: 'svg-upload';
-  assetKind?: 'svg' | 'image';
   /**
    * Raw uploaded SVG text — only ever passed through the safe parser, never rendered.
    * null if no SVG was uploaded when the project was saved.
    */
   uploadedSvgText: string | null;
+  assetKind?: 'svg' | 'image';
   uploadedImageDataUrl?: string | null;
   imageFileName?: string | null;
   renderMode?: 'vector-layout' | 'artwork-dots';
+  dimensionUnit?: 'mm' | 'in';
   stoneSize: StoneSizeId;
   includeGuideBox: boolean;
   includeLabels: boolean;
   paddingMm: number;
   targetWidthMm: number | null;
   targetHeightMm: number | null;
-  dimensionUnit?: Unit;
   preserveAspectRatio: boolean;
   coverageMode?: TemplateCoverageMode;
   densityPreset: DensityPreset;
@@ -161,13 +180,42 @@ export interface ManualEditorProjectState {
 
 export interface RhinestoneFontProjectState {
   generatorId: 'rhinestone-font' | 'rhinestone-font-line' | 'rhinestone-font-digits';
-  presentationMode?: 'stones' | 'line' | 'digits';
   text: string;
   stoneSize: StoneSizeId;
   rhinestoneFontId: string;
   targetStoneSizeMm: number;
   letterSpacingMm: number;
   lineSpacingMm: number;
+  presentationMode?: 'stones' | 'line' | 'digits';
+  includeGuideBox: boolean;
+  includeLabels: boolean;
+  paddingMm: number;
+}
+
+export interface SvgAlphabetProjectState {
+  generatorId: 'svg-alphabet';
+  text: string;
+  stoneSize: StoneSizeId;
+  svgAlphabetId: string;
+  letterSpacingMm: number;
+  lineSpacingMm: number;
+  includeGuideBox: boolean;
+  includeLabels: boolean;
+  paddingMm: number;
+}
+
+export interface LetterStencilProjectState {
+  generatorId: 'letter-stencil';
+  sourceType: 'svg-alphabet' | 'rhinestone-font';
+  text: string;
+  svgAlphabetId: string;
+  rhinestoneFontId: string;
+  stoneSize: StoneSizeId;
+  cardPaddingMm: number;
+  cardCornerRadiusMm: number;
+  minCardWidthMm: number;
+  layoutMode: 'preview' | 'cut-sheet';
+  cutSheetGapMm: number;
   includeGuideBox: boolean;
   includeLabels: boolean;
   paddingMm: number;
@@ -191,43 +239,13 @@ export interface TemplateImportProjectState {
   paddingMm: number;
 }
 
-export interface SvgAlphabetProjectState {
-  generatorId: 'svg-alphabet';
-  text: string;
-  svgAlphabetId: string;
-  stoneSize: StoneSizeId;
-  targetStoneSizeMm: number;
-  letterSpacingMm: number;
-  lineSpacingMm: number;
-  includeGuideBox: boolean;
-  includeLabels: boolean;
-  paddingMm: number;
-}
-
-export interface LetterStencilProjectState {
-  generatorId: 'letter-stencil';
-  sourceType: 'svg-alphabet' | 'rhinestone-font';
-  text: string;
-  svgAlphabetId: string;
-  rhinestoneFontId: string;
-  stoneSize: StoneSizeId;
-  targetStoneSizeMm: number;
-  cardPaddingMm: number;
-  cardCornerRadiusMm: number;
-  minCardWidthMm: number;
-  layoutMode: 'preview' | 'cut-sheet';
-  cutSheetGapMm: number;
-  includeGuideBox: boolean;
-  includeLabels: boolean;
-  paddingMm: number;
-}
-
 // ─── Discriminated union ──────────────────────────────────────────────────────
 
 export type GeneratorProjectState =
   | OutlineTextProjectState
   | DotMatrixTextProjectState
   | ManualGridProjectState
+  | PolylineLogoProjectState
   | SvgUploadProjectState
   | ManualEditorProjectState
   | RhinestoneFontProjectState
@@ -274,11 +292,12 @@ const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contou
 const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
 const VALID_PLACEMENT_PATTERNS = new Set(['default', 'hexagonal', 'radial']);
 const VALID_TEXT_ALIGNS = new Set(['left', 'center', 'right']);
-const VALID_UNITS = new Set(['mm', 'in']);
+const VALID_DEMO_SHAPES = new Set(['diamond', 'triangle', 'rectangle', 'zigzag']);
 const VALID_GENERATOR_IDS = new Set([
   'outline-text',
   'dot-matrix-text',
   'manual-grid',
+  'polyline-logo',
   'svg-upload',
   'manual-editor',
   'rhinestone-font',
@@ -444,46 +463,60 @@ function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
   };
 }
 
+function validatePolylineLogo(s: UnknownRecord): PolylineLogoProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'polyline-logo',
+    shape: requireEnum<PolylineDemoShape>(s, 'shape', ctx, VALID_DEMO_SHAPES),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
+    targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),
+    preserveAspectRatio: requireBoolean(s, 'preserveAspectRatio', ctx),
+    densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
+    customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
+    fillMode: requireEnum<TemplateFillMode>(s, 'fillMode', ctx, VALID_FILL_MODES),
+    fillPattern: requireEnum<FillPattern>(s, 'fillPattern', ctx, VALID_FILL_PATTERNS),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
 function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
   const ctx = 'generatorState';
   const svgText = s.uploadedSvgText;
   if (svgText !== null && typeof svgText !== 'string') {
     throw new Error('[Project] generatorState.uploadedSvgText must be a string or null');
   }
-  const imageDataUrl = s.uploadedImageDataUrl;
-  if (imageDataUrl !== undefined && imageDataUrl !== null && typeof imageDataUrl !== 'string') {
-    throw new Error('[Project] generatorState.uploadedImageDataUrl must be a string or null');
-  }
-  if (s.imageFileName !== undefined && s.imageFileName !== null && typeof s.imageFileName !== 'string') {
-    throw new Error('[Project] generatorState.imageFileName must be a string or null');
-  }
-  const renderMode = s.renderMode === 'artwork-dots'
-    ? 'artwork-dots'
-    : s.renderMode === 'vector-layout'
-      ? 'vector-layout'
-      : undefined;
+  const assetKind = s.assetKind === undefined ? undefined : requireEnum<'svg' | 'image'>(s, 'assetKind', ctx, new Set(['svg', 'image']));
+  const dimensionUnit = s.dimensionUnit === undefined ? undefined : requireEnum<'mm' | 'in'>(s, 'dimensionUnit', ctx, new Set(['mm', 'in']));
+  const renderMode = s.renderMode === undefined ? undefined : requireEnum<'vector-layout' | 'artwork-dots'>(s, 'renderMode', ctx, new Set(['vector-layout', 'artwork-dots']));
+  const imageColorCountRaw = s.imageColorCount;
+  const imageColorCount = imageColorCountRaw === undefined ? undefined : [1, 2, 3, 4].includes(Number(imageColorCountRaw)) && typeof imageColorCountRaw === 'number'
+    ? imageColorCountRaw as 1 | 2 | 3 | 4
+    : (() => { throw new Error('[Project] generatorState.imageColorCount must be one of 1, 2, 3, or 4'); })();
   return {
     generatorId: 'svg-upload',
-    assetKind: s.assetKind === 'image' ? 'image' : 'svg',
     uploadedSvgText: svgText as string | null,
-    uploadedImageDataUrl: imageDataUrl as string | null | undefined,
-    imageFileName: (s.imageFileName as string | null | undefined) ?? null,
+    assetKind,
+    uploadedImageDataUrl: typeof s.uploadedImageDataUrl === 'string' || s.uploadedImageDataUrl === undefined || s.uploadedImageDataUrl === null ? s.uploadedImageDataUrl ?? undefined : (() => { throw new Error('[Project] generatorState.uploadedImageDataUrl must be a string, null, or undefined'); })(),
+    imageFileName: typeof s.imageFileName === 'string' || s.imageFileName === undefined || s.imageFileName === null ? s.imageFileName ?? undefined : (() => { throw new Error('[Project] generatorState.imageFileName must be a string, null, or undefined'); })(),
     renderMode,
+    dimensionUnit,
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
     includeLabels: requireBoolean(s, 'includeLabels', ctx),
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
     targetWidthMm: requireNumberOrNull(s, 'targetWidthMm', ctx),
     targetHeightMm: requireNumberOrNull(s, 'targetHeightMm', ctx),
-    dimensionUnit: s.dimensionUnit === undefined ? 'mm' : requireEnum<Unit>(s, 'dimensionUnit', ctx, VALID_UNITS),
     preserveAspectRatio: requireBoolean(s, 'preserveAspectRatio', ctx),
     coverageMode: s.coverageMode === undefined ? 'outline' : requireEnum<TemplateCoverageMode>(s, 'coverageMode', ctx, VALID_COVERAGE_MODES),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
-    imageColorCount: s.imageColorCount === undefined ? 1 : requireFiniteNumber(s, 'imageColorCount', ctx) as 1 | 2 | 3 | 4,
-    imageThreshold: s.imageThreshold === undefined ? 128 : requireFiniteNumber(s, 'imageThreshold', ctx),
-    imageDetail: s.imageDetail === undefined ? 128 : requireFiniteNumber(s, 'imageDetail', ctx),
-    imageInvert: s.imageInvert === undefined ? false : requireBoolean(s, 'imageInvert', ctx),
+    imageColorCount,
+    imageThreshold: s.imageThreshold === undefined ? undefined : requireFiniteNumber(s, 'imageThreshold', ctx),
+    imageDetail: s.imageDetail === undefined ? undefined : requireFiniteNumber(s, 'imageDetail', ctx),
+    imageInvert: s.imageInvert === undefined ? undefined : requireBoolean(s, 'imageInvert', ctx),
     cleanupEnabled: requireBoolean(s, 'cleanupEnabled', ctx),
     cleanupSimplify: requireBoolean(s, 'cleanupSimplify', ctx),
     cleanupSimplifyTol: requireFiniteNumber(s, 'cleanupSimplifyTol', ctx),
@@ -531,62 +564,13 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
 function validateRhinestoneFont(s: UnknownRecord): RhinestoneFontProjectState {
   const ctx = 'generatorState';
   return {
-    generatorId: s.generatorId === 'rhinestone-font-line'
-      ? 'rhinestone-font-line'
-      : s.generatorId === 'rhinestone-font-digits'
-        ? 'rhinestone-font-digits'
-        : 'rhinestone-font',
-    presentationMode:
-      s.presentationMode === 'line' || s.presentationMode === 'digits'
-        ? s.presentationMode
-        : s.generatorId === 'rhinestone-font-line'
-          ? 'line'
-          : s.generatorId === 'rhinestone-font-digits'
-            ? 'digits'
-            : 'stones',
+    generatorId: 'rhinestone-font',
     text: requireString(s, 'text', ctx),
     stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
     rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
     targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
     letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
     lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
-    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
-    includeLabels: requireBoolean(s, 'includeLabels', ctx),
-    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
-  };
-}
-
-function validateSvgAlphabet(s: UnknownRecord): SvgAlphabetProjectState {
-  const ctx = 'generatorState';
-  return {
-    generatorId: 'svg-alphabet',
-    text: requireString(s, 'text', ctx),
-    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
-    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
-    targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
-    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
-    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
-    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
-    includeLabels: requireBoolean(s, 'includeLabels', ctx),
-    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
-  };
-}
-
-function validateLetterStencil(s: UnknownRecord): LetterStencilProjectState {
-  const ctx = 'generatorState';
-  return {
-    generatorId: 'letter-stencil',
-    sourceType: requireEnum<'svg-alphabet' | 'rhinestone-font'>(s, 'sourceType', ctx, new Set(['svg-alphabet', 'rhinestone-font'])),
-    text: requireString(s, 'text', ctx),
-    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
-    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
-    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
-    targetStoneSizeMm: requireFiniteNumber(s, 'targetStoneSizeMm', ctx),
-    cardPaddingMm: requireFiniteNumber(s, 'cardPaddingMm', ctx),
-    cardCornerRadiusMm: requireFiniteNumber(s, 'cardCornerRadiusMm', ctx),
-    minCardWidthMm: requireFiniteNumber(s, 'minCardWidthMm', ctx),
-    layoutMode: requireEnum<'preview' | 'cut-sheet'>(s, 'layoutMode', ctx, new Set(['preview', 'cut-sheet'])),
-    cutSheetGapMm: requireFiniteNumber(s, 'cutSheetGapMm', ctx),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
     includeLabels: requireBoolean(s, 'includeLabels', ctx),
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
@@ -648,18 +632,14 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateDotMatrixText(s);
     case 'manual-grid':
       return validateManualGrid(s);
+    case 'polyline-logo':
+      return validatePolylineLogo(s);
     case 'svg-upload':
       return validateSvgUpload(s);
     case 'manual-editor':
       return validateManualEditor(s);
     case 'rhinestone-font':
-    case 'rhinestone-font-line':
-    case 'rhinestone-font-digits':
       return validateRhinestoneFont(s);
-    case 'svg-alphabet':
-      return validateSvgAlphabet(s);
-    case 'letter-stencil':
-      return validateLetterStencil(s);
     case 'template-import':
       return validateTemplateImport(s);
     default:
@@ -732,22 +712,20 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
   // Optional active tool
   let activeTool: RhinestoneProjectFile['activeTool'] = undefined;
   if (typeof obj.activeTool === 'string') {
-    const validTools = new Set(['select', 'text', 'svg', 'grid', 'rhinestone-font', 'svg-alphabet', 'letter-stencil', 'template-import', 'manual']);
+    const validTools = new Set(['select', 'text', 'svg', 'grid', 'rhinestone-font', 'template-import', 'manual']);
     if (validTools.has(obj.activeTool)) {
       activeTool = obj.activeTool as RhinestoneProjectFile['activeTool'];
     }
   }
   
   // Optional manual tool state
-  let manualToolState: { snapToGrid: boolean; gridSnapSize: number; addStoneSize: StoneSizeId; interactionMode?: 'place' | 'erase'; assistBrushSizeMm?: number } | undefined = undefined;
+  let manualToolState: { snapToGrid: boolean; gridSnapSize: number; addStoneSize: StoneSizeId } | undefined = undefined;
   if (obj.manualToolState !== undefined) {
     const mts = asRecord(obj.manualToolState, 'manualToolState');
     manualToolState = {
       snapToGrid: requireBoolean(mts, 'snapToGrid', 'manualToolState'),
       gridSnapSize: requireFiniteNumber(mts, 'gridSnapSize', 'manualToolState'),
       addStoneSize: requireEnum<StoneSizeId>(mts, 'addStoneSize', 'manualToolState', VALID_STONE_SIZES),
-      interactionMode: mts.interactionMode === undefined ? 'place' : requireEnum<'place' | 'erase'>(mts, 'interactionMode', 'manualToolState', new Set(['place', 'erase'])),
-      assistBrushSizeMm: mts.assistBrushSizeMm === undefined ? 12 : requireFiniteNumber(mts, 'assistBrushSizeMm', 'manualToolState'),
     };
   }
 
