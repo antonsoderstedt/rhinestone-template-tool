@@ -33,7 +33,14 @@ All internal calculations use **millimeters**. The exported SVG preserves physic
 
 ## Status
 
-Phase 0 — Foundation (documentation and folder structure). Engine not yet implemented.
+Active development — both Rhinestone Studio (`/rhinestone`) and HTV Studio (`/htv`) are implemented and covered by automated checks.
+
+Latest local validation snapshot:
+
+- ✅ `npm run typecheck`
+- ✅ `npm run test` (1011/1011)
+- ✅ `npm run build`
+- ⚠️ `npm run lint` has 2 non-blocking warnings in HTV mockup rendering
 
 ---
 

@@ -19,8 +19,14 @@ import {
   Stone,
   type GeneratorId,
   LEGACY_OUTLINE_FONT_ID,
+  DEFAULT_SVG_ALPHABET_ID,
+  suggestSvgUploadMode,
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
+  getPreferredRhinestoneFontStoneSize,
+  getSupportedRhinestoneFontStoneSizes,
+  getRhinestoneFontDefinition,
+  isKnownRhinestoneFontId,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
@@ -381,6 +387,38 @@ function normalizeTextToolUpdate(current: TextToolState, updates: Partial<TextTo
 function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolState>): SvgToolState {
   const next: SvgToolState = { ...current, ...updates };
 
+  const applyVectorLayoutPreset = () => {
+    next.coverageMode = 'outline-fill';
+    next.fillMode = 'outline-fill';
+    next.placementPattern = 'default';
+  };
+
+  const applyArtworkDotsPreset = () => {
+    next.coverageMode = 'fill';
+    next.fillMode = 'fill';
+    next.placementPattern = 'hexagonal';
+    next.densityPreset = 'dense';
+  };
+
+  if (updates.renderMode === 'vector-layout') {
+    applyVectorLayoutPreset();
+  } else if (updates.renderMode === 'artwork-dots') {
+    applyArtworkDotsPreset();
+  }
+
+  if (
+    updates.uploadedSvgText !== undefined
+    && updates.renderMode === undefined
+    && typeof updates.uploadedSvgText === 'string'
+    && updates.uploadedSvgText.trim().length > 0
+  ) {
+    if (suggestSvgUploadMode(updates.uploadedSvgText) === 'outline-fill') {
+      next.renderMode = 'artwork-dots';
+      applyArtworkDotsPreset();
+      next.targetWidthMm = 280;
+    }
+  }
+
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
     next.fillMode = updates.coverageMode;
   } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {
@@ -462,7 +500,7 @@ export const DEFAULT_RHINESTONE_FONT_TOOL_STATE: RhinestoneFontToolState = {
 
 export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
   text: 'SULAY',
-  svgAlphabetId: 'default',
+  svgAlphabetId: DEFAULT_SVG_ALPHABET_ID,
   stoneSize: 'SS10',
   letterSpacingMm: 2,
   lineSpacingMm: 0,
@@ -473,7 +511,7 @@ export const DEFAULT_SVG_ALPHABET_TOOL_STATE: SvgAlphabetToolState = {
 export const DEFAULT_LETTER_STENCIL_TOOL_STATE: LetterStencilToolState = {
   sourceType: 'svg-alphabet',
   text: 'SULAY',
-  svgAlphabetId: 'default',
+  svgAlphabetId: DEFAULT_SVG_ALPHABET_ID,
   rhinestoneFontId: 'trw-clean-stone',
   stoneSize: 'SS10',
   cardPaddingMm: 3,
@@ -601,6 +639,49 @@ function inferEditableSourceGenerator(state: EditorState): GeneratorId | null {
   }
 }
 
+function resolveRhinestoneFontPresentationMode(style: string): RhinestoneFontPresentationMode {
+  if (style === 'Line') return 'line';
+  if (style === 'Digits') return 'digits';
+  return 'stones';
+}
+
+function normalizeRhinestoneFontToolUpdate(
+  current: RhinestoneFontToolState,
+  updates: Partial<RhinestoneFontToolState>,
+): RhinestoneFontToolState {
+  const next: RhinestoneFontToolState = { ...current, ...updates };
+
+  if (updates.rhinestoneFontId !== undefined) {
+    const nextStyle = isKnownRhinestoneFontId(updates.rhinestoneFontId)
+      ? getRhinestoneFontDefinition(updates.rhinestoneFontId).style
+      : 'Script';
+    const nextMode = resolveRhinestoneFontPresentationMode(nextStyle);
+    next.presentationMode = nextMode;
+
+    const supportedSizes = getSupportedRhinestoneFontStoneSizes(updates.rhinestoneFontId);
+    if (!supportedSizes.includes(next.stoneSize)) {
+      next.stoneSize = getPreferredRhinestoneFontStoneSize(updates.rhinestoneFontId);
+    }
+
+    const usedDefaultSpacing =
+      current.letterSpacingMm === DEFAULT_RHINESTONE_FONT_TOOL_STATE.letterSpacingMm
+      && current.lineSpacingMm === DEFAULT_RHINESTONE_FONT_TOOL_STATE.lineSpacingMm;
+    if (usedDefaultSpacing && nextMode !== 'stones') {
+      next.letterSpacingMm = 0;
+      next.lineSpacingMm = 0;
+    }
+  }
+
+  if (updates.stoneSize !== undefined) {
+    const supportedSizes = getSupportedRhinestoneFontStoneSizes(next.rhinestoneFontId);
+    if (!supportedSizes.includes(updates.stoneSize)) {
+      next.stoneSize = getPreferredRhinestoneFontStoneSize(next.rhinestoneFontId);
+    }
+  }
+
+  return next;
+}
+
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
@@ -622,7 +703,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
-      return { ...state, rhinestoneFontTool: { ...state.rhinestoneFontTool, ...action.updates } };
+      return {
+        ...state,
+        rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates),
+      };
     
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };

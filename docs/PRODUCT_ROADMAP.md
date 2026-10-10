@@ -2,7 +2,7 @@
 
 > Last updated: 2026-08-30
 
-> **Note on scope (added 2026-08-30):** This document predates HTV Studio (`/htv`) entirely — a second, fully separate studio for heat-transfer-vinyl garment design, with its own state, canvas, garment mockup photos (tee/oversized/cropped tee/hoodie/tote, front/back/left/right), placement zones, and image-trace engine. See `MEMORY.md`-linked project notes or `app/htv/` directly; this roadmap only tracks Rhinestone Studio's modules below. Sections G and C were also corrected during this pass — check the module tables directly rather than assuming parity with this date.
+> **Note on scope (added 2026-08-30):** This document predates HTV Studio (`/htv`) entirely — a second, fully separate studio for heat-transfer-vinyl garment design, with its own state, canvas, garment mockup photos (tee/oversized/cropped tee/hoodie/tote, front/back/left/right), placement zones, and image-trace engine. See `docs/PROJECT_HANDOFF.md` and `app/htv/` directly; this roadmap only tracks Rhinestone Studio's modules below. Sections G and C were also corrected during this pass — check the module tables directly rather than assuming parity with this date.
 
 ---
 

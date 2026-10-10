@@ -26,11 +26,13 @@ function getFontPolicyLabel(fontId: string): string {
   const font = getOutlineFontDefinition(fontId);
   switch (font.preferredTextCoverageMode) {
     case 'fill':
-      return 'Fill default';
+      return 'Filled typography default';
     case 'outline-fill':
-      return 'Outline + fill default';
+      return 'Filled typography (outline + fill) default';
     default:
-      return font.supportedTextCoverageModes.includes('fill') ? 'Outline default' : 'Outline only';
+      return font.supportedTextCoverageModes.includes('fill')
+        ? 'Outline default (Filled typography available)'
+        : 'Outline only';
   }
 }
 
