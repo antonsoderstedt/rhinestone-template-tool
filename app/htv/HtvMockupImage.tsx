@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { GarmentColorSwatch } from '../components/garmentPreview/garmentCatalog';
 
 interface HtvMockupImageProps {
@@ -36,18 +37,24 @@ export default function HtvMockupImage({ imageSrc, alt, color }: HtvMockupImageP
   return (
     <div role="img" aria-label={alt} className="pointer-events-none absolute inset-0 isolate">
       <div aria-hidden className="absolute inset-0 bg-center bg-no-repeat" style={maskStyle} />
-      <img
+      <Image
         src={imageSrc}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-contain"
+        fill
+        unoptimized
+        sizes="100vw"
+        className="absolute inset-0 object-contain"
         style={shadowLayerStyle}
       />
-      <img
+      <Image
         src={imageSrc}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-contain"
+        fill
+        unoptimized
+        sizes="100vw"
+        className="absolute inset-0 object-contain"
         style={highlightLayerStyle}
       />
     </div>
