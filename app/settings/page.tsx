@@ -1,12 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { CheckCircle2, Settings2 } from 'lucide-react';
+import { CheckCircle2, Ruler, Settings2 } from 'lucide-react';
 import {
   DEFAULT_WORKSPACE_SETTINGS,
+  type CalibrationProfile,
   type WorkspaceSettings,
   type WorkspaceVault,
+  readActiveCalibrationProfileId,
   readWorkspaceVault,
+  setActiveCalibrationProfile,
+  upsertCalibrationProfile,
+  deleteCalibrationProfile,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
 import {
@@ -27,6 +33,7 @@ function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault,
 export default function SettingsPage() {
   const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(() => readActiveCalibrationProfileId());
 
   const settings = vault.settings;
   const update = <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {
@@ -34,6 +41,30 @@ export default function SettingsPage() {
     persistSettings(next, vault, setVault);
     setSavedAt(new Date().toLocaleTimeString());
   };
+
+  function handleSetActiveProfile(id: string | null) {
+    setActiveCalibrationProfile(id);
+    setActiveProfileIdState(id);
+  }
+
+  function handleToggleApproval(profile: CalibrationProfile) {
+    const next: CalibrationProfile = {
+      ...profile,
+      approvedAt: profile.approvedAt ? undefined : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const nextVault = upsertCalibrationProfile(vault, next);
+    setVault(nextVault);
+    writeWorkspaceVault(nextVault);
+    if (next.approvedAt) handleSetActiveProfile(profile.id);
+  }
+
+  function handleDeleteProfile(id: string) {
+    const nextVault = deleteCalibrationProfile(vault, id);
+    setVault(nextVault);
+    writeWorkspaceVault(nextVault);
+    if (activeProfileId === id) handleSetActiveProfile(null);
+  }
 
   return (
     <WorkspacePage tone="accent">
@@ -91,6 +122,88 @@ export default function SettingsPage() {
             <Field label="Quality checklist" value={settings.qualityChecklist} onChange={(value) => update('qualityChecklist', value)} multiline />
           </FormCard>
         </section>
+
+        {/* ── Calibration Profiles ──────────────────────────────────────────── */}
+        <WorkspaceSurface className="p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Ruler className="h-5 w-5 text-accent-600" />
+              <h2 className="text-2xl font-semibold text-ink">Calibration Profiles</h2>
+            </div>
+            <Link
+              href="/setup"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+            >
+              Full workflow →
+            </Link>
+          </div>
+          <p className="mt-2 text-sm leading-7 text-ink-secondary">
+            Switch the active profile here, approve it for production, or go to Setup to run the full calibration workflow.
+          </p>
+
+          {vault.calibrationProfiles.length === 0 ? (
+            <div className="mt-5 rounded-xl border border-dashed border-border bg-surface-raised px-6 py-8 text-center">
+              <p className="text-sm font-medium text-ink">No calibration profiles saved yet.</p>
+              <p className="mt-2 text-xs text-ink-muted">Run the calibration workflow in Setup to create one.</p>
+              <Link href="/setup" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-ink-inverse transition hover:bg-sand-800">
+                Go to Setup & Calibration
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {vault.calibrationProfiles.map((profile) => {
+                const isActive = activeProfileId === profile.id;
+                const isApproved = Boolean(profile.approvedAt);
+                return (
+                  <div
+                    key={profile.id}
+                    className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${isActive ? 'border-accent-300 bg-accent-50' : 'border-border bg-surface-raised'}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate font-medium text-ink">{profile.name}</span>
+                        {isActive && (
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Active</span>
+                        )}
+                        {isApproved ? (
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Approved</span>
+                        ) : (
+                          <span className="rounded-full border border-warning-300 bg-warning-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-700">Pending</span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-ink-muted">
+                        {profile.overrides.length} size overrides · updated {profile.updatedAt.slice(0, 10)}
+                        {isApproved ? ` · approved ${profile.approvedAt!.slice(0, 10)}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!isActive && (
+                        <button
+                          onClick={() => handleSetActiveProfile(profile.id)}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink-secondary transition hover:bg-surface hover:text-ink"
+                        >
+                          Set active
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleToggleApproval(profile)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${isApproved ? 'border-warning-300 text-warning-700 hover:bg-warning-50' : 'border-success-300 text-success-700 hover:bg-success-50'}`}
+                      >
+                        {isApproved ? 'Unapprove' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProfile(profile.id)}
+                        className="rounded-lg border border-danger-200 px-3 py-1.5 text-xs font-medium text-danger-600 transition hover:bg-danger-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </WorkspaceSurface>
       </div>
     </WorkspacePage>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Download, RotateCcw, RotateCw, Save, Settings2, Shirt } from 'lucide-react';
+import { ChevronDown, Download, FolderOpen, RotateCcw, RotateCw, Save, Settings2, Shirt } from 'lucide-react';
 import type { HtvAction } from './HtvState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
@@ -23,8 +23,10 @@ interface HtvTopbarProps {
   canExport: boolean;
   canPreviewGarment: boolean;
   designSurface: 'canvas' | 'garment' | '3d';
+  recentDesigns?: { id: string; name: string }[];
   dispatch: React.Dispatch<HtvAction>;
   onSaveDesign: () => void;
+  onOpenRecent?: (id: string) => void;
   onExport: () => void;
   onOpenGarmentPreview: () => void;
   onToggleDesignSurface: (surface: 'canvas' | 'garment' | '3d') => void;
@@ -39,8 +41,10 @@ export default function HtvTopbar({
   canExport,
   canPreviewGarment,
   designSurface,
+  recentDesigns = [],
   dispatch,
   onSaveDesign,
+  onOpenRecent = () => undefined,
   onExport,
   onOpenGarmentPreview,
   onToggleDesignSurface,
@@ -86,6 +90,30 @@ export default function HtvTopbar({
         </ToolbarSection>
 
         <ToolbarSection label="Output">
+          {recentDesigns.length > 0 && (
+            <div className="relative">
+              <details className="group">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] [&::-webkit-details-marker]:hidden">
+                  <FolderOpen className="h-4 w-4" />
+                  Recent
+                  <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />
+                </summary>
+                <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
+                  <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent HTV designs</div>
+                  {recentDesigns.map((design) => (
+                    <button
+                      key={design.id}
+                      onClick={() => { onOpenRecent(design.id); (document.activeElement as HTMLElement | null)?.blur(); }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+                    >
+                      <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--studio-ink-muted)]" />
+                      <span className="truncate">{design.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </details>
+            </div>
+          )}
           <button
             onClick={onOpenGarmentPreview}
             disabled={!canPreviewGarment}

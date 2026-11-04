@@ -1297,9 +1297,11 @@ export default function EditorShell() {
         exportReady={exportReady}
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
+        recentDesigns={libraryRecord.userTemplates.slice(0, 5).map((entry) => ({ id: entry.templateId, name: entry.name }))}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
+        onOpenRecent={(id) => void handleLoadFromLibrary(id)}
         onSaveProject={handleSaveProject}
         onOpenLibrary={handleOpenLibrary}
         onExport={handleExport}

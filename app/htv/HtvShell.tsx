@@ -394,8 +394,17 @@ export default function HtvShell() {
         canExport={activePlacementLayers.length > 0}
         canPreviewGarment={activePlacementLayers.length > 0}
         designSurface={designSurface}
+        recentDesigns={readWorkspaceVault().htvDesigns.slice(0, 5).map((design) => ({ id: design.designId, name: design.name }))}
         dispatch={dispatch}
         onSaveDesign={handleSaveDesign}
+        onOpenRecent={(id) => {
+          const design = findHtvDesignById(id);
+          if (!design) return;
+          const restored = deserializeHtvState(design.snapshot);
+          dispatch({ type: 'LOAD_STATE', state: restored });
+          setActiveSavedDesignId(design.designId);
+          setToast({ message: `Opened "${design.name}".`, tone: 'success' });
+        }}
         onExport={handleExport}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
         onToggleDesignSurface={setDesignSurface}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
+import { ChevronDown, Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
 import { EditorAction } from './EditorState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
@@ -25,9 +25,11 @@ interface EditorTopbarProps {
   exportReady?: boolean;
   exportErrorCount?: number;
   exportWarningCount?: number;
+  recentDesigns?: { id: string; name: string }[];
   dispatch?: React.Dispatch<EditorAction>;
   onNewProject?: () => void;
   onOpenProject?: () => void;
+  onOpenRecent?: (id: string) => void;
   onSaveProject?: () => void;
   onOpenLibrary?: () => void;
   onExport?: () => void;
@@ -46,9 +48,11 @@ export default function EditorTopbar({
   exportReady = false,
   exportErrorCount = 0,
   exportWarningCount = 0,
+  recentDesigns = [],
   dispatch = () => undefined,
   onNewProject = () => undefined,
   onOpenProject = () => undefined,
+  onOpenRecent = () => undefined,
   onSaveProject = () => undefined,
   onOpenLibrary = () => undefined,
   onExport = () => undefined,
@@ -90,14 +94,38 @@ export default function EditorTopbar({
             <Sparkles className="h-4 w-4" />
             New
           </button>
-          <button
-            onClick={onOpenProject}
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Open a saved project"
-          >
-            <FolderOpen className="h-4 w-4" />
-            Open
-          </button>
+          <div className="relative">
+            <details className="group">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none [&::-webkit-details-marker]:hidden">
+                <FolderOpen className="h-4 w-4" />
+                Open
+                {recentDesigns.length > 0 && <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />}
+              </summary>
+              {recentDesigns.length > 0 && (
+                <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
+                  <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent designs</div>
+                  {recentDesigns.map((design) => (
+                    <button
+                      key={design.id}
+                      onClick={() => { onOpenRecent(design.id); (document.activeElement as HTMLElement | null)?.blur(); }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+                    >
+                      <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--studio-ink-muted)]" />
+                      <span className="truncate">{design.name}</span>
+                    </button>
+                  ))}
+                  <div className="border-t border-[var(--studio-border)] px-3 py-1.5">
+                    <button
+                      onClick={() => { onOpenProject(); (document.activeElement as HTMLElement | null)?.blur(); }}
+                      className="text-[10px] text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)]"
+                    >
+                      Open from file…
+                    </button>
+                  </div>
+                </div>
+              )}
+            </details>
+          </div>
           <button
             onClick={onSaveProject}
             className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
