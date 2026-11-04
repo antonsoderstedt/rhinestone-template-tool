@@ -18,7 +18,6 @@ import {
   checkExportReadiness,
   createTemplateLibraryEntry,
   parseRhinestoneProject,
-  serializeRhinestoneProject,
   createBasicSvgExport,
   LEGACY_OUTLINE_FONT_ID,
   LocalStorageTemplateLibraryRepository,
@@ -44,6 +43,7 @@ import EditorDialog from './EditorDialog';
 import EditorToast from './EditorToast';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
+import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -55,7 +55,8 @@ import {
   savedStoneToEditableStone,
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
-import { findAssetById } from '../lib/workspaceVault';
+import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
+import { findAssetById, readActiveCalibrationProfile } from '../lib/workspaceVault';
 
 export default function EditorShell() {
   const { theme, toggleTheme } = useStudioTheme();
@@ -86,9 +87,10 @@ export default function EditorShell() {
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
-        kind: 'new-project' | 'export-warning' | 'autosave-restore';
+        kind: 'new-project' | 'export-warning' | 'export-blocked' | 'autosave-restore';
         title: string;
         message: string;
+        details?: string[];
         confirmLabel: string;
         confirmTone?: 'default' | 'destructive';
         icon?: 'sparkles' | 'warning' | 'info';
@@ -624,11 +626,53 @@ export default function EditorShell() {
     return () => window.clearTimeout(timeoutId);
   }, [autosaveEntry?.createdAt, buildCurrentLibraryEntry, effectiveTemplate, state.projectName]);
 
-  const exportReady = useMemo(() => {
-    if (!effectiveTemplate) return false;
-    const readiness = checkExportReadiness(effectiveTemplate, { includeLabels: state.includeLabels });
-    return readiness.ready;
-  }, [effectiveTemplate, state.includeLabels]);
+  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(() => readActiveCalibrationProfile());
+  useEffect(() => {
+    const syncActiveCalibrationProfile = () => setActiveCalibrationProfile(readActiveCalibrationProfile());
+    syncActiveCalibrationProfile();
+    window.addEventListener('storage', syncActiveCalibrationProfile);
+    window.addEventListener('focus', syncActiveCalibrationProfile);
+    return () => {
+      window.removeEventListener('storage', syncActiveCalibrationProfile);
+      window.removeEventListener('focus', syncActiveCalibrationProfile);
+    };
+  }, []);
+
+  const calibrationState = useMemo(() => {
+    if (!activeCalibrationProfile) {
+      return { label: 'No active profile', tone: 'warning' as const };
+    }
+    if (activeCalibrationProfile.approvedAt) {
+      return { label: `Approved: ${activeCalibrationProfile.name}`, tone: 'success' as const };
+    }
+    return { label: `Pending: ${activeCalibrationProfile.name}`, tone: 'warning' as const };
+  }, [activeCalibrationProfile]);
+
+  const exportReadiness = useMemo(() => {
+    if (!effectiveTemplate) return null;
+    return checkExportReadiness(effectiveTemplate, {
+      includeLabels: state.includeLabels,
+      approvedCalibrationProfile: activeCalibrationProfile,
+    });
+  }, [activeCalibrationProfile, effectiveTemplate, state.includeLabels]);
+
+  const exportReady = exportReadiness?.ready ?? false;
+  const exportErrorCount = exportReadiness?.issues.filter((issue) => issue.severity === 'error').length ?? 0;
+  const exportWarningCount = exportReadiness?.issues.filter((issue) => issue.severity === 'warning').length ?? 0;
+  const workflowStatus = !effectiveTemplate
+    ? 'Blocked'
+    : exportErrorCount > 0
+      ? 'Blocked'
+      : exportWarningCount > 0
+        ? 'Warning'
+        : 'Ready';
+  const workflowGuidance = !effectiveTemplate
+    ? 'Start by generating or loading a design. The canvas is empty, so there is no production-ready template yet.'
+    : exportErrorCount > 0
+      ? (exportReadiness?.issues.find((issue) => issue.severity === 'error')?.suggestion ?? 'Fix the blocking issues before exporting.')
+      : exportWarningCount > 0
+        ? (exportReadiness?.issues.find((issue) => issue.severity === 'warning')?.suggestion ?? 'Review the warnings before exporting to confirm the production output matches the expected result.')
+        : 'This design is export-ready. Review the final placement and proceed with the production SVG export.';
 
   const editorDispatch = useCallback((action: EditorAction) => {
     if (shouldPromptForGeneratorMutation(state, action)) {
@@ -1087,6 +1131,11 @@ export default function EditorShell() {
       runExport();
     }
 
+    if (pendingDialog.kind === 'export-blocked') {
+      setPendingDialog(null);
+      return;
+    }
+
     if (pendingDialog.kind === 'autosave-restore') {
       handleLoadAutosave();
     }
@@ -1143,18 +1192,14 @@ export default function EditorShell() {
 
     e.target.value = ''; // Reset for re-loading same file
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const json = typeof ev.target?.result === 'string' ? ev.target.result : '';
-      try {
-        const project = parseRhinestoneProject(json);
+    void readProjectFile(file)
+      .then((project) => {
         applyProjectToEditor(project);
         setToast({ message: 'Project opened.', tone: 'success' });
-      } catch (err) {
+      })
+      .catch((err) => {
         setToast({ message: `Invalid project file: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
-      }
-    };
-    reader.readAsText(file);
+      });
   }, [applyProjectToEditor]);
 
   const handleSaveProject = useCallback(() => {
@@ -1169,16 +1214,8 @@ export default function EditorShell() {
       return;
     }
 
-    const json = serializeRhinestoneProject(project);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const filename = `${state.projectName.toLowerCase().replace(/\s+/g, '-')}.json`;
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filename = buildProjectFilename(state.projectName, project.generatorState.generatorId);
+    downloadProject(project, filename);
     setToast({ message: 'Project saved.', tone: 'success' });
   }, [effectiveTemplate, state]);
 
@@ -1188,11 +1225,39 @@ export default function EditorShell() {
       return;
     }
 
+    if (exportErrorCount > 0) {
+      const errorDetails = exportReadiness
+        ? exportReadiness.issues
+            .filter((issue) => issue.severity === 'error')
+            .slice(0, 4)
+            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
+        : [];
+
+      setPendingDialog({
+        kind: 'export-blocked',
+        title: 'Fix errors before export',
+        message: 'This design has critical export issues. Resolve them before exporting to SVG.',
+        details: errorDetails,
+        confirmLabel: 'Review issues',
+        confirmTone: 'default',
+        icon: 'warning',
+      });
+      return;
+    }
+
     if (!exportReady) {
+      const issueDetails = exportReadiness
+        ? exportReadiness.issues
+            .filter((issue) => issue.severity === 'warning')
+            .slice(0, 4)
+            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
+        : [];
+
       setPendingDialog({
         kind: 'export-warning',
         title: 'Export with warnings?',
         message: 'The current template has export warnings. Continue only if you want to export exactly what is on the canvas.',
+        details: issueDetails,
         confirmLabel: 'Export anyway',
         confirmTone: 'destructive',
         icon: 'warning',
@@ -1201,7 +1266,7 @@ export default function EditorShell() {
     }
 
     runExport();
-  }, [effectiveTemplate, exportReady, runExport]);
+  }, [effectiveTemplate, exportErrorCount, exportReady, exportReadiness, runExport]);
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
@@ -1229,6 +1294,9 @@ export default function EditorShell() {
         canRedo={state.history.future.length > 0}
         canExport={Boolean(effectiveTemplate)}
         canPreviewGarment={Boolean(effectiveTemplate) && (effectiveTemplate?.stones.length ?? 0) > 0}
+        exportReady={exportReady}
+        exportErrorCount={exportErrorCount}
+        exportWarningCount={exportWarningCount}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
@@ -1239,6 +1307,14 @@ export default function EditorShell() {
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
+      />
+
+      <WorkspaceModeBanner
+        mode="Rhinestone Studio"
+        status={workflowStatus}
+        project={state.projectName || 'Untitled project'}
+        guidance={workflowGuidance}
+        calibrationState={calibrationState}
       />
 
       <GarmentPreviewPanel
@@ -1281,6 +1357,7 @@ export default function EditorShell() {
         open={Boolean(pendingDialog)}
         title={pendingDialog?.title ?? ''}
         description={pendingDialog?.message ?? ''}
+        details={pendingDialog?.details}
         confirmLabel={pendingDialog?.confirmLabel ?? 'Confirm'}
         onConfirm={handleDialogConfirm}
         onCancel={() => setPendingDialog(null)}
@@ -1299,7 +1376,13 @@ export default function EditorShell() {
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
         <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
-          <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="source" outlineFontStatus={outlineFontStatus} />
+          <EditorPropertiesPanel
+            state={state}
+            dispatch={editorDispatch}
+            mode="source"
+            outlineFontStatus={outlineFontStatus}
+            activeCalibrationProfile={activeCalibrationProfile}
+          />
         </div>
 
         <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
@@ -1311,7 +1394,14 @@ export default function EditorShell() {
         </main>
 
         <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
-          <EditorPropertiesPanel state={state} dispatch={editorDispatch} mode="inspector" outlineFontStatus={outlineFontStatus} />
+          <EditorPropertiesPanel
+            state={state}
+            dispatch={editorDispatch}
+            mode="inspector"
+            outlineFontStatus={outlineFontStatus}
+            exportReadiness={exportReadiness}
+            activeCalibrationProfile={activeCalibrationProfile}
+          />
         </div>
       </div>
 
@@ -1319,9 +1409,12 @@ export default function EditorShell() {
         template={effectiveTemplate}
         canvas={state.canvas}
         exportReady={exportReady}
+        exportErrorCount={exportErrorCount}
+        exportWarningCount={exportWarningCount}
         isEditable={state.editableTemplate.isEditable}
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
+        calibrationState={calibrationState}
       />
     </div>
   );

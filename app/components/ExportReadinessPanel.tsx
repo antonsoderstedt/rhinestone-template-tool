@@ -13,9 +13,11 @@ interface ExportReadinessPanelProps {
 export default function ExportReadinessPanel({ result }: ExportReadinessPanelProps) {
   if (!result) return null;
 
-  const errors   = result.issues.filter((i) => i.severity === 'error');
+  const errors = result.issues.filter((i) => i.severity === 'error');
   const warnings = result.issues.filter((i) => i.severity === 'warning');
-  const infos    = result.issues.filter((i) => i.severity === 'info');
+  const infos = result.issues.filter((i) => i.severity === 'info');
+  const nextAction = errors[0]?.suggestion ?? warnings[0]?.suggestion ?? infos[0]?.suggestion ?? 'Review the export checklist and continue only if the file matches your intended cut.';
+  const confidenceLabel = result.ready ? 'High confidence' : errors.length > 0 ? 'Blocked' : 'Needs review';
 
   return (
     <div className="rounded-lg border overflow-hidden text-sm">
@@ -34,7 +36,17 @@ export default function ExportReadinessPanel({ result }: ExportReadinessPanelPro
 
       {/* ── Summary stats ─────────────────────────────────────────────── */}
       <div className="bg-surface border-b border-border px-4 py-3">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
+        <div className="mb-3 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+          <span>Export confidence</span>
+          <span className={result.ready ? 'text-success-600' : errors.length > 0 ? 'text-danger-600' : 'text-warning-600'}>{confidenceLabel}</span>
+        </div>
+
+        <div className="rounded-md border border-border bg-surface-raised p-2 text-[11px] leading-5 text-ink-secondary">
+          <div className="font-semibold uppercase tracking-[0.12em] text-ink-muted">Next action</div>
+          <p className="mt-1 text-sm leading-6 text-ink">{nextAction}</p>
+        </div>
+
+        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
           <div>
             <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Stones</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.stoneCount}</dd>

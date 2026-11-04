@@ -96,6 +96,21 @@ describe('checkExportReadiness — warnings', () => {
     expect(r.summary.hasCalibrationWarning).toBe(false);
   });
 
+  it('blocks export when a calibration-required material has no approved active profile', () => {
+    const r = checkExportReadiness(VALID_GRID, { approvedCalibrationProfile: null, requireCalibration: true });
+    expect(r.ready).toBe(false);
+    expect(r.issues.some((i) => i.code === 'REQUIRES_APPROVED_CALIBRATION_PROFILE' && i.severity === 'error')).toBe(true);
+  });
+
+  it('allows export when the active calibration profile is approved', () => {
+    const r = checkExportReadiness(VALID_GRID, {
+      approvedCalibrationProfile: { approvedAt: '2025-01-15T12:00:00.000Z' },
+      requireCalibration: true,
+    });
+    expect(r.ready).toBe(true);
+    expect(r.issues.some((i) => i.code === 'REQUIRES_APPROVED_CALIBRATION_PROFILE')).toBe(false);
+  });
+
   it('warnings do not block ready — template with only warnings is ready', () => {
     // Only calibration warning expected
     const r = checkExportReadiness(VALID_GRID, { requireCalibration: true });

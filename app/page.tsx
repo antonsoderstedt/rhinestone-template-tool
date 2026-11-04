@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Bebas_Neue, Sora } from 'next/font/google';
-import { ArrowRight, FolderHeart, Gem, LibraryBig, Layers3, Settings2, SwatchBook, Type } from 'lucide-react';
+import { ArrowRight, FolderHeart, Gem, LibraryBig, Layers3, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
+import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
 
 const display = Bebas_Neue({ subsets: ['latin'], weight: '400' });
 const sora = Sora({ subsets: ['latin'], variable: '--font-sora' });
@@ -33,6 +34,13 @@ const toolCards = [
     copy: 'Preview every typeface on one phrase, compare styles at a glance, and keep your font catalog organized.',
     icon: Type,
     tone: 'from-brand-500 to-accent-500',
+  },
+  {
+    href: '/setup',
+    title: 'Setup & Calibration',
+    copy: 'Cut the calibration sheet, measure hole diameters, approve your material profile, and gate production export.',
+    icon: Ruler,
+    tone: 'from-sand-600 to-brand-400',
   },
 ];
 
@@ -113,6 +121,13 @@ export default function Home() {
                 >
                   Review saved work
                 </Link>
+                <Link
+                  href="/setup"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-6 py-3 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+                >
+                  <Ruler className="h-4 w-4" />
+                  Calibrate
+                </Link>
               </div>
             </div>
 
@@ -166,6 +181,10 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-[1560px] px-4 pb-6 md:px-6">
+        <WorkspaceRecoveryPanel />
       </section>
 
       <section className="mx-auto grid w-full max-w-[1560px] gap-5 px-4 pb-8 md:px-6 xl:grid-cols-4">

@@ -9,18 +9,27 @@ interface EditorStatusBarProps {
   template: RhinestoneTemplate | null;
   canvas: CanvasState;
   exportReady: boolean;
+  exportErrorCount: number;
+  exportWarningCount: number;
   isEditable: boolean;
   autosaveUpdatedAt: string | null;
   activeLibraryName: string | null;
+  calibrationState?: {
+    label: string;
+    tone: 'success' | 'warning' | 'danger';
+  };
 }
 
 export default function EditorStatusBar({
   template,
   canvas,
   exportReady,
+  exportErrorCount,
+  exportWarningCount,
   isEditable,
   autosaveUpdatedAt,
   activeLibraryName,
+  calibrationState,
 }: EditorStatusBarProps) {
   const stoneCount = template?.stones.length ?? 0;
   const statusCopy = getEditableStatusCopy(isEditable);
@@ -35,6 +44,28 @@ export default function EditorStatusBar({
       })()
     : '0×0 mm';
 
+  const workflowStateLabel = exportReady
+    ? 'Ready to export'
+    : exportErrorCount > 0
+      ? `${exportErrorCount} error${exportErrorCount !== 1 ? 's' : ''}`
+      : template
+        ? `${exportWarningCount} warning${exportWarningCount !== 1 ? 's' : ''}`
+        : 'No template';
+
+  const workflowToneClass = exportReady
+    ? 'border-success-500/30 bg-success-50 text-success-600'
+    : exportErrorCount > 0
+      ? 'border-danger-500/30 bg-danger-50 text-danger-600'
+      : template
+        ? 'border-warning-500/30 bg-warning-50 text-warning-600'
+        : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]';
+
+  const calibrationToneClass = calibrationState?.tone === 'success'
+    ? 'border-success-500/30 bg-success-50 text-success-600'
+    : calibrationState?.tone === 'danger'
+      ? 'border-danger-500/30 bg-danger-50 text-danger-600'
+      : 'border-warning-500/30 bg-warning-50 text-warning-600';
+
   return (
     <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-[11px] text-[var(--studio-ink-muted)]">
       <div className="flex flex-wrap items-center gap-3">
@@ -46,20 +77,18 @@ export default function EditorStatusBar({
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        {exportReady ? (
-          <div className="flex items-center gap-1.5 text-success-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Ready to export</span>
-          </div>
-        ) : template ? (
-          <div className="flex items-center gap-1.5 text-warning-600">
-            <div className="w-2 h-2 rounded-full bg-warning-500" />
-            <span>Has warnings</span>
-          </div>
-        ) : (
-          <span className="text-ink-muted">No template</span>
+      <div className="flex flex-wrap items-center gap-2">
+        {calibrationState && (
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${calibrationToneClass}`}>
+            <div className="h-2 w-2 rounded-full bg-current opacity-80" />
+            <span className="font-medium">Calibration: {calibrationState.label}</span>
+          </span>
         )}
+
+        <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${workflowToneClass}`}>
+          {exportReady ? <CheckCircle2 className="h-3.5 w-3.5" /> : exportErrorCount > 0 ? <div className="h-2 w-2 rounded-full bg-danger-500" /> : template ? <div className="h-2 w-2 rounded-full bg-warning-500" /> : <Clock3 className="h-3.5 w-3.5" />}
+          <span className="font-medium">{workflowStateLabel}</span>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

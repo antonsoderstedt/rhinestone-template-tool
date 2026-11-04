@@ -22,6 +22,8 @@ import {
   workspaceInputClassName,
   workspaceSelectClassName,
 } from '../components/workspace/WorkspaceChrome';
+import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
+import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
 
 type StudioFilter = 'all' | 'rhinestone' | 'htv';
 
@@ -37,6 +39,19 @@ export default function DesignsPage() {
   const [query, setQuery] = useState('');
   const [studioFilter, setStudioFilter] = useState<StudioFilter>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
+  const [hasAutosave] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const raw = window.localStorage.getItem('rhinestone-template-library-autosave');
+    return Boolean(raw && raw.trim().length > 0);
+  });
+
+  const approvedCalibrationCount = vault.calibrationProfiles.filter((profile) => Boolean(profile.approvedAt)).length;
+  const workflowStatus: 'Ready' | 'Warning' | 'Blocked' = vault.calibrationProfiles.length === 0 ? 'Warning' : approvedCalibrationCount === 0 ? 'Warning' : 'Ready';
+  const calibrationState = vault.calibrationProfiles.length === 0
+    ? { label: 'No profiles', tone: 'warning' as const }
+    : approvedCalibrationCount === 0
+      ? { label: `${vault.calibrationProfiles.length} pending`, tone: 'warning' as const }
+      : { label: `${approvedCalibrationCount} approved`, tone: 'success' as const };
 
   useEffect(() => {
     const repository = new LocalStorageTemplateLibraryRepository();
@@ -124,6 +139,53 @@ export default function DesignsPage() {
   return (
     <WorkspacePage tone="neutral">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
+        <WorkspaceQuickActions
+          actions={[
+            {
+              label: 'Setup & calibration',
+              description: 'Verify calibration before reopening a saved production job.',
+              href: '/setup',
+              icon: FolderHeart,
+              tone: 'brand',
+            },
+            {
+              label: 'Rhinestone studio',
+              description: 'Resume an active rhinestone layout with the latest saved context.',
+              href: '/rhinestone',
+              icon: Gem,
+              tone: 'default',
+            },
+            {
+              label: 'HTV studio',
+              description: 'Jump to the garment workflow for the next cut or placement pass.',
+              href: '/htv',
+              icon: SwatchBook,
+              tone: 'neutral',
+            },
+            {
+              label: 'Production settings',
+              description: 'Tune material defaults and quality checks before export.',
+              href: '/settings',
+              icon: Search,
+              tone: 'neutral',
+            },
+          ]}
+        />
+
+        <WorkspaceModeBanner
+          mode="My Designs"
+          status={workflowStatus}
+          project="Saved project lifecycle"
+          guidance={
+            vault.calibrationProfiles.length === 0
+              ? 'No saved calibration profiles yet. Keep the work in context with names, favorites, and archive states so the next production pass stays structured.'
+              : approvedCalibrationCount === 0
+                ? 'Saved work is active, but no calibration profile is approved yet. Review the setup workflow before the next production export.'
+                : 'Your saved work and approved calibration profiles are aligned for the next production pass.'
+          }
+          calibrationState={calibrationState}
+        />
+
         <WorkspaceHero
           eyebrow="My Designs"
           title="Everything you have already made, still usable"
@@ -135,6 +197,16 @@ export default function DesignsPage() {
               <p className="mt-3 text-sm leading-7 text-ink-secondary">
                 This page is optimized for returning to production work fast, not for browsing a gallery without context.
               </p>
+              {hasAutosave && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/rhinestone')}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
+                >
+                  <FolderHeart className="h-4 w-4" />
+                  Resume autosave
+                </button>
+              )}
             </WorkspaceSurface>
           )}
         />

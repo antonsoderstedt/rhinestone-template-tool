@@ -20,6 +20,8 @@ export interface ExportReadinessIssue {
   /** Short machine-readable code. */
   code: string;
   message: string;
+  /** Concrete next action to help the user resolve the issue. */
+  suggestion?: string;
   /** Stone IDs involved (for collision or hole-diameter issues). */
   stoneIds?: string[];
 }
@@ -47,6 +49,25 @@ export interface ExportReadinessResult {
   summary: ExportReadinessSummary;
 }
 
+const EXPORT_ISSUE_SUGGESTIONS: Record<string, string> = {
+  INVALID_UNIT: 'Convert the template to millimeter coordinates before exporting.',
+  NO_STONES: 'Create a design from a generator or add at least one stone to the template.',
+  INVALID_HOLE_DIAMETER: 'Give each stone a valid positive hole diameter in millimeters.',
+  EMPTY_ID: 'Give the template a non-empty id before exporting.',
+  EMPTY_NAME: 'Give the template a non-empty name before exporting.',
+  STONE_COLLISION: 'Separate overlapping stones or increase the spacing between them.',
+  DUPLICATE_STONE_ID: 'Ensure every stone has a unique id before export.',
+  INSUFFICIENT_STONES: 'Add more stones or lower the minimum threshold for this export check.',
+  EXCEEDS_MAX_WIDTH: 'Reduce the design width or increase the allowed export limit for this material.',
+  BELOW_MIN_WIDTH: 'Increase the width or lower the minimum threshold for this material.',
+  EXCEEDS_MAX_HEIGHT: 'Reduce the design height or use a larger material area.',
+  BELOW_MIN_HEIGHT: 'Increase the height or lower the minimum threshold for this material.',
+  REQUIRES_CALIBRATION: 'Cut a calibration sheet and confirm the stone-to-hole fit before production use.',
+  UNSUPPORTED_STONE_SIZE: 'Switch to a material-supported stone size or validate the fit with a test cut.',
+  PROVISIONAL_HOLE_PRESET: 'Run a calibration sheet and confirm the actual hole size before moving into production.',
+  TEXT_LABELS_NOT_CRICUT_SAFE: 'Turn labels off or verify that the exported SVG opens correctly in Cricut Design Space before cutting.',
+};
+
 export interface ExportReadinessOptions {
   /** Material profile to check against. Defaults to the Magic Flock profile. */
   materialProfileId?: string;
@@ -55,6 +76,12 @@ export interface ExportReadinessOptions {
    * physical calibration before production use.
    */
   requireCalibration?: boolean;
+  /**
+   * The currently active calibration profile. When an active profile is present
+   * but not approved for production, export is blocked for calibration-required
+   * materials until it is approved.
+   */
+  approvedCalibrationProfile?: { approvedAt?: string } | null;
   /** Warn if template width exceeds this value (mm). */
   maxWidthMm?: number;
   /** Warn if template width is below this value (mm). */
@@ -119,6 +146,7 @@ export function checkExportReadiness(
       severity: 'error',
       code: 'INVALID_UNIT',
       message: `template.unit must be "mm", got "${template.unit}". All internal coordinates must be in millimeters.`,
+      suggestion: 'Convert the template to millimeter coordinates before exporting.',
     });
   }
 
@@ -128,6 +156,7 @@ export function checkExportReadiness(
       severity: 'error',
       code: 'NO_STONES',
       message: 'Template has no stones. At least one stone is required before exporting.',
+      suggestion: 'Create a design from a generator or add at least one stone to the template.',
     });
   }
 
@@ -137,6 +166,7 @@ export function checkExportReadiness(
       code: 'INSUFFICIENT_STONES',
       message:
         `Template has ${template.stones.length} stone(s) but minimum required is ${minStoneCount}.`,
+      suggestion: 'Add more stones or lower the minimum threshold for this export check.',
     });
   }
 
@@ -151,6 +181,7 @@ export function checkExportReadiness(
       severity: 'error',
       code: issue.code,
       message: issue.message,
+      suggestion: EXPORT_ISSUE_SUGGESTIONS[issue.code],
       stoneIds: issue.stoneIds,
     });
   }
@@ -167,6 +198,7 @@ export function checkExportReadiness(
       code: 'EXCEEDS_MAX_WIDTH',
       message:
         `Template width (${physicalSize.widthMm.toFixed(1)} mm) exceeds maximum allowed (${maxWidthMm} mm).`,
+      suggestion: 'Reduce the design width or increase the allowed export limit for this material.',
     });
   }
   if (minWidthMm !== undefined && physicalSize.widthMm < minWidthMm) {
@@ -175,6 +207,7 @@ export function checkExportReadiness(
       code: 'BELOW_MIN_WIDTH',
       message:
         `Template width (${physicalSize.widthMm.toFixed(1)} mm) is below minimum (${minWidthMm} mm).`,
+      suggestion: 'Increase the width or lower the minimum threshold for this material.',
     });
   }
   if (maxHeightMm !== undefined && physicalSize.heightMm > maxHeightMm) {
@@ -183,6 +216,7 @@ export function checkExportReadiness(
       code: 'EXCEEDS_MAX_HEIGHT',
       message:
         `Template height (${physicalSize.heightMm.toFixed(1)} mm) exceeds maximum allowed (${maxHeightMm} mm).`,
+      suggestion: 'Reduce the design height or use a larger material area.',
     });
   }
   if (minHeightMm !== undefined && physicalSize.heightMm < minHeightMm) {
@@ -191,6 +225,7 @@ export function checkExportReadiness(
       code: 'BELOW_MIN_HEIGHT',
       message:
         `Template height (${physicalSize.heightMm.toFixed(1)} mm) is below minimum (${minHeightMm} mm).`,
+      suggestion: 'Increase the height or lower the minimum threshold for this material.',
     });
   }
 
@@ -204,6 +239,21 @@ export function checkExportReadiness(
       message:
         `${materialProfile.name} (${materialProfile.cutter}) requires physical calibration ` +
         `before production use. Cut a calibration sheet first.`,
+      suggestion: 'Cut a calibration sheet and confirm the stone-to-hole fit before production use.',
+    });
+  }
+
+  if (
+    options.approvedCalibrationProfile !== undefined
+    && materialProfile.requiresCalibration
+    && !options.approvedCalibrationProfile?.approvedAt
+  ) {
+    issues.push({
+      severity: 'error',
+      code: 'REQUIRES_APPROVED_CALIBRATION_PROFILE',
+      message:
+        `${materialProfile.name} requires an approved calibration profile before production export.`,
+      suggestion: 'Open the setup workflow, approve the active calibration profile, and then export again.',
     });
   }
 
@@ -217,6 +267,7 @@ export function checkExportReadiness(
         message:
           `Stone size ${size} is not listed as supported by ${materialProfile.name}. ` +
           `Verify compatibility before cutting.`,
+        suggestion: 'Switch to a material-supported stone size or validate the fit with a test cut.',
       });
     }
   }
@@ -233,6 +284,7 @@ export function checkExportReadiness(
           `${size}'s hole diameter for ${materialProfile.name} has no verified vendor source ` +
           `yet and is a preliminary starting point only. Cut a calibration sheet and confirm the ` +
           `hole size before production use.`,
+        suggestion: 'Run a calibration sheet and confirm the actual hole size before moving into production.',
       });
     }
   }
@@ -243,6 +295,7 @@ export function checkExportReadiness(
       severity: 'warning',
       code: 'TEXT_LABELS_NOT_CRICUT_SAFE',
       message: TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
+      suggestion: 'Turn labels off or verify that the exported SVG opens correctly in Cricut Design Space before cutting.',
     });
   }
 

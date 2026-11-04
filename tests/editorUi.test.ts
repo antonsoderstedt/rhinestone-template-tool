@@ -81,6 +81,9 @@ describe('editor UI rendering', () => {
         canUndo: false,
         canRedo: false,
         canExport: false,
+        exportReady: false,
+        exportErrorCount: 0,
+        exportWarningCount: 0,
         dispatch: vi.fn() as never,
         onNewProject: vi.fn(),
         onOpenProject: vi.fn(),
@@ -91,7 +94,25 @@ describe('editor UI rendering', () => {
     );
 
     expect(html).toContain('Export');
+    expect(html).toContain('No template');
     expect(html).toContain('disabled');
+  });
+
+  it('shows the export readiness badge in the topbar when warnings or errors exist', () => {
+    const html = renderToStaticMarkup(
+      createElement(EditorTopbar, {
+        projectName: 'Test',
+        canUndo: false,
+        canRedo: false,
+        canExport: true,
+        exportReady: false,
+        exportErrorCount: 1,
+        exportWarningCount: 2,
+        dispatch: vi.fn() as never,
+      }),
+    );
+
+    expect(html).toContain('Blocked (1)');
   });
 
   it('renders toolbar buttons with accessible labels and active styling', () => {

@@ -7,6 +7,7 @@ interface EditorDialogProps {
   open: boolean;
   title: string;
   description: string;
+  details?: string[];
   confirmLabel: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -24,6 +25,7 @@ export default function EditorDialog({
   open,
   title,
   description,
+  details,
   confirmLabel,
   cancelLabel = 'Cancel',
   onConfirm,
@@ -76,6 +78,16 @@ export default function EditorDialog({
             <div>
               <h2 id="editor-dialog-title" className="text-base font-semibold text-white">{title}</h2>
               <p id="editor-dialog-description" className="mt-2 text-sm text-zinc-400">{description}</p>
+              {details && details.length > 0 && (
+                <ul className="mt-3 space-y-1.5 text-xs text-zinc-300">
+                  {details.map((detail) => (
+                    <li key={detail} className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
           <button

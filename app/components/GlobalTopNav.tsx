@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderOpen, Gem, LibraryBig, Settings2, Sparkles, SwatchBook, Type } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, FolderOpen, Gem, LibraryBig, Ruler, Settings2, ShieldAlert, Sparkles, SwatchBook, Type } from 'lucide-react';
+import { readActiveCalibrationProfile } from '@/app/lib/workspaceVault';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Start', shortLabel: 'Start', icon: Sparkles },
@@ -11,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/library', label: 'Library', shortLabel: 'Library', icon: LibraryBig },
   { href: '/fonts', label: 'Fonts', shortLabel: 'Fonts', icon: Type },
   { href: '/designs', label: 'My Designs', shortLabel: 'Designs', icon: FolderOpen },
+  { href: '/setup', label: 'Setup & Calibration', shortLabel: 'Setup', icon: Ruler },
   { href: '/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings2 },
 ] as const;
 
@@ -19,24 +22,143 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getModeMeta(pathname: string, activeCalibrationProfile: ReturnType<typeof readActiveCalibrationProfile> | null) {
+  if (pathname.startsWith('/htv')) {
+    return {
+      studioLabel: 'HTV Studio',
+      status: 'Warning',
+      statusText: 'Review garment placement',
+      statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+      icon: AlertTriangle,
+    };
+  }
+
+  if (pathname.startsWith('/setup')) {
+    return {
+      studioLabel: 'Setup & Calibration',
+      status: 'Warning',
+      statusText: 'Calibration before production',
+      statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+      icon: AlertTriangle,
+    };
+  }
+
+  if (pathname.startsWith('/rhinestone')) {
+    if (!activeCalibrationProfile) {
+      return {
+        studioLabel: 'Rhinestone Studio',
+        status: 'Warning',
+        statusText: 'Calibration required before production',
+        statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        icon: AlertTriangle,
+      };
+    }
+
+    if (!activeCalibrationProfile.approvedAt) {
+      return {
+        studioLabel: 'Rhinestone Studio',
+        status: 'Warning',
+        statusText: `Pending calibration: ${activeCalibrationProfile.name}`,
+        statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        icon: AlertTriangle,
+      };
+    }
+
+    return {
+      studioLabel: 'Rhinestone Studio',
+      status: 'Ready',
+      statusText: `Production ready: ${activeCalibrationProfile.name}`,
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+    };
+  }
+
+  if (pathname.startsWith('/library')) {
+    return {
+      studioLabel: 'Library',
+      status: 'Ready',
+      statusText: 'Asset workspace ready',
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+    };
+  }
+
+  if (pathname.startsWith('/fonts')) {
+    return {
+      studioLabel: 'Fonts',
+      status: 'Ready',
+      statusText: 'Font catalog loaded',
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+    };
+  }
+
+  if (pathname.startsWith('/designs')) {
+    return {
+      studioLabel: 'My Designs',
+      status: 'Ready',
+      statusText: 'Saved work visible',
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+    };
+  }
+
+  if (pathname.startsWith('/settings')) {
+    return {
+      studioLabel: 'Settings',
+      status: 'Warning',
+      statusText: 'Review production defaults',
+      statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+      icon: ShieldAlert,
+    };
+  }
+
+  return {
+    studioLabel: 'Workspace Home',
+    status: 'Ready',
+    statusText: 'Workspace ready',
+    statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    icon: CheckCircle2,
+  };
+}
+
 export default function GlobalTopNav() {
   const pathname = usePathname();
-  const studioLabel = pathname.startsWith('/htv')
-    ? 'HTV Studio'
-    : pathname.startsWith('/rhinestone')
-      ? 'Rhinestone Studio'
-      : pathname.startsWith('/library')
-        ? 'Library'
-        : pathname.startsWith('/fonts')
-          ? 'Fonts'
-          : pathname.startsWith('/designs')
-            ? 'My Designs'
-            : pathname.startsWith('/settings')
-              ? 'Settings'
-              : 'Workspace Home';
+  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(null);
+
+  useEffect(() => {
+    const syncProfile = () => setActiveCalibrationProfile(readActiveCalibrationProfile());
+    syncProfile();
+    window.addEventListener('storage', syncProfile);
+    window.addEventListener('focus', syncProfile);
+    return () => {
+      window.removeEventListener('storage', syncProfile);
+      window.removeEventListener('focus', syncProfile);
+    };
+  }, [pathname]);
+
+  const modeMeta = useMemo(
+    () => getModeMeta(pathname, activeCalibrationProfile),
+    [activeCalibrationProfile, pathname],
+  );
+  const StatusIcon = modeMeta.icon;
+
+  const workflowSummary = pathname.startsWith('/rhinestone')
+    ? activeCalibrationProfile
+      ? activeCalibrationProfile.approvedAt
+        ? `Production ready • ${activeCalibrationProfile.name}`
+        : `Calibration pending • ${activeCalibrationProfile.name}`
+      : 'Calibration required before production'
+    : pathname.startsWith('/htv')
+      ? 'Garment review before export'
+      : pathname.startsWith('/setup')
+        ? 'Calibration workflow is the production gate'
+        : pathname.startsWith('/designs')
+          ? 'Saved work and active production context'
+          : 'Workspace ready';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#151518] text-zinc-200 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
@@ -44,7 +166,7 @@ export default function GlobalTopNav() {
           </div>
           <div className="min-w-0">
             <div className="text-[10px] font-medium tracking-[0.18em] text-zinc-500 uppercase">Rhinestone OS</div>
-            <div className="truncate text-sm font-medium text-zinc-200">Studios, assets, fonts, saved production flow</div>
+            <div className="truncate text-sm font-medium text-zinc-200">Studios, assets, fonts, production workflow</div>
           </div>
         </Link>
 
@@ -71,8 +193,14 @@ export default function GlobalTopNav() {
 
         <div className="hidden items-center gap-2 lg:flex">
           <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400">
-            {studioLabel}
+            {modeMeta.studioLabel}
           </span>
+
+          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${modeMeta.statusClassName}`}>
+            <StatusIcon className="h-3.5 w-3.5" />
+            {modeMeta.status}
+          </span>
+
           <Link
             href="/library"
             className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100"
@@ -85,6 +213,20 @@ export default function GlobalTopNav() {
           >
             Open Studio
           </Link>
+        </div>
+      </div>
+
+      <div className="border-t border-white/10 bg-[#121215] px-3 py-2 text-[11px] text-zinc-300 md:px-5">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-zinc-300">
+            <span className="inline-flex h-2 w-2 rounded-full bg-violet-400" />
+            <span className="font-medium text-zinc-200">Workflow</span>
+            <span className="text-zinc-400">{workflowSummary}</span>
+          </div>
+          <div className="hidden items-center gap-2 text-zinc-400 md:flex">
+            <span>Mode split:</span>
+            <span className="font-medium text-zinc-200">Rhinestone / HTV / Setup</span>
+          </div>
         </div>
       </div>
 

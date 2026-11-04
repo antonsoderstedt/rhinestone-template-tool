@@ -22,6 +22,9 @@ interface EditorTopbarProps {
   canRedo?: boolean;
   canExport?: boolean;
   canPreviewGarment?: boolean;
+  exportReady?: boolean;
+  exportErrorCount?: number;
+  exportWarningCount?: number;
   dispatch?: React.Dispatch<EditorAction>;
   onNewProject?: () => void;
   onOpenProject?: () => void;
@@ -40,6 +43,9 @@ export default function EditorTopbar({
   canRedo = false,
   canExport = false,
   canPreviewGarment = false,
+  exportReady = false,
+  exportErrorCount = 0,
+  exportWarningCount = 0,
   dispatch = () => undefined,
   onNewProject = () => undefined,
   onOpenProject = () => undefined,
@@ -51,6 +57,13 @@ export default function EditorTopbar({
   theme = 'dark',
   onToggleTheme = () => undefined,
 }: EditorTopbarProps) {
+  const exportStatus = exportReady
+    ? { label: 'Ready', className: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' }
+    : exportErrorCount > 0
+      ? { label: `Blocked (${exportErrorCount})`, className: 'border-rose-400/30 bg-rose-500/10 text-rose-200' }
+      : exportWarningCount > 0
+        ? { label: `Warnings (${exportWarningCount})`, className: 'border-amber-400/30 bg-amber-500/10 text-amber-200' }
+        : { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' };
   return (
     <header className="flex flex-wrap items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)]">
       <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
@@ -134,15 +147,20 @@ export default function EditorTopbar({
             <Shirt className="h-4 w-4" />
             Preview
           </button>
-          <button
-            onClick={onExport}
-            disabled={!canExport}
-            className="inline-flex items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:bg-[var(--studio-hover-overlay)] disabled:text-[var(--studio-ink-subtle)]"
-            title={canExport ? 'Export the current design as SVG' : 'Create or open a design before exporting'}
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExport}
+              disabled={!canExport}
+              className="inline-flex items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:bg-[var(--studio-hover-overlay)] disabled:text-[var(--studio-ink-subtle)]"
+              title={canExport ? 'Export the current design as SVG' : 'Create or open a design before exporting'}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${exportStatus.className}`}>
+              {exportStatus.label}
+            </span>
+          </div>
         </ToolbarSection>
 
         <Link

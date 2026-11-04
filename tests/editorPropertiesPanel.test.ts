@@ -1,9 +1,14 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import EditorDialog from '../app/editor/EditorDialog';
 import EditorPropertiesPanel from '../app/editor/EditorPropertiesPanel';
 import { DEFAULT_EDITOR_STATE, editorReducer, type EditorTool } from '../app/editor/EditorState';
-import { TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE } from '../src/lib/rhinestone-engine/index';
+import {
+  TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
+  checkExportReadiness,
+  createStoneGridTemplate,
+} from '../src/lib/rhinestone-engine/index';
 
 const ERROR_MESSAGE = 'Font asset failed to load: boom';
 
@@ -27,6 +32,46 @@ function renderSourcePanel(tool: EditorTool, errorStatus: boolean) {
     }),
   );
 }
+
+describe('EditorPropertiesPanel calibration gate visibility', () => {
+  it('shows a setup prompt when no active calibration profile is selected', () => {
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, {
+        state: structuredClone(DEFAULT_EDITOR_STATE),
+        dispatch: () => undefined,
+        mode: 'source',
+        activeCalibrationProfile: null,
+      }),
+    );
+
+    expect(html).toContain('Calibration gate');
+    expect(html).toContain('No approved profile is active');
+    expect(html).toContain('Open setup');
+  });
+
+  it('shows the approved profile status when a profile is active', () => {
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, {
+        state: structuredClone(DEFAULT_EDITOR_STATE),
+        dispatch: () => undefined,
+        mode: 'source',
+        activeCalibrationProfile: {
+          id: 'approved-profile',
+          name: 'Magic Flock SS10',
+          materialProfileId: 'magic-flock-cricut-maker',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+          approvedAt: '2026-01-02T00:00:00.000Z',
+          overrides: [{ stoneSize: 'SS10', holeDiameterMm: 3.37 }],
+        },
+      }),
+    );
+
+    expect(html).toContain('Calibration gate');
+    expect(html).toContain('Magic Flock SS10');
+    expect(html).toContain('This calibration profile is approved for production');
+  });
+});
 
 describe('EditorPropertiesPanel generator error visibility', () => {
   it.each<EditorTool>(['rhinestone-font', 'svg-alphabet', 'letter-stencil'])(
@@ -106,5 +151,63 @@ describe('EditorPropertiesPanel export labels Cricut-safety warning', () => {
   it('shows no warning when Include labels is off', () => {
     const html = renderInspectorPanel(false);
     expect(html).not.toContain(TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE);
+  });
+
+  it('shows the export readiness panel when a template is active', () => {
+    const template = createStoneGridTemplate({
+      id: 'qa-panel-grid',
+      name: 'QA Panel Grid',
+      stoneSize: 'SS10',
+      columns: 4,
+      rows: 2,
+    });
+
+    const html = renderToStaticMarkup(
+      createElement(EditorPropertiesPanel, {
+        state: structuredClone(DEFAULT_EDITOR_STATE),
+        dispatch: () => undefined,
+        mode: 'inspector',
+        exportReadiness: checkExportReadiness(template, { requireCalibration: false }),
+      }),
+    );
+
+    expect(html).toContain('Export readiness');
+    expect(html).toContain('Ready for Cricut SVG export');
+  });
+
+  it('attaches actionable suggestions to export issues', () => {
+    const readiness = checkExportReadiness(createStoneGridTemplate({
+      id: 'qa-suggestion-grid',
+      name: 'QA Suggestion Grid',
+      stoneSize: 'SS10',
+      columns: 2,
+      rows: 2,
+    }), {
+      requireCalibration: false,
+      includeLabels: true,
+    });
+
+    const labelIssue = readiness.issues.find((issue) => issue.code === 'TEXT_LABELS_NOT_CRICUT_SAFE');
+    expect(labelIssue?.suggestion).toContain('Turn labels off');
+  });
+
+  it('renders actionable export warning details in the confirmation dialog', () => {
+    const html = renderToStaticMarkup(
+      createElement(EditorDialog, {
+        open: true,
+        title: 'Export with warnings?',
+        description: 'The current template has export warnings.',
+        details: [
+          'Text labels are not guaranteed to import reliably in Cricut Design Space. Suggestion: Turn labels off or verify that the exported SVG opens correctly in Cricut Design Space before cutting.',
+        ],
+        confirmLabel: 'Export anyway',
+        onConfirm: () => undefined,
+        onCancel: () => undefined,
+        tone: 'destructive',
+        icon: 'warning',
+      }),
+    );
+
+    expect(html).toContain('Suggestion: Turn labels off or verify that the exported SVG opens correctly in Cricut Design Space before cutting.');
   });
 });

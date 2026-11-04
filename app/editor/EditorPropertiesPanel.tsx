@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { CopyPlus, DiamondMinus, Hand, MoveHorizontal, MoveVertical, PenLine, ScanSearch, Sparkles } from 'lucide-react';
 import {
   createImportedTemplate,
@@ -16,6 +17,8 @@ import {
   getSvgAlphabetDefinition,
   TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
 } from '@/src/lib/rhinestone-engine/index';
+import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
+import ExportReadinessPanel from '../components/ExportReadinessPanel';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
 import DensityControl from './controls/DensityControl';
@@ -36,12 +39,15 @@ import {
 import { EDITOR_TOOLS, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
+import type { CalibrationProfile } from '@/app/lib/workspaceVault';
 
 interface EditorPropertiesPanelProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   mode: 'source' | 'inspector';
   outlineFontStatus?: OutlineFontStatus;
+  exportReadiness?: ExportReadinessResult | null;
+  activeCalibrationProfile?: CalibrationProfile | null;
 }
 
 interface ToolPropertiesProps {
@@ -94,6 +100,54 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
+function CalibrationWorkflowCard({ activeCalibrationProfile }: { activeCalibrationProfile?: CalibrationProfile | null }) {
+  if (!activeCalibrationProfile) {
+    return (
+      <div className="rounded-xl border border-amber-400/30 bg-amber-50 px-3 py-3 text-left">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-700">Calibration gate</span>
+          <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-700">
+            Missing
+          </span>
+        </div>
+        <p className="mt-2 text-sm font-medium text-amber-800">No approved profile is active.</p>
+        <p className="mt-1 text-xs leading-5 text-amber-700">
+          Set up the material profile before production export so the final SVG matches your cut settings.
+        </p>
+        <Link href="/setup" className="mt-3 inline-flex items-center text-xs font-semibold text-amber-800 underline decoration-amber-400 underline-offset-4">
+          Open setup & calibration
+        </Link>
+      </div>
+    );
+  }
+
+  const approved = Boolean(activeCalibrationProfile.approvedAt);
+  return (
+    <div className={`rounded-xl border px-3 py-3 text-left ${approved ? 'border-emerald-400/30 bg-emerald-50' : 'border-amber-400/30 bg-amber-50'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-[9px] font-semibold uppercase tracking-[0.18em] ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
+          Calibration gate
+        </span>
+        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${approved ? 'border-emerald-200 bg-emerald-100 text-emerald-700' : 'border-amber-200 bg-amber-100 text-amber-700'}`}>
+          {approved ? 'Approved' : 'Pending'}
+        </span>
+      </div>
+
+      <p className={`mt-2 text-sm font-medium ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
+        {activeCalibrationProfile.name}
+      </p>
+      <p className={`mt-1 text-xs leading-5 ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
+        {approved
+          ? 'This calibration profile is approved for production. Keep it active before export.'
+          : 'Approve this calibration in setup before using it for production work.'}
+      </p>
+      <Link href="/setup" className={`mt-3 inline-flex items-center text-xs font-semibold underline decoration-2 underline-offset-4 ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
+        Review setup workflow
+      </Link>
+    </div>
+  );
+}
+
 function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activeTool']; dispatch: React.Dispatch<EditorAction> }) {
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -121,7 +175,7 @@ function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activ
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, activeCalibrationProfile }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
@@ -132,6 +186,8 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
           description="Choose the generator, adjust the baseline settings, and keep the design system readable while you work."
           mode="source"
         />
+
+        <CalibrationWorkflowCard activeCalibrationProfile={activeCalibrationProfile} />
 
         <div className="lg:hidden">
         <PanelSection title="Tools" description="Choose how you want to work with this design.">
@@ -221,6 +277,12 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
             step={0.5}
           />
         </PanelSection>
+
+        {exportReadiness && (
+          <PanelSection title="Export readiness" description="Cricut-safe checks for the current design." defaultOpen={false}>
+            <ExportReadinessPanel result={exportReadiness} />
+          </PanelSection>
+        )}
       </aside>
     );
   }

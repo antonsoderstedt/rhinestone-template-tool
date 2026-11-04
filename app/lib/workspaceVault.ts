@@ -3,6 +3,7 @@ import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalo
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
 
 export const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
+export const ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY = 'rhinestone-active-calibration-profile';
 
 export interface WorkspaceAsset {
   assetId: string;
@@ -106,6 +107,22 @@ export interface WorkspaceSettings {
   qualityChecklist: string;
 }
 
+export interface CalibrationProfileOverride {
+  stoneSize: string;
+  holeDiameterMm: number;
+  notes?: string;
+}
+
+export interface CalibrationProfile {
+  id: string;
+  name: string;
+  materialProfileId: string;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string;
+  overrides: CalibrationProfileOverride[];
+}
+
 export interface WorkspaceVault {
   version: 1;
   assets: WorkspaceAsset[];
@@ -114,6 +131,7 @@ export interface WorkspaceVault {
   htvDesigns: HtvDesignEntry[];
   designPreferences: DesignPreference[];
   settings: WorkspaceSettings;
+  calibrationProfiles: CalibrationProfile[];
 }
 
 export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
@@ -165,6 +183,30 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
       }))
     : [];
 
+  const calibrationProfiles: CalibrationProfile[] = Array.isArray(raw?.calibrationProfiles)
+    ? raw.calibrationProfiles
+        .filter((profile): profile is CalibrationProfile => !!profile && typeof profile === 'object')
+        .map((profile) => ({
+          id: typeof profile.id === 'string' ? profile.id : makeWorkspaceId('calibration-profile'),
+          name: typeof profile.name === 'string' && profile.name.trim().length > 0 ? profile.name.trim() : 'Calibrated profile',
+          materialProfileId: typeof profile.materialProfileId === 'string' ? profile.materialProfileId : 'magic-flock-cricut-maker',
+          createdAt: typeof profile.createdAt === 'string' ? profile.createdAt : new Date().toISOString(),
+          updatedAt: typeof profile.updatedAt === 'string' ? profile.updatedAt : new Date().toISOString(),
+          approvedAt: typeof profile.approvedAt === 'string' ? profile.approvedAt : undefined,
+          overrides: Array.isArray(profile.overrides)
+            ? profile.overrides
+                .filter((override): override is CalibrationProfileOverride => !!override && typeof override === 'object')
+                .map((override) => ({
+                  stoneSize: typeof override.stoneSize === 'string' ? override.stoneSize : 'SS10',
+                  holeDiameterMm: typeof override.holeDiameterMm === 'number' && Number.isFinite(override.holeDiameterMm) && override.holeDiameterMm > 0
+                    ? override.holeDiameterMm
+                    : 3.43,
+                  notes: typeof override.notes === 'string' ? override.notes : undefined,
+                }))
+            : [],
+        }))
+    : [];
+
   return {
     version: 1,
     assets: Array.isArray(raw?.assets) ? raw.assets : [],
@@ -176,6 +218,7 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
       ...DEFAULT_WORKSPACE_SETTINGS,
       ...(raw?.settings ?? {}),
     },
+    calibrationProfiles,
   };
 }
 
@@ -235,6 +278,58 @@ export function writeWorkspaceVault(vault: WorkspaceVault): void {
   const storage = getStorage();
   if (!storage) return;
   storage.setItem(WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify(vault));
+}
+
+export function readActiveCalibrationProfileId(): string | null {
+  const storage = getStorage();
+  if (!storage) return null;
+  const value = storage.getItem(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY);
+  return value && value.trim().length > 0 ? value : null;
+}
+
+export function readActiveCalibrationProfile(): CalibrationProfile | null {
+  const activeId = readActiveCalibrationProfileId();
+  if (!activeId) return null;
+  return readWorkspaceVault().calibrationProfiles.find((profile) => profile.id === activeId) ?? null;
+}
+
+export function setActiveCalibrationProfile(profileId: string | null): void {
+  const storage = getStorage();
+  if (!storage) return;
+  if (profileId && profileId.trim().length > 0) {
+    storage.setItem(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY, profileId);
+    return;
+  }
+  storage.removeItem(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY);
+}
+
+export function isApprovedCalibrationProfileActive(): boolean {
+  return Boolean(readActiveCalibrationProfile()?.approvedAt);
+}
+
+export function upsertCalibrationProfile(
+  vault: WorkspaceVault,
+  profile: CalibrationProfile,
+): WorkspaceVault {
+  const normalizedProfile: CalibrationProfile = {
+    ...profile,
+    overrides: profile.overrides.filter((override) => typeof override.stoneSize === 'string' && override.holeDiameterMm > 0),
+  };
+
+  const nextProfiles = [...vault.calibrationProfiles.filter((item) => item.id !== normalizedProfile.id), normalizedProfile]
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+  return {
+    ...vault,
+    calibrationProfiles: nextProfiles,
+  };
+}
+
+export function deleteCalibrationProfile(vault: WorkspaceVault, profileId: string): WorkspaceVault {
+  return {
+    ...vault,
+    calibrationProfiles: vault.calibrationProfiles.filter((profile) => profile.id !== profileId),
+  };
 }
 
 export function makeWorkspaceId(prefix: string): string {
