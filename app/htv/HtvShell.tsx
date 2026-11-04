@@ -33,6 +33,7 @@ import {
   deserializeHtvState,
   findAssetById,
   findHtvDesignById,
+  readActiveCalibrationProfile,
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
@@ -50,8 +51,17 @@ export default function HtvShell() {
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
   const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>(() => readWorkspaceVault().assets.filter((asset) => !asset.archived).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
+  const [activeCalibrationProfile, setActiveCalibrationProfileState] = useState(() => readActiveCalibrationProfile());
   const nextLayerIdRef = useRef(0);
   const handledQueryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => setActiveCalibrationProfileState(readActiveCalibrationProfile());
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    return () => { window.removeEventListener('storage', sync); window.removeEventListener('focus', sync); };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -415,9 +425,18 @@ export default function HtvShell() {
 
       <WorkspaceModeBanner
         mode="HTV Studio"
-        status="Warning"
+        status={activeCalibrationProfile?.approvedAt ? 'Ready' : 'Warning'}
         project={state.projectName || 'Untitled HTV Design'}
-        guidance="Review garment placement and final cut paths before export. Production quality depends on the active material setup."
+        guidance={
+          activeCalibrationProfile?.approvedAt
+            ? 'Active calibration profile is approved. Review placement and export when ready.'
+            : 'Review garment placement and final cut paths before export. Approve a calibration profile in Setup before production.'
+        }
+        calibrationState={
+          activeCalibrationProfile
+            ? { label: activeCalibrationProfile.approvedAt ? `Approved: ${activeCalibrationProfile.name}` : `Pending: ${activeCalibrationProfile.name}`, tone: activeCalibrationProfile.approvedAt ? 'success' : 'warning' }
+            : { label: 'No active profile', tone: 'warning' }
+        }
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">

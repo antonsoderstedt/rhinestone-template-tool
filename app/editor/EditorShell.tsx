@@ -49,7 +49,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
-import { EDITOR_TOOLS, getSourcePanelTool } from './editorUi';
+import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -1385,6 +1385,12 @@ export default function EditorShell() {
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
         <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+          <CanvasActionStrip
+            activeTool={state.activeTool}
+            hasTemplate={Boolean(effectiveTemplate)}
+            isEditable={state.editableTemplate.isEditable}
+            dispatch={editorDispatch}
+          />
           <EditorCanvas
             state={state}
             dispatch={editorDispatch}
@@ -1457,7 +1463,16 @@ function StudioContextPanel({
   exportReadiness: ExportReadinessResult | null;
   activeCalibrationProfile: CalibrationProfile | null;
 }) {
-  const [tab, setTab] = useState<'source' | 'inspector'>('source');
+  // Auto-switch: Inspect when select tool is active, Generate for generators.
+  const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
+  const [manualTab, setManualTab] = useState<'source' | 'inspector' | null>(null);
+  const [prevTool, setPrevTool] = useState(state.activeTool);
+  if (prevTool !== state.activeTool) {
+    setPrevTool(state.activeTool);
+    setManualTab(null);
+  }
+  const tab = manualTab ?? autoTab;
+
   return (
     <div className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
       {/* Tabs */}
@@ -1465,7 +1480,7 @@ function StudioContextPanel({
         {(['source', 'inspector'] as const).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => setManualTab(t === autoTab ? null : t)}
             className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
             {t === 'source' ? 'Generate' : 'Inspect'}
@@ -1483,6 +1498,42 @@ function StudioContextPanel({
           activeCalibrationProfile={activeCalibrationProfile}
         />
       </div>
+    </div>
+  );
+}
+
+// ─── Canvas action strip ────────────────────────────────────────────────────
+
+function CanvasActionStrip({
+  activeTool,
+  hasTemplate,
+  isEditable,
+  dispatch,
+}: {
+  activeTool: EditorState['activeTool'];
+  hasTemplate: boolean;
+  isEditable: boolean;
+  dispatch: React.Dispatch<EditorAction>;
+}) {
+  const hint = getCanvasHint(activeTool);
+
+  const primaryAction = !hasTemplate
+    ? null
+    : !isEditable && activeTool !== 'select' && activeTool !== 'manual'
+      ? { label: 'Make Editable', onClick: () => dispatch({ type: 'CONVERT_TO_EDITABLE' }) }
+      : null;
+
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5">
+      <p className="min-w-0 truncate text-[11px] text-[var(--studio-ink-muted)]">{hint}</p>
+      {primaryAction && (
+        <button
+          onClick={primaryAction.onClick}
+          className="shrink-0 rounded-md border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300 transition hover:bg-violet-500/25"
+        >
+          {primaryAction.label}
+        </button>
+      )}
     </div>
   );
 }
