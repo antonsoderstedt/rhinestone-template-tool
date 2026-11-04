@@ -71,6 +71,7 @@ export default function EditorShell() {
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
+  const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
   const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
   const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
   const [hasPromptedAutosaveRestore, setHasPromptedAutosaveRestore] = useState(false);
@@ -1298,6 +1299,7 @@ export default function EditorShell() {
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
         recentDesigns={libraryRecord.userTemplates.slice(0, 5).map((entry) => ({ id: entry.templateId, name: entry.name }))}
+        designSurface={designSurface}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
@@ -1307,6 +1309,10 @@ export default function EditorShell() {
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
         onOpenGarmentPreview={() => setGarmentPreviewOpen(true)}
+        onToggleDesignSurface={(surface) => {
+          setDesignSurface(surface);
+          setGarmentPreviewOpen(surface === 'garment');
+        }}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -1322,7 +1328,7 @@ export default function EditorShell() {
       <GarmentPreviewPanel
         open={garmentPreviewOpen}
         template={effectiveTemplate}
-        onClose={() => setGarmentPreviewOpen(false)}
+        onClose={() => { setGarmentPreviewOpen(false); setDesignSurface('canvas'); }}
       />
 
       <TemplateLibraryPanel

@@ -26,6 +26,7 @@ interface EditorTopbarProps {
   exportErrorCount?: number;
   exportWarningCount?: number;
   recentDesigns?: { id: string; name: string }[];
+  designSurface?: 'canvas' | 'garment';
   dispatch?: React.Dispatch<EditorAction>;
   onNewProject?: () => void;
   onOpenProject?: () => void;
@@ -35,6 +36,7 @@ interface EditorTopbarProps {
   onExport?: () => void;
   onOpenSetup?: () => void;
   onOpenGarmentPreview?: () => void;
+  onToggleDesignSurface?: (surface: 'canvas' | 'garment') => void;
   theme?: StudioTheme;
   onToggleTheme?: () => void;
 }
@@ -49,6 +51,7 @@ export default function EditorTopbar({
   exportErrorCount = 0,
   exportWarningCount = 0,
   recentDesigns = [],
+  designSurface = 'canvas',
   dispatch = () => undefined,
   onNewProject = () => undefined,
   onOpenProject = () => undefined,
@@ -58,6 +61,7 @@ export default function EditorTopbar({
   onExport = () => undefined,
   onOpenSetup = () => undefined,
   onOpenGarmentPreview = () => undefined,
+  onToggleDesignSurface = () => undefined,
   theme = 'dark',
   onToggleTheme = () => undefined,
 }: EditorTopbarProps) {
@@ -166,15 +170,23 @@ export default function EditorTopbar({
         </ToolbarSection>
 
         <ToolbarSection label="Output">
-          <button
-            onClick={onOpenGarmentPreview}
-            disabled={!canPreviewGarment}
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
-            title={canPreviewGarment ? 'Preview this design on a t-shirt or hoodie' : 'Create or open a design before previewing'}
-          >
-            <Shirt className="h-4 w-4" />
-            Preview
-          </button>
+          <div className="inline-flex rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] p-0.5">
+            {(['canvas', 'garment'] as const).map((surface) => (
+              <button
+                key={surface}
+                type="button"
+                disabled={surface === 'garment' && !canPreviewGarment}
+                onClick={() => {
+                  if (surface === 'garment') onOpenGarmentPreview();
+                  onToggleDesignSurface(surface);
+                }}
+                className={`rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-30 ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+                title={surface === 'garment' && !canPreviewGarment ? 'Create or open a design before previewing' : undefined}
+              >
+                {surface === 'canvas' ? 'Canvas' : <><Shirt className="inline h-3 w-3 mr-1" />Garment</>}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onExport}
