@@ -20,6 +20,7 @@ import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import HtvGarmentStage from './HtvGarmentStage';
 import HtvGarment3D from './HtvGarment3D';
+import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import { createHtvSvgExport } from './htvExport';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
@@ -410,6 +411,13 @@ export default function HtvShell() {
         onToggleDesignSurface={setDesignSurface}
         theme={theme}
         onToggleTheme={toggleTheme}
+      />
+
+      <WorkspaceModeBanner
+        mode="HTV Studio"
+        status="Warning"
+        project={state.projectName || 'Untitled HTV Design'}
+        guidance="Review garment placement and final cut paths before export. Production quality depends on the active material setup."
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
