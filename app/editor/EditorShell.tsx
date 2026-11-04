@@ -7,7 +7,7 @@ import {
   DEFAULT_EDITOR_STATE,
   type EditorAction,
 } from './EditorState';
-import type { EditableStone } from './EditorState';
+import type { EditableStone, EditorState } from './EditorState';
 import {
   createStoneGridTemplate,
   createOutlineTextTemplateAsync,
@@ -38,6 +38,7 @@ import { useStudioTheme } from '../lib/studioTheme';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
+import type { OutlineFontStatus } from './controls/FontPicker';
 import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
 import EditorToast from './EditorToast';
@@ -1383,16 +1384,6 @@ export default function EditorShell() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
-          <EditorPropertiesPanel
-            state={state}
-            dispatch={editorDispatch}
-            mode="source"
-            outlineFontStatus={outlineFontStatus}
-            activeCalibrationProfile={activeCalibrationProfile}
-          />
-        </div>
-
         <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
           <EditorCanvas
             state={state}
@@ -1401,16 +1392,13 @@ export default function EditorShell() {
           />
         </main>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[220px] lg:border-t-0">
-          <EditorPropertiesPanel
-            state={state}
-            dispatch={editorDispatch}
-            mode="inspector"
-            outlineFontStatus={outlineFontStatus}
-            exportReadiness={exportReadiness}
-            activeCalibrationProfile={activeCalibrationProfile}
-          />
-        </div>
+        <StudioContextPanel
+          state={state}
+          dispatch={editorDispatch}
+          outlineFontStatus={outlineFontStatus}
+          exportReadiness={exportReadiness}
+          activeCalibrationProfile={activeCalibrationProfile}
+        />
       </div>
 
       <EditorStatusBar
@@ -1448,5 +1436,53 @@ function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_E
         );
       })}
     </nav>
+  );
+}
+
+// ─── Tabbed context panel ───────────────────────────────────────────────────
+
+import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
+import type { CalibrationProfile } from '../lib/workspaceVault';
+
+function StudioContextPanel({
+  state,
+  dispatch,
+  outlineFontStatus,
+  exportReadiness,
+  activeCalibrationProfile,
+}: {
+  state: EditorState;
+  dispatch: React.Dispatch<EditorAction>;
+  outlineFontStatus: OutlineFontStatus;
+  exportReadiness: ExportReadinessResult | null;
+  activeCalibrationProfile: CalibrationProfile | null;
+}) {
+  const [tab, setTab] = useState<'source' | 'inspector'>('source');
+  return (
+    <div className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
+      {/* Tabs */}
+      <div className="flex shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)]">
+        {(['source', 'inspector'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+          >
+            {t === 'source' ? 'Generate' : 'Inspect'}
+          </button>
+        ))}
+      </div>
+      {/* Panel content */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <EditorPropertiesPanel
+          state={state}
+          dispatch={dispatch}
+          mode={tab}
+          outlineFontStatus={outlineFontStatus}
+          exportReadiness={tab === 'inspector' ? exportReadiness : null}
+          activeCalibrationProfile={activeCalibrationProfile}
+        />
+      </div>
+    </div>
   );
 }

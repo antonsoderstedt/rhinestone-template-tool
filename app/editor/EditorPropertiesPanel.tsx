@@ -71,18 +71,6 @@ function PanelSection({ title, description, children, defaultOpen = true }: { ti
   );
 }
 
-function PanelHeader({ title, description, mode }: { title: string; description: string; mode: 'source' | 'inspector' }) {
-  return (
-    <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 shadow-sm">
-      <div className="inline-flex rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
-        {mode === 'source' ? 'Source controls' : 'Inspector'}
-      </div>
-      <h2 className="mt-2 text-base font-semibold text-[var(--studio-ink)]">{title}</h2>
-      <p className="mt-1 text-xs leading-5 text-[var(--studio-ink-muted)]">{description}</p>
-    </div>
-  );
-}
-
 /**
  * Surfaces a generation error (e.g. a font asset that failed to load) for
  * generator panels that don't otherwise show one. `outlineFontStatus` is a
@@ -180,24 +168,16 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
-        <PanelHeader
-          title="Design source"
-          description="Choose the generator, adjust the baseline settings, and keep the design system readable while you work."
-          mode="source"
-        />
-
+      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         <CalibrationWorkflowCard activeCalibrationProfile={activeCalibrationProfile} />
 
-        <div className="lg:hidden">
-        <PanelSection title="Tools" description="Choose how you want to work with this design.">
+        <PanelSection title="Tools" description="Choose how you want to work with this design." defaultOpen={false}>
           <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
         </PanelSection>
-        </div>
 
         {state.activeTool === 'select' ? (
           <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
-            <p className="text-xs text-[var(--studio-ink-muted)]">Fine-tune the selection — position, alignment, and export options — in the Inspector panel on the right.</p>
+            <p className="text-xs text-[var(--studio-ink-muted)]">Switch to the Inspect tab to fine-tune selection position, alignment, and export options.</p>
           </PanelSection>
         ) : (
           <>
@@ -229,13 +209,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
   if (mode === 'inspector') {
     return (
-      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain border-l border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
-        <PanelHeader
-          title="Selection and export"
-          description="Work on the current selection, repair layout details, and control what leaves the canvas."
-          mode="inspector"
-        />
-
+      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
