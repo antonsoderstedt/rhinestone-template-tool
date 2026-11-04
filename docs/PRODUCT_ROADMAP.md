@@ -106,12 +106,14 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 | ✅ Done | Multi-size calibration sheet generator |
 | ✅ Done | Calibration workflow UI |
 | ✅ Done | Hole diameter overrides per stone size |
-| 🔜 Planned | Saved calibrated profiles (browser localStorage) |
+| ✅ Done | Saved calibrated profiles (browser localStorage) — `app/components/CalibrationWorkflow.tsx`, `app/lib/workspaceVault.ts` |
+| ✅ Done | Profile approval gate — `CalibrationProfile.approvedAt`; `checkExportReadiness` blocks export when unapproved; approve/unapprove in both `/setup` and `/settings` |
+| ✅ Done | Profile import/export as JSON — `CalibrationWorkflow`: Export JSON / Import JSON |
+| ✅ Done | Active profile switching from `/settings` — Calibration Profiles section added 2026-11-04 |
 | 🔜 Planned | Per-cutter profiles (Cricut Maker, Explore, Silhouette) |
 | 🔜 Planned | Per-material profiles (Magic Flock, HTV, leather) |
 | 🔜 Planned | Scale compensation and kerf compensation fields |
 | 🔜 Planned | Calibration history log |
-| 🔜 Planned | Profile import/export as JSON |
 
 ### F. Export System
 
@@ -134,13 +136,13 @@ Every exported hole is a real vector `<circle>` sized in mm. The tool handles th
 |---|---|
 | ✅ Done | Save / open projects ("My Designs" page, both studios) |
 | ✅ Done | Browser localStorage persistence (`app/lib/workspaceVault.ts`) |
-| 🔜 Planned | Project JSON import/export (portable file, not just browser storage) |
-| 🔜 Planned | Template library (curated starting points, distinct from saved designs) |
-| 🔜 Planned | Duplicate project |
+| ✅ Done | Project JSON import/export — Rhinestone Studio topbar Save / Open (`.json` file round-trip) |
+| ✅ Done | Template library (curated starting points + user saved designs, `TemplateLibraryPanel`) |
+| ✅ Done | Duplicate project (template library "Copy" action) |
+| ✅ Done | Autosave with restore prompt (900ms debounce; autosave entry in library; restore dialog on load) |
+| ✅ Done | Open recent menu — both topbars show last 5 designs with one-click load (added 2026-11-04) |
 | 🔜 Planned | Export history |
 | ❌ Not started | Cloud saved projects (requires auth) |
-
-> Browser localStorage persistence shipped ahead of this document (see `app/lib/workspaceVault.ts` and `app/designs/page.tsx`). Portable JSON export/import is still open.
 
 ### H. SaaS / Commercial Features
 
@@ -192,11 +194,30 @@ These are not code tasks. They block everything else.
 
 | Priority | Sprint |
 |---|---|
-| 1 | Project JSON import/export (save and reload designs) |
-| 2 | Manual Editor v2 (click-to-add, drag stones) |
-| 3 | Before/after SVG cleanup preview |
-| 4 | Saved calibrated material profiles |
-| 5 | Smooch logo/lip-icon workflow improvements |
+| ~~1~~ | ~~Project JSON import/export~~ — ✅ shipped |
+| ~~4~~ | ~~Saved calibrated material profiles~~ — ✅ shipped |
+| 1 | Before/after SVG cleanup preview |
+| 2 | Smooch logo/lip-icon workflow improvements |
+| 3 | Multi-size batch export (cut sheet with multiple designs) |
+| 4 | Per-shape fill/outline mode selector in SVG upload tool |
+
+### J. UX / Studio Layer (added 2026-11-04)
+
+| Status | Feature |
+|---|---|
+| ✅ Done | `/setup` in GlobalTopNav (was absent) |
+| ✅ Done | Dark-theme port of `/setup` page and `WorkspaceModeBanner` |
+| ✅ Done | Setup & Calibration card on home page + hero CTA |
+| ✅ Done | Template library as bottom drawer (was full-screen right overlay) |
+| ✅ Done | Canvas-first layout — single right panel replaces dual side panels |
+| ✅ Done | Generate / Inspect tabs with auto-switching based on active tool |
+| ✅ Done | Canvas action strip — tool hint + contextual "Make Editable" CTA |
+| ✅ Done | Open recent menu in both Rhinestone and HTV topbars |
+| ✅ Done | `canvas \| garment` surface toggle in Rhinestone topbar (matches HTV) |
+| ✅ Done | Calibration profiles section in `/settings` |
+| ✅ Done | Dynamic calibration-aware status banner in HTV Studio |
+| 🔜 Planned | Brush erase mode (paint-remove stones) |
+| 🔜 Planned | Live collision highlight on offending stones |
 
 ### Later
 
