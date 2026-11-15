@@ -184,6 +184,31 @@ export default function Home() {
       </section>
 
       <section className="mx-auto w-full max-w-[1560px] px-4 pb-6 md:px-6">
+        <div className="mb-5 rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700">Production gate</div>
+              <h3 className="mt-2 text-2xl font-semibold text-ink">Build, calibrate, approve, then produce.</h3>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 1</div>
+              <div className="mt-2 text-lg font-semibold text-ink">Setup & Calibration</div>
+              <p className="mt-2 text-sm leading-7 text-ink-secondary">Cut the calibration sheet, measure hole diameters, and save a material profile for the job.</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 2</div>
+              <div className="mt-2 text-lg font-semibold text-ink">Saved work</div>
+              <p className="mt-2 text-sm leading-7 text-ink-secondary">Resume the latest draft, reopen a favorite design, and continue from the right production context.</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 3</div>
+              <div className="mt-2 text-lg font-semibold text-ink">Approve before export</div>
+              <p className="mt-2 text-sm leading-7 text-ink-secondary">Only approved profiles move into export and production. The gate is kept visible, not hidden in the flow.</p>
+            </div>
+          </div>
+        </div>
         <WorkspaceRecoveryPanel />
       </section>
 

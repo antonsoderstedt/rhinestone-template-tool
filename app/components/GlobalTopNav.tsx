@@ -22,14 +22,34 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function getModeMeta(pathname: string, activeCalibrationProfile: ReturnType<typeof readActiveCalibrationProfile> | null) {
+export function getModeMeta(pathname: string, activeCalibrationProfile: ReturnType<typeof readActiveCalibrationProfile> | null) {
   if (pathname.startsWith('/htv')) {
+    if (!activeCalibrationProfile) {
+      return {
+        studioLabel: 'HTV Studio',
+        status: 'Warning',
+        statusText: 'Calibration required before production',
+        statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        icon: AlertTriangle,
+      };
+    }
+
+    if (!activeCalibrationProfile.approvedAt) {
+      return {
+        studioLabel: 'HTV Studio',
+        status: 'Warning',
+        statusText: `Pending calibration: ${activeCalibrationProfile.name}`,
+        statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        icon: AlertTriangle,
+      };
+    }
+
     return {
       studioLabel: 'HTV Studio',
-      status: 'Warning',
-      statusText: 'Review garment placement',
-      statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
-      icon: AlertTriangle,
+      status: 'Ready',
+      statusText: `Production ready: ${activeCalibrationProfile.name}`,
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
     };
   }
 
@@ -37,7 +57,7 @@ function getModeMeta(pathname: string, activeCalibrationProfile: ReturnType<type
     return {
       studioLabel: 'Setup & Calibration',
       status: 'Warning',
-      statusText: 'Calibration before production',
+      statusText: 'Calibration gate before production',
       statusClassName: 'border-amber-200 bg-amber-50 text-amber-700',
       icon: AlertTriangle,
     };
@@ -147,15 +167,21 @@ export default function GlobalTopNav() {
     ? activeCalibrationProfile
       ? activeCalibrationProfile.approvedAt
         ? `Production ready • ${activeCalibrationProfile.name}`
-        : `Calibration pending • ${activeCalibrationProfile.name}`
-      : 'Calibration required before production'
+        : `Approval needed • ${activeCalibrationProfile.name}`
+      : 'Calibration gate • approve before production'
     : pathname.startsWith('/htv')
-      ? 'Garment review before export'
+      ? activeCalibrationProfile
+        ? activeCalibrationProfile.approvedAt
+          ? `Production ready • ${activeCalibrationProfile.name}`
+          : `Approval needed • ${activeCalibrationProfile.name}`
+        : 'Calibration gate • approve before production'
       : pathname.startsWith('/setup')
-        ? 'Calibration workflow is the production gate'
+        ? 'Setup gate • cut, measure, approve, then produce'
         : pathname.startsWith('/designs')
-          ? 'Saved work and active production context'
-          : 'Workspace ready';
+          ? 'Saved work • resume the next production pass'
+          : pathname.startsWith('/settings')
+            ? 'Workspace defaults • review before production'
+            : 'Workspace ready';
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl">

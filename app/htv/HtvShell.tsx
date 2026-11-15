@@ -428,14 +428,16 @@ export default function HtvShell() {
         status={activeCalibrationProfile?.approvedAt ? 'Ready' : 'Warning'}
         project={state.projectName || 'Untitled HTV Design'}
         guidance={
-          activeCalibrationProfile?.approvedAt
-            ? 'Active calibration profile is approved. Review placement and export when ready.'
-            : 'Review garment placement and final cut paths before export. Approve a calibration profile in Setup before production.'
+          !activeCalibrationProfile
+            ? 'Calibration gate is active. Open Setup & Calibration, cut the sheet, and approve a profile before production export.'
+            : activeCalibrationProfile.approvedAt
+              ? 'Active calibration profile is approved. Review placement and export when ready.'
+              : 'Calibration profile is pending approval. Complete the setup workflow before production export.'
         }
         calibrationState={
           activeCalibrationProfile
             ? { label: activeCalibrationProfile.approvedAt ? `Approved: ${activeCalibrationProfile.name}` : `Pending: ${activeCalibrationProfile.name}`, tone: activeCalibrationProfile.approvedAt ? 'success' : 'warning' }
-            : { label: 'No active profile', tone: 'warning' }
+            : { label: 'Calibration gate', tone: 'warning' }
         }
       />
 

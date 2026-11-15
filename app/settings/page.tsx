@@ -23,6 +23,7 @@ import {
   workspaceInputClassName,
   workspaceTextAreaClassName,
 } from '../components/workspace/WorkspaceChrome';
+import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
 
 function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   const nextVault = { ...vault, settings: nextSettings };
@@ -69,6 +70,15 @@ export default function SettingsPage() {
   return (
     <WorkspacePage tone="accent">
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+        <WorkspaceQuickActions
+          actions={[
+            { label: 'Setup & calibration', description: 'Run the production gate before a new material profile is approved.', href: '/setup', icon: Ruler, tone: 'brand' },
+            { label: 'Saved work', description: 'Review the latest saved layouts and continue from the right job.', href: '/designs', icon: CheckCircle2, tone: 'neutral' },
+            { label: 'Rhinestone studio', description: 'Return to the design surface with the active material profile in context.', href: '/rhinestone', icon: Settings2, tone: 'default' },
+            { label: 'HTV studio', description: 'Open the garment workflow and move into production review.', href: '/htv', icon: Settings2, tone: 'neutral' },
+          ]}
+        />
+
         <WorkspaceHero
           eyebrow={<><Settings2 className="h-3.5 w-3.5" /> Settings</>}
           title="Operational defaults for the whole workspace"

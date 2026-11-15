@@ -11,6 +11,7 @@ import {
   getSelectionEmptyState,
   getSourcePanelTool,
 } from '../app/editor/editorUi';
+import { getModeMeta } from '../app/components/GlobalTopNav';
 
 describe('editorUi helpers', () => {
   it('derives the source panel tool from editable source generator', () => {
@@ -70,6 +71,25 @@ describe('editorUi helpers', () => {
   it('returns a useful empty selection state for generated and editable flows', () => {
     expect(getSelectionEmptyState(false).title).toBe('Generated output');
     expect(getSelectionEmptyState(true).title).toBe('Nothing selected');
+  });
+
+  it('treats HTV as ready only when the active calibration profile is approved', () => {
+    expect(getModeMeta('/htv', null)).toMatchObject({
+      studioLabel: 'HTV Studio',
+      status: 'Warning',
+    });
+
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: undefined } as any)).toMatchObject({
+      studioLabel: 'HTV Studio',
+      status: 'Warning',
+      statusText: 'Pending calibration: Magic Flock',
+    });
+
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: '2025-01-01T00:00:00.000Z' } as any)).toMatchObject({
+      studioLabel: 'HTV Studio',
+      status: 'Ready',
+      statusText: 'Production ready: Magic Flock',
+    });
   });
 });
 

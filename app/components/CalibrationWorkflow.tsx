@@ -324,9 +324,49 @@ export default function CalibrationWorkflow() {
   const activeProfile = savedProfiles.find((profile) => profile.id === activeProfileId) ?? null;
   const approvedProfiles = savedProfiles.filter((profile) => profile.approvedAt);
   const productionReady = Boolean(activeProfile?.approvedAt);
+  const hasMeasuredValues = STONE_SIZES.some((size) => {
+    const value = Number.parseFloat(holeMap[size]);
+    return Number.isFinite(value) && value > 0;
+  });
+  const gateStatus = productionReady
+    ? 'Ready to produce'
+    : activeProfile
+      ? 'Approval needed'
+      : hasMeasuredValues
+        ? 'Save and approve'
+        : 'Cut and measure first';
 
   return (
     <div className="flex flex-col gap-6">
+      <div className={`rounded-2xl border p-5 ${productionReady ? 'border-emerald-400/40 bg-emerald-500/10' : activeProfile ? 'border-amber-400/40 bg-amber-500/10' : 'border-border bg-sand-50'}`}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Production gate</p>
+            <h3 className="mt-2 text-2xl font-semibold text-ink">{gateStatus}</h3>
+          </div>
+          <Badge tone={productionReady ? 'success' : activeProfile ? 'warning' : 'info'}>
+            {productionReady ? 'Approved' : activeProfile ? 'Pending approval' : 'Not started'}
+          </Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className={`rounded-xl border p-3 ${hasMeasuredValues ? 'border-emerald-300 bg-emerald-50' : 'border-border bg-white'}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 1</div>
+            <div className="mt-2 text-sm font-semibold text-ink">Cut calibration sheet</div>
+            <p className="mt-1 text-xs text-ink-secondary">{hasMeasuredValues ? 'Measured values are present.' : 'Use the calibration sheet before production.'}</p>
+          </div>
+          <div className={`rounded-xl border p-3 ${hasMeasuredValues ? 'border-emerald-300 bg-emerald-50' : 'border-border bg-white'}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 2</div>
+            <div className="mt-2 text-sm font-semibold text-ink">Validate hole sizes</div>
+            <p className="mt-1 text-xs text-ink-secondary">{hasMeasuredValues ? 'The current values are ready for preview.' : 'Enter measured hole diameters in mm.'}</p>
+          </div>
+          <div className={`rounded-xl border p-3 ${productionReady ? 'border-emerald-300 bg-emerald-50' : activeProfile ? 'border-amber-300 bg-amber-50' : 'border-border bg-white'}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 3</div>
+            <div className="mt-2 text-sm font-semibold text-ink">Approve profile</div>
+            <p className="mt-1 text-xs text-ink-secondary">{productionReady ? 'This profile is approved and ready.' : activeProfile ? 'Approve the active profile before export.' : 'Save a profile and approve it when the cut passes.'}</p>
+          </div>
+        </div>
+      </div>
 
       {/* ── Machine cut settings (separate from template settings below) ──── */}
       <MachineCutSettingsCard recommendation={MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION} />

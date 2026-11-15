@@ -24,6 +24,11 @@ import {
 } from '../components/workspace/WorkspaceChrome';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import {
+  getCalibrationGateSummary,
+  getRecoveryActionPlan,
+} from '../lib/workspaceRecovery';
+import { readActiveCalibrationProfileId } from '../lib/workspaceVault';
 
 type StudioFilter = 'all' | 'rhinestone' | 'htv';
 
@@ -52,6 +57,12 @@ export default function DesignsPage() {
     : approvedCalibrationCount === 0
       ? { label: `${vault.calibrationProfiles.length} pending`, tone: 'warning' as const }
       : { label: `${approvedCalibrationCount} approved`, tone: 'success' as const };
+  const recoveryAction = useMemo(() => getRecoveryActionPlan(vault, hasAutosave), [hasAutosave, vault]);
+  const calibrationGate = useMemo(
+    () => getCalibrationGateSummary(vault, readActiveCalibrationProfileId()),
+    [vault],
+  );
+  const resumeReady = calibrationGate.activeProfileApproved && !hasAutosave;
 
   useEffect(() => {
     const repository = new LocalStorageTemplateLibraryRepository();
@@ -197,24 +208,32 @@ export default function DesignsPage() {
               <p className="mt-3 text-sm leading-7 text-ink-secondary">
                 This page is optimized for returning to production work fast, not for browsing a gallery without context.
               </p>
-              {hasAutosave && (
+              <div className="mt-4 rounded-[1.25rem] border border-border bg-surface px-4 py-3">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration gate</div>
+                <div className="mt-2 text-base font-semibold text-ink">{calibrationGate.activeProfileName ?? 'No active profile'}</div>
+                <p className="mt-2 text-sm leading-6 text-ink-secondary">
+                  {calibrationGate.activeProfileApproved
+                    ? `Approved and ready for the next production pass.`
+                    : 'Approval is still pending before export or production work.'}
+                </p>
                 <button
                   type="button"
-                  onClick={() => router.push('/rhinestone')}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
+                  onClick={() => router.push(recoveryAction.href)}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
                 >
                   <FolderHeart className="h-4 w-4" />
-                  Resume autosave
+                  {recoveryAction.label}
                 </button>
-              )}
+              </div>
             </WorkspaceSurface>
           )}
         />
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-4">
           <WorkspaceMetricCard label="Total saved" value={rhinestoneDesigns.length + vault.htvDesigns.length} />
           <WorkspaceMetricCard label="Rhinestone" value={rhinestoneDesigns.length} />
           <WorkspaceMetricCard label="HTV" value={vault.htvDesigns.length} />
+          <WorkspaceMetricCard label="Calibration" value={calibrationGate.approvedCalibrationCount > 0 ? `${calibrationGate.approvedCalibrationCount} approved` : 'Pending'} />
         </section>
 
         <WorkspaceSurface className="p-5">
@@ -278,6 +297,15 @@ export default function DesignsPage() {
                     <div className="mt-2 text-sm text-ink-secondary">{(design.meta as HtvDesignEntry).layerCount} layers · {(design.meta as HtvDesignEntry).garmentLabel}</div>
                   </>
                 )}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${calibrationGate.activeProfileApproved ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                  {calibrationGate.activeProfileApproved ? 'Resume ready' : 'Needs calibration'}
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+                  {resumeReady ? 'Production approved' : 'Review before export'}
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">

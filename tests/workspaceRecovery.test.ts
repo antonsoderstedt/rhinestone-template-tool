@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getWorkspaceRecoverySummary } from '../app/lib/workspaceRecovery';
+import {
+  getCalibrationGateSummary,
+  getRecoveryActionPlan,
+  getWorkspaceRecoverySummary,
+} from '../app/lib/workspaceRecovery';
 import type { WorkspaceVault } from '../app/lib/workspaceVault';
 
 const baseVault: WorkspaceVault = {
@@ -70,6 +74,32 @@ describe('workspace recovery summary', () => {
     expect(summary.workflowStatus).toBe('Ready');
   });
 
+  it('summarizes the calibration gate for the setup workflow', () => {
+    expect(getCalibrationGateSummary(baseVault, 'profile-1')).toMatchObject({
+      activeProfileName: 'Magic Flock',
+      activeProfileApproved: true,
+      approvedCalibrationCount: 1,
+      workflowState: 'Ready',
+    });
+
+    expect(getCalibrationGateSummary({
+      ...baseVault,
+      calibrationProfiles: [{
+        id: 'profile-2',
+        name: 'Pending profile',
+        materialProfileId: 'magic-flock',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-02T00:00:00.000Z',
+        overrides: [],
+      }],
+    }, 'profile-2')).toMatchObject({
+      activeProfileName: 'Pending profile',
+      activeProfileApproved: false,
+      approvedCalibrationCount: 0,
+      workflowState: 'Warning',
+    });
+  });
+
   it('flags calibration risk when no approved profile exists', () => {
     const summary = getWorkspaceRecoverySummary({
       ...baseVault,
@@ -85,5 +115,38 @@ describe('workspace recovery summary', () => {
 
     expect(summary.approvedCalibrationCount).toBe(0);
     expect(summary.workflowStatus).toBe('Warning');
+  });
+
+  it('prefers the most urgent recovery action in order', () => {
+    expect(getRecoveryActionPlan(baseVault, true)).toMatchObject({
+      label: 'Resume autosave',
+      href: '/rhinestone',
+    });
+
+    expect(getRecoveryActionPlan({
+      ...baseVault,
+      calibrationProfiles: [{
+        id: 'profile-2',
+        name: 'Pending profile',
+        materialProfileId: 'magic-flock',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+        overrides: [],
+      }],
+    }, false)).toMatchObject({
+      label: 'Review calibration',
+      href: '/setup',
+    });
+
+    expect(getRecoveryActionPlan({
+      ...baseVault,
+      calibrationProfiles: [{
+        ...baseVault.calibrationProfiles[0],
+        approvedAt: '2024-02-01T00:00:00.000Z',
+      }],
+    }, false)).toMatchObject({
+      label: 'Open saved work',
+      href: '/designs',
+    });
   });
 });

@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FolderOpen, ShieldAlert } from 'lucide-react';
 import { readWorkspaceVault } from '../lib/workspaceVault';
-import { getWorkspaceRecoverySummary } from '../lib/workspaceRecovery';
+import { getRecoveryActionPlan, getWorkspaceRecoverySummary } from '../lib/workspaceRecovery';
 
 export default function WorkspaceRecoveryPanel() {
   const [summary, setSummary] = useState(() => getWorkspaceRecoverySummary(readWorkspaceVault(), false));
+  const actionPlan = useMemo(() => getRecoveryActionPlan(readWorkspaceVault(), summary.hasAutosave), [summary.hasAutosave]);
 
   useEffect(() => {
     const sync = () => {
       const vault = readWorkspaceVault();
       const rawAutosave = window.localStorage.getItem('rhinestone-template-library-autosave');
-      setSummary(getWorkspaceRecoverySummary(vault, Boolean(rawAutosave && rawAutosave.trim().length > 0)));
+      const nextSummary = getWorkspaceRecoverySummary(vault, Boolean(rawAutosave && rawAutosave.trim().length > 0));
+      setSummary(nextSummary);
     };
 
     sync();
@@ -89,14 +91,15 @@ export default function WorkspaceRecoveryPanel() {
       <p className="mt-4 text-sm leading-7 text-ink-secondary">{statusConfig.text}</p>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <Link href="/designs" className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-ink-inverse">
+        <Link href={actionPlan.href} className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-ink-inverse">
           <FolderOpen className="h-4 w-4" />
-          Open saved work
+          {actionPlan.label}
         </Link>
-        <Link href="/setup" className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:text-ink">
-          Review calibration
+        <Link href={summary.hasAutosave ? '/rhinestone' : '/setup'} className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:text-ink">
+          {summary.hasAutosave ? 'Resume draft' : 'Review calibration'}
         </Link>
       </div>
+      <p className="mt-3 text-xs leading-6 text-ink-secondary">{actionPlan.description}</p>
     </div>
   );
 }

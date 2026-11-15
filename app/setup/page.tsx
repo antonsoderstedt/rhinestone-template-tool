@@ -1,20 +1,51 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle2, Clock3, FolderOpen, Gem, Settings2, ShieldAlert, SwatchBook } from 'lucide-react';
 import CalibrationSheetGenerator from '../components/CalibrationSheetGenerator';
 import CricutTestPack from '../components/CricutTestPack';
 import CalibrationWorkflow from '../components/CalibrationWorkflow';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
-import { FolderOpen, Gem, Settings2, SwatchBook } from 'lucide-react';
-import Link from 'next/link';
+import { getCalibrationGateSummary } from '../lib/workspaceRecovery';
+import { readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
 
 export default function SetupPage() {
+  const [vault, setVault] = useState(() => readWorkspaceVault());
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => readActiveCalibrationProfileId());
+
+  useEffect(() => {
+    const sync = () => {
+      setVault(readWorkspaceVault());
+      setActiveProfileId(readActiveCalibrationProfileId());
+    };
+
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, []);
+
+  const gateSummary = useMemo(() => getCalibrationGateSummary(vault, activeProfileId), [activeProfileId, vault]);
+  const gateTone = gateSummary.workflowState === 'Ready'
+    ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
+    : 'border-amber-400/30 bg-amber-500/10 text-amber-100';
+  const StatusIcon = gateSummary.workflowState === 'Ready' ? CheckCircle2 : ShieldAlert;
+
   return (
     <div className="min-h-screen bg-[var(--studio-bg,#0f0f12)] text-[var(--studio-ink,#f1f0ef)]" data-theme="dark">
       <WorkspaceModeBanner
         mode="Setup & Calibration"
-        status="Warning"
+        status={gateSummary.workflowState === 'Ready' ? 'Ready' : 'Warning'}
         project="Production readiness"
-        guidance="Calibration is the gate to production. Cut the calibration sheet and approve the active material profile before export."
-        calibrationState={{ label: 'Approval gate', tone: 'warning' }}
+        guidance={gateSummary.workflowState === 'Ready'
+          ? 'The active material profile has been approved. Keep the calibration gate visible before any export or production cut.'
+          : 'Calibration is the gate to production. Cut the calibration sheet and approve the active material profile before export.'}
+        calibrationState={{ label: gateSummary.activeProfileApproved ? 'Approved' : 'Approval gate', tone: gateSummary.activeProfileApproved ? 'success' : 'warning' }}
       />
       <main className="mx-auto max-w-5xl px-6 py-14 space-y-14">
         <WorkspaceQuickActions
@@ -26,6 +57,46 @@ export default function SetupPage() {
           ]}
         />
 
+        <section className={`rounded-2xl border p-5 ${gateTone}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/80">Production gate</div>
+              <h2 className="mt-2 text-2xl font-semibold text-[var(--studio-ink,#f1f0ef)]">Cut, measure, approve, then produce.</h2>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-current/30 bg-black/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-current">
+              <StatusIcon className="h-3.5 w-3.5" />
+              {gateSummary.workflowState === 'Ready' ? 'Ready' : 'Pending'}
+            </div>
+          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--studio-ink-secondary,#a8a29e)]">
+            {gateSummary.nextStep}
+          </p>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Active profile</div>
+              <div className="mt-2 text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">{gateSummary.activeProfileName ?? 'No active profile'}</div>
+              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">
+                {gateSummary.activeProfileApproved ? 'Approved and ready for production' : 'Waiting on approval'}
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Approved</div>
+              <div className="mt-2 text-2xl font-semibold text-[var(--studio-ink,#f1f0ef)]">{gateSummary.approvedCalibrationCount}</div>
+              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">Material profiles verified for production</div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Last approval</div>
+              <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">
+                {gateSummary.lastApprovedAt ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+                {gateSummary.lastApprovedAt ? new Date(gateSummary.lastApprovedAt).toLocaleDateString() : 'Not yet'}
+              </div>
+              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">Keep the calibration gate visible before each new material batch</div>
+            </div>
+          </div>
+        </section>
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header>
           <Link
