@@ -611,7 +611,7 @@ export default function HtvShell() {
               fallback={<HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />}
             />
           ) : (
-            <HtvCanvas state={state} dispatch={dispatch} />
+            <HtvCanvas state={state} dispatch={dispatch} measuredSizes={measuredTextSizes} />
           )}
         </main>
 

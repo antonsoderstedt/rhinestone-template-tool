@@ -259,7 +259,7 @@ export default function GlobalTopNav() {
         </button>
 
         <div className="hidden items-center gap-2 whitespace-nowrap lg:flex">
-          <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
+          <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs 2xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
             {modeMeta.studioLabel}
           </span>
 
@@ -270,7 +270,7 @@ export default function GlobalTopNav() {
 
           <Link
             href="/library"
-            className="hidden rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 xl:inline-flex"
+            className="hidden rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 2xl:inline-flex"
           >
             Manage Assets
           </Link>

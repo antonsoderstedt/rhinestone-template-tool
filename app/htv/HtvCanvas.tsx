@@ -12,6 +12,8 @@ import { approximateLayerBounds, computeDesignBounds, HTV_WORKSPACE_SIZE_MM, tra
 interface HtvCanvasProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
+  /** Real sizes of text layers (their measured outlines). Text layers without one fall back to an estimate. */
+  measuredSizes?: ReadonlyMap<string, { width: number; height: number }>;
 }
 
 const WORKSPACE_SIZE_MM = HTV_WORKSPACE_SIZE_MM;
@@ -32,7 +34,7 @@ type Interaction =
   | { kind: 'rotate'; pointerId: number; layerId: string; centerX: number; centerY: number }
   | { kind: 'marquee'; pointerId: number; startMmX: number; startMmY: number; curMmX: number; curMmY: number; moved: boolean };
 
-export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
+export default function HtvCanvas({ state, dispatch, measuredSizes }: HtvCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
@@ -153,7 +155,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         const hits = placementLayers
           .filter((l) => l.visible && !l.locked)
           .filter((l) => {
-            const b = transformedLayerBounds(l);
+            const b = transformedLayerBounds(l, measuredSizes?.get(l.id));
             return b.minX <= maxX && b.maxX >= minX && b.minY <= maxY && b.maxY >= minY;
           })
           .map((l) => l.id);
@@ -175,7 +177,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const zoomOut = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.2) } });
   const resetView = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
   const fitToView = useCallback(() => {
-    const bounds = computeDesignBounds(placementLayers);
+    const bounds = computeDesignBounds(placementLayers, measuredSizes);
     if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
       dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
       return;
@@ -198,15 +200,17 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         panY: centerY,
       },
     });
-  }, [dispatch, placementLayers]);
+  }, [dispatch, measuredSizes, placementLayers]);
 
   const fitToViewRef = useRef(fitToView);
   useEffect(() => {
     fitToViewRef.current = fitToView;
   }, [fitToView]);
+  // Refit when the layers change and when their real (measured) text sizes arrive, so the first view really shows the
+  // whole design instead of an estimate of it.
   useEffect(() => {
     fitToViewRef.current();
-  }, [placementLayers]);
+  }, [placementLayers, measuredSizes]);
 
   // Two fingers pinch-zoom and pan; one finger keeps working as select/move/scale/rotate.
   useTouchViewGestures(svgRef, {
@@ -304,7 +308,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
               style={{ cursor: layer.locked ? 'not-allowed' : 'move' }}
             >
               <HtvLayerShape layer={layer} />
-              {selected && <SelectionOutline layer={layer} />}
+              {selected && <SelectionOutline layer={layer} measured={measuredSizes?.get(layer.id)} />}
             </g>
           );
         })}
@@ -312,6 +316,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         {singleSelectedLayer && (
           <TransformHandles
             layer={singleSelectedLayer}
+            measured={measuredSizes?.get(singleSelectedLayer.id)}
             zoom={state.canvas.zoom}
             onScaleHandlePointerDown={handleScaleHandlePointerDown}
             onRotateHandlePointerDown={handleRotateHandlePointerDown}
@@ -364,8 +369,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   );
 }
 
-function SelectionOutline({ layer }: { layer: HtvLayer }) {
-  const { width, height } = approximateLayerBounds(layer);
+function SelectionOutline({ layer, measured }: { layer: HtvLayer; measured?: { width: number; height: number } }) {
+  const { width, height } = measured ?? approximateLayerBounds(layer);
   const padding = Math.max(width, height) * 0.06 + 1.5;
   return (
     <rect
@@ -391,16 +396,18 @@ function rotatePoint(x: number, y: number, thetaRad: number): { x: number; y: nu
 
 function TransformHandles({
   layer,
+  measured,
   zoom,
   onScaleHandlePointerDown,
   onRotateHandlePointerDown,
 }: {
   layer: HtvLayer;
+  measured?: { width: number; height: number };
   zoom: number;
   onScaleHandlePointerDown: (event: React.PointerEvent<SVGRectElement>, layer: HtvLayer, corner: { x: number; y: number }) => void;
   onRotateHandlePointerDown: (event: React.PointerEvent<SVGCircleElement>, layer: HtvLayer) => void;
 }) {
-  const { width, height } = approximateLayerBounds(layer);
+  const { width, height } = measured ?? approximateLayerBounds(layer);
   const padding = Math.max(width, height) * 0.06 + 1.5;
   const hw = (width / 2 + padding) * layer.scale;
   const hh = (height / 2 + padding) * layer.scale;

@@ -11,18 +11,20 @@ interface EditorToastProps {
 }
 
 export default function EditorToast({ message, tone, onDismiss, action }: EditorToastProps) {
+  // Toasts keep their own dark surface in both studio themes: the pale tinted text is only readable on it
+  // (a translucent tint over the light theme gave pale text on a pale background).
   const toneStyles = {
     success: {
       icon: CheckCircle2,
-      className: 'border-green-500/30 bg-green-500/12 text-green-100',
+      className: 'border-green-500/40 bg-zinc-900/95 text-green-100',
     },
     warning: {
       icon: AlertTriangle,
-      className: 'border-yellow-500/30 bg-yellow-500/12 text-yellow-100',
+      className: 'border-yellow-500/40 bg-zinc-900/95 text-yellow-100',
     },
     error: {
       icon: XCircle,
-      className: 'border-red-500/30 bg-red-500/12 text-red-100',
+      className: 'border-red-500/40 bg-zinc-900/95 text-red-100',
     },
     info: {
       icon: Info,
