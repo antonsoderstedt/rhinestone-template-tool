@@ -5,12 +5,13 @@ import { ChevronDown, Download, FolderOpen, RotateCcw, RotateCw, Save, Settings2
 import type { HtvAction } from './HtvState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
+import { KeyboardShortcutsButton } from '../components/KeyboardShortcuts';
 
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
-      <div className="px-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-[var(--studio-ink-subtle)]">{label}</div>
-      <div className="h-5 w-px bg-[var(--studio-hover-overlay)]" />
+    <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
+      <div className="hidden px-1.5 text-xs font-medium uppercase tracking-[0.16em] text-[var(--studio-ink-subtle)] 2xl:block">{label}</div>
+      <div className="hidden h-5 w-px bg-[var(--studio-hover-overlay)] 2xl:block" />
       <div className="flex flex-wrap items-center gap-1">{children}</div>
     </div>
   );
@@ -52,10 +53,10 @@ export default function HtvTopbar({
   onToggleTheme,
 }: HtvTopbarProps) {
   return (
-    <header className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
+    <section aria-label="Project actions" className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
       <div className="flex flex-wrap items-center gap-2 px-3 py-1.5">
         <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
-          <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
+          <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-xs font-medium uppercase tracking-[0.14em] text-violet-200">
             Layer editor
           </span>
           <input
@@ -63,7 +64,7 @@ export default function HtvTopbar({
             value={projectName}
             onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
             aria-label="Project name"
-            className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:border-violet-400/60 focus:bg-[var(--studio-surface)] focus:outline-none"
+            className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:bg-[var(--studio-surface)] focus-visible:ring-2 focus-visible:ring-violet-400"
             placeholder="Untitled HTV Design"
           />
         </div>
@@ -99,7 +100,7 @@ export default function HtvTopbar({
                   <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />
                 </summary>
                 <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
-                  <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent HTV designs</div>
+                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent HTV designs</div>
                   {recentDesigns.map((design) => (
                     <button
                       key={design.id}
@@ -148,8 +149,9 @@ export default function HtvTopbar({
               <button
                 key={surface}
                 type="button"
+                aria-pressed={designSurface === surface}
                 onClick={() => onToggleDesignSurface(surface)}
-                className={`rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+                className={`rounded px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] transition ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
               >
                 {surface}
               </button>
@@ -169,9 +171,10 @@ export default function HtvTopbar({
             <Settings2 className="h-4 w-4" />
             View
           </button>
+          <KeyboardShortcutsButton />
           <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
       </div>
-    </header>
+    </section>
   );
 }

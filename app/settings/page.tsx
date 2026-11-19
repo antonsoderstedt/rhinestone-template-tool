@@ -214,12 +214,12 @@ export default function SettingsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate font-medium text-ink">{profile.name}</span>
                         {isActive && (
-                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Active</span>
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-700">Active</span>
                         )}
                         {isApproved ? (
-                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Approved</span>
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-700">Approved</span>
                         ) : (
-                          <span className="rounded-full border border-warning-300 bg-warning-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-700">Pending</span>
+                          <span className="rounded-full border border-warning-300 bg-warning-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-warning-700">Pending</span>
                         )}
                       </div>
                       <p className="mt-1 text-xs text-ink-muted">

@@ -24,11 +24,11 @@ export default function GettingStartedGuide() {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-300">Your first design in 4 steps</h2>
-          <ol className="mt-1.5 grid gap-x-4 gap-y-1 text-[11px] text-[var(--studio-ink-secondary)] sm:grid-cols-2 xl:grid-cols-4">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Your first design in 4 steps</h2>
+          <ol className="mt-1.5 grid gap-x-4 gap-y-1 text-xs text-[var(--studio-ink-secondary)] sm:grid-cols-2 xl:grid-cols-4">
             {GETTING_STARTED_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-2">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-semibold text-violet-200">{index + 1}</span>
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-200">{index + 1}</span>
                 <span><strong className="font-semibold text-[var(--studio-ink)]">{step.title}.</strong> {step.detail}</span>
               </li>
             ))}
@@ -40,7 +40,7 @@ export default function GettingStartedGuide() {
             writeOnboardingDismissed(globalThis.localStorage);
             setDismissed(true);
           }}
-          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--studio-border)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--studio-border)] px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
         >
           <X className="h-3 w-3" aria-hidden="true" />
           Got it

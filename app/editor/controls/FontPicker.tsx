@@ -100,7 +100,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
       <style dangerouslySetInnerHTML={{ __html: getOutlineFontFaceCss() }} />
       <div className="flex items-center justify-between">
         <span className={editorFieldLabelClassName}>Font</span>
-        <div className="flex items-center gap-2 text-[11px] text-ink-muted">
+        <div className="flex items-center gap-2 text-xs text-ink-muted">
           <span>{selectedFont.category}</span>
           <span className="rounded-full border border-border px-2 py-0.5 uppercase tracking-wide">
             {getFontPolicyLabel(selectedFont.fontId)}
@@ -149,8 +149,8 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
                     <div className="min-w-0 pr-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{font.displayName}</span>
-                        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink-muted">{font.category}</span>
-                        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink-muted">{getFontPolicyLabel(font.fontId)}</span>
+                        <span className="rounded-full border border-border px-2 py-0.5 text-xs uppercase tracking-wide text-ink-muted">{font.category}</span>
+                        <span className="rounded-full border border-border px-2 py-0.5 text-xs uppercase tracking-wide text-ink-muted">{getFontPolicyLabel(font.fontId)}</span>
                       </div>
                       <p className="mt-2 truncate text-lg leading-tight" style={{ fontFamily: font.previewFontFamily }}>
                         {safePreviewText}

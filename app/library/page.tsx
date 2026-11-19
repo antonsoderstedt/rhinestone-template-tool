@@ -229,7 +229,7 @@ export default function LibraryPage() {
           )}
           aside={(
             <WorkspaceSurface className="p-5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace behavior</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace behavior</div>
               <p className="mt-3 text-sm leading-7 text-ink-secondary">
                 Vector files stay easy to route into Rhinestone. Raster files stay visible for HTV tracing and silhouette cleanup.
               </p>
@@ -273,21 +273,21 @@ export default function LibraryPage() {
                 className={workspaceInputClassName}
               />
             </label>
-            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName}>
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName} aria-label="Filter by kind">
               <option value="all">All kinds</option>
               <option value="svg">SVG only</option>
               <option value="image">Image only</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName}>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label="Filter by status">
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All statuses</option>
             </select>
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName}>
+            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName} aria-label="Filter by tag">
               <option value="all">All tags</option>
               {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
             </select>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName} aria-label="Sort assets">
               <option value="recent">Recently updated</option>
               <option value="name">Name</option>
               <option value="favorites">Favorites first</option>
@@ -320,7 +320,7 @@ export default function LibraryPage() {
                 <input
                   value={asset.name}
                   onChange={(event) => updateAsset(asset.assetId, (current) => ({ ...current, name: event.target.value, updatedAt: new Date().toISOString() }))}
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-lg font-semibold text-ink outline-none focus:border-accent-300"
+                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-lg font-semibold text-ink focus:border-accent-300"
                 />
 
                 <label className="block space-y-2 text-sm text-ink-secondary">
@@ -332,7 +332,7 @@ export default function LibraryPage() {
                       tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean),
                       updatedAt: new Date().toISOString(),
                     }))}
-                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-accent-300"
                     placeholder="competition, bride, mascot, chrome"
                   />
                 </label>

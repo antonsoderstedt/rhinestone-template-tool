@@ -64,9 +64,6 @@ export default function HtvGarmentPreviewPanel({ open, state, showAllPlacementOv
   return (
     <Modal open={open} onClose={onClose} titleId="htv-garment-preview-title" overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="htv-garment-preview-title"
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">

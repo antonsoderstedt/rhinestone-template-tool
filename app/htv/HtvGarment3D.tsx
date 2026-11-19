@@ -626,7 +626,7 @@ export default function HtvGarment3D({ state, fallback }: { state: HtvState; fal
       </Preview3dErrorBoundary>
       <FrontDesignRasterizer state={state} canvas={textureCanvas} onDraw={markDirty} />
       <LoadingBadge />
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/40 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/40 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">
         Drag to rotate · scroll to zoom
       </div>
     </div>

@@ -52,6 +52,15 @@ import ExportDialog from '../components/ExportDialog';
 import PromptDialog from '../components/PromptDialog';
 import { readSvgSizeMm } from '../components/exportDialogHelpers';
 import EditorToast from './EditorToast';
+import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import {
+  RHINESTONE_NUDGE_SHIFT_STEP_MM,
+  RHINESTONE_NUDGE_STEP_MM,
+  isKeyHandlingWidget,
+  isModalOpen,
+  nudgeCenters,
+  resolveStudioShortcut,
+} from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
 import { getExportFilename, getExportGate, summarizeExportStatus } from '../components/summarizeExportStatus';
@@ -1474,6 +1483,72 @@ export default function EditorShell() {
     window.location.href = '/setup';
   }, []);
 
+  // ─── Keyboard shortcuts (tools, view, save/export, nudge) ──────────────────
+  // Undo/redo, copy/paste, delete, select-all, duplicate, Esc and Space-pan live in EditorCanvas.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isKeyHandlingWidget(event.target) || isModalOpen()) return;
+      const shortcut = resolveStudioShortcut(event, {
+        tools: true,
+        nudgeStepMm: RHINESTONE_NUDGE_STEP_MM,
+        nudgeShiftStepMm: RHINESTONE_NUDGE_SHIFT_STEP_MM,
+      });
+      if (!shortcut) return;
+
+      switch (shortcut.type) {
+        case 'tool':
+          event.preventDefault();
+          dispatch({ type: 'SET_ACTIVE_TOOL', tool: shortcut.tool });
+          return;
+        case 'fit':
+          event.preventDefault();
+          requestCanvasFit();
+          return;
+        case 'zoom-in':
+        case 'zoom-out':
+        case 'zoom-reset': {
+          event.preventDefault();
+          const zoom = shortcut.type === 'zoom-reset'
+            ? 1
+            : shortcut.type === 'zoom-in'
+              ? Math.min(state.canvas.zoom * 1.2, 5)
+              : Math.max(state.canvas.zoom / 1.2, 0.1);
+          const view = shortcut.type === 'zoom-reset'
+            ? { zoom, panX: 0, panY: 0 }
+            : { zoom, panX: state.canvas.panX, panY: state.canvas.panY };
+          dispatch({ type: 'UPDATE_CANVAS', updates: view });
+          persistManualCanvasView(view);
+          return;
+        }
+        case 'export':
+          event.preventDefault();
+          handleExport();
+          return;
+        case 'save':
+          event.preventDefault();
+          void handleSaveToLibrary();
+          return;
+        case 'nudge': {
+          const { isEditable, stones } = state.editableTemplate;
+          if (!isEditable || state.selectedStoneIds.size === 0) return;
+          event.preventDefault();
+          const selected = stones
+            .filter((stone) => state.selectedStoneIds.has(stone.id))
+            .map((stone) => ({ id: stone.id, x: stone.center.x, y: stone.center.y }));
+          dispatch({ type: 'MOVE_STONES', moves: nudgeCenters(selected, shortcut.dx, shortcut.dy) });
+          return;
+        }
+        case 'help':
+          return; // handled by <KeyboardShortcutsHost>
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    state.canvas.zoom, state.canvas.panX, state.canvas.panY, state.editableTemplate, state.selectedStoneIds,
+    requestCanvasFit, persistManualCanvasView, handleExport, handleSaveToLibrary,
+  ]);
+
   // ─── Canvas Click Handler ──────────────────────────────────────────────────
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -1497,6 +1572,7 @@ export default function EditorShell() {
         className="hidden"
       />
 
+      <KeyboardShortcutsHost studio="rhinestone" />
       <EditorTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -1528,7 +1604,7 @@ export default function EditorShell() {
       />
 
       {autosaveDecision === 'restored' && autosaveEntry && (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
+        <div role="status" className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
           <span>Restored your last session · {autosaveEntry.name}</span>
           <button
             type="button"
@@ -1637,7 +1713,8 @@ export default function EditorShell() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
-        <main className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+        <main id="main-content" tabIndex={-1} aria-label="Canvas" className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+          <h1 className="sr-only">Rhinestone Studio</h1>
           <GettingStartedGuide />
           <CanvasActionStrip
             activeTool={state.activeTool}
@@ -1683,7 +1760,7 @@ export default function EditorShell() {
 
 function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_EDITOR_STATE.activeTool; dispatch: React.Dispatch<EditorAction> }) {
   return (
-    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-2 lg:order-none lg:h-full lg:w-[52px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
+    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-2 lg:order-none lg:h-full lg:w-[68px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
       {EDITOR_TOOLS.map((tool) => {
         const Icon = tool.icon;
         const active = activeTool === tool.id;
@@ -1693,7 +1770,8 @@ function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_E
             onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
             title={tool.description}
             aria-label={tool.label}
-            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-[10px] transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+            aria-pressed={active}
+            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-xs transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
             <Icon className="h-4 w-4" />
             <span className="mt-1 truncate">{tool.label}</span>
@@ -1729,21 +1807,25 @@ function StudioContextPanel({
   const tab = manualTab ?? autoTab;
 
   return (
-    <div className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
+    <aside aria-label="Design and inspector" className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
       {/* Tabs */}
-      <div className="flex shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)]">
+      <div role="tablist" aria-label="Panel" className="flex shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)]">
         {(['source', 'inspector'] as const).map((t) => (
           <button
             key={t}
+            id={`studio-tab-${t}`}
+            role="tab"
+            aria-selected={tab === t}
+            aria-controls="studio-panel"
             onClick={() => setManualTab(t === autoTab ? null : t)}
-            className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+            className={`flex-1 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
             {t === 'source' ? 'Design' : 'Inspect'}
           </button>
         ))}
       </div>
       {/* Panel content */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div id="studio-panel" role="tabpanel" aria-labelledby={`studio-tab-${tab}`} className="min-h-0 flex-1 overflow-hidden">
         <EditorPropertiesPanel
           state={state}
           dispatch={dispatch}
@@ -1752,7 +1834,7 @@ function StudioContextPanel({
           exportReadiness={tab === 'inspector' ? exportReadiness : null}
         />
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -1779,11 +1861,11 @@ function CanvasActionStrip({
 
   return (
     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5">
-      <p className="min-w-0 truncate text-[11px] text-[var(--studio-ink-muted)]">{hint}</p>
+      <p className="min-w-0 truncate text-xs text-[var(--studio-ink-muted)]">{hint}</p>
       {primaryAction && (
         <button
           onClick={primaryAction.onClick}
-          className="shrink-0 rounded-md border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300 transition hover:bg-violet-500/25"
+          className="shrink-0 rounded-md border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-300 transition hover:bg-violet-500/25"
         >
           {primaryAction.label}
         </button>

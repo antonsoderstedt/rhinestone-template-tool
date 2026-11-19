@@ -415,7 +415,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
                   </span>
                 )}
                 {invalid && (
-                  <span className="text-xs text-danger-500">Enter a value &gt; 0</span>
+                  <span className="text-xs text-danger-700">Enter a value &gt; 0</span>
                 )}
               </div>
             );
@@ -427,7 +427,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-[10px]">
+            <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-xs">
               <th className="text-left px-3 py-2">Size</th>
               <th className="text-right px-3 py-2">Stone diameter</th>
               <th className="text-right px-3 py-2">Recommended hole diameter</th>
@@ -452,7 +452,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
                   <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
                   <td className="px-3 py-2 text-right text-ink-muted">{rec.toFixed(2)} mm</td>
                   <td className="px-3 py-2 text-right font-medium text-ink">
-                    {invalid ? <span className="text-danger-500">—</span> : `${num.toFixed(2)} mm`}
+                    {invalid ? <span className="text-danger-700">—</span> : `${num.toFixed(2)} mm`}
                   </td>
                   <td className={`px-3 py-2 text-right font-mono ${
                     diff === null ? 'text-ink-secondary' :

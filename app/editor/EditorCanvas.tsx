@@ -17,6 +17,7 @@ import {
 } from './canvasCoordinates';
 import { findNearestValidStonePosition, wouldCollide } from './collisionDetection';
 import { isIgnoredKeyboardTarget } from './editorDomGuards';
+import { isActivatableControl } from '../lib/studioShortcuts';
 import { findSnapCandidates, type SnapGuideLine } from './alignmentGuides';
 import {
   applyBoxSelection,
@@ -1108,7 +1109,8 @@ export default function EditorCanvas({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ' && !spacePressed) {
-        if (!isIgnoredKeyboardTarget(e.target)) {
+        // Space also activates a focused button/link/summary; never swallow it there.
+        if (!isIgnoredKeyboardTarget(e.target) && !isActivatableControl(e.target)) {
           e.preventDefault();
           setSpacePressed(true);
         }
@@ -1134,7 +1136,7 @@ export default function EditorCanvas({
   return (
     <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
         </div>
@@ -1188,7 +1190,7 @@ export default function EditorCanvas({
                   >
                     <div className={`w-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-[var(--studio-ink-subtle)]">
+                      <span className="absolute left-1 top-1 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -1207,7 +1209,7 @@ export default function EditorCanvas({
                   >
                     <div className={`h-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-[var(--studio-ink-subtle)]">
+                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
                         {Math.round(tick)}
                       </span>
                     )}

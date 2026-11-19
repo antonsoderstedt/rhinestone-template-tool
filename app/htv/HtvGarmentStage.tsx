@@ -305,7 +305,7 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
   return (
     <div className="relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden bg-[var(--studio-surface)] p-4 lg:p-8">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Garment canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Garment canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {activePlacementLayers.length > 0
             ? `${activePlacementLayers.length} layer${activePlacementLayers.length === 1 ? '' : 's'} on ${garment.type} · ${garment.placementZone}`
@@ -390,7 +390,7 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
             </svg>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--studio-ink-subtle)]">
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--studio-ink-subtle)]">
           {garment.activePlacementZones.map((zone) => (
             <span key={zone} className={`rounded-full border px-2.5 py-1 ${zone === garment.placementZone ? 'border-violet-400/60 bg-violet-500/15 text-violet-100' : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]'}`}>
               {zone}

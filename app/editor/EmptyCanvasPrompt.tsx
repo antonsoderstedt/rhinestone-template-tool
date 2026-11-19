@@ -18,7 +18,7 @@ export default function EmptyCanvasPrompt({ onText }: { onText: (text: string) =
           className="mt-4 w-full rounded-xl border border-[var(--studio-border-strong)] bg-[var(--studio-well)] px-4 py-3 text-center text-xl tracking-wide text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
         />
         <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Or try</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Or try</span>
           {TEXT_EXAMPLES.map((example) => (
             <button
               key={example.label}

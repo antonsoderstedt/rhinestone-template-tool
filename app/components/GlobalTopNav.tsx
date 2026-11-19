@@ -184,19 +184,19 @@ export default function GlobalTopNav() {
             : 'Workspace ready';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl">
+    <header data-focus-surface="dark" className="sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
             RT
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-medium tracking-[0.18em] text-zinc-500 uppercase">Rhinestone OS</div>
+            <div className="text-xs font-medium tracking-[0.18em] text-zinc-400 uppercase">Rhinestone OS</div>
             <div className="truncate text-sm font-medium text-zinc-200">Studios, assets, fonts, production workflow</div>
           </div>
         </Link>
 
-        <nav className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
+        <nav aria-label="Main" className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
@@ -204,6 +204,7 @@ export default function GlobalTopNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   active
                     ? 'bg-violet-500/35 text-white shadow-sm'
@@ -218,11 +219,11 @@ export default function GlobalTopNav() {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400">
+          <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
             {modeMeta.studioLabel}
           </span>
 
-          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${modeMeta.statusClassName}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${modeMeta.statusClassName}`}>
             <StatusIcon className="h-3.5 w-3.5" />
             {modeMeta.status}
           </span>
@@ -242,7 +243,7 @@ export default function GlobalTopNav() {
         </div>
       </div>
 
-      <div className={`${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : 'block'} border-t border-white/10 bg-[#121215] px-3 py-2 text-[11px] text-zinc-300 md:px-5`}>
+      <div className={`${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : 'block'} border-t border-white/10 bg-[#121215] px-3 py-2 text-xs text-zinc-300 md:px-5`}>
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-zinc-300">
             <span className="inline-flex h-2 w-2 rounded-full bg-violet-400" />
@@ -257,7 +258,7 @@ export default function GlobalTopNav() {
       </div>
 
       <div className={`overflow-x-auto border-t border-white/10 xl:hidden ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : ''}`}>
-        <nav className="mx-auto flex w-max min-w-full gap-1 px-2 py-1.5 sm:px-3">
+        <nav aria-label="Main" className="mx-auto flex w-max min-w-full gap-1 px-2 py-1.5 sm:px-3">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
@@ -265,6 +266,7 @@ export default function GlobalTopNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition sm:gap-2 sm:px-3 sm:text-sm ${
                   active
                     ? 'bg-violet-500/35 text-white'

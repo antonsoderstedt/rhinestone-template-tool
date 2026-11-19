@@ -76,7 +76,7 @@ function ExportDialogContent({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           aria-label="Close export dialog"
         >
           <X className="h-4 w-4" />
@@ -89,14 +89,14 @@ function ExportDialogContent({
             className="flex h-56 items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-white p-3"
             data-testid="export-preview"
           >
-            {loading && <span className="text-sm text-zinc-500">Preparing preview…</span>}
+            {loading && <span className="text-sm text-zinc-400">Preparing preview…</span>}
             {!loading && error && <span className="text-center text-sm text-red-600">{error}</span>}
             {!loading && !error && previewSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- inline SVG data URL preview of the exact export
               <img src={previewSrc} alt="Preview of the exported SVG" className="max-h-full max-w-full object-contain" />
             )}
           </div>
-          <p className="text-[11px] leading-5 text-zinc-500">
+          <p className="text-xs leading-5 text-zinc-400">
             Preview of the exact file you will download. It is a vector SVG sized in millimetres.
           </p>
         </div>
@@ -104,16 +104,16 @@ function ExportDialogContent({
         <div className="flex flex-col gap-4 text-sm text-zinc-300">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
-              <dt className="text-[10px] uppercase tracking-wide text-zinc-500">Width</dt>
+              <dt className="text-xs uppercase tracking-wide text-zinc-400">Width</dt>
               <dd className="text-sm font-semibold text-white">{widthMm !== null ? `${widthMm.toFixed(1)} mm` : '—'}{widthMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(widthMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             <div>
-              <dt className="text-[10px] uppercase tracking-wide text-zinc-500">Height</dt>
+              <dt className="text-xs uppercase tracking-wide text-zinc-400">Height</dt>
               <dd className="text-sm font-semibold text-white">{heightMm !== null ? `${heightMm.toFixed(1)} mm` : '—'}{heightMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(heightMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             {summaryRows.map((row) => (
               <div key={row.label}>
-                <dt className="text-[10px] uppercase tracking-wide text-zinc-500">{row.label}</dt>
+                <dt className="text-xs uppercase tracking-wide text-zinc-400">{row.label}</dt>
                 <dd className="text-sm font-semibold text-white">{row.value}</dd>
               </div>
             ))}
@@ -183,7 +183,7 @@ function ExportDialogContent({
       </div>
 
       <div className="flex flex-col gap-3 border-t border-zinc-800 px-5 py-4 sm:flex-row sm:items-end">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-400">
           File name
           <input
             type="text"
@@ -192,7 +192,7 @@ function ExportDialogContent({
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm normal-case tracking-normal text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             aria-describedby="export-dialog-filename-hint"
           />
-          <span id="export-dialog-filename-hint" className="text-[10px] normal-case tracking-normal text-zinc-500">
+          <span id="export-dialog-filename-hint" className="text-xs normal-case tracking-normal text-zinc-400">
             Saved as {downloadFilename}
           </span>
         </label>

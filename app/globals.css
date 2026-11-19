@@ -102,6 +102,29 @@ body {
   color: var(--color-ink);
 }
 
+/*
+ * Keyboard focus ring. One token, used by every control that does not draw its
+ * own ring: a 2px outline offset by 2px, which stays visible on light pages and
+ * on the dark studio and top bar. It lives in the base layer, so a component's
+ * own `focus-visible:ring-*` / `focus-visible:outline-*` utilities still win;
+ * `outline-none` without a replacement is a bug (see tests/focusStyleGuard.test.ts).
+ */
+:root {
+  --focus-ring: #6d28d9; /* violet-700: 7.1:1 on white, 6.4:1 on the sand surface */
+}
+
+[data-theme='dark'],
+[data-focus-surface='dark'] {
+  --focus-ring: #c4b5fd; /* violet-300: 9:1 on the dark surfaces */
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
 ::selection {
   background: var(--color-accent-100);
   color: var(--color-accent-700);

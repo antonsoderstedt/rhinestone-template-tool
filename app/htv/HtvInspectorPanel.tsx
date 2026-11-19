@@ -54,7 +54,7 @@ function PanelSection({ title, children, defaultOpen = true }: { title: string; 
   return (
     <details open={defaultOpen} className="group rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 marker:hidden [&::-webkit-details-marker]:hidden">
-        <span className="text-sm font-semibold text-[var(--studio-ink)]">{title}</span>
+        <h2 className="text-sm font-semibold text-[var(--studio-ink)]">{title}</h2>
         <span className="text-xs font-semibold text-[var(--studio-ink-subtle)] transition group-open:rotate-180">⌄</span>
       </summary>
       <div className="space-y-3 border-t border-[var(--studio-border)] px-3 py-3">{children}</div>
@@ -69,7 +69,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
   const otherPlacementLayerCount = state.layers.filter((l) => l.placementId !== state.garment.placementZone).length;
 
   return (
-    <aside className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
+    <aside aria-label="Inspector" className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
       <PanelSection title="Inspector">
         {selectedLayers.length === 0 ? (
           <div className="rounded-md border border-dashed border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-4 text-xs leading-6 text-[var(--studio-ink-subtle)]">
@@ -137,7 +137,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-ink-secondary">HTV color</span>
                 {singleLayer && !hasVendorMatch(getHtvColor(singleLayer.colorId)) && (
-                  <span className="text-[10px] text-ink-muted" title="This swatch isn't mapped to a real vendor product yet — hex only.">
+                  <span className="text-xs text-ink-muted" title="This swatch isn't mapped to a real vendor product yet — hex only.">
                     generic swatch
                   </span>
                 )}
@@ -208,13 +208,13 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
           value={layer.text}
           onChange={(e) => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { text: e.target.value } })}
           rows={2}
-          className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
         />
       </label>
       <div className="space-y-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-2.5">
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Font</span>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{selectedFont.category}</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{selectedFont.category}</span>
         </div>
         <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2">
           <div className="text-xs font-medium text-[var(--studio-ink)]">{selectedFont.displayName}</div>
@@ -234,7 +234,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium">{font.displayName}</span>
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--studio-ink-subtle)]">{font.category}</span>
+                  <span className="text-xs uppercase tracking-[0.12em] text-[var(--studio-ink-subtle)]">{font.category}</span>
                 </div>
                 <div className="mt-1 truncate text-base leading-tight" style={{ fontFamily: font.previewFontFamily }}>
                   {previewText}
@@ -261,7 +261,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
                   align: preset.align,
                 },
               })}
-              className="rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-left text-[11px] font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)]"
+              className="rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-left text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)]"
             >
               {preset.displayName}
             </button>
@@ -350,7 +350,7 @@ function ContourControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type:
   return (
     <div className="space-y-1.5 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] p-3">
       <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Contour</span>
-      <p className="text-[11px] text-[var(--studio-ink-subtle)]">Hide sub-paths you don&apos;t want cut, e.g. stray traced lines.</p>
+      <p className="text-xs text-[var(--studio-ink-subtle)]">Hide sub-paths you don&apos;t want cut, e.g. stray traced lines.</p>
       <div className="space-y-1">
         {layer.polylines.map((pl, i) => {
           const hidden = layer.excludedContours.includes(i);
@@ -362,7 +362,7 @@ function ContourControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type:
             >
               {hidden ? <EyeOff className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
               <span>Sub-path {i + 1}</span>
-              <span className="ml-auto text-[10px] text-[var(--studio-ink-subtle)]">{pl.points.length} pts</span>
+              <span className="ml-auto text-xs text-[var(--studio-ink-subtle)]">{pl.points.length} pts</span>
             </button>
           );
         })}
@@ -495,7 +495,7 @@ function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatc
           <button
             onClick={group}
             disabled={!canGroup}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-[11px] font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Boxes className="h-3.5 w-3.5" />
             Group
@@ -503,7 +503,7 @@ function ArrangeControls({ selected, dispatch }: { selected: HtvLayer[]; dispatc
           <button
             onClick={ungroup}
             disabled={!canUngroup}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-[11px] font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:border-[var(--studio-border-strong)] hover:text-[var(--studio-ink)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Ungroup className="h-3.5 w-3.5" />
             Ungroup

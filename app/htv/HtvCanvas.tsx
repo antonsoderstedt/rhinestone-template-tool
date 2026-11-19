@@ -255,7 +255,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   return (
     <div ref={containerRef} className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {placementLayers.length > 0 ? `${placementLayers.length} layer${placementLayers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>

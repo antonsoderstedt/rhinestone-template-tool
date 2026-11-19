@@ -250,12 +250,12 @@ export default function DesignsPage() {
           tone="neutral"
           aside={(
             <WorkspaceSurface className="p-5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Recovery cue</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Recovery cue</div>
               <p className="mt-3 text-sm leading-7 text-ink-secondary">
                 This page is optimized for returning to production work fast, not for browsing a gallery without context.
               </p>
               <div className="mt-4 rounded-[1.25rem] border border-border bg-surface px-4 py-3">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration gate</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration gate</div>
                 <div className="mt-2 text-base font-semibold text-ink">{calibrationGate.activeProfileName ?? 'No active profile'}</div>
                 <p className="mt-2 text-sm leading-6 text-ink-secondary">
                   {calibrationGate.activeProfileApproved
@@ -293,12 +293,12 @@ export default function DesignsPage() {
                 className={workspaceInputClassName}
               />
             </label>
-            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className={workspaceSelectClassName}>
+            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className={workspaceSelectClassName} aria-label="Filter by studio">
               <option value="all">All studios</option>
               <option value="rhinestone">Rhinestone</option>
               <option value="htv">HTV</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName}>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label="Filter by status">
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All statuses</option>

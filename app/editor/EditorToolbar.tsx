@@ -42,6 +42,7 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
           key={tool.id}
           onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
           aria-label={tool.label}
+          aria-pressed={activeTool === tool.id}
           className={`group flex ${isHorizontal ? 'h-11 min-w-[72px] flex-col px-3' : 'h-14 w-full'} items-center justify-center rounded-lg text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${
             activeTool === tool.id
               ? 'bg-purple-600 text-white shadow-md'
@@ -50,7 +51,7 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
           title={[tool.tooltip, getToolShortcutLabel(tool.id)].filter(Boolean).join(' • ')}
         >
           <tool.icon className="h-4 w-4" />
-          <span className="mt-1 text-[11px]">{tool.label}</span>
+          <span className="mt-1 text-xs">{tool.label}</span>
         </button>
       ))}
 

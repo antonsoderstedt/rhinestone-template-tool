@@ -1,9 +1,9 @@
 // Control styles follow the studio theme (--studio-* tokens in globals.css), so the
 // same controls read correctly in both the dark and the light studio.
-export const editorFieldLabelClassName = 'text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]';
+export const editorFieldLabelClassName = 'text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]';
 
 const editorFieldBase =
-  'w-full rounded-md border border-[var(--studio-border-strong)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink)] outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30';
+  'w-full rounded-md border border-[var(--studio-border-strong)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink)] outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400';
 
 export const editorInputClassName =
   `${editorFieldBase} placeholder:text-[var(--studio-ink-subtle)] disabled:cursor-not-allowed disabled:bg-[var(--studio-surface-2)] disabled:text-[var(--studio-ink-subtle)]`;

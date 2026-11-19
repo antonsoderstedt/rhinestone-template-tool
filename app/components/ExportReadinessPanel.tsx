@@ -44,31 +44,31 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
 
       {/* ── Summary stats ─────────────────────────────────────────────── */}
       <div className="bg-surface border-b border-border px-4 py-3">
-        <div className="mb-3 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">
           <span>Export confidence</span>
           <span className={confidenceTextClass}>{confidence.label}</span>
         </div>
 
-        <div className="rounded-md border border-border bg-surface-raised p-2 text-[11px] leading-5 text-ink-secondary">
+        <div className="rounded-md border border-border bg-surface-raised p-2 text-xs leading-5 text-ink-secondary">
           <div className="font-semibold uppercase tracking-[0.12em] text-ink-muted">Next action</div>
           <p className="mt-1 text-sm leading-6 text-ink">{nextAction}</p>
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Stones</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Stones</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.stoneCount}</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Width</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Width</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.widthMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Height</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Height</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.heightMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Cutter</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Cutter</dt>
             <dd className="font-semibold text-ink text-sm truncate">{result.summary.cutter}</dd>
           </div>
         </dl>
@@ -109,7 +109,7 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
               <ul className="space-y-1">
                 {warnings.map((issue, i) => (
                   <li key={i} className="flex gap-2 text-xs text-warning-600">
-                    <span className="shrink-0 font-mono text-warning-500">[{issue.code}]</span>
+                    <span className="shrink-0 font-mono text-warning-700">[{issue.code}]</span>
                     <span>{issue.message}</span>
                   </li>
                 ))}

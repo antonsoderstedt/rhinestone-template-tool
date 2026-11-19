@@ -44,25 +44,25 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
       : 'border-amber-400/30 bg-amber-500/15 text-amber-300';
 
   return (
-    <section className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)]">
+    <section aria-label="Studio status" className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)]">
       <div className="mx-auto max-w-[1600px] px-4 py-3 md:px-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-200">
+            <span className="inline-flex items-center rounded-full border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">
               {mode}
             </span>
-            <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
+            <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
               <Icon className={`h-3.5 w-3.5 ${iconClassName}`} />
               {status}
             </span>
             {calibrationState && (
-              <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${calibrationToneClassName}`}>
+              <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${calibrationToneClassName}`}>
                 {calibrationState.label}
               </span>
             )}
           </div>
 
-          <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${labelClassName}`}>
+          <div className={`text-xs font-semibold uppercase tracking-[0.2em] ${labelClassName}`}>
             {project}
           </div>
         </div>

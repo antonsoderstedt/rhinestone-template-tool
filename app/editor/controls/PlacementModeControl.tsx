@@ -83,7 +83,7 @@ export default function PlacementModeControl({
               title={option.help}
             >
               <div className="text-sm font-medium">{option.label}</div>
-              <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+              <p className="mt-1 text-xs text-ink-muted">{option.help}</p>
             </button>
           ))}
         </div>
@@ -106,7 +106,7 @@ export default function PlacementModeControl({
                 title={option.help}
               >
                 <div className="text-sm font-medium">{option.label}</div>
-                <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+                <p className="mt-1 text-xs text-ink-muted">{option.help}</p>
               </button>
             ))}
           </div>

@@ -34,6 +34,8 @@ import { summarizeHtvStatus } from './htvStatus';
 import { findHtvSizeIssues, summarizeHtvSize } from './htvSizeCheck';
 import { getPlacementZoneSizeMm } from './htvPlacementZones';
 import { useMeasuredTextSizes } from './useMeasuredTextSizes';
+import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import { isKeyHandlingWidget, isModalOpen, resolveStudioShortcut } from '../lib/studioShortcuts';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import {
   DEFAULT_OUTLINE_FONT_ID,
@@ -398,9 +400,12 @@ export default function HtvShell() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (isKeyHandlingWidget(e.target) || isModalOpen()) return;
 
+      if (e.key === 'Escape' && state.selectedLayerIds.size > 0) {
+        e.preventDefault();
+        dispatch({ type: 'SET_SELECTED_LAYERS', ids: [] });
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedLayerIds.size > 0) {
         e.preventDefault();
         dispatch({ type: 'DELETE_LAYERS', ids: [...state.selectedLayerIds] });
@@ -431,10 +436,30 @@ export default function HtvShell() {
           .map((l) => ({ id: l.id, updates: { x: l.x + dx, y: l.y + dy } }));
         dispatch({ type: 'BATCH_UPDATE_LAYERS', updates });
       }
+
+      // Save, export, view (fit / zoom). `?` is handled by <KeyboardShortcutsHost>.
+      const shortcut = resolveStudioShortcut(e, { tools: false, nudgeStepMm: 1, nudgeShiftStepMm: 10 });
+      if (!shortcut) return;
+      if (shortcut.type === 'save') {
+        e.preventDefault();
+        handleSaveDesign();
+      } else if (shortcut.type === 'export') {
+        e.preventDefault();
+        handleExport();
+      } else if (shortcut.type === 'fit' || shortcut.type === 'zoom-reset') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+      } else if (shortcut.type === 'zoom-in') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
+      } else if (shortcut.type === 'zoom-out') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.2) } });
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.selectedLayerIds, state.layers]);
+  }, [state.selectedLayerIds, state.layers, state.canvas.zoom, handleSaveDesign, handleExport]);
 
   const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
   const htvStatus = summarizeHtvStatus(state.layers, state.garment.placementZone, sizeSummary);
@@ -514,6 +539,7 @@ export default function HtvShell() {
 
   return (
     <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">
+      <KeyboardShortcutsHost studio="htv" />
       <HtvTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -564,7 +590,8 @@ export default function HtvShell() {
           />
         </div>
 
-        <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
+        <main id="main-content" tabIndex={-1} aria-label="Design surface" className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
+          <h1 className="sr-only">HTV Studio</h1>
           {designSurface === 'garment' ? (
             <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
           ) : designSurface === '3d' ? (
@@ -575,7 +602,7 @@ export default function HtvShell() {
           ) : (
             <HtvCanvas state={state} dispatch={dispatch} />
           )}
-        </div>
+        </main>
 
         <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
           <HtvInspectorPanel
@@ -651,6 +678,8 @@ export default function HtvShell() {
 
       {toast && (
         <div
+          role="status"
+          aria-live="polite"
           className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
             toast.tone === 'success' ? 'bg-success-600 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-600 text-ink-inverse' : 'bg-danger-600 text-ink-inverse'
           }`}

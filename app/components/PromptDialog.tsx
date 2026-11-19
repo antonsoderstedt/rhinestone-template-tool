@@ -78,14 +78,14 @@ function PromptDialogContent({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           aria-label="Close dialog"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <label htmlFor={inputId} className="mt-4 block text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+      <label htmlFor={inputId} className="mt-4 block text-xs font-medium uppercase tracking-wide text-zinc-400">
         {label}
       </label>
       <input

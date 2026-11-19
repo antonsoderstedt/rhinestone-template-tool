@@ -92,7 +92,7 @@ export default function CalibrationSheetGenerator() {
               <th className="px-3 py-2 font-medium">Stone size</th>
               <th className="px-3 py-2 font-medium">Test values (mm)</th>
               <th className="px-3 py-2 font-medium">Standard</th>
-              <th className="px-3 py-2 font-medium" />
+              <th className="px-3 py-2 font-medium"><span className="sr-only">Status</span></th>
             </tr>
           </thead>
           <tbody>

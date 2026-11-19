@@ -69,7 +69,7 @@ export default function EditorDialog({
           </div>
           <button
             onClick={onCancel}
-            className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             aria-label="Close dialog"
             title="Close dialog"
           >

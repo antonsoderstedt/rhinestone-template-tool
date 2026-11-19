@@ -29,39 +29,39 @@ export default function MachineCutSettingsCard({
 
       <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Material</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Material</dt>
           <dd className="font-semibold text-ink">{recommendation.material}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Blade</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Blade</dt>
           <dd className="font-semibold text-ink">{recommendation.blade}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Custom pressure</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Custom pressure</dt>
           <dd className="font-semibold text-ink">{recommendation.customPressure}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Pressure</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Pressure</dt>
           <dd className="font-semibold text-ink">{recommendation.pressureSetting}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Passes</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Passes</dt>
           <dd className="font-semibold text-ink">{recommendation.passes}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Multi-cut</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Multi-cut</dt>
           <dd className="font-semibold text-ink">{recommendation.multiCut ? 'On' : 'Off'}</dd>
         </div>
         <div>
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Mirror</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Mirror</dt>
           <dd className="font-semibold text-ink">{recommendation.mirror ? 'Yes' : 'No'}</dd>
         </div>
         <div className="col-span-2 sm:col-span-3">
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Liner</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Liner</dt>
           <dd className="text-ink">{recommendation.linerHandling}</dd>
         </div>
         <div className="col-span-2 sm:col-span-3">
-          <dt className="text-accent-700/70 uppercase tracking-wide text-[10px]">Mat</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">Mat</dt>
           <dd className="text-ink">{recommendation.mat}</dd>
         </div>
       </dl>

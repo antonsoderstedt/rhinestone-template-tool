@@ -61,9 +61,6 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
   return (
     <Modal open={open} onClose={onClose} titleId="garment-preview-title" overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="garment-preview-title"
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -124,7 +121,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
                   />
                 ))}
               </div>
-              <p className="text-[11px] text-ink-muted">{color.name}</p>
+              <p className="text-xs text-ink-muted">{color.name}</p>
             </div>
 
             <div className="space-y-2">
@@ -145,7 +142,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Print area: {printAreaMm.widthMm} × {printAreaMm.heightMm} mm
               </p>
             </div>

@@ -68,7 +68,7 @@ export default function EditorStatusBar({
         : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]';
 
   return (
-    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-[11px] text-[var(--studio-ink-muted)]">
+    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-xs text-[var(--studio-ink-muted)]">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-medium">{stoneCount} stone{stoneCount !== 1 && 's'}</span>
         <span className="font-mono">{physicalSize}</span>

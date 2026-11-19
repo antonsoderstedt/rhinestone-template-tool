@@ -61,10 +61,10 @@ export default function WorkspaceRecoveryPanel() {
     <div className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-muted">Recovery & status</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted">Recovery & status</div>
           <h3 className="mt-2 text-xl font-semibold text-ink">Current workflow snapshot</h3>
         </div>
-        <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${statusConfig.badge}`}>
+        <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusConfig.badge}`}>
           <StatusIcon className="h-3.5 w-3.5" />
           {summary.workflowStatus}
         </span>
@@ -72,13 +72,13 @@ export default function WorkspaceRecoveryPanel() {
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Saved work</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Saved work</div>
           <div className="mt-2 text-2xl font-semibold text-ink">{summary.totalSavedDesigns}</div>
           <div className="mt-1 text-xs text-ink-secondary">{summary.rhinestoneSavedCount} rhinestone · {summary.htvSavedCount} HTV</div>
         </div>
 
         <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration</div>
           <div className="mt-2 text-2xl font-semibold text-ink">{summary.approvedCalibrationCount}</div>
           <div className="mt-1 text-xs text-ink-secondary">
             {summary.activeCalibrationProfileName ? `Active: ${summary.activeCalibrationProfileName}` : 'No approved profile yet'}
@@ -86,7 +86,7 @@ export default function WorkspaceRecoveryPanel() {
         </div>
 
         <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Autosave</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Autosave</div>
           <div className="mt-2 text-2xl font-semibold text-ink">{summary.hasAutosave ? 'Ready' : 'None'}</div>
           <div className="mt-1 text-xs text-ink-secondary">{summary.hasAutosave ? 'Recent recovery is available' : 'No local emergency draft'}</div>
         </div>

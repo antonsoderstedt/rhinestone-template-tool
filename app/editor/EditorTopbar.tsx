@@ -5,12 +5,13 @@ import { ChevronDown, Download, FileDown, FolderOpen, LibraryBig, RotateCcw, Rot
 import { EditorAction } from './EditorState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
+import { KeyboardShortcutsButton } from '../components/KeyboardShortcuts';
 
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
-      <div className="px-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-[var(--studio-ink-subtle)]">{label}</div>
-      <div className="h-5 w-px bg-[var(--studio-hover-overlay)]" />
+    <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
+      <div className="hidden px-1.5 text-xs font-medium uppercase tracking-[0.16em] text-[var(--studio-ink-subtle)] 2xl:block">{label}</div>
+      <div className="hidden h-5 w-px bg-[var(--studio-hover-overlay)] 2xl:block" />
       <div className="flex flex-wrap items-center gap-1">{children}</div>
     </div>
   );
@@ -84,9 +85,9 @@ export default function EditorTopbar({
         ? { label: `Warnings (${exportWarningCount})`, className: 'border-amber-400/30 bg-amber-500/10 text-amber-200' }
         : { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' };
   return (
-    <header className="flex items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)] lg:h-[60px] lg:flex-nowrap lg:overflow-x-auto">
+    <section aria-label="Project actions" className="flex items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)] lg:min-h-[60px] lg:flex-wrap">
       <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
-        <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
+        <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-xs font-medium uppercase tracking-[0.14em] text-violet-200">
           Live editor
         </span>
         <input
@@ -94,7 +95,7 @@ export default function EditorTopbar({
           value={projectName}
           onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
           aria-label="Project name"
-          className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:border-violet-400/60 focus:bg-[var(--studio-surface)] focus:outline-none"
+          className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:bg-[var(--studio-surface)] focus-visible:ring-2 focus-visible:ring-violet-400"
           placeholder="Untitled Project"
         />
       </div>
@@ -111,7 +112,7 @@ export default function EditorTopbar({
           </button>
           <div className="relative">
             <details className="group">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none [&::-webkit-details-marker]:hidden">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus-visible:ring-2 focus-visible:ring-violet-400 [&::-webkit-details-marker]:hidden">
                 <FolderOpen className="h-4 w-4" />
                 Open
                 <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />
@@ -119,7 +120,7 @@ export default function EditorTopbar({
               <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
                 {recentDesigns.length > 0 && (
                   <>
-                    <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent designs</div>
+                    <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent designs</div>
                     {recentDesigns.map((design) => (
                       <button
                         key={design.id}
@@ -203,11 +204,12 @@ export default function EditorTopbar({
                 key={surface}
                 type="button"
                 disabled={surface === 'garment' && !canPreviewGarment}
+                aria-pressed={designSurface === surface}
                 onClick={() => {
                   if (surface === 'garment') onOpenGarmentPreview();
                   onToggleDesignSurface(surface);
                 }}
-                className={`rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-30 ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+                className={`rounded px-2.5 py-1 text-xs font-medium uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-30 ${designSurface === surface ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
                 title={surface === 'garment' && !canPreviewGarment ? 'Create or open a design before previewing' : undefined}
               >
                 {surface === 'canvas' ? 'Canvas' : <><Shirt className="inline h-3 w-3 mr-1" />Garment</>}
@@ -224,7 +226,7 @@ export default function EditorTopbar({
               <Download className="h-4 w-4" />
               Export
             </button>
-            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${exportStatus.className}`}>
+            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] ${exportStatus.className}`}>
               {exportStatus.label}
             </span>
           </div>
@@ -244,8 +246,9 @@ export default function EditorTopbar({
           <Settings2 className="h-4 w-4" />
           Setup
         </button>
+        <KeyboardShortcutsButton />
         <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
-    </header>
+    </section>
   );
 }

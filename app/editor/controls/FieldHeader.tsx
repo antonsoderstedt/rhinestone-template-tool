@@ -27,14 +27,14 @@ export default function FieldHeader({ label, help, htmlFor }: { label: string; h
             aria-expanded={open}
             aria-controls={helpId}
             aria-label={`What is ${label}?`}
-            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--studio-border-strong)] text-[10px] font-semibold leading-none text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--studio-border-strong)] text-xs font-semibold leading-none text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
             ?
           </button>
         )}
       </div>
       {help && open && (
-        <p id={helpId} role="note" className="mt-1 rounded-md bg-[var(--studio-hover-overlay-soft)] px-2 py-1.5 text-[11px] leading-5 text-[var(--studio-ink-secondary)]">
+        <p id={helpId} role="note" className="mt-1 rounded-md bg-[var(--studio-hover-overlay-soft)] px-2 py-1.5 text-xs leading-5 text-[var(--studio-ink-secondary)]">
           {help}
         </p>
       )}
