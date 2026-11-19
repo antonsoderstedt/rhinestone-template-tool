@@ -99,6 +99,15 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
    skipped, spec and ADR updated. Skeleton and Lloyd-style relaxation therefore use fixed iteration counts and seeded-free
    ordering (sort by position).
 
+## 3.5 Progress
+
+| Item | Status |
+|---|---|
+| J1 fixture corpus, J2 quality harness | **Done** (ADR 0020, `npm run quality`, regression test) |
+| J3 honest renderer, J4 canvas / panel polish, H5 error boundaries | **Done** |
+| J5 importer | **Done** (ADR 0020) |
+| J6 layers, J7 feasibility, J8–J11 generators, J12 panel | Next |
+
 ## 4. Phases
 
 Effort: S ≤ 1 day · M = days · L ≈ a week+. Order is the order to build; items inside a phase can run in parallel unless a

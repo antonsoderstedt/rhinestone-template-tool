@@ -26,6 +26,8 @@ export interface SvgSafetyResult {
   issues: string[];
 }
 
+import { importSvgArtwork } from './svgImport';
+
 export type SvgUploadSuggestedMode = 'outline' | 'outline-fill';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -163,6 +165,17 @@ function isClosedSvgElement(tagName: string, attrs: Record<string, string>): boo
 }
 
 export function suggestSvgUploadMode(svgString: string): SvgUploadSuggestedMode {
+  try {
+    // Read it the way the importer will: a visible fill on a shape that can be closed means a filled design.
+    const { shapes } = importSvgArtwork(svgString);
+    const filled = shapes.some((shape) => shape.fill !== null && shape.polylines.some((polyline) => polyline.closed || polyline.points.length >= 3));
+    return filled ? 'outline-fill' : 'outline';
+  } catch {
+    return suggestSvgUploadModeFromElements(svgString);
+  }
+}
+
+function suggestSvgUploadModeFromElements(svgString: string): SvgUploadSuggestedMode {
   const fillValues = collectClassPresentationValues(svgString, 'fill');
   const strokeValues = collectClassPresentationValues(svgString, 'stroke');
   const elements = extractSvgElements(stripSvgStyleElements(svgString));

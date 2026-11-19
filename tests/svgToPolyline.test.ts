@@ -125,9 +125,11 @@ describe('svgStringToPolylines — error cases', () => {
     expect(() => svgStringToPolylines(noShapesSvg)).toThrow(/no supported/i);
   });
 
-  it('arc A still throws in v2 with a clear message', () => {
-    const arcSvg = '<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>';
-    expect(() => svgStringToPolylines(arcSvg)).toThrow(/arc/i);
+  it('reads arc commands instead of refusing them', () => {
+    const polys = svgStringToPolylines('<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>');
+    const end = polys[0]!.points[polys[0]!.points.length - 1]!;
+    expect(end.x).toBeCloseTo(20, 3);
+    expect(end.y).toBeCloseTo(0, 3);
   });
 });
 
@@ -255,10 +257,11 @@ describe('svgStringToPolylines — Bezier curves', () => {
     expect(curve[0]!.points.length).toBeGreaterThan(straight[0]!.points.length);
   });
 
-  it('throws on arc A command (not supported in v2)', () => {
-    expect(() =>
-      svgStringToPolylines('<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>'),
-    ).toThrow(/arc/i);
+  it('an arc bulges the way the sweep flag says', () => {
+    const up = svgStringToPolylines('<svg><path d="M 0 0 A 10 10 0 0 1 20 0" /></svg>', { cleanup: false })[0]!;
+    const down = svgStringToPolylines('<svg><path d="M 0 0 A 10 10 0 0 0 20 0" /></svg>', { cleanup: false })[0]!;
+    expect(Math.min(...up.points.map((p) => p.y))).toBeCloseTo(-10, 1);
+    expect(Math.max(...down.points.map((p) => p.y))).toBeCloseTo(10, 1);
   });
 
   it('curve-based SVG → template → valid → exported SVG with real circles', () => {
@@ -327,8 +330,15 @@ describe('svgStringToPolylines — transforms', () => {
     expect(polys[0]!.points[1]!.x).toBeCloseTo(15, 3);
   });
 
-  it('malformed transform throws a clear error', () => {
-    const svg = '<svg><line x1="0" y1="0" x2="10" y2="0" transform="skewX(45)" /></svg>';
-    expect(() => svgStringToPolylines(svg)).toThrow();
+  it('skewX is applied', () => {
+    const svg = '<svg><line x1="0" y1="10" x2="0" y2="20" transform="skewX(45)" /></svg>';
+    const p = svgStringToPolylines(svg, { cleanup: false })[0]!;
+    expect(p.points[0]!.x).toBeCloseTo(10, 3);
+    expect(p.points[1]!.x).toBeCloseTo(20, 3);
+  });
+
+  it('an unknown transform function is skipped, not a crash', () => {
+    const svg = '<svg><line x1="0" y1="0" x2="10" y2="0" transform="wobble(45)" /></svg>';
+    expect(() => svgStringToPolylines(svg, { cleanup: false })).not.toThrow();
   });
 });

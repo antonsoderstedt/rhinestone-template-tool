@@ -31,10 +31,13 @@ describe('artwork quality does not regress', () => {
       if (now.notCuttable > before.notCuttable) regressions.push(`${label}: not cuttable ${before.notCuttable} -> ${now.notCuttable}`);
       if (now.strayStones > before.strayStones) regressions.push(`${label}: strays ${before.strayStones} -> ${now.strayStones}`);
       if (now.outsideStones > before.outsideStones) regressions.push(`${label}: outside ${before.outsideStones} -> ${now.outsideStones}`);
-      if (before.areaCoverage !== null && (now.areaCoverage ?? 0) < before.areaCoverage - COVERAGE_TOLERANCE) {
+      // Area only means something for modes that fill; outline coverage for modes that draw the edge.
+      const fills = before.mode === 'fill' || before.mode === 'outline-fill';
+      const edges = before.mode !== 'fill';
+      if (fills && before.areaCoverage !== null && (now.areaCoverage ?? 0) < before.areaCoverage - COVERAGE_TOLERANCE) {
         regressions.push(`${label}: area ${before.areaCoverage} -> ${now.areaCoverage}`);
       }
-      if (before.outlineCoverage !== null && (now.outlineCoverage ?? 0) < before.outlineCoverage - COVERAGE_TOLERANCE) {
+      if (edges && before.outlineCoverage !== null && (now.outlineCoverage ?? 0) < before.outlineCoverage - COVERAGE_TOLERANCE) {
         regressions.push(`${label}: outline ${before.outlineCoverage} -> ${now.outlineCoverage}`);
       }
     }

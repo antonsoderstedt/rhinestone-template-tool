@@ -649,6 +649,38 @@ Provides `parseSvgViewBox` and `getSvgRootAttributes` for reading the root SVG's
 
 ---
 
+## SVG Import Module (v3, `svg/svgImport.ts`)
+
+`importSvgArtwork(svgText)` reads an SVG as a viewer would, as far as artwork for stones needs, and returns `shapes` (document
+order = paint order), the `viewBox`, `naturalSizeMm`, `userUnitMm` and plain-language `warnings`. `svgStringToPolylines` is a
+thin wrapper that flattens the shapes to polylines (user units, one unit = one mm until the caller scales) and runs the
+polyline cleanup.
+
+- **Tree and transforms:** a tolerant tokenizer builds the element tree; the transform of every enclosing group is applied
+  (`translate`, `scale`, `rotate`, `skewX`, `skewY`, `matrix`, lists). An unknown transform function is skipped with a warning.
+- **`<use>` / `<defs>` / `<symbol>`:** local references (`#id`) are instanced with the use's `x`, `y` and transform; things
+  only inside `defs` are not drawn; depth is limited to 8 and instances to 5,000.
+- **Styles:** presentation attributes < `<style>` rules (tag, `.class`, `#id`, `tag.class`, by specificity then order) < inline
+  `style`. Inherited: `fill`, `stroke`, `stroke-width`, `fill-rule`, `visibility`; `opacity` multiplies down the tree.
+  Colours are normalised to `#rrggbb` (hex, rgb(), names). Gradients and patterns become one flat grey with a warning.
+- **Visibility:** `display:none`, `visibility:hidden`, zero opacity, and shapes with neither a visible fill nor a stroke are
+  skipped. Text is skipped with a message on how to convert it to outlines.
+- **Paths:** M L H V C S Q T and elliptical arcs `A` (spec F.6, flags may be written without separators); extra pairs after
+  `M` are line-tos; a subpath after `Z` starts at the previous start; a closed path that repeats its first point drops the copy.
+- **Size:** `width` / `height` with units give `naturalSizeMm`; otherwise the viewBox at 96 dpi; `userUnitMm` is mm per user unit.
+- **Refused (`findUnsafeSvgContent`):** `<script>`, `<foreignObject>`, `<image>`, entity declarations, event handlers,
+  `javascript:`, `data:`, `@import`, any `href` or `url()` that does not start with `#`.
+- Fill rule, stroke width (scaled by the transform) and opacity are kept on each shape for the colour-layer step.
+
+### Artwork quality (`quality/artworkQuality.ts`)
+
+`measureArtworkQuality({ polylines, stones, pitchMm })` scores a layout against its source: `areaCoverage` (share of the
+even-odd silhouette within 0.75 pitch of a stone), `outlineCoverage` (share of the outline within one pitch of a stone),
+`outsideStones`, `strayStones` (no neighbour within two pitches) and `minGapMm`. Pure and deterministic. The regression test
+`tests/quality/` holds every generator to `tests/quality/baseline.json`; `npm run quality` writes `docs/QUALITY_REPORT.md`.
+
+---
+
 ## SVG Parser Module (Upload v1)
 
 ### Security model
