@@ -51,4 +51,14 @@ describe('getQuickFixes', () => {
     expect(fix?.action).toBeNull();
     expect(fix?.title).toContain('1,600');
   });
+
+  it('offers to enlarge, instead of nudging, when the stones overlap the way font artwork does', () => {
+    const dense = Array.from({ length: 12 }, (_, i) => stone(`d${i}`, 10 + (i % 4) * 1.5, 10 + Math.floor(i / 4) * 1.5));
+    const result = checkExportReadiness(template(dense));
+    const withOption = getQuickFixes(result, { enlargement: { scale: 2.3, widthMm: 40 } });
+    expect(withOption.find((item) => item.id === 'overlap-artwork')?.action).toBe('enlarge-cuttable');
+    expect(withOption.some((item) => item.id === 'spacing')).toBe(false);
+    // without the option the ordinary nudge is offered
+    expect(getQuickFixes(result).find((item) => item.id === 'spacing')?.action).toBe('auto-fix-spacing');
+  });
 });

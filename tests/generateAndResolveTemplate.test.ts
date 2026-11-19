@@ -94,16 +94,9 @@ describe('stone fonts with overlapping dots', () => {
     })),
   };
 
-  it('enlarges the layout instead of discarding stones, and reports the factor', async () => {
+  it('shows the artwork exactly as drawn: same stones, same positions, no automatic change', async () => {
     const result = await generateAndResolveTemplate({ sourceTool: 'rhinestone-font', generateTemplate: () => overlapping });
-    expect(result.template?.stones).toHaveLength(30);
-    expect(result.spacingAdjustment?.enlargedByFactor).toBeGreaterThan(2);
-    expect(result.validation?.issues.filter((issue) => issue.severity === 'error')).toEqual([]);
-  });
-
-  it('only does this for stone fonts', async () => {
-    const result = await generateAndResolveTemplate({ sourceTool: 'template-import', generateTemplate: () => overlapping });
+    expect(result.template).toBe(overlapping);
     expect(result.spacingAdjustment).toBeNull();
-    expect(result.template?.stones[1]?.center.x).toBeCloseTo(6.6, 6);
   });
 });

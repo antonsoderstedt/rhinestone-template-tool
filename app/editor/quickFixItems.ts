@@ -5,10 +5,10 @@
 
 import { HIGH_STONE_COUNT_THRESHOLD, getMatFit, MAT_LABELS, type ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 
-export type QuickFixAction = 'auto-fix-spacing' | 'fit-12x12' | 'fit-12x24';
+export type QuickFixAction = 'auto-fix-spacing' | 'enlarge-cuttable' | 'fit-12x12' | 'fit-12x24';
 
 export interface QuickFixItem {
-  id: 'spacing' | 'mat-too-large' | 'mat-needs-large' | 'many-stones';
+  id: 'spacing' | 'overlap-artwork' | 'mat-too-large' | 'mat-needs-large' | 'many-stones';
   tone: 'warning' | 'info';
   title: string;
   detail: string;
@@ -22,12 +22,26 @@ export function hasSpacingIssues(result: ExportReadinessResult | null): boolean 
   return Boolean(result?.issues.some((issue) => SPACING_CODES.has(issue.code)));
 }
 
-export function getQuickFixes(result: ExportReadinessResult | null): QuickFixItem[] {
+export interface QuickFixOptions {
+  /** Set when the stones overlap the way vendor font artwork does; enlarging the whole design is then the fix. */
+  enlargement?: { scale: number; widthMm: number } | null;
+}
+
+export function getQuickFixes(result: ExportReadinessResult | null, options: QuickFixOptions = {}): QuickFixItem[] {
   if (!result || result.summary.stoneCount === 0) return [];
   const items: QuickFixItem[] = [];
 
   const spacingCount = result.issues.filter((issue) => SPACING_CODES.has(issue.code)).length;
-  if (spacingCount > 0) {
+  if (spacingCount > 0 && options.enlargement) {
+    items.push({
+      id: 'overlap-artwork',
+      tone: 'warning',
+      title: 'Stones overlap, so it cannot be cut as it is',
+      detail: `This design is drawn with overlapping dots, as many stone fonts are. Enlarging it ×${options.enlargement.scale.toFixed(1)} (about ${Math.round(options.enlargement.widthMm)} mm wide) gives every stone room and keeps the letters. You can undo it.`,
+      action: 'enlarge-cuttable',
+      actionLabel: `Enlarge ×${options.enlargement.scale.toFixed(1)} to make cuttable`,
+    });
+  } else if (spacingCount > 0) {
     items.push({
       id: 'spacing',
       tone: 'warning',

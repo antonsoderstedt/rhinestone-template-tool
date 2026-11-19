@@ -1,5 +1,4 @@
 import {
-  enlargeToCuttableSpacing,
   getDefaultMaterialProfile,
   resolveStoneSpacing,
   validateRhinestoneTemplate,
@@ -14,8 +13,6 @@ export interface SpacingAdjustmentSummary {
   maxDisplacementMm: number;
   resolutionPasses: number;
   tooDenseForStoneSize: boolean;
-  /** Set when the whole layout was enlarged by this factor to make overlapping stones cuttable (stone fonts). */
-  enlargedByFactor?: number;
 }
 
 export interface GenerateAndResolveTemplateResult {
@@ -61,40 +58,19 @@ export async function generateAndResolveTemplate(
   const shouldResolve = shouldAutoResolveTemplateSpacing(options.sourceTool)
     && generatedTemplate.source !== 'vendor';
 
-  let template = shouldResolve
+  const template = shouldResolve
     ? resolveStoneSpacing(generatedTemplate, {
         minGapMm,
         strategy: 'nudge',
       })
     : generatedTemplate;
 
-  // Vendor stone fonts are often drawings of overlapping dots. Nudging cannot fix that (it would smear the
-  // letters); the layout is enlarged until the stones fit instead, which keeps every letter intact.
-  let enlargement: { scale: number; removedCount: number } | null = null;
-  if (options.sourceTool === 'rhinestone-font') {
-    const enlarged = enlargeToCuttableSpacing(generatedTemplate, { minGapMm });
-    if (enlarged.scale > 1) {
-      template = enlarged.template;
-      enlargement = { scale: enlarged.scale, removedCount: enlarged.removedCount };
-    }
-  }
-
   const validation = validateRhinestoneTemplate(template, { minGapMm });
   const movedStoneCount = toNumber(template.metadata?.movedStoneCount);
   const removedStoneCount = toNumber(template.metadata?.removedStoneCount);
   const adjustedStoneCount = movedStoneCount + removedStoneCount;
 
-  const spacingAdjustment = enlargement
-    ? {
-        adjustedStoneCount: enlargement.removedCount,
-        movedStoneCount: template.stones.length,
-        removedStoneCount: enlargement.removedCount,
-        maxDisplacementMm: 0,
-        resolutionPasses: 0,
-        tooDenseForStoneSize: false,
-        enlargedByFactor: enlargement.scale,
-      }
-    : shouldResolve
+  const spacingAdjustment = shouldResolve
     ? {
         adjustedStoneCount,
         movedStoneCount,

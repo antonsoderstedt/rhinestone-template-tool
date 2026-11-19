@@ -20,13 +20,18 @@ lumps with "BLOCKED (1)", and several smaller defects. This ADR records what was
    the top-left of wherever the view was, and nothing limited panning. The grid now covers the visible view box, and
    `clampCanvasPan` (pure, idempotent, tested) keeps the centre of the view within 30 % of a screen of the design's edges. It is
    applied in one place, wrappers around `dispatch` and `onManualViewChange`, so wheel, drag, pinch and cursor-zoom all obey it.
-3. **Stone fonts.** Measured with the library on this machine: only TRW Clean Stone (in the repository) has stones that do not
-   overlap. Blessed, Forever, Cheer Block, Outline, Small Line, Atletico Real, Bride and Old English place stones at 0.2–0.65 ×
-   the stone diameter, so the template was BLOCKED. This is identical on `main`; it was not a regression, but QA should have
-   found it. Thinning (dropping stones) destroyed the letters; **enlarging the whole layout** until the stones fit keeps them
-   (`enlargeToCuttableSpacing`, see the engine spec). The editor says so ("enlarged ×3.1 (about 231 mm wide)…") and a smaller
-   stone size gives a smaller design. Huge Digits given letters made 0 stones, counted as a blocking error; an empty result now
-   means "no design" (neutral), the panel already explains the unsupported characters.
+3. **Stone fonts: shown as drawn, enlargement is a choice.** Measured with the library on this machine: only TRW Clean Stone (in
+   the repository) has stones that do not overlap; Blessed, Forever, Cheer Block, Outline, Small Line, Atletico Real, Bride and
+   Old English place stones at 0.2–0.65 × the stone diameter, so the template is BLOCKED. This is identical on `main`.
+   **A first attempt enlarged these designs automatically; that was wrong.** The overlapping dots are the artwork: shown as drawn
+   they are solid, legible letters, while the enlarged version is the same letters built from a coarse lattice and 2–3 times
+   larger, which the user rightly called ruined. Fonts are now generated and shown exactly as before. When stones overlap like
+   artwork (a dry run of `enlargeToCuttableSpacing` gives a factor of 1.3 or more) the Quick fixes panel, and the "Fix errors
+   before export" dialog, offer **"Enlarge ×N to make cuttable"**, which the user chooses and can undo (one undo step). For a few
+   stones that merely sit too close the ordinary nudge ("Fix spacing automatically") is still what is offered.
+   Also: the "Test Fixture Font" (a font file that only exists for the test suite) was listed in the font picker and failed with
+   "no browser asset URL"; it is hidden from the picker. A generator that produces no stones (a digits-only font given letters)
+   now means "no design" (neutral), not a blocking error.
 4. **Calm chrome.** The "Live editor"/"Layer editor" badges squeezed the project name to a few letters and are gone. The
    amber "WARNING" pill on a normal first visit now says "Not calibrated" in a quiet tone (the full text is its tooltip) and
    no longer wraps; "Open Studio" is hidden on the studio page, "Manage Assets" and the studio label below 1280 px, and the topbar

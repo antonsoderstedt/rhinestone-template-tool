@@ -57,6 +57,8 @@ interface EditorPropertiesPanelProps {
   /** One-click fixes (spacing, fit to mat). `canResize` is false for hand-made designs. */
   onQuickFix?: (action: QuickFixAction) => void;
   canResize?: boolean;
+  /** Set when the design is artwork whose stones overlap by design; see getQuickFixes. */
+  overlapEnlargement?: { scale: number; widthMm: number } | null;
 }
 
 interface ToolPropertiesProps {
@@ -97,7 +99,7 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, stones, onQuickFix, canResize = false }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, stones, onQuickFix, canResize = false, overlapEnlargement = null }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
@@ -137,7 +139,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
   }
 
   if (mode === 'inspector') {
-    const quickFixes = getQuickFixes(exportReadiness ?? null);
+    const quickFixes = getQuickFixes(exportReadiness ?? null, { enlargement: overlapEnlargement });
     return (
       <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         {quickFixes.length > 0 && onQuickFix && (
@@ -478,7 +480,8 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
 function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { rhinestoneFontTool } = state;
-  const availableFonts = listRhinestoneFonts();
+  // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
+  const availableFonts = listRhinestoneFonts().filter((font) => font.fontId !== 'test-fixture');
   const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
   const supportedStoneSizes = getSupportedRhinestoneFontStoneSizes(rhinestoneFontTool.rhinestoneFontId);
   const getStoneDiameterLabel = (size: typeof rhinestoneFontTool.stoneSize) => {
@@ -778,7 +781,8 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
 function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { letterStencilTool } = state;
   const availableAlphabets = listSvgAlphabets();
-  const availableFonts = listRhinestoneFonts();
+  // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
+  const availableFonts = listRhinestoneFonts().filter((font) => font.fontId !== 'test-fixture');
   const selectedAlphabet = getSvgAlphabetDefinition(letterStencilTool.svgAlphabetId as never);
   const selectedFont = getRhinestoneFontDefinition(letterStencilTool.rhinestoneFontId as never);
   const activeSource = letterStencilTool.sourceType === 'rhinestone-font'

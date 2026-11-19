@@ -249,8 +249,9 @@ whole layout, about its top-left corner, by `scale = max(1, (maxHoleDiameter + m
 and every hole size, and finally runs `thinStonesToSpacing` to drop the few stones still closer than `minGapMm` (walking the
 stones in their original order, keeping a stone only if it is far enough from all kept ones). A layout with no overlaps is
 returned unchanged (same object, `scale` 1). The result records `metadata.enlargedByFactor`. Pure and deterministic.
-It is applied by the editor to the stone-font tool only (`generateAndResolveTemplate`); `createRhinestoneFontTemplate` itself
-is unchanged. TRW Clean Stone, whose stones do not overlap, is unaffected.
+It is **never applied automatically**: stone fonts are shown as drawn. The editor offers it as a user-chosen, undoable quick fix
+("Enlarge ×N to make cuttable") when a dry run gives a factor of at least 1.3. `createRhinestoneFontTemplate` is unchanged.
+TRW Clean Stone, whose stones do not overlap, is unaffected.
 
 ### `resolveStoneSpacing` final algorithm
 

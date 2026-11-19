@@ -35,6 +35,7 @@ import {
   DEFAULT_OUTLINE_FONT_ID,
   isAvailableOutlineFontId,
   autoFixSpacing,
+  enlargeToCuttableSpacing,
   getDefaultMaterialProfile,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
@@ -572,21 +573,16 @@ export default function EditorShell() {
         const adjustedStoneCount = spacingAdjustment?.adjustedStoneCount ?? 0;
         // Nudging a few stones apart is routine (the result is always cuttable), so it is not announced. Say
         // something only when stones had to be removed or the design is too dense for the stone size.
-        const enlargedBy = spacingAdjustment?.enlargedByFactor ?? 0;
-        const worthMentioning = enlargedBy > 0 || (spacingAdjustment?.removedStoneCount ?? 0) > 0 || Boolean(spacingAdjustment?.tooDenseForStoneSize);
-        if ((adjustedStoneCount > 0 || enlargedBy > 0) && worthMentioning) {
-          const message = enlargedBy > 0
-            ? `The dots of this font overlap at ${state.rhinestoneFontTool.stoneSize}, so the design was enlarged ×${enlargedBy.toFixed(1)} (about ${Math.round(generationResult.template?.widthMm ?? 0)} mm wide) to make the stones cuttable. A smaller stone size gives a smaller design.`
-            : spacingAdjustment?.tooDenseForStoneSize
+        const worthMentioning = (spacingAdjustment?.removedStoneCount ?? 0) > 0 || Boolean(spacingAdjustment?.tooDenseForStoneSize);
+        if (adjustedStoneCount > 0 && worthMentioning) {
+          const message = spacingAdjustment?.tooDenseForStoneSize
             ? `Adjusted ${adjustedStoneCount} stones for minimum spacing. This design is too dense for this stone size — increase the size or use a smaller stone.`
             : `Adjusted ${adjustedStoneCount} stones for minimum spacing.`;
           setSpacingAdjustmentNote(message);
 
-          // Enlargement can leave the removed count at 0, so the announce-once key includes the factor.
-          const announceKey = adjustedStoneCount + Math.round(enlargedBy * 100);
-          if (lastSpacingAdjustmentCountRef.current !== announceKey) {
+          if (lastSpacingAdjustmentCountRef.current !== adjustedStoneCount) {
             setToast({ message, tone: spacingAdjustment?.tooDenseForStoneSize ? 'warning' : 'info' });
-            lastSpacingAdjustmentCountRef.current = announceKey;
+            lastSpacingAdjustmentCountRef.current = adjustedStoneCount;
           }
         } else {
           setSpacingAdjustmentNote(null);
@@ -841,9 +837,36 @@ export default function EditorShell() {
     dispatch(action);
   }, [state]);
 
+  // Some vendor stone fonts are drawings of dots that overlap on purpose. They are shown exactly as drawn; when the
+  // design is exported or the user asks, the whole layout can be enlarged until the stones can be cut. Only worked out
+  // when stones actually collide, and only offered when the overlap is that of artwork (a real enlargement), not a few
+  // stones that a small nudge fixes.
+  const overlapEnlargement = useMemo(() => {
+    if (!effectiveTemplate || !exportReadiness?.summary.hasCollisions || effectiveTemplate.stones.length > 4000) return null;
+    const result = enlargeToCuttableSpacing(effectiveTemplate, { minGapMm: getDefaultMaterialProfile().minimumEdgeSpacingMm });
+    if (result.scale < 1.3) return null;
+    return { scale: result.scale, widthMm: (exportReadiness.summary.widthMm ?? 0) * result.scale, template: result.template, removedCount: result.removedCount };
+  }, [effectiveTemplate, exportReadiness]);
+
+  const handleEnlargeCuttable = useCallback(() => {
+    if (!overlapEnlargement) return;
+    suppressDeleteToastRef.current = true;
+    dispatch({ type: 'REPLACE_STONES', stones: overlapEnlargement.template.stones });
+    setToast({
+      message: `Enlarged ×${overlapEnlargement.scale.toFixed(1)} (about ${Math.round(overlapEnlargement.widthMm)} mm wide) so every stone has room to be cut.${overlapEnlargement.removedCount > 0 ? ` ${overlapEnlargement.removedCount} stones that were still too close were removed.` : ''}`,
+      tone: 'success',
+      action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+    });
+  }, [overlapEnlargement]);
+
   // One-click fixes offered by the Quick fixes panel and the "fix errors before export" dialog.
   const handleAutoFixSpacing = useCallback(() => {
     if (!effectiveTemplate) return;
+    // Artwork drawn with overlapping dots cannot be nudged apart without smearing the letters: enlarge instead.
+    if (overlapEnlargement) {
+      handleEnlargeCuttable();
+      return;
+    }
     const result = autoFixSpacing(effectiveTemplate, { minGapMm: getDefaultMaterialProfile().minimumEdgeSpacingMm });
     if (!result.changed) {
       setToast({ message: 'Nothing to fix: no stones are too close together.', tone: 'info' });
@@ -865,7 +888,7 @@ export default function EditorShell() {
       tone: removed > 0 || stillWrong ? 'warning' : 'success',
       action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
     });
-  }, [effectiveTemplate]);
+  }, [effectiveTemplate, handleEnlargeCuttable, overlapEnlargement]);
 
   const canResize = useMemo(() => canResizeDesign(state), [state]);
 
@@ -889,8 +912,9 @@ export default function EditorShell() {
 
   const handleQuickFix = useCallback((action: QuickFixAction) => {
     if (action === 'auto-fix-spacing') handleAutoFixSpacing();
+    else if (action === 'enlarge-cuttable') handleEnlargeCuttable();
     else handleFitToMat(action === 'fit-12x12' ? '12x12' : '12x24');
-  }, [handleAutoFixSpacing, handleFitToMat]);
+  }, [handleAutoFixSpacing, handleEnlargeCuttable, handleFitToMat]);
 
   const applyPendingGeneratorAction = useCallback((mode: 'replace' | 'keep' | 'cancel') => {
     if (!pendingGeneratorAction) return;
@@ -1568,7 +1592,7 @@ export default function EditorShell() {
         confirmTone: 'default',
         icon: 'warning',
         tertiaryAction: hasSpacingIssues(exportReadiness)
-          ? { label: 'Fix spacing automatically', onClick: () => { setPendingDialog(null); handleAutoFixSpacing(); } }
+          ? { label: overlapEnlargement ? `Enlarge ×${overlapEnlargement.scale.toFixed(1)} to make cuttable` : 'Fix spacing automatically', onClick: () => { setPendingDialog(null); handleAutoFixSpacing(); } }
           : undefined,
       });
       return;
@@ -1577,7 +1601,7 @@ export default function EditorShell() {
     // Ready, warnings-only and "needs calibration" all go through the export dialog,
     // which previews the file and shows size, mat fit, warnings and calibration state.
     setExportDialogOpen(true);
-  }, [effectiveTemplate, exportReadiness, exportStatusSummary, handleAutoFixSpacing]);
+  }, [effectiveTemplate, exportReadiness, exportStatusSummary, handleAutoFixSpacing, overlapEnlargement]);
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
@@ -1856,6 +1880,7 @@ export default function EditorShell() {
           stones={effectiveTemplate?.stones}
           onQuickFix={handleQuickFix}
           canResize={canResize}
+          overlapEnlargement={overlapEnlargement ? { scale: overlapEnlargement.scale, widthMm: overlapEnlargement.widthMm } : null}
           mobilePanel={mobilePanel}
         />
       </div>
@@ -1959,6 +1984,7 @@ function StudioContextPanel({
   stones,
   onQuickFix,
   canResize,
+  overlapEnlargement,
   mobilePanel,
 }: {
   state: EditorState;
@@ -1968,6 +1994,7 @@ function StudioContextPanel({
   stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
   onQuickFix: (action: import('./quickFixItems').QuickFixAction) => void;
   canResize: boolean;
+  overlapEnlargement: { scale: number; widthMm: number } | null;
   /** Phones/tablets: which bottom-bar panel is open. `'none'` on desktop, where both tabs are visible. */
   mobilePanel: 'none' | 'tools' | 'design' | 'inspect';
 }) {
@@ -2013,6 +2040,7 @@ function StudioContextPanel({
           stones={tab === 'inspector' ? stones : undefined}
           onQuickFix={onQuickFix}
           canResize={canResize}
+          overlapEnlargement={overlapEnlargement}
         />
       </div>
     </aside>
