@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Ruler, Settings2 } from 'lucide-react';
 import {
   DEFAULT_WORKSPACE_SETTINGS,
   type CalibrationProfile,
   type WorkspaceSettings,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   readActiveCalibrationProfileId,
   readWorkspaceVault,
   setActiveCalibrationProfile,
@@ -32,9 +33,16 @@ function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault,
 }
 
 export default function SettingsPage() {
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(() => readActiveCalibrationProfileId());
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setVault(readWorkspaceVault());
+      setActiveProfileIdState(readActiveCalibrationProfileId());
+    });
+  }, []);
 
   const settings = vault.settings;
   const update = <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {

@@ -129,7 +129,7 @@ export default function CalibrationSheetGenerator() {
         extraStats={[{ label: 'Stone sizes', value: sizeRows.map((r) => r.stoneSize).join(', ') }]}
       />
 
-      <ExportReadinessPanel result={readiness} />
+      <ExportReadinessPanel result={readiness} showCalibrationStep={false} />
 
       <SvgPreview svg={svgString} title="Calibration sheet preview" />
 

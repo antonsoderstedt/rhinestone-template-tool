@@ -6,9 +6,11 @@ interface EditorToastProps {
   message: string;
   tone: 'success' | 'warning' | 'error' | 'info';
   onDismiss: () => void;
+  /** Optional inline action, e.g. Undo after a delete. */
+  action?: { label: string; onClick: () => void };
 }
 
-export default function EditorToast({ message, tone, onDismiss }: EditorToastProps) {
+export default function EditorToast({ message, tone, onDismiss, action }: EditorToastProps) {
   const toneStyles = {
     success: {
       icon: CheckCircle2,
@@ -35,6 +37,15 @@ export default function EditorToast({ message, tone, onDismiss }: EditorToastPro
       <div className="flex items-start gap-3">
         <Icon className="mt-0.5 h-4 w-4 shrink-0" />
         <p className="flex-1 text-sm">{message}</p>
+        {action && (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-xs font-semibold text-current transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-purple-400"
+          >
+            {action.label}
+          </button>
+        )}
         <button
           onClick={onDismiss}
           className="text-current/70 transition hover:text-current"

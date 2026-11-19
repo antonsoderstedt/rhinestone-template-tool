@@ -3,7 +3,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { snapToGrid, isPointNearStone, interpolateLinePointsAtSpacing, calculateCanvasWorkspaceBounds, calculateDisplayedCanvasViewBox } from '../app/editor/canvasCoordinates';
+import {
+  snapToGrid,
+  isPointNearStone,
+  interpolateLinePointsAtSpacing,
+  calculateCanvasWorkspaceBounds,
+  calculateDisplayedCanvasViewBox,
+  calculateFitViewTransform,
+  validatePersistedCanvasView,
+} from '../app/editor/canvasCoordinates';
 
 describe('snapToGrid', () => {
   it('should snap to nearest grid point', () => {
@@ -149,6 +157,93 @@ describe('calculateDisplayedCanvasViewBox', () => {
       y: 175,
       width: 450,
       height: 350,
+    });
+  });
+
+  describe('calculateFitViewTransform', () => {
+    it('returns a centered fit transform with margin', () => {
+      const workspace = { x: 0, y: 0, width: 900, height: 700 };
+      const content = { x: 100, y: 120, width: 200, height: 120 };
+      const fit = calculateFitViewTransform(workspace, content, { widthPx: 1200, heightPx: 800 });
+
+      expect(fit.zoom).toBeGreaterThan(0.1);
+      expect(fit.zoom).toBeLessThanOrEqual(5);
+      expect(fit.panX).toBeCloseTo(250, 6);
+      expect(fit.panY).toBeCloseTo(170, 6);
+    });
+
+    it('handles portrait viewports deterministically', () => {
+      const workspace = { x: -40, y: -20, width: 900, height: 700 };
+      const content = { x: 10, y: 40, width: 260, height: 420 };
+      const fit = calculateFitViewTransform(workspace, content, { widthPx: 800, heightPx: 1400 }, { margin: 0.9 });
+      const secondFit = calculateFitViewTransform(workspace, content, { widthPx: 800, heightPx: 1400 }, { margin: 0.9 });
+
+      expect(fit).toEqual(secondFit);
+    });
+
+    it.each([
+      ['20x12 grid', { x: 0, y: 0, width: 20, height: 12 }],
+      ['100x25 word', { x: 0, y: 0, width: 100, height: 25 }],
+      ['100x94 star', { x: 0, y: 0, width: 100, height: 94 }],
+    ])('round-trips %s fully inside the fitted viewBox', (_name, content) => {
+      const workspace = { x: -40, y: -35, width: 900, height: 700 };
+      const fit = calculateFitViewTransform(
+        workspace,
+        content,
+        { widthPx: 1000, heightPx: 700 },
+        { margin: 0.92, minZoom: 0.1, maxZoom: 5 },
+      );
+      const viewBox = calculateDisplayedCanvasViewBox(
+        workspace,
+        fit.zoom,
+        fit.panX,
+        fit.panY,
+      );
+
+      expect(viewBox.x).toBeLessThanOrEqual(content.x);
+      expect(viewBox.x + viewBox.width).toBeGreaterThanOrEqual(content.x + content.width);
+      expect(viewBox.y).toBeLessThanOrEqual(content.y);
+      expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(content.y + content.height);
+
+      const viewCenterX = viewBox.x + viewBox.width / 2;
+      const viewCenterY = viewBox.y + viewBox.height / 2;
+      const contentCenterX = content.x + content.width / 2;
+      const contentCenterY = content.y + content.height / 2;
+      expect(Math.abs(viewCenterX - contentCenterX)).toBeLessThanOrEqual(1);
+      expect(Math.abs(viewCenterY - contentCenterY)).toBeLessThanOrEqual(1);
+    });
+
+    it('round-trips a portrait viewport fit', () => {
+      const workspace = { x: 0, y: 0, width: 900, height: 700 };
+      const content = { x: 20, y: 30, width: 60, height: 120 };
+      const fit = calculateFitViewTransform(
+        workspace,
+        content,
+        { widthPx: 390, heightPx: 844 },
+        { margin: 0.92, minZoom: 0.1, maxZoom: 5 },
+      );
+      const viewBox = calculateDisplayedCanvasViewBox(workspace, fit.zoom, fit.panX, fit.panY);
+      expect(viewBox.x).toBeLessThanOrEqual(content.x);
+      expect(viewBox.x + viewBox.width).toBeGreaterThanOrEqual(content.x + content.width);
+      expect(viewBox.y).toBeLessThanOrEqual(content.y);
+      expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(content.y + content.height);
+    });
+
+    it('discards legacy and out-of-range persisted views', () => {
+      const workspace = { x: 0, y: 0, width: 900, height: 700 };
+      const content = { x: 0, y: 0, width: 20, height: 12 };
+      expect(validatePersistedCanvasView({ zoom: 5, panX: 430, panY: 330 }, workspace, content)).toBeNull();
+      expect(validatePersistedCanvasView({ manual: true, zoom: 99, panX: 0, panY: 0 }, workspace, content)).toBeNull();
+    });
+
+    it('accepts a validated manual persisted view', () => {
+      const workspace = { x: 0, y: 0, width: 900, height: 700 };
+      const content = { x: 0, y: 0, width: 20, height: 12 };
+      expect(validatePersistedCanvasView(
+        { manual: true, zoom: 1.5, panX: 430, panY: 340 },
+        workspace,
+        content,
+      )).toEqual({ zoom: 1.5, panX: 430, panY: 340 });
     });
   });
 

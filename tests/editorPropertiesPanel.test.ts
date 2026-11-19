@@ -40,13 +40,11 @@ describe('EditorPropertiesPanel calibration gate visibility', () => {
         state: structuredClone(DEFAULT_EDITOR_STATE),
         dispatch: () => undefined,
         mode: 'source',
-        activeCalibrationProfile: null,
       }),
     );
 
-    expect(html).toContain('Calibration gate');
-    expect(html).toContain('No approved profile is active');
-    expect(html).toContain('Open setup');
+    expect(html).not.toContain('Calibration gate');
+    expect(html).not.toContain('Open setup');
   });
 
   it('shows the approved profile status when a profile is active', () => {
@@ -55,21 +53,10 @@ describe('EditorPropertiesPanel calibration gate visibility', () => {
         state: structuredClone(DEFAULT_EDITOR_STATE),
         dispatch: () => undefined,
         mode: 'source',
-        activeCalibrationProfile: {
-          id: 'approved-profile',
-          name: 'Magic Flock SS10',
-          materialProfileId: 'magic-flock-cricut-maker',
-          createdAt: '2026-01-01T00:00:00.000Z',
-          updatedAt: '2026-01-02T00:00:00.000Z',
-          approvedAt: '2026-01-02T00:00:00.000Z',
-          overrides: [{ stoneSize: 'SS10', holeDiameterMm: 3.37 }],
-        },
       }),
     );
 
-    expect(html).toContain('Calibration gate');
-    expect(html).toContain('Magic Flock SS10');
-    expect(html).toContain('This calibration profile is approved for production');
+    expect(html).not.toContain('Calibration gate');
   });
 });
 

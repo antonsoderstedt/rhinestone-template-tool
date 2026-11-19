@@ -27,9 +27,13 @@ import {
   createRasterArtworkTemplate,
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
+  validateAssetUpload,
   TRW_STONE_SIZE_CALIBRATION,
+  DEFAULT_OUTLINE_FONT_ID,
+  isAvailableOutlineFontId,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
+  RhinestoneTemplate,
   TemplateLibraryEntry,
   TemplateLibraryRecord,
   TemplateLibraryRepository,
@@ -41,10 +45,13 @@ import EditorPropertiesPanel from './EditorPropertiesPanel';
 import type { OutlineFontStatus } from './controls/FontPicker';
 import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
+import ExportDialog from '../components/ExportDialog';
+import PromptDialog from '../components/PromptDialog';
+import { readSvgSizeMm } from '../components/exportDialogHelpers';
 import EditorToast from './EditorToast';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
-import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
+import { getExportFilename, getExportGate, summarizeExportStatus } from '../components/summarizeExportStatus';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -53,11 +60,20 @@ import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
+  readRhinestoneAutosave,
   savedStoneToEditableStone,
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
 import { findAssetById, readActiveCalibrationProfile } from '../lib/workspaceVault';
+import { generateAndResolveTemplate } from './generateAndResolveTemplate';
+import {
+  calculateCanvasWorkspaceBounds,
+  validatePersistedCanvasView,
+} from './canvasCoordinates';
+
+/** Deleting at least this many stones in one step shows an Undo toast. */
+const BULK_DELETE_UNDO_THRESHOLD = 10;
 
 export default function EditorShell() {
   const { theme, toggleTheme } = useStudioTheme();
@@ -67,15 +83,24 @@ export default function EditorShell() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateLibraryRepositoryRef = useRef<TemplateLibraryRepository | null>(null);
   const generationRequestRef = useRef(0);
+  const lastSpacingAdjustmentCountRef = useRef<number | null>(null);
   const handledQueryRef = useRef<string | null>(null);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
-  const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: 'success' | 'warning' | 'error' | 'info';
+    action?: { label: string; onClick: () => void };
+  } | null>(null);
+  const [namePrompt, setNamePrompt] = useState<{ mode: 'rename' | 'duplicate'; templateId: string; initialValue: string } | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
+  const [fitRequestId, setFitRequestId] = useState(0);
+  const [spacingAdjustmentNote, setSpacingAdjustmentNote] = useState<string | null>(null);
   const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
   const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
-  const [hasPromptedAutosaveRestore, setHasPromptedAutosaveRestore] = useState(false);
+  const [autosaveDecision, setAutosaveDecision] = useState<'deciding' | 'ready' | 'restored'>('deciding');
+  const initialAutosaveRestoreRef = useRef(false);
   const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
@@ -89,7 +114,7 @@ export default function EditorShell() {
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
-        kind: 'new-project' | 'export-warning' | 'export-blocked' | 'autosave-restore';
+        kind: 'new-project' | 'export-blocked' | 'autosave-restore' | 'asset-open-error';
         title: string;
         message: string;
         details?: string[];
@@ -103,10 +128,39 @@ export default function EditorShell() {
         };
       }
   >(null);
+  const requestCanvasFit = useCallback(() => {
+    setFitRequestId((current) => current + 1);
+  }, []);
+
+  const canvasViewStorageKey = useMemo(() => {
+    const normalizedName = state.projectName.trim().toLowerCase().replace(/\s+/g, '-') || 'untitled-project';
+    return `rhinestone-canvas-view:${normalizedName}`;
+  }, [state.projectName]);
+
+  // A bulk delete (e.g. Select all + Delete) is easy to do by accident, so
+  // offer a one-click Undo. History already supports undo; this only surfaces it.
+  const editableStoneCount = state.editableTemplate.stones.length;
+  const historyDepth = state.history.past.length;
+  const previousStoneStatsRef = useRef({ stoneCount: editableStoneCount, historyDepth });
+  useEffect(() => {
+    const previous = previousStoneStatsRef.current;
+    previousStoneStatsRef.current = { stoneCount: editableStoneCount, historyDepth };
+    const removed = previous.stoneCount - editableStoneCount;
+    if (removed >= BULK_DELETE_UNDO_THRESHOLD && historyDepth === previous.historyDepth + 1) {
+      setToast({
+        message: `Deleted ${removed} stones.`,
+        tone: 'info',
+        action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+      });
+    }
+  }, [dispatch, editableStoneCount, historyDepth]);
 
   useEffect(() => {
     if (!toast) return;
-    const timeoutId = window.setTimeout(() => setToast(null), toast.tone === 'error' ? 5000 : 3200);
+    const timeoutId = window.setTimeout(
+      () => setToast(null),
+      toast.action ? 8000 : toast.tone === 'error' ? 5000 : 3200,
+    );
     return () => window.clearTimeout(timeoutId);
   }, [toast]);
 
@@ -124,44 +178,12 @@ export default function EditorShell() {
     templateLibraryRepositoryRef.current = new LocalStorageTemplateLibraryRepository();
     void refreshTemplateLibrary();
     const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
-    if (!rawAutosave) return;
-    const timeoutId = window.setTimeout(() => {
-      try {
-        setAutosaveEntry(JSON.parse(rawAutosave) as TemplateLibraryEntry);
-      } catch {
-        setAutosaveEntry(null);
-      }
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
+    const entry = readRhinestoneAutosave(rawAutosave);
+    queueMicrotask(() => {
+      setAutosaveEntry(entry);
+      setAutosaveDecision(entry ? 'restored' : 'ready');
+    });
   }, [refreshTemplateLibrary]);
-
-  useEffect(() => {
-    if (!autosaveEntry || hasPromptedAutosaveRestore) return;
-    if (state.projectName !== DEFAULT_EDITOR_STATE.projectName) return;
-    if (state.template || state.editableTemplate.isEditable) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setPendingDialog({
-        kind: 'autosave-restore',
-        title: 'Restore autosave?',
-        message: `A recent autosave for "${autosaveEntry.name}" is available in this browser. Restore it now or discard it.`,
-        confirmLabel: 'Restore autosave',
-        icon: 'info',
-        tertiaryAction: {
-          label: 'Discard autosave',
-          tone: 'destructive',
-          onClick: () => {
-            globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
-            setAutosaveEntry(null);
-            setPendingDialog(null);
-            setToast({ message: 'Autosave discarded.', tone: 'info' });
-          },
-        },
-      });
-      setHasPromptedAutosaveRestore(true);
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [autosaveEntry, hasPromptedAutosaveRestore, state.editableTemplate.isEditable, state.projectName, state.template]);
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
@@ -172,11 +194,12 @@ export default function EditorShell() {
    * This runs whenever tool state changes.
    */
   useEffect(() => {
+    if (autosaveDecision === 'deciding') return;
     const requestId = ++generationRequestRef.current;
 
     const generateTemplate = async () => {
       try {
-        let template = null;
+        let template: RhinestoneTemplate | null = null;
 
         switch (sourceTool) {
           case 'grid':
@@ -476,8 +499,34 @@ export default function EditorShell() {
             return;
         }
 
+        const generationResult = await generateAndResolveTemplate({
+          sourceTool,
+          generateTemplate: () => template,
+        });
         if (requestId !== generationRequestRef.current) return;
+        template = generationResult.template;
+
+        const spacingAdjustment = generationResult.spacingAdjustment;
+        const adjustedStoneCount = spacingAdjustment?.adjustedStoneCount ?? 0;
+        if (adjustedStoneCount > 0) {
+          const message = spacingAdjustment?.tooDenseForStoneSize
+            ? `Adjusted ${adjustedStoneCount} stones for minimum spacing. This design is too dense for this stone size — increase the size or use a smaller stone.`
+            : `Adjusted ${adjustedStoneCount} stones for minimum spacing.`;
+          setSpacingAdjustmentNote(message);
+
+          if (lastSpacingAdjustmentCountRef.current !== adjustedStoneCount) {
+            setToast({ message, tone: spacingAdjustment?.tooDenseForStoneSize ? 'warning' : 'info' });
+            lastSpacingAdjustmentCountRef.current = adjustedStoneCount;
+          }
+        } else {
+          setSpacingAdjustmentNote(null);
+          lastSpacingAdjustmentCountRef.current = 0;
+        }
+
         dispatch({ type: 'SET_TEMPLATE', template });
+        if (template) {
+          requestCanvasFit();
+        }
       } catch (err) {
         if (requestId !== generationRequestRef.current) return;
         console.error('Template generation error:', err);
@@ -494,6 +543,8 @@ export default function EditorShell() {
 
     void generateTemplate();
   }, [
+    requestCanvasFit,
+    autosaveDecision,
     sourceTool,
     state.gridTool,
     state.textTool,
@@ -539,6 +590,49 @@ export default function EditorShell() {
   // ─── Export Readiness ──────────────────────────────────────────────────────
 
   const effectiveTemplate = useMemo(() => buildEffectiveTemplate(state), [state]);
+  const restoredCanvasViewKeyRef = useRef<string | null>(null);
+  const persistManualCanvasView = useCallback(
+    (view: { zoom: number; panX: number; panY: number }) => {
+      globalThis.localStorage?.setItem(
+        canvasViewStorageKey,
+        JSON.stringify({ ...view, manual: true }),
+      );
+    },
+    [canvasViewStorageKey],
+  );
+
+  useEffect(() => {
+    if (restoredCanvasViewKeyRef.current === canvasViewStorageKey) return;
+    restoredCanvasViewKeyRef.current = canvasViewStorageKey;
+
+    const raw = globalThis.localStorage?.getItem(canvasViewStorageKey);
+    let restored = null;
+    if (raw && effectiveTemplate) {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        const stones = effectiveTemplate.stones.map((stone) => ({
+          center: stone.center,
+          holeDiameterMm: stone.holeDiameterMm,
+        }));
+        const workspace = calculateCanvasWorkspaceBounds(stones);
+        const content = calculateCanvasWorkspaceBounds(stones, {
+          paddingMm: 20,
+          minWidthMm: 0,
+          minHeightMm: 0,
+        });
+        restored = validatePersistedCanvasView(parsed, workspace, content);
+      } catch {
+        restored = null;
+      }
+    }
+
+    if (restored) {
+      dispatch({ type: 'UPDATE_CANVAS', updates: restored });
+    } else {
+      requestCanvasFit();
+    }
+  }, [canvasViewStorageKey, effectiveTemplate, requestCanvasFit]);
+
   const activeLibraryEntry = useMemo(
     () => libraryRecord.userTemplates.find((entry) => entry.templateId === activeLibraryTemplateId) ?? null,
     [activeLibraryTemplateId, libraryRecord.userTemplates],
@@ -628,9 +722,12 @@ export default function EditorShell() {
     return () => window.clearTimeout(timeoutId);
   }, [autosaveEntry?.createdAt, buildCurrentLibraryEntry, effectiveTemplate, state.projectName]);
 
-  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(() => readActiveCalibrationProfile());
+  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(null);
   useEffect(() => {
-    const syncActiveCalibrationProfile = () => setActiveCalibrationProfile(readActiveCalibrationProfile());
+    const syncActiveCalibrationProfile = () => {
+      const profile = readActiveCalibrationProfile();
+      queueMicrotask(() => setActiveCalibrationProfile(profile));
+    };
     syncActiveCalibrationProfile();
     window.addEventListener('storage', syncActiveCalibrationProfile);
     window.addEventListener('focus', syncActiveCalibrationProfile);
@@ -640,16 +737,6 @@ export default function EditorShell() {
     };
   }, []);
 
-  const calibrationState = useMemo(() => {
-    if (!activeCalibrationProfile) {
-      return { label: 'No active profile', tone: 'warning' as const };
-    }
-    if (activeCalibrationProfile.approvedAt) {
-      return { label: `Approved: ${activeCalibrationProfile.name}`, tone: 'success' as const };
-    }
-    return { label: `Pending: ${activeCalibrationProfile.name}`, tone: 'warning' as const };
-  }, [activeCalibrationProfile]);
-
   const exportReadiness = useMemo(() => {
     if (!effectiveTemplate) return null;
     return checkExportReadiness(effectiveTemplate, {
@@ -658,24 +745,18 @@ export default function EditorShell() {
     });
   }, [activeCalibrationProfile, effectiveTemplate, state.includeLabels]);
 
-  const exportReady = exportReadiness?.ready ?? false;
-  const exportErrorCount = exportReadiness?.issues.filter((issue) => issue.severity === 'error').length ?? 0;
-  const exportWarningCount = exportReadiness?.issues.filter((issue) => issue.severity === 'warning').length ?? 0;
-  const workflowStatus = !effectiveTemplate
-    ? 'Blocked'
-    : exportErrorCount > 0
-      ? 'Blocked'
-      : exportWarningCount > 0
-        ? 'Warning'
-        : 'Ready';
-  const workflowGuidance = !effectiveTemplate
-    ? 'Start by generating or loading a design. The canvas is empty, so there is no production-ready template yet.'
-    : exportErrorCount > 0
-      ? (exportReadiness?.issues.find((issue) => issue.severity === 'error')?.suggestion ?? 'Fix the blocking issues before exporting.')
-      : exportWarningCount > 0
-        ? (exportReadiness?.issues.find((issue) => issue.severity === 'warning')?.suggestion ?? 'Review the warnings before exporting to confirm the production output matches the expected result.')
-        : 'This design is export-ready. Review the final placement and proceed with the production SVG export.';
-
+  const exportStatusSummary = useMemo(() => summarizeExportStatus(exportReadiness), [exportReadiness]);
+  const exportDesignWarningNotes = useMemo(
+    () => exportStatusSummary.designWarnings.slice(0, 5).map((issue) => ({
+      tone: 'warning' as const,
+      text: issue.suggestion ? `${issue.message} ${issue.suggestion}` : issue.message,
+    })),
+    [exportStatusSummary.designWarnings],
+  );
+  const exportReady = exportStatusSummary.ready;
+  const exportErrorCount = exportStatusSummary.designErrors.length;
+  const exportWarningCount = exportStatusSummary.designWarnings.length;
+  const needsCalibration = exportStatusSummary.needsCalibration;
   const editorDispatch = useCallback((action: EditorAction) => {
     if (shouldPromptForGeneratorMutation(state, action)) {
       setPendingGeneratorAction(action);
@@ -693,34 +774,48 @@ export default function EditorShell() {
     setPendingGeneratorAction(null);
   }, [pendingGeneratorAction]);
 
-  const runExport = useCallback(() => {
-    if (!effectiveTemplate) {
-      setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
-      return;
-    }
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
+  // The exact SVG shown in the export dialog preview and downloaded from it.
+  const exportPreview = useMemo(() => {
+    if (!exportDialogOpen || !effectiveTemplate) return null;
     try {
-      const svgString = createBasicSvgExport(effectiveTemplate, {
+      const svg = createBasicSvgExport(effectiveTemplate, {
         includeGuideBox: state.includeGuideBox,
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
         decimalPlaces: 3,
+        uncalibratedOverride: needsCalibration,
       });
-
-      const blob = new Blob([svgString], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const filename = `${state.projectName.toLowerCase().replace(/\s+/g, '-')}.svg`;
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      setToast({ message: 'SVG exported.', tone: 'success' });
+      const size = readSvgSizeMm(svg);
+      return { svg, widthMm: size?.widthMm ?? null, heightMm: size?.heightMm ?? null, error: null as string | null };
     } catch (err) {
-      setToast({ message: `Export failed: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
+      return {
+        svg: null as string | null,
+        widthMm: null as number | null,
+        heightMm: null as number | null,
+        error: `Could not prepare the export: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
-  }, [effectiveTemplate, state.includeGuideBox, state.includeLabels, state.paddingMm, state.projectName]);
+  }, [effectiveTemplate, exportDialogOpen, needsCalibration, state.includeGuideBox, state.includeLabels, state.paddingMm]);
+
+  const handleExportDownload = useCallback((filename: string, options: { uncalibratedOverride: boolean }) => {
+    if (!exportPreview?.svg) return;
+    const blob = new Blob([exportPreview.svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportDialogOpen(false);
+    setToast({
+      message: options.uncalibratedOverride
+        ? 'SVG exported without calibration. Test-cut a small piece before the real job.'
+        : 'SVG exported.',
+      tone: options.uncalibratedOverride ? 'warning' : 'success',
+    });
+  }, [exportPreview]);
 
   const notify = useCallback((message: string, tone: 'success' | 'warning' | 'error' | 'info') => {
     setToast({ message, tone });
@@ -743,6 +838,13 @@ export default function EditorShell() {
   }, []);
 
   const applyProjectToEditor = useCallback((project: ReturnType<typeof parseRhinestoneProject>) => {
+    // Loading replaces the whole design, so it uses the raw dispatch: the
+    // "Regenerate from source settings?" prompt guards user edits, not loads.
+    // A generated (non-editable) project must not open inside a leftover editable
+    // session, which would keep showing the previous (possibly empty) stones.
+    if (!project.editableState && project.generatorState.generatorId !== 'manual-editor') {
+      dispatch({ type: 'DISCARD_EDITABLE_CHANGES' });
+    }
     dispatch({ type: 'SET_PROJECT_NAME', name: project.projectName });
 
     if (project.exportSettings) {
@@ -767,7 +869,7 @@ export default function EditorShell() {
     switch (project.generatorState.generatorId) {
       case 'manual-grid':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'grid' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_GRID_TOOL',
           updates: {
             stoneSize: project.generatorState.stoneSize,
@@ -780,7 +882,7 @@ export default function EditorShell() {
         break;
       case 'outline-text':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'outline',
@@ -808,7 +910,7 @@ export default function EditorShell() {
         break;
       case 'dot-matrix-text':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'dot-matrix',
@@ -826,7 +928,7 @@ export default function EditorShell() {
         break;
       case 'svg-upload':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
             assetKind: project.generatorState.assetKind ?? (project.generatorState.uploadedImageDataUrl ? 'image' : 'svg'),
@@ -978,6 +1080,7 @@ export default function EditorShell() {
           stones: editableStones,
           sourceGenerator: project.generatorState.generatorId,
         });
+        requestCanvasFit();
       }, 100);
     } else if (project.generatorState.generatorId === 'manual-editor') {
       const manualStones: EditableStone[] = project.generatorState.stones.map(savedStoneToEditableStone);
@@ -987,9 +1090,10 @@ export default function EditorShell() {
           stones: manualStones,
           sourceGenerator: 'manual-editor',
         });
+        requestCanvasFit();
       }, 0);
     }
-  }, [editorDispatch, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
+  }, [requestCanvasFit, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
 
   useEffect(() => {
     const designId = searchParams.get('designId');
@@ -1016,6 +1120,37 @@ export default function EditorShell() {
       if (assetId) {
         const asset = findAssetById(assetId);
         if (asset) {
+          if (asset.kind === 'svg') {
+            const validation = validateAssetUpload({
+              fileName: asset.fileName,
+              mimeType: asset.mimeType,
+              sizeBytes: asset.sizeBytes,
+              svgText: asset.svgText,
+            });
+            if (!validation.valid) {
+              setPendingDialog({
+                kind: 'asset-open-error',
+                title: 'This asset cannot be opened',
+                message: validation.code === 'no_supported_shapes'
+                  ? 'This SVG has no supported shapes for Rhinestone generation.'
+                  : 'This file is not a valid SVG for Rhinestone generation.',
+                details: ['Return to Library to upload a different asset, or retry opening this asset.'],
+                confirmLabel: 'Back to Library',
+                icon: 'warning',
+                tertiaryAction: {
+                  label: 'Retry open',
+                  onClick: () => {
+                    handledQueryRef.current = null;
+                    setPendingDialog(null);
+                    window.location.reload();
+                  },
+                },
+              });
+              handledQueryRef.current = queryKey;
+              return;
+            }
+          }
+
           dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
           dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
           dispatch({
@@ -1042,13 +1177,17 @@ export default function EditorShell() {
       }
 
       if (fontId) {
+        const resolvedFontId = isAvailableOutlineFontId(fontId) ? fontId : DEFAULT_OUTLINE_FONT_ID;
+        if (resolvedFontId !== fontId) {
+          setToast({ message: 'Font not found — using a default font instead.', tone: 'warning' });
+        }
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
         dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} Rhinestone Design` });
         dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'outline',
-            fontId,
+            fontId: resolvedFontId,
             text: launchText ?? 'Sulay 123',
           },
         });
@@ -1065,11 +1204,11 @@ export default function EditorShell() {
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!effectiveTemplate) {
-      setToast({ message: 'Nothing to save to the library yet.', tone: 'warning' });
+      setToast({ message: 'Nothing to save yet. Create or open a design first.', tone: 'warning' });
       return;
     }
     if (!templateLibraryRepositoryRef.current) {
-      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      setToast({ message: 'Could not save: the current design could not be serialized.', tone: 'error' });
       return;
     }
 
@@ -1087,21 +1226,21 @@ export default function EditorShell() {
     }
 
     if (!entry) {
-      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      setToast({ message: 'Could not save: the current design could not be serialized.', tone: 'error' });
       return;
     }
 
     await templateLibraryRepositoryRef.current.save(entry);
     setActiveLibraryTemplateId(entry.templateId);
     await refreshTemplateLibrary();
-    setToast({ message: activeLibraryTemplateId ? 'Library design updated.' : 'Design saved to the local library.', tone: 'success' });
+    setToast({ message: activeLibraryTemplateId ? 'Saved to My Designs.' : 'Saved to My Designs. Find it under Open or on the My Designs page.', tone: 'success' });
   }, [activeLibraryTemplateId, buildCurrentLibraryEntry, effectiveTemplate, refreshTemplateLibrary, state.projectName]);
 
   const handleLoadFromLibrary = useCallback(async (templateId: string) => {
     if (!templateLibraryRepositoryRef.current) return;
     const entry = await templateLibraryRepositoryRef.current.get(templateId);
     if (!entry) {
-      setToast({ message: 'That library entry could not be found.', tone: 'error' });
+      setToast({ message: 'That design could not be found.', tone: 'error' });
       return;
     }
 
@@ -1109,7 +1248,7 @@ export default function EditorShell() {
     applyProjectToEditor(project);
     setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
     setTemplateLibraryOpen(false);
-    setToast({ message: 'Library design opened.', tone: 'success' });
+    setToast({ message: 'Design opened.', tone: 'success' });
   }, [applyProjectToEditor]);
 
   const handleLoadAutosave = useCallback(() => {
@@ -1121,16 +1260,18 @@ export default function EditorShell() {
     setToast({ message: 'Autosave opened.', tone: 'success' });
   }, [applyProjectToEditor, autosaveEntry]);
 
+  useEffect(() => {
+    if (autosaveDecision !== 'restored' || !autosaveEntry || initialAutosaveRestoreRef.current) return;
+    initialAutosaveRestoreRef.current = true;
+    handleLoadAutosave();
+  }, [autosaveDecision, autosaveEntry, handleLoadAutosave]);
+
   const handleDialogConfirm = useCallback(() => {
     if (!pendingDialog) return;
 
     if (pendingDialog.kind === 'new-project') {
       dispatch({ type: 'RESET_EDITOR' });
       setToast({ message: 'Started a new project.', tone: 'info' });
-    }
-
-    if (pendingDialog.kind === 'export-warning') {
-      runExport();
     }
 
     if (pendingDialog.kind === 'export-blocked') {
@@ -1142,8 +1283,12 @@ export default function EditorShell() {
       handleLoadAutosave();
     }
 
+    if (pendingDialog.kind === 'asset-open-error') {
+      window.location.assign('/library');
+    }
+
     setPendingDialog(null);
-  }, [handleLoadAutosave, pendingDialog, runExport]);
+  }, [handleLoadAutosave, pendingDialog]);
 
   const handleFavoriteLibraryEntry = useCallback(async (templateId: string, favorite: boolean) => {
     if (!templateLibraryRepositoryRef.current) return;
@@ -1152,41 +1297,70 @@ export default function EditorShell() {
   }, [refreshTemplateLibrary]);
 
   const handleDeleteLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    await templateLibraryRepositoryRef.current.delete(templateId);
+    const repository = templateLibraryRepositoryRef.current;
+    if (!repository) return;
+    const entry = await repository.get(templateId);
+    await repository.delete(templateId);
     await refreshTemplateLibrary();
-    setToast({ message: 'Library design deleted.', tone: 'info' });
+    setToast({
+      message: entry ? `Deleted “${entry.name}”.` : 'Design deleted.',
+      tone: 'info',
+      action: entry
+        ? {
+            label: 'Undo',
+            onClick: () => {
+              void (async () => {
+                await repository.save(entry);
+                await refreshTemplateLibrary();
+                setToast({ message: `Restored “${entry.name}”.`, tone: 'success' });
+              })();
+            },
+          }
+        : undefined,
+    });
   }, [refreshTemplateLibrary]);
 
   const handleRenameLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    const nextName = window.prompt('Rename design');
-    if (!nextName || !nextName.trim()) return;
-    await templateLibraryRepositoryRef.current.rename(templateId, nextName.trim());
-    await refreshTemplateLibrary();
-    setToast({ message: 'Library design renamed.', tone: 'success' });
-  }, [refreshTemplateLibrary]);
+    const entry = await templateLibraryRepositoryRef.current?.get(templateId);
+    if (!entry) return;
+    setNamePrompt({ mode: 'rename', templateId, initialValue: entry.name });
+  }, []);
 
   const handleDuplicateLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    const nextName = window.prompt('Duplicate design as');
-    if (!nextName || !nextName.trim()) return;
+    const entry = await templateLibraryRepositoryRef.current?.get(templateId);
+    if (!entry) return;
+    setNamePrompt({ mode: 'duplicate', templateId, initialValue: `${entry.name} copy` });
+  }, []);
+
+  const submitNamePrompt = useCallback(async (nextName: string) => {
+    const prompt = namePrompt;
+    const repository = templateLibraryRepositoryRef.current;
+    setNamePrompt(null);
+    if (!prompt || !repository) return;
+
+    if (prompt.mode === 'rename') {
+      await repository.rename(prompt.templateId, nextName);
+      await refreshTemplateLibrary();
+      setToast({ message: 'Design renamed.', tone: 'success' });
+      return;
+    }
+
     const nextTemplateId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? `library-${crypto.randomUUID()}`
       : `library-${Date.now()}`;
 
-    if (activeLibraryTemplateId === templateId) {
-      const duplicate = buildCurrentLibraryEntry(nextTemplateId, nextName.trim(), new Date().toISOString(), false);
+    if (activeLibraryTemplateId === prompt.templateId) {
+      const duplicate = buildCurrentLibraryEntry(nextTemplateId, nextName, new Date().toISOString(), false);
       if (duplicate) {
-        await templateLibraryRepositoryRef.current.save(duplicate);
+        await repository.save(duplicate);
       }
     } else {
-      await templateLibraryRepositoryRef.current.duplicate(templateId, nextTemplateId, nextName.trim());
+      await repository.duplicate(prompt.templateId, nextTemplateId, nextName);
     }
 
     await refreshTemplateLibrary();
-    setToast({ message: 'Library design duplicated.', tone: 'success' });
-  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, refreshTemplateLibrary]);
+    setToast({ message: 'Design duplicated.', tone: 'success' });
+  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, namePrompt, refreshTemplateLibrary]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1206,40 +1380,37 @@ export default function EditorShell() {
 
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
-      setToast({ message: 'Nothing to save yet. Create or open a design first.', tone: 'warning' });
+      setToast({ message: 'Nothing to export yet. Create or open a design first.', tone: 'warning' });
       return;
     }
 
     const project = buildProjectFileFromEditorState(state);
     if (!project) {
-      setToast({ message: 'Project save failed because the current editor state could not be serialized.', tone: 'error' });
+      setToast({ message: 'Project export failed because the current editor state could not be serialized.', tone: 'error' });
       return;
     }
 
-    const filename = buildProjectFilename(state.projectName, project.generatorState.generatorId);
+    const filename = buildProjectFilename(state.projectName);
     downloadProject(project, filename);
-    setToast({ message: 'Project saved.', tone: 'success' });
+    setToast({ message: 'Project file downloaded. Keep it as a backup or share it.', tone: 'success' });
   }, [effectiveTemplate, state]);
 
   const handleExport = useCallback(() => {
-    if (!effectiveTemplate) {
+    const gate = getExportGate(Boolean(effectiveTemplate), exportStatusSummary);
+
+    if (gate === 'no-design') {
       setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
       return;
     }
 
-    if (exportErrorCount > 0) {
-      const errorDetails = exportReadiness
-        ? exportReadiness.issues
-            .filter((issue) => issue.severity === 'error')
-            .slice(0, 4)
-            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
-        : [];
-
+    if (gate === 'blocked-design-errors') {
       setPendingDialog({
         kind: 'export-blocked',
         title: 'Fix errors before export',
         message: 'This design has critical export issues. Resolve them before exporting to SVG.',
-        details: errorDetails,
+        details: exportStatusSummary.designErrors
+          .slice(0, 4)
+          .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message),
         confirmLabel: 'Review issues',
         confirmTone: 'default',
         icon: 'warning',
@@ -1247,28 +1418,10 @@ export default function EditorShell() {
       return;
     }
 
-    if (!exportReady) {
-      const issueDetails = exportReadiness
-        ? exportReadiness.issues
-            .filter((issue) => issue.severity === 'warning')
-            .slice(0, 4)
-            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
-        : [];
-
-      setPendingDialog({
-        kind: 'export-warning',
-        title: 'Export with warnings?',
-        message: 'The current template has export warnings. Continue only if you want to export exactly what is on the canvas.',
-        details: issueDetails,
-        confirmLabel: 'Export anyway',
-        confirmTone: 'destructive',
-        icon: 'warning',
-      });
-      return;
-    }
-
-    runExport();
-  }, [effectiveTemplate, exportErrorCount, exportReady, exportReadiness, runExport]);
+    // Ready, warnings-only and "needs calibration" all go through the export dialog,
+    // which previews the file and shows size, mat fit, warnings and calibration state.
+    setExportDialogOpen(true);
+  }, [effectiveTemplate, exportStatusSummary]);
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
@@ -1279,13 +1432,21 @@ export default function EditorShell() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
+  if (autosaveDecision === 'deciding') {
+    return (
+      <div data-theme={theme} className="flex h-full min-h-0 flex-1 items-center justify-center bg-[var(--studio-bg)] text-sm text-[var(--studio-ink-muted)]">
+        Loading your workspace…
+      </div>
+    );
+  }
+
   return (
-    <div data-theme={theme} className="h-full min-h-0 flex flex-col bg-[var(--studio-bg)] text-[var(--studio-ink)]">
+    <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.rhinestone.json,application/json"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -1299,13 +1460,15 @@ export default function EditorShell() {
         exportReady={exportReady}
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
+        needsCalibration={needsCalibration}
         recentDesigns={libraryRecord.userTemplates.slice(0, 5).map((entry) => ({ id: entry.templateId, name: entry.name }))}
         designSurface={designSurface}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
         onOpenRecent={(id) => void handleLoadFromLibrary(id)}
-        onSaveProject={handleSaveProject}
+        onSave={() => void handleSaveToLibrary()}
+        onExportProjectFile={handleSaveProject}
         onOpenLibrary={handleOpenLibrary}
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
@@ -1318,13 +1481,24 @@ export default function EditorShell() {
         onToggleTheme={toggleTheme}
       />
 
-      <WorkspaceModeBanner
-        mode="Rhinestone Studio"
-        status={workflowStatus}
-        project={state.projectName || 'Untitled project'}
-        guidance={workflowGuidance}
-        calibrationState={calibrationState}
-      />
+      {autosaveDecision === 'restored' && autosaveEntry && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
+          <span>Restored your last session · {autosaveEntry.name}</span>
+          <button
+            type="button"
+            onClick={() => {
+              globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
+              setAutosaveEntry(null);
+              setAutosaveDecision('ready');
+              dispatch({ type: 'RESET_EDITOR' });
+              setToast({ message: 'Started fresh.', tone: 'info' });
+            }}
+            className="rounded-md border border-[var(--studio-border)] px-2.5 py-1 font-medium text-[var(--studio-ink)] hover:bg-[var(--studio-hover-overlay)]"
+          >
+            Start fresh
+          </button>
+        </div>
+      )}
 
       <GarmentPreviewPanel
         open={garmentPreviewOpen}
@@ -1347,6 +1521,16 @@ export default function EditorShell() {
         onDuplicate={handleDuplicateLibraryEntry}
       />
 
+      <PromptDialog
+        open={namePrompt !== null}
+        title={namePrompt?.mode === 'duplicate' ? 'Duplicate design' : 'Rename design'}
+        label={namePrompt?.mode === 'duplicate' ? 'Name of the copy' : 'Design name'}
+        initialValue={namePrompt?.initialValue ?? ''}
+        confirmLabel={namePrompt?.mode === 'duplicate' ? 'Duplicate' : 'Rename'}
+        onSubmit={(value) => { void submitNamePrompt(value); }}
+        onCancel={() => setNamePrompt(null)}
+      />
+
       <EditorDialog
         open={Boolean(pendingGeneratorAction)}
         title="Regenerate from source settings?"
@@ -1360,6 +1544,24 @@ export default function EditorShell() {
         }}
         tone="destructive"
         icon="warning"
+      />
+
+      <ExportDialog
+        open={exportDialogOpen}
+        title="Export SVG"
+        svg={exportPreview?.svg ?? null}
+        error={exportPreview?.error ?? null}
+        widthMm={exportPreview?.widthMm ?? null}
+        heightMm={exportPreview?.heightMm ?? null}
+        summaryRows={[
+          { label: 'Stones', value: String(effectiveTemplate?.stones.length ?? 0) },
+          { label: 'Cutter', value: exportReadiness?.summary.cutter ?? '—' },
+        ]}
+        notes={exportDesignWarningNotes}
+        calibration={{ needsCalibration, onCalibrate: handleOpenSetup }}
+        defaultFilename={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
+        onDownload={handleExportDownload}
+        onClose={() => setExportDialogOpen(false)}
       />
 
       <EditorDialog
@@ -1377,7 +1579,12 @@ export default function EditorShell() {
 
       {toast && (
         <div className="absolute bottom-20 right-4 z-30">
-          <EditorToast message={toast.message} tone={toast.tone} onDismiss={() => setToast(null)} />
+          <EditorToast
+            message={toast.message}
+            tone={toast.tone}
+            action={toast.action}
+            onDismiss={() => setToast(null)}
+          />
         </div>
       )}
 
@@ -1395,6 +1602,8 @@ export default function EditorShell() {
             state={state}
             dispatch={editorDispatch}
             onNotify={notify}
+            fitRequestId={fitRequestId}
+            onManualViewChange={persistManualCanvasView}
           />
         </main>
 
@@ -1403,7 +1612,6 @@ export default function EditorShell() {
           dispatch={editorDispatch}
           outlineFontStatus={outlineFontStatus}
           exportReadiness={exportReadiness}
-          activeCalibrationProfile={activeCalibrationProfile}
         />
       </div>
 
@@ -1413,10 +1621,11 @@ export default function EditorShell() {
         exportReady={exportReady}
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
+        needsCalibration={needsCalibration}
+        spacingAdjustmentNote={spacingAdjustmentNote}
         isEditable={state.editableTemplate.isEditable}
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
-        calibrationState={calibrationState}
       />
     </div>
   );
@@ -1448,20 +1657,16 @@ function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_E
 // ─── Tabbed context panel ───────────────────────────────────────────────────
 
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
-import type { CalibrationProfile } from '../lib/workspaceVault';
-
 function StudioContextPanel({
   state,
   dispatch,
   outlineFontStatus,
   exportReadiness,
-  activeCalibrationProfile,
 }: {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus: OutlineFontStatus;
   exportReadiness: ExportReadinessResult | null;
-  activeCalibrationProfile: CalibrationProfile | null;
 }) {
   // Auto-switch: Inspect when select tool is active, Generate for generators.
   const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
@@ -1495,7 +1700,6 @@ function StudioContextPanel({
           mode={tab}
           outlineFontStatus={outlineFontStatus}
           exportReadiness={tab === 'inspector' ? exportReadiness : null}
-          activeCalibrationProfile={activeCalibrationProfile}
         />
       </div>
     </div>

@@ -196,7 +196,7 @@ export default function GlobalTopNav() {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex">
+        <nav className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
@@ -242,7 +242,7 @@ export default function GlobalTopNav() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-[#121215] px-3 py-2 text-[11px] text-zinc-300 md:px-5">
+      <div className={`${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : 'block'} border-t border-white/10 bg-[#121215] px-3 py-2 text-[11px] text-zinc-300 md:px-5`}>
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-zinc-300">
             <span className="inline-flex h-2 w-2 rounded-full bg-violet-400" />
@@ -256,7 +256,7 @@ export default function GlobalTopNav() {
         </div>
       </div>
 
-      <div className="overflow-x-auto border-t border-white/10 xl:hidden">
+      <div className={`overflow-x-auto border-t border-white/10 xl:hidden ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : ''}`}>
         <nav className="mx-auto flex w-max min-w-full gap-1 px-2 py-1.5 sm:px-3">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);

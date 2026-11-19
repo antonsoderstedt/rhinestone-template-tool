@@ -122,6 +122,7 @@ export default function TemplateLibraryPanel({
         </div>
         <button
           onClick={() => onFavorite(entry.templateId, !entry.favorite)}
+          aria-label={entry.favorite ? `Remove ${entry.name} from favorites` : `Add ${entry.name} to favorites`}
           className="rounded p-1 text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)]"
           title={entry.favorite ? 'Remove favorite' : 'Favorite'}
         >
@@ -137,12 +138,14 @@ export default function TemplateLibraryPanel({
           <FolderOpen className="h-3 w-3" />
           Open
         </button>
-        <button
-          onClick={() => onDuplicate(entry.templateId)}
-          className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
-        >
-          Copy
-        </button>
+        {!entry.tags.includes('autosave') && (
+          <button
+            onClick={() => onDuplicate(entry.templateId)}
+            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+          >
+            Copy
+          </button>
+        )}
         {!entry.builtIn && !entry.tags.includes('autosave') && (
           <button
             onClick={() => onRename(entry.templateId)}
@@ -154,6 +157,7 @@ export default function TemplateLibraryPanel({
         {!entry.builtIn && !entry.tags.includes('autosave') && (
           <button
             onClick={() => onDelete(entry.templateId)}
+            aria-label={`Delete ${entry.name}`}
             className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:border-rose-400/40 hover:text-rose-400"
           >
             <Trash2 className="h-3 w-3" />
@@ -170,11 +174,11 @@ export default function TemplateLibraryPanel({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="inline-flex rounded-full border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">
-                Browser library
+                Saved in this browser
               </div>
               <div className="flex items-center gap-2 text-[var(--studio-ink)]">
                 <LibraryBig className="h-4 w-4 text-amber-400" />
-                <h2 className="text-sm font-semibold">Template Library</h2>
+                <h2 className="text-sm font-semibold">My Designs</h2>
               </div>
             </div>
             <button
@@ -192,7 +196,7 @@ export default function TemplateLibraryPanel({
             className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400"
           >
             <Save className="h-3.5 w-3.5" />
-            Save current
+            Save to My Designs
           </button>
           <input
             type="search"
@@ -232,7 +236,7 @@ export default function TemplateLibraryPanel({
           {builtInEntries.length === 0 && userEntries.length === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">
               <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">No saved designs yet.</p>
-              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Save the current canvas to build a reusable design library.</p>
+              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Press “Save to My Designs” to keep the current canvas in this browser.</p>
             </div>
           ) : totalVisibleEntries === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">

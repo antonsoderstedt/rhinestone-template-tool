@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { traceImageSilhouette, type Polyline, type TraceableImageData } from '@/src/lib/rhinestone-engine/index';
 import { centerPolylines, polylinesToPathD } from './htvGeometry';
+import Modal from '../editor/ui/Modal';
 
 interface HtvSilhouetteConverterModalProps {
   image: TraceableImageData | null;
@@ -52,11 +53,16 @@ export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onC
   };
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 p-6 backdrop-blur-sm">
-      <div className="flex h-full max-h-[720px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl">
+    <Modal open={Boolean(image)} onClose={onCancel} titleId="htv-silhouette-title" overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="htv-silhouette-title"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-ink">Convert image to silhouette</h2>
+            <h2 id="htv-silhouette-title" className="text-sm font-semibold text-ink">Convert image to silhouette</h2>
             <p className="mt-0.5 text-xs text-ink-muted">Adjust the sliders until the outline looks right, then apply.</p>
           </div>
           <button onClick={onCancel} aria-label="Cancel" className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface-raised hover:text-ink">
@@ -109,7 +115,7 @@ export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onC
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

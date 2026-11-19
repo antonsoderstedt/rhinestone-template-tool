@@ -112,7 +112,7 @@ describe('editorReducer', () => {
     expect(outlineFill.svgTool.fillMode).toBe('outline-fill');
   });
 
-  it('defaults filled uploaded SVG artwork to outline-fill and a larger width', () => {
+  it('defaults filled uploaded SVG artwork to ~100 mm longest side and keeps it within print bounds', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_SVG_TOOL',
       updates: { uploadedSvgText: filledSvg },
@@ -122,7 +122,20 @@ describe('editorReducer', () => {
     expect(state.svgTool.fillMode).toBe('fill');
     expect(state.svgTool.placementPattern).toBe('hexagonal');
     expect(state.svgTool.densityPreset).toBe('dense');
-    expect(state.svgTool.targetWidthMm).toBe(280);
+    expect(state.svgTool.targetWidthMm).toBe(100);
+    expect(state.svgTool.targetHeightMm).toBe(40);
+    expect(Number(state.svgTool.targetWidthMm)).toBeLessThanOrEqual(280);
+    expect(Number(state.svgTool.targetHeightMm)).toBeLessThanOrEqual(280);
+  });
+
+  it('scales a 100x100 uploaded SVG to a 100x100 default target', () => {
+    const squareSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M 0 0 L 100 0 L 100 100 L 0 100 Z" /></svg>';
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { uploadedSvgText: squareSvg },
+    });
+    expect(state.svgTool.targetWidthMm).toBe(100);
+    expect(state.svgTool.targetHeightMm).toBe(100);
   });
 
   it('switches SVG render mode presets cleanly', () => {

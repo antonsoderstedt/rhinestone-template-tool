@@ -8,6 +8,7 @@ import {
   type FontPreference,
   type UploadedWorkspaceFont,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   getFontPreference,
   makeWorkspaceId,
   mergeInstalledWorkspaceFonts,
@@ -141,7 +142,7 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
 
 export default function FontsPage() {
   const router = useRouter();
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [installedManifestMeta, setInstalledManifestMeta] = useState<InstalledFontManifestMeta | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState('Sulay 123');
@@ -151,6 +152,10 @@ export default function FontsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [groupInstalledFamilies, setGroupInstalledFamilies] = useState(true);
   const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    queueMicrotask(() => setVault(readWorkspaceVault()));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

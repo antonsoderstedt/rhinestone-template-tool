@@ -57,7 +57,7 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
       {isHorizontal && (
         <div className="ml-2 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
           <Hand className="h-3.5 w-3.5 text-zinc-500" />
-          <span>Pan with Space or middle mouse</span>
+          <span>Pan with Space/middle mouse or wheel • Ctrl/Cmd + wheel zooms</span>
         </div>
       )}
     </aside>

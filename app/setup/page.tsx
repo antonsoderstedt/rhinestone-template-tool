@@ -9,16 +9,18 @@ import CalibrationWorkflow from '../components/CalibrationWorkflow';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
 import { getCalibrationGateSummary } from '../lib/workspaceRecovery';
-import { readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
+import { EMPTY_WORKSPACE_VAULT, readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
 
 export default function SetupPage() {
-  const [vault, setVault] = useState(() => readWorkspaceVault());
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => readActiveCalibrationProfileId());
+  const [vault, setVault] = useState(() => EMPTY_WORKSPACE_VAULT);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     const sync = () => {
-      setVault(readWorkspaceVault());
-      setActiveProfileId(readActiveCalibrationProfileId());
+      queueMicrotask(() => {
+        setVault(readWorkspaceVault());
+        setActiveProfileId(readActiveCalibrationProfileId());
+      });
     };
 
     sync();

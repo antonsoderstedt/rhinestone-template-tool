@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Minus, Plus, Scan } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Expand, Minus, Plus, Scan } from 'lucide-react';
 import { expandSelectionToGroups, type HtvAction, type HtvLayer, type HtvState } from './HtvState';
 import HtvLayerShape from './HtvLayerShape';
-import { approximateLayerBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
+import { approximateLayerBounds, computeDesignBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
 
 interface HtvCanvasProps {
   state: HtvState;
@@ -12,6 +12,7 @@ interface HtvCanvasProps {
 }
 
 const WORKSPACE_SIZE_MM = HTV_WORKSPACE_SIZE_MM;
+const FIT_MARGIN = 0.9;
 
 /** setPointerCapture can throw NotFoundError in edge cases (fast clicks, some stylus/trackpad drivers) — capture is a nice-to-have for drags that leave the handle, not a precondition for starting one. */
 function trySetPointerCapture(target: EventTarget | null, pointerId: number) {
@@ -30,8 +31,12 @@ type Interaction =
 
 export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
-  const placementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+  const placementLayers = useMemo(
+    () => state.layers.filter((layer) => layer.placementId === state.garment.placementZone),
+    [state.garment.placementZone, state.layers],
+  );
 
   const viewBoxSize = WORKSPACE_SIZE_MM / state.canvas.zoom;
   const viewBoxX = -viewBoxSize / 2 + state.canvas.panX;
@@ -162,12 +167,93 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const zoomIn = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
   const zoomOut = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.2) } });
   const resetView = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+  const fitToView = useCallback(() => {
+    const bounds = computeDesignBounds(placementLayers);
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+      dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+      return;
+    }
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    const viewportWidth = rect?.width ?? 1;
+    const viewportHeight = rect?.height ?? 1;
+    if (viewportWidth <= 0 || viewportHeight <= 0) return;
+
+    const viewportAspect = viewportWidth / viewportHeight;
+    const targetWidth = viewportAspect >= bounds.width / bounds.height
+      ? bounds.width
+      : bounds.height * viewportAspect;
+    const targetHeight = viewportAspect >= bounds.width / bounds.height
+      ? bounds.width / viewportAspect
+      : bounds.height;
+    const nextViewBoxSize = Math.max(
+      targetWidth / FIT_MARGIN,
+      targetHeight / FIT_MARGIN,
+    );
+    const nextZoom = Math.min(Math.max(WORKSPACE_SIZE_MM / nextViewBoxSize, 0.2), 5);
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    dispatch({
+      type: 'UPDATE_CANVAS',
+      updates: {
+        zoom: nextZoom,
+        panX: centerX,
+        panY: centerY,
+      },
+    });
+  }, [dispatch, placementLayers]);
+
+  const fitToViewRef = useRef(fitToView);
+  useEffect(() => {
+    fitToViewRef.current = fitToView;
+  }, [fitToView]);
+  useEffect(() => {
+    fitToViewRef.current();
+  }, [placementLayers]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      if (event.ctrlKey || event.metaKey) {
+        const delta = event.deltaY > 0 ? 0.9 : 1.1;
+        const nextZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.2), 5);
+        if (nextZoom === state.canvas.zoom) return;
+
+        const currentSize = WORKSPACE_SIZE_MM / state.canvas.zoom;
+        const cursorX = -currentSize / 2 + state.canvas.panX + ((event.clientX - rect.left) / rect.width) * currentSize;
+        const cursorY = -currentSize / 2 + state.canvas.panY + ((event.clientY - rect.top) / rect.height) * currentSize;
+        const nextSize = WORKSPACE_SIZE_MM / nextZoom;
+        const nextPanX = cursorX - ((event.clientX - rect.left) / rect.width) * nextSize + nextSize / 2;
+        const nextPanY = cursorY - ((event.clientY - rect.top) / rect.height) * nextSize + nextSize / 2;
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: nextZoom, panX: nextPanX, panY: nextPanY } });
+        return;
+      }
+
+      const mmPerPx = viewBoxSize / Math.max(rect.width, 1);
+      dispatch({
+        type: 'UPDATE_CANVAS',
+        updates: {
+          panX: state.canvas.panX - event.deltaX * mmPerPx,
+          panY: state.canvas.panY - event.deltaY * mmPerPx,
+        },
+      });
+    };
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', handleWheel);
+  }, [dispatch, state.canvas.panX, state.canvas.panY, state.canvas.zoom, viewBoxSize]);
 
   const singleSelectedLayer =
     state.selectedLayerIds.size === 1 ? placementLayers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
   return (
-    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
+    <div ref={containerRef} className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
         <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
@@ -177,7 +263,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
       <svg
         ref={svgRef}
         viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxSize} ${viewBoxSize}`}
-        className="h-full w-full touch-none"
+        preserveAspectRatio="xMidYMid meet"
+        className="absolute inset-0 h-full w-full touch-none"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerDown={handleBackgroundPointerDown}
@@ -244,6 +331,9 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         </button>
         <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
           <Scan className="h-4 w-4" />
+        </button>
+        <button onClick={fitToView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Fit design to view">
+          <Expand className="h-4 w-4" />
         </button>
       </div>
       <div className="absolute bottom-3 left-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2 py-1 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">

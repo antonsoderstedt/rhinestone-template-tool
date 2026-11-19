@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Archive, Gem, Image as ImageIcon, LibraryBig, Search, Star, SwatchBook, Trash2, Upload } from 'lucide-react';
 import {
   type WorkspaceAsset,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   makeWorkspaceId,
   readWorkspaceVault,
   writeWorkspaceVault,
@@ -20,6 +21,11 @@ import {
   workspaceInputClassName,
   workspaceSelectClassName,
 } from '../components/workspace/WorkspaceChrome';
+import UndoToast from '../components/UndoToast';
+import {
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+  validateAssetUpload,
+} from '@/src/lib/rhinestone-engine/index';
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -30,9 +36,9 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-async function fileToAsset(file: File): Promise<WorkspaceAsset> {
+async function fileToAsset(file: File, svgTextOverride?: string | null): Promise<WorkspaceAsset> {
   const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
-  const svgText = isSvg ? await file.text() : null;
+  const svgText = isSvg ? (typeof svgTextOverride === 'string' ? svgTextOverride : await file.text()) : null;
   const sourceDataUrl = isSvg
     ? `data:image/svg+xml;utf8,${encodeURIComponent(svgText ?? '')}`
     : await readFileAsDataUrl(file);
@@ -61,14 +67,37 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
   writeWorkspaceVault(nextVault);
 }
 
+function getUploadRejectionMessage(code: ReturnType<typeof validateAssetUpload>['code']): string {
+  switch (code) {
+    case 'not_a_valid_svg':
+      return 'not a valid SVG';
+    case 'no_supported_shapes':
+      return 'no supported shapes';
+    case 'file_too_large':
+      return 'file too large';
+    default:
+      return 'upload failed';
+  }
+}
+
 export default function LibraryPage() {
   const router = useRouter();
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [query, setQuery] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | 'svg' | 'image'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'favorites'>('recent');
   const [tagFilter, setTagFilter] = useState('all');
+  const [undoState, setUndoState] = useState<{ toastId: number; message: string; asset: WorkspaceAsset } | null>(null);
+  const [uploadSummary, setUploadSummary] = useState<{
+    tone: 'success' | 'warning' | 'error';
+    message: string;
+    details: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => setVault(readWorkspaceVault()));
+  }, []);
 
   const allTags = useMemo(
     () => Array.from(new Set(vault.assets.flatMap((asset) => asset.tags))).sort((a, b) => a.localeCompare(b)),
@@ -98,12 +127,57 @@ export default function LibraryPage() {
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const uploaded = await Promise.all(Array.from(files).map(fileToAsset));
-    const nextVault = {
-      ...vault,
-      assets: [...uploaded, ...vault.assets],
-    };
-    persistVault(nextVault, setVault);
+    const nextAssets: WorkspaceAsset[] = [];
+    const details: string[] = [];
+    const rejectionReasons: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+      const svgText = isSvg ? await file.text().catch(() => null) : null;
+      const validation = validateAssetUpload({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        svgText,
+        maxSizeBytes: DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+      });
+
+      if (!validation.valid) {
+        const reason = getUploadRejectionMessage(validation.code);
+        rejectionReasons.push(reason);
+        details.push(`${file.name} — rejected: ${reason}`);
+        continue;
+      }
+
+      try {
+        const asset = await fileToAsset(file, svgText);
+        nextAssets.push(asset);
+        details.push(`${file.name} — added`);
+      } catch {
+        rejectionReasons.push('could not read file');
+        details.push(`${file.name} — rejected: could not read file`);
+      }
+    }
+
+    if (nextAssets.length > 0) {
+      const nextVault = {
+        ...vault,
+        assets: [...nextAssets, ...vault.assets],
+      };
+      persistVault(nextVault, setVault);
+    }
+
+    const addedCount = nextAssets.length;
+    const rejectedCount = details.length - addedCount;
+    const distinctReasons = Array.from(new Set(rejectionReasons));
+    const message = rejectedCount > 0
+      ? `${addedCount} added, ${rejectedCount} rejected: ${distinctReasons.join(', ')}`
+      : `${addedCount} added`;
+    setUploadSummary({
+      tone: rejectedCount === 0 ? 'success' : addedCount > 0 ? 'warning' : 'error',
+      message,
+      details,
+    });
   };
 
   const updateAsset = (assetId: string, updater: (asset: WorkspaceAsset) => WorkspaceAsset) => {
@@ -112,6 +186,21 @@ export default function LibraryPage() {
       assets: vault.assets.map((asset) => (asset.assetId === assetId ? updater(asset) : asset)),
     };
     persistVault(nextVault, setVault);
+  };
+
+  const deleteAsset = (asset: WorkspaceAsset) => {
+    persistVault({ ...vault, assets: vault.assets.filter((item) => item.assetId !== asset.assetId) }, setVault);
+    setUndoState((current) => ({ toastId: (current?.toastId ?? 0) + 1, message: `Deleted “${asset.name}”.`, asset }));
+  };
+
+  const undoDeleteAsset = () => {
+    if (!undoState) return;
+    // Restore into the latest stored vault so edits made in the meantime are kept.
+    const latest = readWorkspaceVault();
+    if (!latest.assets.some((item) => item.assetId === undoState.asset.assetId)) {
+      persistVault({ ...latest, assets: [undoState.asset, ...latest.assets] }, setVault);
+    }
+    setUndoState(null);
   };
 
   return (
@@ -155,6 +244,25 @@ export default function LibraryPage() {
         </section>
 
         <WorkspaceSurface className="p-5">
+          {uploadSummary && (
+            <div
+              role="status"
+              className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                uploadSummary.tone === 'success'
+                  ? 'border-success-500/30 bg-success-50 text-success-700'
+                  : uploadSummary.tone === 'warning'
+                    ? 'border-warning-500/30 bg-warning-50 text-warning-700'
+                    : 'border-danger-500/30 bg-danger-50 text-danger-700'
+              }`}
+            >
+              <p className="font-semibold">{uploadSummary.message}</p>
+              <ul className="mt-2 space-y-1 text-xs">
+                {uploadSummary.details.map((detail, index) => (
+                  <li key={`${index}-${detail}`}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid gap-3 lg:grid-cols-[1.8fr_repeat(4,minmax(0,1fr))]">
             <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
@@ -268,7 +376,7 @@ export default function LibraryPage() {
                     {asset.archived ? 'Restore' : 'Archive'}
                   </button>
                   <button
-                    onClick={() => persistVault({ ...vault, assets: vault.assets.filter((item) => item.assetId !== asset.assetId) }, setVault)}
+                    onClick={() => deleteAsset(asset)}
                     className="inline-flex items-center gap-2 rounded-xl bg-danger-50 px-3 py-2 text-sm font-medium text-danger-600 transition hover:bg-danger-500/10"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -287,6 +395,13 @@ export default function LibraryPage() {
           />
         )}
       </div>
+
+      <UndoToast
+        message={undoState?.message ?? null}
+        toastId={undoState?.toastId ?? 0}
+        onUndo={undoDeleteAsset}
+        onDismiss={() => setUndoState(null)}
+      />
     </WorkspacePage>
   );
 }

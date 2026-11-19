@@ -27,6 +27,8 @@ import {
   getSupportedRhinestoneFontStoneSizes,
   getRhinestoneFontDefinition,
   isKnownRhinestoneFontId,
+  svgStringToPolylines,
+  calculatePolylineBounds,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
 
@@ -285,6 +287,37 @@ export interface EditorState {
   history: EditHistory;
 }
 
+export const DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM = 100;
+export const MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM = 280;
+
+function getDefaultSvgUploadTargetDimensions(svgText: string): { widthMm: number; heightMm: number } {
+  const targetLongestSideMm = Math.min(DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM, MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM);
+
+  try {
+    const polylines = svgStringToPolylines(svgText, { cleanup: false });
+    const bounds = calculatePolylineBounds(polylines);
+    const sourceWidthMm = Math.max(bounds.width, 1e-6);
+    const sourceHeightMm = Math.max(bounds.height, 1e-6);
+
+    if (sourceWidthMm >= sourceHeightMm) {
+      return {
+        widthMm: targetLongestSideMm,
+        heightMm: Number(((sourceHeightMm / sourceWidthMm) * targetLongestSideMm).toFixed(2)),
+      };
+    }
+
+    return {
+      widthMm: Number(((sourceWidthMm / sourceHeightMm) * targetLongestSideMm).toFixed(2)),
+      heightMm: targetLongestSideMm,
+    };
+  } catch {
+    return {
+      widthMm: targetLongestSideMm,
+      heightMm: targetLongestSideMm,
+    };
+  }
+}
+
 // ─── Default States ───────────────────────────────────────────────────────────
 
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
@@ -415,8 +448,10 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     if (suggestSvgUploadMode(updates.uploadedSvgText) === 'outline-fill') {
       next.renderMode = 'artwork-dots';
       applyArtworkDotsPreset();
-      next.targetWidthMm = 280;
     }
+    const defaults = getDefaultSvgUploadTargetDimensions(updates.uploadedSvgText);
+    next.targetWidthMm = defaults.widthMm;
+    next.targetHeightMm = defaults.heightMm;
   }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {

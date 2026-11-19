@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react';
 import { Shirt, X } from 'lucide-react';
 import { getTemplateStoneBounds, type RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
+import Modal from '../editor/ui/Modal';
 import {
   GARMENTS,
   GARMENT_COLORS,
@@ -58,13 +59,18 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 p-6 backdrop-blur-sm">
-      <div className="flex h-full max-h-[720px] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl">
+    <Modal open={open} onClose={onClose} titleId="garment-preview-title" overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="garment-preview-title"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2 text-ink">
             <Shirt className="h-4 w-4 text-accent-600" />
             <div>
-              <h2 className="text-sm font-semibold">Garment preview</h2>
+              <h2 id="garment-preview-title" className="text-sm font-semibold">Garment preview</h2>
               <p className="mt-0.5 text-xs text-ink-muted">
                 Flat mockup — swap in real product photos once you have them.
               </p>
@@ -176,6 +182,6 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

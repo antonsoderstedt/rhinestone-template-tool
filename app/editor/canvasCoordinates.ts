@@ -28,6 +28,12 @@ export interface CanvasWorkspaceBounds {
   height: number;
 }
 
+export interface FitViewResult {
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
 export function calculateDisplayedCanvasViewBox(
   workspace: CanvasWorkspaceBounds,
   zoom: number,
@@ -172,6 +178,79 @@ export function calculateCanvasWorkspaceBounds(
     width,
     height,
   };
+}
+
+export function calculateFitViewTransform(
+  workspace: CanvasWorkspaceBounds,
+  content: CanvasWorkspaceBounds,
+  viewport: { widthPx: number; heightPx: number },
+  options?: { margin?: number; minZoom?: number; maxZoom?: number },
+): FitViewResult {
+  const margin = options?.margin ?? 0.92;
+  const minZoom = options?.minZoom ?? 0.1;
+  const maxZoom = options?.maxZoom ?? 5;
+  const contentWidth = Math.max(content.width, 1e-6);
+  const contentHeight = Math.max(content.height, 1e-6);
+  const viewportWidth = Math.max(viewport.widthPx, 1);
+  const viewportHeight = Math.max(viewport.heightPx, 1);
+  const viewportAspect = viewportWidth / viewportHeight;
+  const contentAspect = contentWidth / contentHeight;
+
+  let viewBoxWidth: number;
+  let viewBoxHeight: number;
+  if (contentAspect >= viewportAspect) {
+    viewBoxWidth = contentWidth / margin;
+    viewBoxHeight = viewBoxWidth / viewportAspect;
+  } else {
+    viewBoxHeight = contentHeight / margin;
+    viewBoxWidth = viewBoxHeight * viewportAspect;
+  }
+
+  const exactFitZoom = Math.min(
+    workspace.width / viewBoxWidth,
+    workspace.height / viewBoxHeight,
+  );
+  const zoom = Math.min(Math.max(exactFitZoom, minZoom), maxZoom);
+  const panX = workspace.x + workspace.width / 2 - (content.x + content.width / 2);
+  const panY = workspace.y + workspace.height / 2 - (content.y + content.height / 2);
+  return { zoom, panX, panY };
+}
+
+export function validatePersistedCanvasView(
+  value: unknown,
+  workspace: CanvasWorkspaceBounds,
+  content: CanvasWorkspaceBounds,
+): FitViewResult | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { manual?: unknown; zoom?: unknown; panX?: unknown; panY?: unknown };
+  if (candidate.manual !== true) return null;
+  if (
+    typeof candidate.zoom !== 'number'
+    || !Number.isFinite(candidate.zoom)
+    || candidate.zoom < 0.1
+    || candidate.zoom > 5
+    || typeof candidate.panX !== 'number'
+    || !Number.isFinite(candidate.panX)
+    || typeof candidate.panY !== 'number'
+    || !Number.isFinite(candidate.panY)
+  ) {
+    return null;
+  }
+
+  const viewBox = calculateDisplayedCanvasViewBox(
+    workspace,
+    candidate.zoom,
+    candidate.panX,
+    candidate.panY,
+  );
+  const intersects =
+    content.x <= viewBox.x + viewBox.width
+    && content.x + content.width >= viewBox.x
+    && content.y <= viewBox.y + viewBox.height
+    && content.y + content.height >= viewBox.y;
+  return intersects
+    ? { zoom: candidate.zoom, panX: candidate.panX, panY: candidate.panY }
+    : null;
 }
 
 /**

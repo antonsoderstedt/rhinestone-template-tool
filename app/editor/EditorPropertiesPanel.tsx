@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { CopyPlus, DiamondMinus, Hand, MoveHorizontal, MoveVertical, PenLine, ScanSearch, Sparkles } from 'lucide-react';
 import {
   createImportedTemplate,
   getRecommendedCenterDistance,
+  getTemplatePhysicalSize,
   getOutlineFontDefinition,
   getPreferredRhinestoneFontStoneSize,
   getSupportedTextCoverageModes,
@@ -39,7 +39,6 @@ import {
 import { EDITOR_TOOLS, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
-import type { CalibrationProfile } from '@/app/lib/workspaceVault';
 
 interface EditorPropertiesPanelProps {
   state: EditorState;
@@ -47,7 +46,6 @@ interface EditorPropertiesPanelProps {
   mode: 'source' | 'inspector';
   outlineFontStatus?: OutlineFontStatus;
   exportReadiness?: ExportReadinessResult | null;
-  activeCalibrationProfile?: CalibrationProfile | null;
 }
 
 interface ToolPropertiesProps {
@@ -88,54 +86,6 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-function CalibrationWorkflowCard({ activeCalibrationProfile }: { activeCalibrationProfile?: CalibrationProfile | null }) {
-  if (!activeCalibrationProfile) {
-    return (
-      <div className="rounded-xl border border-amber-400/30 bg-amber-50 px-3 py-3 text-left">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-700">Calibration gate</span>
-          <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-700">
-            Missing
-          </span>
-        </div>
-        <p className="mt-2 text-sm font-medium text-amber-800">No approved profile is active.</p>
-        <p className="mt-1 text-xs leading-5 text-amber-700">
-          Set up the material profile before production export so the final SVG matches your cut settings.
-        </p>
-        <Link href="/setup" className="mt-3 inline-flex items-center text-xs font-semibold text-amber-800 underline decoration-amber-400 underline-offset-4">
-          Open setup & calibration
-        </Link>
-      </div>
-    );
-  }
-
-  const approved = Boolean(activeCalibrationProfile.approvedAt);
-  return (
-    <div className={`rounded-xl border px-3 py-3 text-left ${approved ? 'border-emerald-400/30 bg-emerald-50' : 'border-amber-400/30 bg-amber-50'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-[9px] font-semibold uppercase tracking-[0.18em] ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
-          Calibration gate
-        </span>
-        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${approved ? 'border-emerald-200 bg-emerald-100 text-emerald-700' : 'border-amber-200 bg-amber-100 text-amber-700'}`}>
-          {approved ? 'Approved' : 'Pending'}
-        </span>
-      </div>
-
-      <p className={`mt-2 text-sm font-medium ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
-        {activeCalibrationProfile.name}
-      </p>
-      <p className={`mt-1 text-xs leading-5 ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
-        {approved
-          ? 'This calibration profile is approved for production. Keep it active before export.'
-          : 'Approve this calibration in setup before using it for production work.'}
-      </p>
-      <Link href="/setup" className={`mt-3 inline-flex items-center text-xs font-semibold underline decoration-2 underline-offset-4 ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
-        Review setup workflow
-      </Link>
-    </div>
-  );
-}
-
 function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activeTool']; dispatch: React.Dispatch<EditorAction> }) {
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -163,13 +113,12 @@ function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activ
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, activeCalibrationProfile }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
       <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
-        <CalibrationWorkflowCard activeCalibrationProfile={activeCalibrationProfile} />
 
         <PanelSection title="Tools" description="Choose how you want to work with this design." defaultOpen={false}>
           <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
@@ -1225,6 +1174,14 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
 
 function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
   const { svgTool } = state;
+  const currentTemplateSize = state.template ? getTemplatePhysicalSize(state.template) : null;
+  const scaledWidthMm = typeof svgTool.targetWidthMm === 'number'
+    ? svgTool.targetWidthMm
+    : currentTemplateSize?.widthMm ?? null;
+  const scaledHeightMm = typeof svgTool.targetHeightMm === 'number'
+    ? svgTool.targetHeightMm
+    : currentTemplateSize?.heightMm ?? null;
+  const scaledStoneCount = state.template?.stones.length ?? 0;
   const svgCapabilities = getGeneratorCapabilityProfile('svg');
   const currentArtworkName = svgTool.assetKind === 'image' ? svgTool.imageFileName : svgTool.svgFileName;
   const uploadInputId = 'artwork-upload-input';
@@ -1488,6 +1445,11 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           />
 
           {/* Target Dimensions */}
+          {typeof scaledWidthMm === 'number' && typeof scaledHeightMm === 'number' && (
+            <p className="rounded-xl border border-info-500/30 bg-info-500/10 px-3 py-2 text-xs text-info-700">
+              Scaled to {scaledWidthMm.toFixed(1)} × {scaledHeightMm.toFixed(1)} mm — change below. Stone count: {scaledStoneCount}.
+            </p>
+          )}
           <PhysicalDimensionsControl
             widthMm={svgTool.targetWidthMm}
             heightMm={svgTool.targetHeightMm}
@@ -1835,6 +1797,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
           <li>• Place mode: click one stone or drag a line</li>
           <li>• Erase mode: click or drag to remove stones</li>
           <li>• Move whole design selects everything and switches to Select</li>
+          <li>• Ctrl/Cmd + wheel zooms · wheel pans the canvas</li>
         </ul>
       </div>
     </div>
@@ -2158,6 +2121,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <ul className="text-xs text-ink-muted space-y-1">
           <li>• Cmd/Ctrl+Z to undo</li>
           <li>• Cmd/Ctrl+Shift+Z to redo</li>
+          <li>• Ctrl/Cmd + wheel zooms · wheel pans the canvas</li>
         </ul>
       </div>
     </div>

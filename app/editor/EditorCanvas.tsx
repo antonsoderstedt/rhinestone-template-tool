@@ -1,11 +1,12 @@
 'use client';
 
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
 import {
   calculateCanvasWorkspaceBounds,
+  calculateFitViewTransform,
   calculateDisplayedCanvasViewBox,
   screenToMm,
   snapToGrid,
@@ -30,6 +31,8 @@ interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   onNotify?: (message: string, tone: 'success' | 'warning' | 'error' | 'info') => void;
+  fitRequestId?: number;
+  onManualViewChange?: (view: { zoom: number; panX: number; panY: number }) => void;
 }
 
 const RULER_BAND_PX = 32;
@@ -62,9 +65,16 @@ function getStoneCanvasColor(stone: EditableStone): string {
   return '#8b5cf6';
 }
 
-export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvasProps) {
+export default function EditorCanvas({
+  state,
+  dispatch,
+  onNotify,
+  fitRequestId = 0,
+  onManualViewChange,
+}: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const suppressNextClickRef = useRef(false);
   const nextStoneIdRef = useRef(0);
   
@@ -324,20 +334,25 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
   // Handle zoom controls
   const handleZoomIn = () => {
-    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
+    const zoom = Math.min(state.canvas.zoom * 1.2, 5);
+    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
+    onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
 
   const handleZoomOut = () => {
-    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.1) } });
+    const zoom = Math.max(state.canvas.zoom / 1.2, 0.1);
+    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
+    onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
 
   const handleZoomReset = () => {
     dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+    onManualViewChange?.({ zoom: 1, panX: 0, panY: 0 });
   };
 
   // Fits the actual design (not the padded default workspace) snugly into the
   // real, current pixel size of the canvas — distinct from "reset to 100%".
-  const handleFitToScreen = () => {
+  const fitToScreen = useCallback(() => {
     if (stones.length === 0) {
       dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
       return;
@@ -349,32 +364,38 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       minHeightMm: 0,
     });
 
-    let targetWidth = contentBounds.width;
-    let targetHeight = contentBounds.height;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (rect && rect.width > 0 && rect.height > 0) {
-      const contentAspect = targetWidth / targetHeight;
-      const rectAspect = rect.width / rect.height;
-      if (contentAspect > rectAspect) {
-        targetHeight = targetWidth / rectAspect;
-      } else {
-        targetWidth = targetHeight * rectAspect;
-      }
-    }
-
-    const exactFitZoom = Math.min(workspaceBounds.width / targetWidth, workspaceBounds.height / targetHeight);
-    // Zoom out slightly from the exact fit so the content isn't flush against the edges.
-    const nextZoom = Math.min(Math.max(exactFitZoom * FIT_TO_SCREEN_MARGIN, 0.1), 5);
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const fit = calculateFitViewTransform(
+      workspaceBounds,
+      contentBounds,
+      { widthPx: rect?.width ?? 1, heightPx: rect?.height ?? 1 },
+      { margin: FIT_TO_SCREEN_MARGIN, minZoom: 0.1, maxZoom: 100 },
+    );
 
     dispatch({
       type: 'UPDATE_CANVAS',
       updates: {
-        zoom: nextZoom,
-        panX: workspaceBounds.x + workspaceBounds.width / 2 - (contentBounds.x + contentBounds.width / 2),
-        panY: workspaceBounds.y + workspaceBounds.height / 2 - (contentBounds.y + contentBounds.height / 2),
+        zoom: fit.zoom,
+        panX: fit.panX,
+        panY: fit.panY,
       },
     });
+  }, [dispatch, stones, workspaceBounds]);
+
+  const handleFitToScreen = () => {
+    fitToScreen();
   };
+
+  const fitToScreenRef = useRef(fitToScreen);
+
+  useEffect(() => {
+    fitToScreenRef.current = fitToScreen;
+  }, [fitToScreen]);
+
+  useEffect(() => {
+    if (fitRequestId <= 0) return;
+    fitToScreenRef.current();
+  }, [fitRequestId]);
 
   const toggleGrid = () => {
     dispatch({ type: 'UPDATE_CANVAS', updates: { showGrid: !state.canvas.showGrid } });
@@ -422,6 +443,11 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           panX: panState.startPanX + dx * mmPerPxX, 
           panY: panState.startPanY + dy * mmPerPxY,
         } 
+      });
+      onManualViewChange?.({
+        zoom: state.canvas.zoom,
+        panX: panState.startPanX + dx * mmPerPxX,
+        panY: panState.startPanY + dy * mmPerPxY,
       });
       return;
     }
@@ -1043,6 +1069,11 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             panY: bounds.y + bounds.height / 2 - nextCenterY,
           },
         });
+        onManualViewChange?.({
+          zoom: newZoom,
+          panX: bounds.x + bounds.width / 2 - nextCenterX,
+          panY: bounds.y + bounds.height / 2 - nextCenterY,
+        });
         return;
       }
 
@@ -1060,11 +1091,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           panY: currentPanY - e.deltaY * mmPerPxY,
         },
       });
+      onManualViewChange?.({
+        zoom: state.canvas.zoom,
+        panX: currentPanX - e.deltaX * mmPerPxX,
+        panY: currentPanY - e.deltaY * mmPerPxY,
+      });
     };
 
     svg.addEventListener('wheel', handleWheel, { passive: false });
     return () => svg.removeEventListener('wheel', handleWheel);
-  }, [state.canvas.zoom, dispatch]);
+  }, [state.canvas.zoom, dispatch, onManualViewChange]);
 
   // Space key pan state
   const [spacePressed, setSpacePressed] = useState(false);
@@ -1096,7 +1132,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   const hasCanvasContent = stones.length > 0 || cutShapes.length > 0;
 
   return (
-    <div ref={containerRef} className="relative flex-1 overflow-hidden bg-[var(--studio-surface)]">
+    <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
         <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
@@ -1182,13 +1218,15 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           )}
 
           <div
+            ref={viewportRef}
             className="relative h-full w-full"
             style={{ gridColumn: state.canvas.showRulers ? 2 : 1, gridRow: state.canvas.showRulers ? 2 : 1 }}
           >
             <svg
               ref={svgRef}
               viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-              className="h-full w-full bg-[var(--studio-bg)]"
+              preserveAspectRatio="xMidYMid meet"
+              className="absolute inset-0 h-full w-full bg-[var(--studio-bg)]"
               style={{
                 width: '100%',
                 height: '100%',

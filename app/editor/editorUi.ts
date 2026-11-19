@@ -167,7 +167,7 @@ export function getToolShortcutLabel(tool: EditorTool): string | null {
 
 const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
   select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
-  manual: 'Click or drag to place stones. Hold Space or the middle mouse button to pan.',
+  manual: 'Click or drag to place stones. Hold Space/middle mouse or use wheel to pan. Ctrl/Cmd + wheel zooms.',
   text: 'Adjust the text settings on the left, then Generate to see your design here.',
   'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
   'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',

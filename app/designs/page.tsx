@@ -8,6 +8,7 @@ import {
   type DesignPreference,
   type HtvDesignEntry,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   getDesignArchived,
   readWorkspaceVault,
   writeWorkspaceVault,
@@ -24,6 +25,9 @@ import {
 } from '../components/workspace/WorkspaceChrome';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import PromptDialog from '../components/PromptDialog';
+import UndoToast from '../components/UndoToast';
+import { formatRelativeTime } from '../lib/relativeTime';
 import {
   getCalibrationGateSummary,
   getRecoveryActionPlan,
@@ -31,6 +35,19 @@ import {
 import { readActiveCalibrationProfileId } from '../lib/workspaceVault';
 
 type StudioFilter = 'all' | 'rhinestone' | 'htv';
+type SortMode = 'recent' | 'name' | 'favorites';
+
+interface RenameTarget {
+  studio: 'rhinestone' | 'htv';
+  id: string;
+  name: string;
+}
+
+interface UndoState {
+  toastId: number;
+  message: string;
+  undo: () => void;
+}
 
 function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   setVault(nextVault);
@@ -39,32 +56,32 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
 
 export default function DesignsPage() {
   const router = useRouter();
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [rhinestoneDesigns, setRhinestoneDesigns] = useState<TemplateLibraryEntry[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [studioFilter, setStudioFilter] = useState<StudioFilter>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
-  const [hasAutosave] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const raw = window.localStorage.getItem('rhinestone-template-library-autosave');
-    return Boolean(raw && raw.trim().length > 0);
-  });
+  const [hasAutosave, setHasAutosave] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
+  const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
+  const [undoState, setUndoState] = useState<UndoState | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
 
-  const approvedCalibrationCount = vault.calibrationProfiles.filter((profile) => Boolean(profile.approvedAt)).length;
-  const workflowStatus: 'Ready' | 'Warning' | 'Blocked' = vault.calibrationProfiles.length === 0 ? 'Warning' : approvedCalibrationCount === 0 ? 'Warning' : 'Ready';
-  const calibrationState = vault.calibrationProfiles.length === 0
-    ? { label: 'No profiles', tone: 'warning' as const }
-    : approvedCalibrationCount === 0
-      ? { label: `${vault.calibrationProfiles.length} pending`, tone: 'warning' as const }
-      : { label: `${approvedCalibrationCount} approved`, tone: 'success' as const };
+  const savedCount = rhinestoneDesigns.length + vault.htvDesigns.length;
   const recoveryAction = useMemo(() => getRecoveryActionPlan(vault, hasAutosave), [hasAutosave, vault]);
   const calibrationGate = useMemo(
-    () => getCalibrationGateSummary(vault, readActiveCalibrationProfileId()),
-    [vault],
+    () => getCalibrationGateSummary(vault, activeProfileId),
+    [activeProfileId, vault],
   );
-  const resumeReady = calibrationGate.activeProfileApproved && !hasAutosave;
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setVault(readWorkspaceVault());
+      setActiveProfileId(readActiveCalibrationProfileId());
+      setHasAutosave(Boolean(window.localStorage.getItem('rhinestone-template-library-autosave')?.trim()));
+      setNow(new Date());
+    });
     const repository = new LocalStorageTemplateLibraryRepository();
     void repository.list().then((record) => {
       setRhinestoneDesigns(record.userTemplates);
@@ -106,8 +123,14 @@ export default function DesignsPage() {
         if (!loweredQuery) return true;
         return `${design.name} ${design.tags.join(' ')}`.toLowerCase().includes(loweredQuery);
       })
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
-  }, [query, rhinestoneDesigns, statusFilter, studioFilter, vault]);
+      .sort((left, right) => {
+        if (sortMode === 'name') return left.name.localeCompare(right.name);
+        if (sortMode === 'favorites' && left.favorite !== right.favorite) {
+          return Number(right.favorite) - Number(left.favorite);
+        }
+        return right.updatedAt.localeCompare(left.updatedAt);
+      });
+  }, [query, rhinestoneDesigns, sortMode, statusFilter, studioFilter, vault]);
 
   const updateDesignArchived = (designKey: string, archived: boolean) => {
     const nextPref: DesignPreference = { designKey, archived };
@@ -117,13 +140,22 @@ export default function DesignsPage() {
     }, setVault);
   };
 
-  const renameRhinestoneDesign = async (templateId: string) => {
-    const repository = new LocalStorageTemplateLibraryRepository();
-    const nextName = window.prompt('Rename design');
-    if (!nextName || !nextName.trim()) return;
-    await repository.rename(templateId, nextName.trim());
-    const record = await repository.list();
-    setRhinestoneDesigns(record.userTemplates);
+  const submitRename = async (nextName: string) => {
+    const target = renameTarget;
+    setRenameTarget(null);
+    if (!target) return;
+    if (target.studio === 'rhinestone') {
+      const repository = new LocalStorageTemplateLibraryRepository();
+      await repository.rename(target.id, nextName);
+      const record = await repository.list();
+      setRhinestoneDesigns(record.userTemplates);
+    } else {
+      updateHtvDesign(target.id, (current) => ({ ...current, name: nextName, updatedAt: new Date().toISOString() }));
+    }
+  };
+
+  const showUndo = (message: string, undo: () => void) => {
+    setUndoState((current) => ({ toastId: (current?.toastId ?? 0) + 1, message, undo }));
   };
 
   const favoriteRhinestoneDesign = async (templateId: string, favorite: boolean) => {
@@ -133,11 +165,28 @@ export default function DesignsPage() {
     setRhinestoneDesigns(record.userTemplates);
   };
 
-  const deleteRhinestoneDesign = async (templateId: string) => {
+  const deleteRhinestoneDesign = async (entry: TemplateLibraryEntry) => {
     const repository = new LocalStorageTemplateLibraryRepository();
-    await repository.delete(templateId);
+    await repository.delete(entry.templateId);
     const record = await repository.list();
     setRhinestoneDesigns(record.userTemplates);
+    showUndo(`Deleted “${entry.name}”.`, () => {
+      void (async () => {
+        await repository.save(entry);
+        const restored = await repository.list();
+        setRhinestoneDesigns(restored.userTemplates);
+      })();
+    });
+  };
+
+  const deleteHtvDesign = (entry: HtvDesignEntry) => {
+    persistVault({ ...vault, htvDesigns: vault.htvDesigns.filter((item) => item.designId !== entry.designId) }, setVault);
+    showUndo(`Deleted “${entry.name}”.`, () => {
+      // Restore from the latest stored vault so changes made meanwhile are kept.
+      const latest = readWorkspaceVault();
+      if (latest.htvDesigns.some((item) => item.designId === entry.designId)) return;
+      persistVault({ ...latest, htvDesigns: [entry, ...latest.htvDesigns] }, setVault);
+    });
   };
 
   const updateHtvDesign = (designId: string, updater: (design: HtvDesignEntry) => HtvDesignEntry) => {
@@ -185,16 +234,13 @@ export default function DesignsPage() {
 
         <WorkspaceModeBanner
           mode="My Designs"
-          status={workflowStatus}
-          project="Saved project lifecycle"
+          status="Ready"
+          project="Saved in this browser"
           guidance={
-            vault.calibrationProfiles.length === 0
-              ? 'No saved calibration profiles yet. Keep the work in context with names, favorites, and archive states so the next production pass stays structured.'
-              : approvedCalibrationCount === 0
-                ? 'Saved work is active, but no calibration profile is approved yet. Review the setup workflow before the next production export.'
-                : 'Your saved work and approved calibration profiles are aligned for the next production pass.'
+            savedCount === 0
+              ? 'Designs you save with Save in a studio are kept in this browser and listed here. Use Export file in the Rhinestone studio to back them up as a file.'
+              : 'These designs are stored in this browser only. Use Export file in the Rhinestone studio to back one up or move it to another computer.'
           }
-          calibrationState={calibrationState}
         />
 
         <WorkspaceHero
@@ -237,13 +283,13 @@ export default function DesignsPage() {
         </section>
 
         <WorkspaceSurface className="p-5">
-          <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr]">
+          <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
             <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name or tag"
+                placeholder="Search by name or tag" aria-label="Search designs"
                 className={workspaceInputClassName}
               />
             </label>
@@ -256,6 +302,11 @@ export default function DesignsPage() {
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All statuses</option>
+            </select>
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className={workspaceSelectClassName} aria-label="Sort designs">
+              <option value="recent">Recently updated</option>
+              <option value="name">Name (A–Z)</option>
+              <option value="favorites">Favorites first</option>
             </select>
           </div>
         </WorkspaceSurface>
@@ -279,32 +330,39 @@ export default function DesignsPage() {
                       updateHtvDesign(design.id, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }));
                     }
                   }}
+                  aria-label={design.favorite ? `Remove ${design.name} from favorites` : `Add ${design.name} to favorites`}
+                  aria-pressed={design.favorite}
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl transition ${design.favorite ? 'bg-warning-50 text-warning-600' : 'bg-surface text-ink-muted hover:text-ink'}`}
                 >
                   <Star className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="mt-4 rounded-[1.5rem] border border-border bg-surface px-5 py-5">
-                {design.studio === 'rhinestone' ? (
-                  <>
-                    <div className="text-sm font-medium text-ink">{(design.meta as TemplateLibraryEntry).stoneCount} stones</div>
-                    <div className="mt-2 text-sm text-ink-secondary">Sizes: {(design.meta as TemplateLibraryEntry).stoneSizes.join(', ')}</div>
-                  </>
+              <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-border bg-surface">
+                {design.studio === 'rhinestone' && (design.meta as TemplateLibraryEntry).previewRef ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- client-generated data: URI thumbnail
+                  <img
+                    src={(design.meta as TemplateLibraryEntry).previewRef ?? undefined}
+                    alt={`Preview of ${design.name}`}
+                    className="h-36 w-full bg-white object-contain p-2"
+                  />
                 ) : (
-                  <>
-                    <div className="text-sm font-medium text-ink">{(design.meta as HtvDesignEntry).previewText}</div>
-                    <div className="mt-2 text-sm text-ink-secondary">{(design.meta as HtvDesignEntry).layerCount} layers · {(design.meta as HtvDesignEntry).garmentLabel}</div>
-                  </>
+                  <div className="flex h-36 items-center justify-center bg-white px-4 text-center text-lg font-semibold text-ink-secondary">
+                    {design.studio === 'htv' ? (design.meta as HtvDesignEntry).previewText || design.name : design.name}
+                  </div>
                 )}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <div className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${calibrationGate.activeProfileApproved ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-                  {calibrationGate.activeProfileApproved ? 'Resume ready' : 'Needs calibration'}
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">
-                  {resumeReady ? 'Production approved' : 'Review before export'}
+                <div className="border-t border-border px-5 py-3">
+                  {design.studio === 'rhinestone' ? (
+                    <>
+                      <div className="text-sm font-medium text-ink">{(design.meta as TemplateLibraryEntry).stoneCount} stones</div>
+                      <div className="mt-1 text-xs text-ink-secondary">Sizes: {(design.meta as TemplateLibraryEntry).stoneSizes.join(', ') || '—'}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm font-medium text-ink">{(design.meta as HtvDesignEntry).layerCount} layers</div>
+                      <div className="mt-1 text-xs text-ink-secondary">{(design.meta as HtvDesignEntry).garmentLabel}</div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -323,15 +381,7 @@ export default function DesignsPage() {
                   Open and continue
                 </button>
                 <button
-                  onClick={() => {
-                    if (design.studio === 'rhinestone') {
-                      void renameRhinestoneDesign(design.id);
-                    } else {
-                      const nextName = window.prompt('Rename design', design.name);
-                      if (!nextName || !nextName.trim()) return;
-                      updateHtvDesign(design.id, (current) => ({ ...current, name: nextName.trim(), updatedAt: new Date().toISOString() }));
-                    }
-                  }}
+                  onClick={() => setRenameTarget({ studio: design.studio, id: design.id, name: design.name })}
                   className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-ink-secondary transition hover:text-ink"
                 >
                   <Pencil className="h-4 w-4" />
@@ -353,9 +403,9 @@ export default function DesignsPage() {
                 <button
                   onClick={() => {
                     if (design.studio === 'rhinestone') {
-                      void deleteRhinestoneDesign(design.id);
+                      void deleteRhinestoneDesign(design.meta as TemplateLibraryEntry);
                     } else {
-                      persistVault({ ...vault, htvDesigns: vault.htvDesigns.filter((item) => item.designId !== design.id) }, setVault);
+                      deleteHtvDesign(design.meta as HtvDesignEntry);
                     }
                   }}
                   className="inline-flex items-center gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm font-medium text-danger-600 transition hover:bg-danger-500/10"
@@ -365,20 +415,46 @@ export default function DesignsPage() {
                 </button>
               </div>
 
-              <div className="mt-4 text-xs text-ink-muted">
-                Updated {new Date(design.updatedAt).toLocaleString()}
+              <div className="mt-4 text-xs text-ink-muted" title={new Date(design.updatedAt).toLocaleString()}>
+                Updated {now ? formatRelativeTime(design.updatedAt, now) : '…'}
               </div>
             </article>
           ))}
         </section>
 
         {visibleDesigns.length === 0 && (
-          <WorkspaceEmptyState
-            title="No designs match the current filters"
-            description="Switch studio or status filters, or clear the search term to bring saved and archived work back into view."
-          />
+          rhinestoneDesigns.length + vault.htvDesigns.length === 0 ? (
+            <WorkspaceEmptyState
+              title="No saved designs yet"
+              description="Press Save in the Rhinestone or HTV studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed."
+            />
+          ) : (
+            <WorkspaceEmptyState
+              title="No designs match the current filters"
+              description="Switch studio or status filters, or clear the search to see everything again. Archived designs are hidden under the Active filter."
+            />
+          )
         )}
       </div>
+
+      <PromptDialog
+        open={renameTarget !== null}
+        title="Rename design"
+        label="Design name"
+        initialValue={renameTarget?.name ?? ''}
+        confirmLabel="Rename"
+        onSubmit={(value) => { void submitRename(value); }}
+        onCancel={() => setRenameTarget(null)}
+      />
+      <UndoToast
+        message={undoState?.message ?? null}
+        toastId={undoState?.toastId ?? 0}
+        onUndo={() => {
+          undoState?.undo();
+          setUndoState(null);
+        }}
+        onDismiss={() => setUndoState(null)}
+      />
     </WorkspacePage>
   );
 }

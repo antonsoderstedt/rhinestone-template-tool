@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, Download, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
+import { ChevronDown, Download, FileDown, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
 import { EditorAction } from './EditorState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
@@ -25,13 +25,18 @@ interface EditorTopbarProps {
   exportReady?: boolean;
   exportErrorCount?: number;
   exportWarningCount?: number;
+  needsCalibration?: boolean;
   recentDesigns?: { id: string; name: string }[];
   designSurface?: 'canvas' | 'garment';
   dispatch?: React.Dispatch<EditorAction>;
   onNewProject?: () => void;
   onOpenProject?: () => void;
   onOpenRecent?: (id: string) => void;
-  onSaveProject?: () => void;
+  /** Save to My Designs (browser-stored). */
+  onSave?: () => void;
+  /** Download a `.rhinestone.json` project file for backup / sharing. */
+  onExportProjectFile?: () => void;
+  /** Open the My Designs panel. */
   onOpenLibrary?: () => void;
   onExport?: () => void;
   onOpenSetup?: () => void;
@@ -50,13 +55,15 @@ export default function EditorTopbar({
   exportReady = false,
   exportErrorCount = 0,
   exportWarningCount = 0,
+  needsCalibration = false,
   recentDesigns = [],
   designSurface = 'canvas',
   dispatch = () => undefined,
   onNewProject = () => undefined,
   onOpenProject = () => undefined,
   onOpenRecent = () => undefined,
-  onSaveProject = () => undefined,
+  onSave = () => undefined,
+  onExportProjectFile = () => undefined,
   onOpenLibrary = () => undefined,
   onExport = () => undefined,
   onOpenSetup = () => undefined,
@@ -65,15 +72,19 @@ export default function EditorTopbar({
   theme = 'dark',
   onToggleTheme = () => undefined,
 }: EditorTopbarProps) {
-  const exportStatus = exportReady
+  const exportStatus = !canExport
+    ? { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' }
+    : exportReady
     ? { label: 'Ready', className: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' }
     : exportErrorCount > 0
       ? { label: `Blocked (${exportErrorCount})`, className: 'border-rose-400/30 bg-rose-500/10 text-rose-200' }
-      : exportWarningCount > 0
+      : needsCalibration
+        ? { label: 'Needs calibration', className: 'border-amber-400/30 bg-amber-500/10 text-amber-200' }
+        : exportWarningCount > 0
         ? { label: `Warnings (${exportWarningCount})`, className: 'border-amber-400/30 bg-amber-500/10 text-amber-200' }
         : { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' };
   return (
-    <header className="flex flex-wrap items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)]">
+    <header className="flex items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)] lg:h-[60px] lg:flex-nowrap lg:overflow-x-auto">
       <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
         <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-violet-200">
           Live editor
@@ -88,7 +99,7 @@ export default function EditorTopbar({
         />
       </div>
 
-      <div className="flex flex-wrap items-center">
+      <div className="flex shrink-0 items-center">
         <ToolbarSection label="Project">
           <button
             onClick={onNewProject}
@@ -103,37 +114,45 @@ export default function EditorTopbar({
               <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none [&::-webkit-details-marker]:hidden">
                 <FolderOpen className="h-4 w-4" />
                 Open
-                {recentDesigns.length > 0 && <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />}
+                <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />
               </summary>
-              {recentDesigns.length > 0 && (
-                <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
-                  <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent designs</div>
-                  {recentDesigns.map((design) => (
-                    <button
-                      key={design.id}
-                      onClick={() => { onOpenRecent(design.id); (document.activeElement as HTMLElement | null)?.blur(); }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
-                    >
-                      <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--studio-ink-muted)]" />
-                      <span className="truncate">{design.name}</span>
-                    </button>
-                  ))}
-                  <div className="border-t border-[var(--studio-border)] px-3 py-1.5">
-                    <button
-                      onClick={() => { onOpenProject(); (document.activeElement as HTMLElement | null)?.blur(); }}
-                      className="text-[10px] text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)]"
-                    >
-                      Open from file…
-                    </button>
-                  </div>
+              <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
+                {recentDesigns.length > 0 && (
+                  <>
+                    <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent designs</div>
+                    {recentDesigns.map((design) => (
+                      <button
+                        key={design.id}
+                        onClick={() => { onOpenRecent(design.id); (document.activeElement as HTMLElement | null)?.blur(); }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+                      >
+                        <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--studio-ink-muted)]" />
+                        <span className="truncate">{design.name}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                <div className={`flex flex-col ${recentDesigns.length > 0 ? 'border-t border-[var(--studio-border)]' : ''}`}>
+                  <button
+                    onClick={() => { onOpenLibrary(); (document.activeElement as HTMLElement | null)?.blur(); }}
+                    className="px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+                  >
+                    My Designs…
+                  </button>
+                  <button
+                    onClick={() => { onOpenProject(); (document.activeElement as HTMLElement | null)?.blur(); }}
+                    className="px-3 py-2 text-left text-xs text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+                  >
+                    Open project file…
+                  </button>
                 </div>
-              )}
+              </div>
             </details>
           </div>
           <button
-            onClick={onSaveProject}
+            onClick={onSave}
             className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Save the current project"
+            title="Save to My Designs (kept in this browser)"
           >
             <Save className="h-4 w-4" />
             Save
@@ -141,10 +160,18 @@ export default function EditorTopbar({
           <button
             onClick={onOpenLibrary}
             className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Open the local template library"
+            title="Browse your saved designs and starter templates"
           >
             <LibraryBig className="h-4 w-4" />
-            Library
+            My Designs
+          </button>
+          <button
+            onClick={onExportProjectFile}
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
+            title="Download a project file (.rhinestone.json) for backup or sharing"
+          >
+            <FileDown className="h-4 w-4" />
+            Export file
           </button>
         </ToolbarSection>
 

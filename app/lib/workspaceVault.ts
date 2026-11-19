@@ -148,6 +148,17 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   qualityChecklist: 'Check font coverage, preview garment placement, verify labels off for Cricut, confirm material preset, cut a calibration test for new batches.',
 };
 
+export const EMPTY_WORKSPACE_VAULT: WorkspaceVault = {
+  version: 1,
+  assets: [],
+  uploadedFonts: [],
+  fontPreferences: [],
+  htvDesigns: [],
+  designPreferences: [],
+  settings: { ...DEFAULT_WORKSPACE_SETTINGS },
+  calibrationProfiles: [],
+};
+
 function getStorage(): Storage | null {
   const candidate = globalThis.localStorage as Partial<Storage> | undefined;
   return typeof candidate === 'object'

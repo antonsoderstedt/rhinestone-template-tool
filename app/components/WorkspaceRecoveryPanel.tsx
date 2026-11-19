@@ -3,19 +3,23 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FolderOpen, ShieldAlert } from 'lucide-react';
-import { readWorkspaceVault } from '../lib/workspaceVault';
+import { EMPTY_WORKSPACE_VAULT, readWorkspaceVault } from '../lib/workspaceVault';
 import { getRecoveryActionPlan, getWorkspaceRecoverySummary } from '../lib/workspaceRecovery';
 
 export default function WorkspaceRecoveryPanel() {
-  const [summary, setSummary] = useState(() => getWorkspaceRecoverySummary(readWorkspaceVault(), false));
-  const actionPlan = useMemo(() => getRecoveryActionPlan(readWorkspaceVault(), summary.hasAutosave), [summary.hasAutosave]);
+  const [vault, setVault] = useState(EMPTY_WORKSPACE_VAULT);
+  const [summary, setSummary] = useState(() => getWorkspaceRecoverySummary(EMPTY_WORKSPACE_VAULT, false));
+  const actionPlan = useMemo(() => getRecoveryActionPlan(vault, summary.hasAutosave), [summary.hasAutosave, vault]);
 
   useEffect(() => {
     const sync = () => {
       const vault = readWorkspaceVault();
       const rawAutosave = window.localStorage.getItem('rhinestone-template-library-autosave');
       const nextSummary = getWorkspaceRecoverySummary(vault, Boolean(rawAutosave && rawAutosave.trim().length > 0));
-      setSummary(nextSummary);
+      queueMicrotask(() => {
+        setVault(vault);
+        setSummary(nextSummary);
+      });
     };
 
     sync();
