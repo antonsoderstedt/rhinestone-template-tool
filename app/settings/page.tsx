@@ -16,7 +16,6 @@ import {
 } from '../lib/workspaceVault';
 import {
   WorkspaceHero,
-  WorkspaceMetricCard,
   WorkspacePage,
   WorkspaceSurface,
   workspaceInputClassName,

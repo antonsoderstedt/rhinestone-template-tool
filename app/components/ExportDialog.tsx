@@ -105,11 +105,11 @@ function ExportDialogContent({
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-500">Width</dt>
-              <dd className="text-sm font-semibold text-white">{widthMm !== null ? `${widthMm.toFixed(1)} mm` : '—'}</dd>
+              <dd className="text-sm font-semibold text-white">{widthMm !== null ? `${widthMm.toFixed(1)} mm` : '—'}{widthMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(widthMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-zinc-500">Height</dt>
-              <dd className="text-sm font-semibold text-white">{heightMm !== null ? `${heightMm.toFixed(1)} mm` : '—'}</dd>
+              <dd className="text-sm font-semibold text-white">{heightMm !== null ? `${heightMm.toFixed(1)} mm` : '—'}{heightMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(heightMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             {summaryRows.map((row) => (
               <div key={row.label}>

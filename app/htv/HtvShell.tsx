@@ -31,6 +31,9 @@ import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './ht
 import { getDesignTemplate, type HtvDesignTemplateId } from './htvDesignTemplates';
 import { getPlacementsForGarmentType } from './htvPlacementZones';
 import { summarizeHtvStatus } from './htvStatus';
+import { findHtvSizeIssues, summarizeHtvSize } from './htvSizeCheck';
+import { getPlacementZoneSizeMm } from './htvPlacementZones';
+import { useMeasuredTextSizes } from './useMeasuredTextSizes';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import {
   DEFAULT_OUTLINE_FONT_ID,
@@ -298,6 +301,8 @@ export default function HtvShell() {
     svg: string | null;
     widthMm: number | null;
     heightMm: number | null;
+    designWidthMm: number | null;
+    designHeightMm: number | null;
     layerCount: number;
     error: string | null;
   } | null>(null);
@@ -307,6 +312,11 @@ export default function HtvShell() {
     [state.garment.placementZone, state.layers],
   );
   const weedMarginMm = workspaceVault.settings.htvWeedMarginMm;
+  const measuredTextSizes = useMeasuredTextSizes(state.layers);
+  const sizeSummary = useMemo(
+    () => summarizeHtvSize(state.layers, state.garment.placementZone, state.garment.type, weedMarginMm, measuredTextSizes),
+    [state.layers, state.garment.placementZone, state.garment.type, weedMarginMm, measuredTextSizes],
+  );
 
   useEffect(() => {
     if (!exportDialogOpen) return;
@@ -321,6 +331,8 @@ export default function HtvShell() {
           svg: result.svg,
           widthMm: result.widthMm,
           heightMm: result.heightMm,
+          designWidthMm: result.designWidthMm,
+          designHeightMm: result.designHeightMm,
           layerCount: result.layerCount,
           error: null,
         });
@@ -334,6 +346,8 @@ export default function HtvShell() {
           svg: null,
           widthMm: null,
           heightMm: null,
+          designWidthMm: null,
+          designHeightMm: null,
           layerCount: 0,
           error: err instanceof Error ? err.message : 'Could not prepare the export.',
         });
@@ -347,6 +361,19 @@ export default function HtvShell() {
     && htvExportPreview.forMarginMm === weedMarginMm
     ? htvExportPreview
     : null;
+
+  // The export dialog already reports whether the file fits a mat; here we add whether the artwork fits its placement, using the exact size.
+  const exportPlacementNotes = useMemo(() => {
+    if (!htvExportFresh || htvExportFresh.designWidthMm === null || htvExportFresh.designHeightMm === null) return [];
+    return findHtvSizeIssues({
+      designSizeMm: { widthMm: htvExportFresh.designWidthMm, heightMm: htvExportFresh.designHeightMm },
+      zoneSizeMm: getPlacementZoneSizeMm(state.garment.type, state.garment.placementZone),
+      zoneName: sizeSummary.zoneName,
+      weedMarginMm,
+    })
+      .filter((issue) => issue.id === 'exceeds-placement')
+      .map((issue) => ({ tone: 'warning' as const, text: issue.message }));
+  }, [htvExportFresh, sizeSummary.zoneName, state.garment.placementZone, state.garment.type, weedMarginMm]);
 
   const handleExport = useCallback(() => {
     if (exportLayers.length === 0) {
@@ -410,7 +437,7 @@ export default function HtvShell() {
   }, [state.selectedLayerIds, state.layers]);
 
   const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
-  const htvStatus = summarizeHtvStatus(state.layers, state.garment.placementZone);
+  const htvStatus = summarizeHtvStatus(state.layers, state.garment.placementZone, sizeSummary);
 
   useEffect(() => {
     const activePlacements = getPlacementsForGarmentType(state.garment.type).map((item) => item.id);
@@ -541,7 +568,10 @@ export default function HtvShell() {
           {designSurface === 'garment' ? (
             <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
           ) : designSurface === '3d' ? (
-            <HtvGarment3D state={state} />
+            <HtvGarment3D
+              state={state}
+              fallback={<HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />}
+            />
           ) : (
             <HtvCanvas state={state} dispatch={dispatch} />
           )}
@@ -578,6 +608,7 @@ export default function HtvShell() {
             { label: 'Weed margin', value: `${weedMarginMm} mm` },
           ]}
           notes={[
+            ...exportPlacementNotes,
             ...(htvExportOptions.mirror
               ? [{ tone: 'info' as const, text: 'Mirrored for iron-on vinyl: cut it face-down and the text will read correctly once pressed.' }]
               : [{ tone: 'warning' as const, text: 'Not mirrored. Text and artwork will press on backwards unless your vinyl is cut face-up.' }]),

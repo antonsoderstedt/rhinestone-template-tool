@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { layoutTextToOpenTypePolylines, loadOutlineFont, type Polyline } from '@/src/lib/rhinestone-engine/index';
-import { applyArcCurve, centerPolylines } from './htvGeometry';
+import type { Polyline } from '@/src/lib/rhinestone-engine/index';
+import { layoutHtvTextLayer } from './htvTextLayout';
 import type { HtvTextLayer } from './HtvState';
 
 /**
@@ -18,28 +18,15 @@ export function useHtvTextGeometry(layer: HtvTextLayer): Polyline[] | null {
     let cancelled = false;
 
     (async () => {
-      if (!layer.fontId || !layer.text.trim()) {
-        if (!cancelled) setPolylines([]);
-        return;
-      }
-      const loaded = await loadOutlineFont(layer.fontId);
-      if (cancelled || !loaded.font) return;
-      const raw = layoutTextToOpenTypePolylines({
-        text: layer.text,
-        font: loaded.font,
-        fontSizeMm: layer.fontSizeMm,
-        align: layer.align,
-        letterSpacingMm: layer.letterSpacingMm,
-      });
-      if (cancelled) return;
-      const centered = centerPolylines(raw).polylines;
-      const curved = applyArcCurve(centered, layer.curveAmount);
-      setPolylines(centerPolylines(curved).polylines);
+      const laidOut = await layoutHtvTextLayer(layer);
+      if (!cancelled && laidOut) setPolylines(laidOut);
     })();
 
     return () => {
       cancelled = true;
     };
+    // The layout depends only on these fields; depending on `layer` itself would redo it on every drag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layer.fontId, layer.text, layer.fontSizeMm, layer.align, layer.letterSpacingMm, layer.curveAmount]);
 
   return polylines;

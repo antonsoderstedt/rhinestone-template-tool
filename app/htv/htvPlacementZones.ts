@@ -23,44 +23,62 @@ export const HTV_PLACEMENT_ZONES: readonly PlacementZoneDefinition[] = [
   { id: 'right-sleeve', displayName: 'Right sleeve', description: 'Right · 90 x 260 mm', view: 'right' },
 ];
 
-const PROFILE_PLACEMENT_DESCRIPTIONS: Record<SelectableGarmentType, Partial<Record<HtvPlacementZone, string>>> = {
+export interface PlacementZoneSizeMm {
+  widthMm: number;
+  heightMm: number;
+}
+
+/** Real-world print size of each placement, per garment. The single source of truth for the labels and for size warnings. */
+const PROFILE_PLACEMENT_SIZES_MM: Record<SelectableGarmentType, Partial<Record<HtvPlacementZone, PlacementZoneSizeMm>>> = {
   tee: {
-    'full-front': 'Front · 290 x 360 mm',
-    'left-chest': 'Front · 120 x 120 mm',
-    'right-chest': 'Front · 120 x 120 mm',
-    'full-back': 'Back · 290 x 420 mm',
-    'left-sleeve': 'Left · 90 x 260 mm',
-    'right-sleeve': 'Right · 90 x 260 mm',
+    'full-front': { widthMm: 290, heightMm: 360 },
+    'left-chest': { widthMm: 120, heightMm: 120 },
+    'right-chest': { widthMm: 120, heightMm: 120 },
+    'full-back': { widthMm: 290, heightMm: 420 },
+    'left-sleeve': { widthMm: 90, heightMm: 260 },
+    'right-sleeve': { widthMm: 90, heightMm: 260 },
   },
   'oversized-tee': {
-    'full-front': 'Front · 320 x 380 mm',
-    'left-chest': 'Front · 120 x 120 mm',
-    'right-chest': 'Front · 120 x 120 mm',
-    'full-back': 'Back · 320 x 420 mm',
-    'left-sleeve': 'Left · 100 x 280 mm',
-    'right-sleeve': 'Right · 100 x 280 mm',
+    'full-front': { widthMm: 320, heightMm: 380 },
+    'left-chest': { widthMm: 120, heightMm: 120 },
+    'right-chest': { widthMm: 120, heightMm: 120 },
+    'full-back': { widthMm: 320, heightMm: 420 },
+    'left-sleeve': { widthMm: 100, heightMm: 280 },
+    'right-sleeve': { widthMm: 100, heightMm: 280 },
   },
   'cropped-tee': {
-    'full-front': 'Front · 260 x 280 mm',
-    'left-chest': 'Front · 110 x 110 mm',
-    'right-chest': 'Front · 110 x 110 mm',
-    'full-back': 'Back · 260 x 300 mm',
-    'left-sleeve': 'Left · 85 x 220 mm',
-    'right-sleeve': 'Right · 85 x 220 mm',
+    'full-front': { widthMm: 260, heightMm: 280 },
+    'left-chest': { widthMm: 110, heightMm: 110 },
+    'right-chest': { widthMm: 110, heightMm: 110 },
+    'full-back': { widthMm: 260, heightMm: 300 },
+    'left-sleeve': { widthMm: 85, heightMm: 220 },
+    'right-sleeve': { widthMm: 85, heightMm: 220 },
   },
   hoodie: {
-    'full-front': 'Front · 280 x 340 mm',
-    'left-chest': 'Front · 110 x 110 mm',
-    'right-chest': 'Front · 110 x 110 mm',
-    'full-back': 'Back · 290 x 380 mm',
-    'left-sleeve': 'Left · 95 x 240 mm',
-    'right-sleeve': 'Right · 95 x 240 mm',
+    'full-front': { widthMm: 280, heightMm: 340 },
+    'left-chest': { widthMm: 110, heightMm: 110 },
+    'right-chest': { widthMm: 110, heightMm: 110 },
+    'full-back': { widthMm: 290, heightMm: 380 },
+    'left-sleeve': { widthMm: 95, heightMm: 240 },
+    'right-sleeve': { widthMm: 95, heightMm: 240 },
   },
   tote: {
-    'full-front': 'Front · 280 x 240 mm',
-    'full-back': 'Back · 280 x 240 mm',
+    'full-front': { widthMm: 280, heightMm: 240 },
+    'full-back': { widthMm: 280, heightMm: 240 },
   },
 };
+
+const VIEW_LABELS: Record<HtvPlacementView, string> = { front: 'Front', back: 'Back', left: 'Left', right: 'Right' };
+
+function describeZoneSize(view: HtvPlacementView, size: PlacementZoneSizeMm): string {
+  return `${VIEW_LABELS[view]} · ${size.widthMm} x ${size.heightMm} mm`;
+}
+
+/** Print size of a placement in mm; falls back to the tee size when a garment has no entry for the zone. */
+export function getPlacementZoneSizeMm(garmentId: GarmentType, zone: HtvPlacementZone): PlacementZoneSizeMm {
+  const normalizedGarmentId = normalizeGarmentType(garmentId);
+  return PROFILE_PLACEMENT_SIZES_MM[normalizedGarmentId][zone] ?? PROFILE_PLACEMENT_SIZES_MM.tee[zone]!;
+}
 
 interface ZoneBox {
   x: number;
@@ -120,10 +138,10 @@ export function getPlacementsForGarmentType(garmentId: GarmentType): readonly Pl
   const definitions = normalizedGarmentId === 'tote'
     ? HTV_PLACEMENT_ZONES.filter((item) => item.id === 'full-front' || item.id === 'full-back')
     : HTV_PLACEMENT_ZONES;
-  return definitions.map((item) => ({
-    ...item,
-    description: PROFILE_PLACEMENT_DESCRIPTIONS[normalizedGarmentId][item.id] ?? item.description,
-  }));
+  return definitions.map((item) => {
+    const size = PROFILE_PLACEMENT_SIZES_MM[normalizedGarmentId][item.id];
+    return { ...item, description: size ? describeZoneSize(item.view, size) : item.description };
+  });
 }
 
 export function getPlacementZoneBox(garmentId: GarmentType, zone: HtvPlacementZone): ZoneBox {
