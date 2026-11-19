@@ -22,6 +22,7 @@ import {
   TRW_CLEAN_STONE_FONT_ID,
   TRW_STONE_SIZE_CALIBRATION,
 } from '../src/lib/rhinestone-engine/index';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 const TWO_COLOR_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="30mm" height="10mm" viewBox="0 0 30 10">
@@ -116,7 +117,7 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('optimized for digits');
   });
 
-  it('uses the authoritative requested diameter in generated templates and SVG circles', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('uses the authoritative requested diameter in generated templates and SVG circles', async () => {
     for (const size of ['SS6', 'SS10'] as const) {
       const diameter = TRW_STONE_SIZE_CALIBRATION[size].diameterMm;
       const result = await createRhinestoneFontTemplate({

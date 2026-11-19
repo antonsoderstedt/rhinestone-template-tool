@@ -17,6 +17,7 @@ import {
   type SvgAlphabetGlyphLoader,
   type SvgAlphabetId,
 } from '../src/lib/rhinestone-engine/index';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 function makeCircleSvg(circles: Array<{ cx: number; cy: number; r: number }>): string {
   const body = circles.map((c) => `<circle cx="${c.cx}" cy="${c.cy}" r="${c.r}"/>`).join('\n');
@@ -290,7 +291,7 @@ describe('Letter Stencil System', () => {
     expect(frames[1]!.x).toBeCloseTo(frames[0]!.x + frames[0]!.widthMm, 3);
   });
 
-  it('uses rhinestone font advance width so narrow glyph cards keep usable side spacing', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('uses rhinestone font advance width so narrow glyph cards keep usable side spacing', async () => {
     const loaded = await loadRhinestoneFont('old-english-stone', 'SS10');
     const extracted = extractStonesFromGlyph(loaded.font, 'l');
     const diameters = extracted.stones.map((stone) => stone.diameterFontUnits).sort((a, b) => a - b);
