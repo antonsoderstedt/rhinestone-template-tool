@@ -52,7 +52,7 @@ code that was not read. **Impact** = how much it changes what a user can make or
 | B8 | Artwork: preview of the trace, colour-to-stone mapping for photos, outline vs fill per colour | Artwork tool is a file picker plus settings, with no preview of what the trace will do |
 | B9 | **Stone font size control** (stone size is the only lever) | Old English "Sulay" at SS10 is 425 × 192 mm, Huge Digits 500 mm: larger than a 12 × 12 in mat with no way to shrink except SS6 |
 | B10 | **Fix "Filled typography"** (text fill) | Fills at 25 and 45 mm leave scattered stones that do not follow the letters |
-| B11 | **Auto-size and auto stone size**: "make this fit the mat" or "best stone size for 60 mm letters" | Fit to mat only works for text and uploaded artwork; stone fonts, hand-made and imported designs cannot be resized |
+| B11 | **Auto-size and auto stone size**: "make this fit the mat" or "best stone size for 60 mm letters" | Fit to mat only works for text and uploaded artwork; stone fonts, hand-made and imported designs cannot be resized (they can now be cut in parts instead; ADR 0019) |
 | B12 | Combine Rhinestone and HTV in one project (HTV letters with a rhinestone outline) | Two separate studios and separate saved designs |
 | B13 | Keyboard editing: arrow-key nudge, Tab through stones, type exact X / Y | Stones can only be selected and moved with a pointer |
 | B14 | Dimension labels and centre guides on the canvas; snap to the mat edge | Size is only in the status bar |
@@ -75,7 +75,7 @@ code that was not read. **Impact** = how much it changes what a user can make or
 |---|-----------|---------------|
 | D1 | More formats: PDF and PNG at true size, DXF, EPS; "Copy SVG" in the dialog | Only SVG is exported |
 | D2 | **Print-at-true-size sheet** to place stones by hand, and a customer-approval sheet (preview, stone counts, sizes) | Not present; useful for sellers |
-| D3 | Split big designs across mats with registration marks | Designs over 12 × 24 in only get a warning |
+| D3 | ~~Split big designs across mats~~ **Done (ADR 0019)**; registration marks remain | Designs over 12 × 24 in now split into parts that each fit a 12 × 12 or 12 × 24 in mat, with a layout file |
 | D4 | Export a small **test patch** of the real design (about 5 × 5 stones) to test-cut | Calibration uses a separate generic test pack |
 | D5 | Step-by-step "open in Design Space" instructions in the export dialog, plus a 50 mm check square in the file to verify import scale | The dialog explains calibration but not the import |
 | D6 | Material and cost: flock area, number of mats, stone cost (cost exists) | Stone estimate exists; material does not |

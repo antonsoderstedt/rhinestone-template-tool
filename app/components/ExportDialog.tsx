@@ -29,8 +29,18 @@ export interface ExportDialogProps {
   defaultFilename: string;
   onDownload: (filename: string, options: { uncalibratedOverride: boolean }) => void;
   onClose: () => void;
-  /** Studio-specific options (e.g. HTV mirror, weed border). */
-  children?: ReactNode;
+  /**
+   * Studio-specific options (e.g. HTV mirror, weed border). A function receives the calibration gate so extra downloads
+   * can follow the same rule as the main one.
+   */
+  children?: ReactNode | ((gate: ExportDialogGate) => ReactNode);
+}
+
+export interface ExportDialogGate {
+  /** False until the material is calibrated or the user has acknowledged the uncalibrated warning. */
+  downloadAllowed: boolean;
+  /** True when files must be marked uncalibrated. */
+  uncalibrated: boolean;
 }
 
 const TITLE_ID = 'export-dialog-title';
@@ -60,7 +70,9 @@ function ExportDialogContent({
   const downloadFilename = needsCalibration && !/-uncalibrated\.svg$/i.test(sanitizedFilename)
     ? sanitizedFilename.replace(/\.svg$/i, '-uncalibrated.svg')
     : sanitizedFilename;
-  const canDownload = Boolean(svg) && !loading && !error && (!needsCalibration || acknowledged);
+  const gateOpen = !needsCalibration || acknowledged;
+  const canDownload = Boolean(svg) && !loading && !error && gateOpen;
+  const extra = typeof children === 'function' ? children({ downloadAllowed: gateOpen, uncalibrated: needsCalibration }) : children;
 
   const matToneClass = matFit?.status === 'fits-12x12'
     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
@@ -125,7 +137,7 @@ function ExportDialogContent({
             </p>
           )}
 
-          {children && <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">{children}</div>}
+          {extra && <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">{extra}</div>}
 
           {notes.length > 0 && (
             <ul className="flex flex-col gap-1.5 text-xs">

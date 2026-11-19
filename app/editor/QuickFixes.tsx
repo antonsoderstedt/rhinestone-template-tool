@@ -41,6 +41,15 @@ export default function QuickFixes({ items, canResize, onAction }: QuickFixesPro
                   <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
                   {item.actionLabel}
                 </button>
+                {item.secondary && (
+                  <button
+                    type="button"
+                    onClick={() => onAction(item.secondary!.action)}
+                    className="ml-2 mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--studio-border)] px-3 py-1.5 text-xs font-semibold text-[var(--studio-ink)] transition hover:bg-[var(--studio-hover-overlay-soft)]"
+                  >
+                    {item.secondary.label}
+                  </button>
+                )}
                 {disabled && (
                   <p className="mt-1.5 text-xs leading-5 text-[var(--studio-ink-muted)]">
                     This design cannot be resized automatically. Change its size in the Design panel, or delete stones.

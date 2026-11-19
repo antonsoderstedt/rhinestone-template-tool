@@ -5,7 +5,7 @@
 
 import { HIGH_STONE_COUNT_THRESHOLD, getMatFit, MAT_LABELS, type ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 
-export type QuickFixAction = 'auto-fix-spacing' | 'enlarge-cuttable' | 'fit-12x12' | 'fit-12x24';
+export type QuickFixAction = 'auto-fix-spacing' | 'enlarge-cuttable' | 'fit-12x12' | 'fit-12x24' | 'split-parts';
 
 export interface QuickFixItem {
   id: 'spacing' | 'overlap-artwork' | 'mat-too-large' | 'mat-needs-large' | 'many-stones';
@@ -14,6 +14,8 @@ export interface QuickFixItem {
   detail: string;
   action: QuickFixAction | null;
   actionLabel: string | null;
+  /** A second way out that does not change the design: cut it in parts (opens the export dialog's split section). */
+  secondary?: { action: 'split-parts'; label: string };
 }
 
 const SPACING_CODES = new Set(['STONE_OVERLAP', 'STONE_COLLISION', 'STONE_TIGHT_GAP']);
@@ -62,6 +64,7 @@ export function getQuickFixes(result: ExportReadinessResult | null, options: Qui
       detail: `The design is ${widthMm.toFixed(0)} × ${heightMm.toFixed(0)} mm. The biggest Cricut mat cuts about 292 × 597 mm.`,
       action: 'fit-12x24',
       actionLabel: `Fit to ${MAT_LABELS['12x24']} mat`,
+      secondary: { action: 'split-parts', label: 'Or cut it in parts' },
     });
   } else if (matFit.status === 'fits-12x24') {
     items.push({
@@ -71,6 +74,7 @@ export function getQuickFixes(result: ExportReadinessResult | null, options: Qui
       detail: `The design is ${widthMm.toFixed(0)} × ${heightMm.toFixed(0)} mm, which does not fit the standard ${MAT_LABELS['12x12']} mat.`,
       action: 'fit-12x12',
       actionLabel: `Shrink to fit a ${MAT_LABELS['12x12']} mat`,
+      secondary: { action: 'split-parts', label: 'Or cut it in two parts' },
     });
   }
 

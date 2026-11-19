@@ -22,6 +22,7 @@ import {
   createTemplateLibraryEntry,
   parseRhinestoneProject,
   createBasicSvgExport,
+  getMatFit,
   LEGACY_OUTLINE_FONT_ID,
   LocalStorageTemplateLibraryRepository,
   createRhinestoneFontTemplate,
@@ -72,6 +73,7 @@ import {
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 // Dialogs are loaded when first opened, keeping the first load of the studio smaller.
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
+const SplitExportPanel = dynamic(() => import('./SplitExportPanel'));
 const GarmentPreviewPanel = dynamic(() => import('../components/GarmentPreviewPanel'), { ssr: false });
 import { getExportFilename, getExportGate, summarizeExportStatus } from '../components/summarizeExportStatus';
 import {
@@ -915,6 +917,7 @@ export default function EditorShell() {
   const handleQuickFix = useCallback((action: QuickFixAction) => {
     if (action === 'auto-fix-spacing') handleAutoFixSpacing();
     else if (action === 'enlarge-cuttable') handleEnlargeCuttable();
+    else if (action === 'split-parts') setExportDialogOpen(true);
     else handleFitToMat(action === 'fit-12x12' ? '12x12' : '12x24');
   }, [handleAutoFixSpacing, handleEnlargeCuttable, handleFitToMat]);
 
@@ -1811,7 +1814,27 @@ export default function EditorShell() {
         defaultFilename={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
         onDownload={handleExportDownload}
         onClose={() => setExportDialogOpen(false)}
-      />
+      >
+        {(gate) =>
+          effectiveTemplate && exportPreview?.widthMm != null && exportPreview.heightMm != null
+            && getMatFit(exportPreview.widthMm, exportPreview.heightMm).status !== 'fits-12x12' ? (
+              <SplitExportPanel
+                template={effectiveTemplate}
+                svgOptions={{
+                  includeGuideBox: state.includeGuideBox,
+                  includeLabels: state.includeLabels,
+                  paddingMm: state.paddingMm,
+                  decimalPlaces: 3,
+                  uncalibratedOverride: needsCalibration,
+                }}
+                designName={state.projectName.trim() || 'Rhinestone design'}
+                filenameBase={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
+                downloadAllowed={gate.downloadAllowed}
+                uncalibrated={gate.uncalibrated}
+                onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
+              />
+            ) : null}
+      </ExportDialog>
 
       <EditorDialog
         open={Boolean(pendingDialog)}

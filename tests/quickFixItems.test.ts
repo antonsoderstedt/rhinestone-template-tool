@@ -35,6 +35,7 @@ describe('getQuickFixes', () => {
     const fix = getQuickFixes(result).find((item) => item.id === 'mat-needs-large');
     expect(fix?.tone).toBe('info');
     expect(fix?.action).toBe('fit-12x12');
+    expect(fix?.secondary?.action).toBe('split-parts');
   });
 
   it('warns and offers fit to a 12 x 24 mat when nothing fits', () => {
@@ -42,6 +43,7 @@ describe('getQuickFixes', () => {
     const fix = getQuickFixes(result).find((item) => item.id === 'mat-too-large');
     expect(fix?.tone).toBe('warning');
     expect(fix?.action).toBe('fit-12x24');
+    expect(fix?.secondary?.action).toBe('split-parts');
   });
 
   it('explains a very high stone count without offering a button', () => {

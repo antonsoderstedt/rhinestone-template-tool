@@ -317,6 +317,27 @@ Input polylines are never mutated. Output is a new array with rounded (4dp) coor
 
 Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radius). This is an estimate — actual cut dimensions depend on calibration.
 
+### Split module: `planSplitForMat(template, mat, options?)` and `buildPartTemplate(template, plan, part)`
+
+A design that does not fit one cutting mat is cut in parts. Cricut usable areas: 12 × 12 in = 292.1 × 292.1 mm, 12 × 24 in =
+292.1 × 596.9 mm (the caller subtracts the export padding on each side, so the exported file, not just the stones, fits).
+
+- **A stone is never cut.** Each stone goes whole to exactly one part, the side its centre is on. The union of all parts is
+  exactly the input stones, each once; no stone is added, moved or resized.
+- **Seams run between stones.** Along an axis the seam is searched in the window `[lo + (max − rMax) / 2, lo + max − rMax]`
+  (`lo` = start of the remaining stones, `max` = mat length on that axis, `rMax` = the largest stone radius) in steps of
+  0.25 mm; the position crossed by the fewest circles wins, and the farthest position that no circle touches ends the search,
+  so there are as few parts as possible. Seam crossings (circles a seam passes through, kept whole on one side) are reported.
+- **Order:** columns by X first, then rows by Y within each column. Both orientations of the mat are tried; the one with fewer
+  parts, then fewer crossings, wins. A part that only fits turned 90° reports `needsTurn`.
+- **Every part fits the mat**, radii included. If the stones are larger than the mat can hold (`maxLen <= 2 × rMax`), the plan
+  reports `splittable: false`. A design that already fits returns one part and `fitsWhole: true`. An empty template returns no
+  parts.
+- Pure and deterministic: millimetres, no randomness, no clock. Cut shapes belong to the whole design and are dropped from the
+  parts (the UI says so).
+- Each part keeps the original coordinates, so its offset from the design's top-left is `part.minX/minY − design minX/minY`;
+  the app writes these offsets, the part sizes and a "turn 90°" hint into `<name>-layout.txt` inside the zip.
+
 ---
 
 ## Fill Mode Module (v1)

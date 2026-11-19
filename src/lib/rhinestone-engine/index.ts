@@ -209,6 +209,10 @@ export {
   estimateStoneUsage,
 } from './estimate/stoneEstimate';
 
+// Splitting a design across several cutting mats
+export type { SplitMat, SplitOptions, DesignPart, SplitPlan } from './split/splitForMat';
+export { planSplitForMat, buildPartTemplate } from './split/splitForMat';
+
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';
