@@ -24,7 +24,7 @@ export default function GettingStartedGuide() {
     // read, and a row inserted then pushed the whole studio down (a layout shift of 0.13 in Lighthouse).
     <section
       aria-label="Getting started"
-      className="absolute left-1/2 top-12 z-20 w-[min(46rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-lg border border-[var(--studio-border-strong)] bg-[var(--studio-surface)]/95 px-3 py-2 shadow-lg backdrop-blur"
+      className="absolute z-20 rounded-lg max-lg:inset-x-3 max-lg:bottom-16 lg:left-1/2 lg:top-12 lg:w-[min(46rem,calc(100%-1.5rem))] lg:-translate-x-1/2 border border-[var(--studio-border-strong)] bg-[var(--studio-surface)]/95 px-3 py-2 shadow-lg backdrop-blur"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

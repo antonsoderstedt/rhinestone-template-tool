@@ -1343,7 +1343,7 @@ export default function EditorShell() {
           setToast({ message: 'Font not found — using a default font instead.', tone: 'warning' });
         }
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} Rhinestone Design` });
+        dispatch({ type: 'SET_PROJECT_NAME', name: `${(launchText ?? 'Preview').replace(/\s+/g, ' ').trim()} Rhinestone Design` });
         dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
@@ -1455,9 +1455,8 @@ export default function EditorShell() {
     if (autosaveDecision !== 'restored' || !autosaveEntry || initialAutosaveRestoreRef.current) return;
     initialAutosaveRestoreRef.current = true;
     if (handleLoadAutosave()) {
-      const name = autosaveEntry.name;
       queueMicrotask(() => setToast({
-        message: `Restored your last session · ${name}`,
+        message: 'Restored your last session.',
         tone: 'info',
         action: { label: 'Start fresh', onClick: startFreshFromAutosave },
       }));
