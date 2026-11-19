@@ -133,6 +133,26 @@ code that was not read. **Impact** = how much it changes what a user can make or
 | I3 | Test on Safari, Firefox and real phones / tablets | Only Chromium emulation so far |
 | I4 | Forced-colors and reduced-motion support | Not handled |
 
+## J. Result quality and the Artwork tool (added 2026-11-19, see `IMPROVEMENT_PLAN.md`)
+
+| # | Suggestion | What was seen |
+|---|-----------|---------------|
+| J1 | **Fixture corpus** of ~30 real-world artworks (Illustrator, Figma, Inkscape, Canva, Cricut exports; PNG/JPG) | The two files that failed are not in the repository; tests use hand-written shapes |
+| J2 | **Quality harness**: IoU against the source, stray stones, smallest gap, time, per fixture × mode × stone size × width, with a baseline in CI | No test judges whether stones look like the artwork; only whether they can be cut |
+| J3 | **Honest renderer**: true-scale stones with the real gap, source art behind, too-tight pairs marked | A cuttable 0.5 mm gap looks like overlap at 4–10× zoom |
+| J4 | Empty-state text not zoom-scaled, clipped placement cards, styled file picker, short project name from a file | "Ready canvas" is cropped and huge at 449 %; "Hexagon…", "determinis…" clipped; native Swedish file button; 25-character names |
+| J5 | **SVG importer**: group transforms, arcs, `<use>`/`<defs>`, `<style>` classes, `fill-rule`, hidden / zero-opacity, units and dpi, plain messages | Measured: group transform ignored, arcs throw, `<use>` throws, hidden shapes included |
+| J6 | **Layers by colour**: background removal, painter's order decides holes, stroke-as-outline, per-layer mode | Fill colour is never read; a white background becomes a frame of stones; an inner shape becomes a hole instead of a second colour |
+| J7 | **Feasibility analysis**: finest feature vs stone size, advice on width and stone size before generating | A 2.4 mm stroke at SS10 gives 24 tight-gap issues in Outline and 0 stones in Fill, with no explanation |
+| J8 | **Centre-line layout** for strokes narrower than about two stones | Same measurement |
+| J9 | **Fill v2**: edge rows first, then distance-field hex packing with fixed relaxation | Fill is a clipped grid, edges ragged, thin parts dropped |
+| J10 | **Contour v2**: real polygon offsetting | Contour gave "No template" on the user's blob; offset is per vertex |
+| J11 | **One gap solver** at the end of every layout | The collision filter uses one hole diameter, the cut gap is enforced later |
+| J12 | **Artwork panel rebuild**: preview, look gallery from the user's own art, advice inline, Advanced for the ten controls | Ten controls with no preview of their combinations |
+| J13 | **Raster joins the vector pipeline** (background removal, quantise to layers, trace) | Raster uses a separate dot sampler; HTV's tracer is unused here |
+| J14 | Raster preview, "stone colors" state, downsampling, EXIF, transparent PNG | The 1–4 colour buttons show no selection |
+| J15 | **Design as a list of elements** (the model behind B1) | One source per design |
+
 ## What is already good (keep)
 
 The goal-based start, the one-click fixes (spacing, fit to mat), stone and cost estimate, backup / restore, the HTV garment
