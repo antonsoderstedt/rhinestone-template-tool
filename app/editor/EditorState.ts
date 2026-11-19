@@ -91,6 +91,8 @@ export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
 export type SvgDimensionUnit = 'mm' | 'in';
 
 export interface SvgToolState {
+  /** Longest side (mm) an uploaded SVG is scaled to; falls back to DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM. */
+  uploadLongestSideMm?: number;
   uploadedSvgText: string | null;
   svgFileName: string | null;
   assetKind: SvgAssetKind;
@@ -290,8 +292,11 @@ export interface EditorState {
 export const DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM = 100;
 export const MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM = 280;
 
-function getDefaultSvgUploadTargetDimensions(svgText: string): { widthMm: number; heightMm: number } {
-  const targetLongestSideMm = Math.min(DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM, MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM);
+function getDefaultSvgUploadTargetDimensions(
+  svgText: string,
+  longestSideMm: number = DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM,
+): { widthMm: number; heightMm: number } {
+  const targetLongestSideMm = Math.min(longestSideMm, MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM);
 
   try {
     const polylines = svgStringToPolylines(svgText, { cleanup: false });
@@ -449,7 +454,7 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
       next.renderMode = 'artwork-dots';
       applyArtworkDotsPreset();
     }
-    const defaults = getDefaultSvgUploadTargetDimensions(updates.uploadedSvgText);
+    const defaults = getDefaultSvgUploadTargetDimensions(updates.uploadedSvgText, next.uploadLongestSideMm);
     next.targetWidthMm = defaults.widthMm;
     next.targetHeightMm = defaults.heightMm;
   }

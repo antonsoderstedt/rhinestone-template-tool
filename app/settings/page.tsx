@@ -4,9 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Ruler, Settings2 } from 'lucide-react';
 import {
-  DEFAULT_WORKSPACE_SETTINGS,
   type CalibrationProfile,
-  type WorkspaceSettings,
   type WorkspaceVault,
   EMPTY_WORKSPACE_VAULT,
   readActiveCalibrationProfileId,
@@ -22,9 +20,23 @@ import {
   WorkspacePage,
   WorkspaceSurface,
   workspaceInputClassName,
-  workspaceTextAreaClassName,
 } from '../components/workspace/WorkspaceChrome';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import {
+  DEFAULT_WORKSPACE_SETTINGS,
+  SETTINGS_DENSITY_PRESETS,
+  SETTINGS_STONE_SIZES,
+  WORKSPACE_SETTING_LIMITS,
+  type SettingsDensityPreset,
+  type WorkspaceSettings,
+} from '../lib/workspaceSettings';
+
+const DENSITY_LABELS: Record<SettingsDensityPreset, string> = {
+  safe: 'Safe — extra gap, easiest to cut',
+  standard: 'Standard — recommended spacing',
+  dense: 'Dense — tight, calibrate first',
+  loose: 'Loose — open, decorative',
+};
 
 function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   const nextVault = { ...vault, settings: nextSettings };
@@ -89,8 +101,8 @@ export default function SettingsPage() {
 
         <WorkspaceHero
           eyebrow={<><Settings2 className="h-3.5 w-3.5" /> Settings</>}
-          title="Operational defaults for the whole workspace"
-          description="Keep machine, material, stone, and output preferences together so the rest of the product can become faster, safer, and more predictable over time."
+          title="Defaults for new projects"
+          description="Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved."
           tone="accent"
           aside={(
             <WorkspaceSurface className="p-5">
@@ -102,44 +114,53 @@ export default function SettingsPage() {
           )}
         />
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <WorkspaceMetricCard label="Machine" value={settings.machineModel || 'Unset'} />
-          <WorkspaceMetricCard label="Default stone" value={settings.defaultStoneSize || 'Unset'} />
-          <WorkspaceMetricCard label="Spacing" value={`${settings.defaultRhinestoneSpacingMm} mm`} />
-        </section>
-
         <section className="grid gap-5 xl:grid-cols-2">
-          <FormCard title="Machine">
-            <Field label="Machine model" value={settings.machineModel} onChange={(value) => update('machineModel', value)} />
-            <Field label="Cutting mat" value={settings.cuttingMat} onChange={(value) => update('cuttingMat', value)} />
-            <Field label="Blade strategy" value={settings.bladeStrategy} onChange={(value) => update('bladeStrategy', value)} multiline />
-          </FormCard>
-
-          <FormCard title="Materials">
-            <Field label="Default rhinestone material" value={settings.defaultMaterial} onChange={(value) => update('defaultMaterial', value)} />
-            <Field label="Default flock" value={settings.defaultFlock} onChange={(value) => update('defaultFlock', value)} />
-            <Field label="Default HTV carrier" value={settings.defaultHtvCarrier} onChange={(value) => update('defaultHtvCarrier', value)} />
-          </FormCard>
-
-          <FormCard title="Production defaults">
-            <Field label="Default stone size" value={settings.defaultStoneSize} onChange={(value) => update('defaultStoneSize', value)} />
-            <Field
-              label="Default rhinestone spacing (mm)"
-              value={String(settings.defaultRhinestoneSpacingMm)}
-              onChange={(value) => update('defaultRhinestoneSpacingMm', Number(value) || DEFAULT_WORKSPACE_SETTINGS.defaultRhinestoneSpacingMm)}
+          <FormCard title="New rhinestone projects" note="Applies to new projects. Open designs keep their own values.">
+            <SelectField
+              label="Stone size"
+              value={settings.defaultStoneSize}
+              options={SETTINGS_STONE_SIZES.map((size) => ({ value: size, label: size }))}
+              onChange={(value) => update('defaultStoneSize', value as WorkspaceSettings['defaultStoneSize'])}
             />
-            <Field
-              label="HTV weed margin (mm)"
-              value={String(settings.htvWeedMarginMm)}
-              onChange={(value) => update('htvWeedMarginMm', Number(value) || DEFAULT_WORKSPACE_SETTINGS.htvWeedMarginMm)}
+            <SelectField
+              label="Spacing"
+              hint="Centre distance is worked out from the stone size and your material, so it always stays cuttable."
+              value={settings.defaultDensityPreset}
+              options={SETTINGS_DENSITY_PRESETS.map((preset) => ({ value: preset, label: DENSITY_LABELS[preset] }))}
+              onChange={(value) => update('defaultDensityPreset', value as SettingsDensityPreset)}
+            />
+            <NumberField
+              label="Uploaded artwork size (mm, longest side)"
+              hint="SVGs you upload are scaled to this size first. You can still resize them."
+              value={settings.defaultArtworkLongestSideMm}
+              {...WORKSPACE_SETTING_LIMITS.defaultArtworkLongestSideMm}
+              onCommit={(value) => update('defaultArtworkLongestSideMm', value)}
             />
           </FormCard>
 
-          <FormCard title="Workspace rules">
-            <Field label="Output folder hint" value={settings.outputFolderHint} onChange={(value) => update('outputFolderHint', value)} />
-            <Field label="Quality checklist" value={settings.qualityChecklist} onChange={(value) => update('qualityChecklist', value)} multiline />
+          <FormCard title="HTV export" note="Used the next time you export from the HTV studio.">
+            <NumberField
+              label="Weed margin (mm)"
+              hint="Empty space kept around the artwork in the exported cut file."
+              value={settings.htvWeedMarginMm}
+              {...WORKSPACE_SETTING_LIMITS.htvWeedMarginMm}
+              onCommit={(value) => update('htvWeedMarginMm', value)}
+            />
           </FormCard>
         </section>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              persistSettings({ ...DEFAULT_WORKSPACE_SETTINGS }, vault, setVault);
+              setSavedAt(new Date().toLocaleTimeString());
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+          >
+            Reset to recommended defaults
+          </button>
+        </div>
 
         {/* ── Calibration Profiles ──────────────────────────────────────────── */}
         <WorkspaceSurface className="p-6">
@@ -227,42 +248,94 @@ export default function SettingsPage() {
   );
 }
 
-function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
+function FormCard({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <WorkspaceSurface className="p-6">
       <h2 className="text-2xl font-semibold text-ink">{title}</h2>
+      {note && <p className="mt-1 text-sm text-ink-muted">{note}</p>}
       <div className="mt-5 space-y-4">{children}</div>
     </WorkspaceSurface>
   );
 }
 
-function Field({
+function SelectField({
   label,
+  hint,
   value,
+  options,
   onChange,
-  multiline = false,
 }: {
   label: string;
+  hint?: string;
   value: string;
+  options: { value: string; label: string }[];
   onChange: (value: string) => void;
-  multiline?: boolean;
 }) {
   return (
     <label className="block space-y-2">
       <span className="text-sm font-medium text-ink-secondary">{label}</span>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          rows={4}
-          className={workspaceTextAreaClassName}
-        />
+      <select value={value} onChange={(event) => onChange(event.target.value)} className={workspaceInputClassName}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      {hint && <span className="block text-xs text-ink-muted">{hint}</span>}
+    </label>
+  );
+}
+
+/**
+ * Number input that keeps what the user is typing while it is out of range and
+ * only saves a value that is valid, so a half-typed "1" never becomes a setting.
+ */
+function NumberField({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
+  const parsed = draft.trim() === '' ? NaN : Number(draft);
+  const valid = Number.isFinite(parsed) && parsed >= min && parsed <= max;
+  const shown = editing ? draft : String(value);
+
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-ink-secondary">{label}</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={max}
+        step="any"
+        value={shown}
+        aria-invalid={editing && !valid ? true : undefined}
+        onFocus={() => {
+          setDraft(String(value));
+          setEditing(true);
+        }}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          const next = event.target.value.trim() === '' ? NaN : Number(event.target.value);
+          if (Number.isFinite(next) && next >= min && next <= max) onCommit(next);
+        }}
+        onBlur={() => setEditing(false)}
+        className={workspaceInputClassName}
+      />
+      {editing && !valid ? (
+        <span role="alert" className="block text-xs text-danger-600">Enter a number from {min} to {max}.</span>
       ) : (
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className={workspaceInputClassName}
-        />
+        hint && <span className="block text-xs text-ink-muted">{hint}</span>
       )}
     </label>
   );

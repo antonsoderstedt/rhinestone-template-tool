@@ -65,7 +65,8 @@ import {
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
-import { findAssetById, readActiveCalibrationProfile } from '../lib/workspaceVault';
+import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
+import { workspaceDefaultsPatch } from './newProjectDefaults';
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
 import {
   calculateCanvasWorkspaceBounds,
@@ -180,10 +181,18 @@ export default function EditorShell() {
     const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
     const entry = readRhinestoneAutosave(rawAutosave);
     queueMicrotask(() => {
+      // A first visit (nothing to restore) starts from the Settings defaults.
+      if (!entry) dispatch({ type: 'LOAD_PROJECT_STATE', state: workspaceDefaultsPatch(DEFAULT_EDITOR_STATE, readWorkspaceSettings()) });
       setAutosaveEntry(entry);
       setAutosaveDecision(entry ? 'restored' : 'ready');
     });
   }, [refreshTemplateLibrary]);
+
+  /** Blank project that starts from the Settings defaults (stone size, density, artwork size). */
+  const resetToNewProject = useCallback(() => {
+    dispatch({ type: 'RESET_EDITOR' });
+    dispatch({ type: 'LOAD_PROJECT_STATE', state: workspaceDefaultsPatch(DEFAULT_EDITOR_STATE, readWorkspaceSettings()) });
+  }, []);
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
@@ -1270,7 +1279,7 @@ export default function EditorShell() {
     if (!pendingDialog) return;
 
     if (pendingDialog.kind === 'new-project') {
-      dispatch({ type: 'RESET_EDITOR' });
+      resetToNewProject();
       setToast({ message: 'Started a new project.', tone: 'info' });
     }
 
@@ -1288,7 +1297,7 @@ export default function EditorShell() {
     }
 
     setPendingDialog(null);
-  }, [handleLoadAutosave, pendingDialog]);
+  }, [handleLoadAutosave, pendingDialog, resetToNewProject]);
 
   const handleFavoriteLibraryEntry = useCallback(async (templateId: string, favorite: boolean) => {
     if (!templateLibraryRepositoryRef.current) return;
@@ -1490,7 +1499,7 @@ export default function EditorShell() {
               globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
               setAutosaveEntry(null);
               setAutosaveDecision('ready');
-              dispatch({ type: 'RESET_EDITOR' });
+              resetToNewProject();
               setToast({ message: 'Started fresh.', tone: 'info' });
             }}
             className="rounded-md border border-[var(--studio-border)] px-2.5 py-1 font-medium text-[var(--studio-ink)] hover:bg-[var(--studio-hover-overlay)]"
