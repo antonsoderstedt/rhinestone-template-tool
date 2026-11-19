@@ -8,6 +8,9 @@ import {
   calculateCanvasWorkspaceBounds,
   calculateFitViewTransform,
   calculateDisplayedCanvasViewBox,
+  expandViewBoxToAspect,
+  MAX_CANVAS_ZOOM,
+  MIN_CANVAS_ZOOM,
   screenToMm,
   snapToGrid,
   isPointNearStone,
@@ -18,6 +21,7 @@ import {
 import { findNearestValidStonePosition, wouldCollide } from './collisionDetection';
 import { isIgnoredKeyboardTarget } from './editorDomGuards';
 import { isActivatableControl } from '../lib/studioShortcuts';
+import { useTouchViewGestures } from '../lib/touchGestures';
 import { findSnapCandidates, type SnapGuideLine } from './alignmentGuides';
 import {
   applyBoxSelection,
@@ -295,9 +299,16 @@ export default function EditorCanvas({
   // optimizing the whole component as a result) — calculateCanvasWorkspaceBounds
   // is a cheap O(stones) bounding-box scan, so a plain call is fine either way.
   const workspaceBounds = calculateCanvasWorkspaceBounds(stones);
-  const viewBox = useMemo(
+  // The SVG's real on-screen size. The view box is grown to this shape (see expandViewBoxToAspect) so it
+  // fills the canvas on any screen, a tall phone included, and pointer positions convert to mm exactly.
+  const [viewportSize, setViewportSize] = useState<{ width: number; height: number } | null>(null);
+  const baseViewBox = useMemo(
     () => calculateDisplayedCanvasViewBox(workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY),
     [workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY],
+  );
+  const viewBox = useMemo(
+    () => (viewportSize ? expandViewBoxToAspect(baseViewBox, viewportSize.width / viewportSize.height) : baseViewBox),
+    [baseViewBox, viewportSize],
   );
 
   // Ruler tick/label spacing adapts to zoom so labels never crowd together when zoomed out.
@@ -335,13 +346,13 @@ export default function EditorCanvas({
 
   // Handle zoom controls
   const handleZoomIn = () => {
-    const zoom = Math.min(state.canvas.zoom * 1.2, 5);
+    const zoom = Math.min(state.canvas.zoom * 1.2, MAX_CANVAS_ZOOM);
     dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
     onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
 
   const handleZoomOut = () => {
-    const zoom = Math.max(state.canvas.zoom / 1.2, 0.1);
+    const zoom = Math.max(state.canvas.zoom / 1.2, MIN_CANVAS_ZOOM);
     dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
     onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
@@ -410,6 +421,55 @@ export default function EditorCanvas({
     viewBoxRef.current = viewBox;
     workspaceBoundsRef.current = workspaceBounds;
   }, [viewBox, workspaceBounds]);
+
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      setViewportSize((previous) =>
+        previous && Math.abs(previous.width - rect.width) < 0.5 && Math.abs(previous.height - rect.height) < 0.5
+          ? previous
+          : { width: rect.width, height: rect.height },
+      );
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Drops whatever one finger / the mouse had started (drag, draw, pan, box select) without applying it.
+  const cancelInteractions = () => {
+    const svg = svgRef.current;
+    const pointerIds = [drawState?.pointerId, boxSelection?.pointerId].filter((id): id is number => id !== undefined);
+    for (const id of pointerIds) {
+      if (svg?.hasPointerCapture(id)) svg.releasePointerCapture(id);
+    }
+    setDrawState(null);
+    setDragState(null);
+    setPanState(null);
+    setBoxSelection(null);
+    setSnapGuides([]);
+    setHoverPosition(null);
+  };
+
+  // Two fingers pinch-zoom and pan the view; one finger keeps working as the active tool.
+  useTouchViewGestures(svgRef, {
+    minZoom: MIN_CANVAS_ZOOM,
+    maxZoom: MAX_CANVAS_ZOOM,
+    getView: () => ({ zoom: state.canvas.zoom, viewBox: viewBoxRef.current }),
+    onGestureStart: cancelInteractions,
+    applyView: ({ zoom, viewBox: next }) => {
+      const bounds = workspaceBoundsRef.current;
+      const view = {
+        zoom,
+        panX: bounds.x + bounds.width / 2 - (next.x + next.width / 2),
+        panY: bounds.y + bounds.height / 2 - (next.y + next.height / 2),
+      };
+      dispatch({ type: 'UPDATE_CANVAS', updates: view });
+      onManualViewChange?.(view);
+    },
+  });
 
   // Get canvas transform for coordinate conversion
   const getCanvasTransform = (): CanvasTransform | null => {
@@ -1049,7 +1109,7 @@ export default function EditorCanvas({
       // standard design-tool behavior (Figma, Google Maps, etc).
       if (e.ctrlKey || e.metaKey) {
         const delta = e.deltaY > 0 ? 0.9 : 1.1; // zoom in/out
-        const newZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.1), 5);
+        const newZoom = Math.min(Math.max(state.canvas.zoom * delta, MIN_CANVAS_ZOOM), MAX_CANVAS_ZOOM);
         if (newZoom === state.canvas.zoom) return;
 
         const fractionX = (e.clientX - rect.left) / rect.width;
@@ -1057,8 +1117,9 @@ export default function EditorCanvas({
         const cursorMmX = currentViewBox.x + fractionX * currentViewBox.width;
         const cursorMmY = currentViewBox.y + fractionY * currentViewBox.height;
 
-        const nextWidth = bounds.width / newZoom;
-        const nextHeight = bounds.height / newZoom;
+        // The shown box scales with 1/zoom (it is the workspace grown to the canvas shape).
+        const nextWidth = currentViewBox.width * (state.canvas.zoom / newZoom);
+        const nextHeight = currentViewBox.height * (state.canvas.zoom / newZoom);
         const nextCenterX = cursorMmX - fractionX * nextWidth + nextWidth / 2;
         const nextCenterY = cursorMmY - fractionY * nextHeight + nextHeight / 2;
 
@@ -1135,7 +1196,7 @@ export default function EditorCanvas({
 
   return (
     <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
         <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
@@ -1228,7 +1289,7 @@ export default function EditorCanvas({
               ref={svgRef}
               viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
               preserveAspectRatio="xMidYMid meet"
-              className="absolute inset-0 h-full w-full bg-[var(--studio-bg)]"
+              className="absolute inset-0 h-full w-full touch-none bg-[var(--studio-bg)]"
               style={{
                 width: '100%',
                 height: '100%',
@@ -1242,6 +1303,7 @@ export default function EditorCanvas({
               onPointerMove={handleMouseMove}
               onPointerLeave={handleMouseLeave}
               onPointerUp={handleMouseUp}
+              onPointerCancel={cancelInteractions}
               onContextMenu={(e) => e.preventDefault()}
             >
           {/* Grid */}

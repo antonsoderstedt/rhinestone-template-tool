@@ -4,6 +4,7 @@ import { CheckCircle2, Clock3, PenSquare, WandSparkles } from 'lucide-react';
 import { RhinestoneTemplate, getTemplatePhysicalSize } from '@/src/lib/rhinestone-engine/index';
 import { CanvasState } from './EditorState';
 import { getEditableStatusCopy } from './editorUi';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
 
 interface EditorStatusBarProps {
   template: RhinestoneTemplate | null;
@@ -30,6 +31,8 @@ export default function EditorStatusBar({
   autosaveUpdatedAt,
   activeLibraryName,
 }: EditorStatusBarProps) {
+  // On a phone this bar scrolls sideways; a scrollable region has to be reachable with the keyboard.
+  const isMobile = useIsMobileStudio();
   const stoneCount = template?.stones.length ?? 0;
   const statusCopy = getEditableStatusCopy(isEditable);
   const autosaveLabel = autosaveUpdatedAt
@@ -68,8 +71,8 @@ export default function EditorStatusBar({
         : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]';
 
   return (
-    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-xs text-[var(--studio-ink-muted)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <footer tabIndex={isMobile ? 0 : undefined} aria-label="Design status" className="flex flex-wrap items-center justify-between gap-3 max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:whitespace-nowrap max-lg:px-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-xs text-[var(--studio-ink-muted)]">
+      <div className="flex flex-wrap items-center gap-3 max-lg:shrink-0 max-lg:flex-nowrap">
         <span className="font-medium">{stoneCount} stone{stoneCount !== 1 && 's'}</span>
         <span className="font-mono">{physicalSize}</span>
         {spacingAdjustmentNote && (
@@ -83,14 +86,14 @@ export default function EditorStatusBar({
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 max-lg:shrink-0 max-lg:flex-nowrap">
         <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${workflowToneClass}`}>
           {exportReady ? <CheckCircle2 className="h-3.5 w-3.5" /> : exportErrorCount > 0 ? <div className="h-2 w-2 rounded-full bg-danger-500" /> : needsCalibration ? <div className="h-2 w-2 rounded-full bg-warning-500" /> : template ? <div className="h-2 w-2 rounded-full bg-warning-500" /> : <Clock3 className="h-3.5 w-3.5" />}
           <span className="font-medium">{workflowStateLabel}</span>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 max-lg:shrink-0 max-lg:flex-nowrap">
         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${activeLibraryName ? 'border-success-500/30 bg-success-50 text-success-600' : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]'}`}>
           <Clock3 className="h-3.5 w-3.5" />
           <span>{autosaveLabel}</span>

@@ -10,6 +10,7 @@ import {
   calculateCanvasWorkspaceBounds,
   calculateDisplayedCanvasViewBox,
   calculateFitViewTransform,
+  expandViewBoxToAspect,
   validatePersistedCanvasView,
 } from '../app/editor/canvasCoordinates';
 
@@ -193,11 +194,10 @@ describe('calculateDisplayedCanvasViewBox', () => {
         { widthPx: 1000, heightPx: 700 },
         { margin: 0.92, minZoom: 0.1, maxZoom: 5 },
       );
-      const viewBox = calculateDisplayedCanvasViewBox(
-        workspace,
-        fit.zoom,
-        fit.panX,
-        fit.panY,
+      // The canvas draws the view box grown to the canvas shape (1000 x 700 px here).
+      const viewBox = expandViewBoxToAspect(
+        calculateDisplayedCanvasViewBox(workspace, fit.zoom, fit.panX, fit.panY),
+        1000 / 700,
       );
 
       expect(viewBox.x).toBeLessThanOrEqual(content.x);
@@ -222,11 +222,25 @@ describe('calculateDisplayedCanvasViewBox', () => {
         { widthPx: 390, heightPx: 844 },
         { margin: 0.92, minZoom: 0.1, maxZoom: 5 },
       );
-      const viewBox = calculateDisplayedCanvasViewBox(workspace, fit.zoom, fit.panX, fit.panY);
+      const viewBox = expandViewBoxToAspect(calculateDisplayedCanvasViewBox(workspace, fit.zoom, fit.panX, fit.panY), 390 / 844);
       expect(viewBox.x).toBeLessThanOrEqual(content.x);
       expect(viewBox.x + viewBox.width).toBeGreaterThanOrEqual(content.x + content.width);
       expect(viewBox.y).toBeLessThanOrEqual(content.y);
       expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(content.y + content.height);
+    });
+
+    it('fills the canvas: the content uses the margin fraction of its limiting side', () => {
+      const workspace = { x: 0, y: 0, width: 900, height: 700 };
+      const content = { x: 20, y: 30, width: 60, height: 120 };
+      for (const viewport of [{ widthPx: 390, heightPx: 844 }, { widthPx: 1280, heightPx: 600 }, { widthPx: 800, heightPx: 800 }]) {
+        const fit = calculateFitViewTransform(workspace, content, viewport, { margin: 0.9, minZoom: 0.01, maxZoom: 100 });
+        const shown = expandViewBoxToAspect(
+          calculateDisplayedCanvasViewBox(workspace, fit.zoom, fit.panX, fit.panY),
+          viewport.widthPx / viewport.heightPx,
+        );
+        const used = Math.max(content.width / shown.width, content.height / shown.height);
+        expect(used).toBeCloseTo(0.9, 6);
+      }
     });
 
     it('discards legacy and out-of-range persisted views', () => {
@@ -254,5 +268,26 @@ describe('calculateDisplayedCanvasViewBox', () => {
       width: 900,
       height: 700,
     });
+  });
+});
+
+describe('expandViewBoxToAspect', () => {
+  const box = { x: 10, y: 20, width: 200, height: 100 };
+
+  it('keeps the box when the aspect already matches', () => {
+    expect(expandViewBoxToAspect(box, 2)).toEqual(box);
+  });
+
+  it('grows the height about the centre for a taller canvas', () => {
+    expect(expandViewBoxToAspect(box, 1)).toEqual({ x: 10, y: -30, width: 200, height: 200 });
+  });
+
+  it('grows the width about the centre for a wider canvas', () => {
+    expect(expandViewBoxToAspect(box, 4)).toEqual({ x: -90, y: 20, width: 400, height: 100 });
+  });
+
+  it('never shrinks and ignores invalid aspects', () => {
+    expect(expandViewBoxToAspect(box, 0)).toBe(box);
+    expect(expandViewBoxToAspect(box, Number.NaN)).toBe(box);
   });
 });

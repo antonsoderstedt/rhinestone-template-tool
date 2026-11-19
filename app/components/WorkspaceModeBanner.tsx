@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export type WorkspaceStatus = 'Ready' | 'Warning' | 'Blocked';
@@ -36,6 +37,9 @@ const statusConfig: Record<WorkspaceStatus, { labelClassName: string; iconClassN
 
 export default function WorkspaceModeBanner({ mode, status, project, guidance, calibrationState }: WorkspaceModeBannerProps) {
   const { Icon, badgeClassName, iconClassName, labelClassName } = statusConfig[status];
+  // On a phone long guidance (size warnings, say) is clamped to two lines until the user opens it.
+  const [expanded, setExpanded] = useState(false);
+  const longGuidance = guidance.length > 90;
 
   const calibrationToneClassName = calibrationState?.tone === 'success'
     ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
@@ -62,14 +66,24 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
             )}
           </div>
 
-          <div className={`text-xs font-semibold uppercase tracking-[0.2em] ${labelClassName}`}>
+          <div className={`text-xs font-semibold uppercase tracking-[0.2em] max-lg:hidden ${labelClassName}`}>
             {project}
           </div>
         </div>
 
-        <p className="mt-2 max-w-4xl text-xs leading-5 text-[var(--studio-ink-secondary)]">
+        <p className={`mt-2 max-w-4xl text-xs leading-5 text-[var(--studio-ink-secondary)] ${expanded ? '' : 'max-lg:line-clamp-2'}`}>
           {guidance}
         </p>
+        {longGuidance && (
+          <button
+            type="button"
+            onClick={() => setExpanded((open) => !open)}
+            aria-expanded={expanded}
+            className="mt-1 text-xs font-semibold text-violet-300 underline-offset-2 hover:underline lg:hidden"
+          >
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
       </div>
     </section>
   );

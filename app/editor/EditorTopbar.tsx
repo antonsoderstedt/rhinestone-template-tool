@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, Download, FileDown, FolderOpen, LibraryBig, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, Download, FileDown, FolderOpen, LibraryBig, Menu, RotateCcw, RotateCw, Save, Settings2, Shirt, Sparkles } from 'lucide-react';
 import { EditorAction } from './EditorState';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
 import { KeyboardShortcutsButton } from '../components/KeyboardShortcuts';
+import StudioMenuSheet, { type StudioMenuSection } from '../components/StudioMenuSheet';
 
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -73,6 +75,33 @@ export default function EditorTopbar({
   theme = 'dark',
   onToggleTheme = () => undefined,
 }: EditorTopbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuSections: StudioMenuSection[] = [
+    {
+      title: 'Project',
+      items: [
+        { id: 'new', label: 'New project', icon: Sparkles, onSelect: onNewProject },
+        { id: 'save', label: 'Save to My Designs', icon: Save, onSelect: onSave },
+        { id: 'library', label: 'My Designs', icon: LibraryBig, onSelect: onOpenLibrary },
+        { id: 'open-file', label: 'Open project file…', icon: FolderOpen, onSelect: onOpenProject },
+        { id: 'export-file', label: 'Download project file', icon: FileDown, onSelect: onExportProjectFile },
+      ],
+    },
+    ...(recentDesigns.length > 0
+      ? [{
+          title: 'Recent designs',
+          items: recentDesigns.map((design) => ({ id: `recent-${design.id}`, label: design.name, icon: FolderOpen, onSelect: () => onOpenRecent(design.id) })),
+        }]
+      : []),
+    {
+      title: 'Output',
+      items: [
+        { id: 'canvas', label: 'Canvas view', pressed: designSurface === 'canvas', onSelect: () => onToggleDesignSurface('canvas') },
+        { id: 'garment', label: 'Garment preview', icon: Shirt, disabled: !canPreviewGarment, pressed: designSurface === 'garment', onSelect: () => { onOpenGarmentPreview(); onToggleDesignSurface('garment'); } },
+        { id: 'setup', label: 'Setup and calibration', icon: Settings2, onSelect: onOpenSetup },
+      ],
+    },
+  ];
   const exportStatus = !canExport
     ? { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' }
     : exportReady
@@ -86,7 +115,47 @@ export default function EditorTopbar({
         : { label: 'No template', className: 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]' };
   return (
     <section aria-label="Project actions" className="flex items-center gap-2 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5 text-[var(--studio-ink)] lg:min-h-[60px] lg:flex-wrap">
-      <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
+      {/* Phones and tablets: menu, project name, undo/redo. Everything else is in the menu or the bottom bar. */}
+      <div className="flex w-full items-center gap-1.5 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          aria-haspopup="dialog"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] text-[var(--studio-ink)] transition hover:bg-[var(--studio-hover-overlay)]"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <input
+          type="text"
+          value={projectName}
+          onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
+          aria-label="Project name"
+          className="h-11 min-w-0 flex-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 text-base font-semibold text-[var(--studio-ink)] focus-visible:ring-2 focus-visible:ring-violet-400"
+          placeholder="Untitled Project"
+        />
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'UNDO' })}
+          disabled={!canUndo}
+          aria-label="Undo"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] disabled:opacity-30"
+        >
+          <RotateCcw className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'REDO' })}
+          disabled={!canRedo}
+          aria-label="Redo"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] disabled:opacity-30"
+        >
+          <RotateCw className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <StudioMenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} sections={menuSections} theme={theme} onToggleTheme={onToggleTheme} />
+      </div>
+
+      <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm max-lg:hidden">
         <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-xs font-medium uppercase tracking-[0.14em] text-violet-200">
           Live editor
         </span>
@@ -100,7 +169,7 @@ export default function EditorTopbar({
         />
       </div>
 
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 items-center max-lg:hidden">
         <ToolbarSection label="Project">
           <button
             onClick={onNewProject}

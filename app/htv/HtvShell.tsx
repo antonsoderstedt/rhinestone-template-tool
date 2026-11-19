@@ -35,6 +35,9 @@ import { findHtvSizeIssues, summarizeHtvSize } from './htvSizeCheck';
 import { getPlacementZoneSizeMm } from './htvPlacementZones';
 import { useMeasuredTextSizes } from './useMeasuredTextSizes';
 import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import MobileStudioBar from '../components/MobileStudioBar';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
+import { Download, Plus, SlidersHorizontal } from 'lucide-react';
 import { isKeyHandlingWidget, isModalOpen, resolveStudioShortcut } from '../lib/studioShortcuts';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import {
@@ -63,6 +66,9 @@ export default function HtvShell() {
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment' | '3d'>('canvas');
+  // Phones and tablets: which panel the bottom bar has open under the canvas.
+  const [mobilePanel, setMobilePanel] = useState<'none' | 'add' | 'inspect'>('none');
+  const isMobile = useIsMobileStudio();
   const [placementOverlayMode, setPlacementOverlayMode] = useState<'active-only' | 'all-active'>('all-active');
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
@@ -461,6 +467,11 @@ export default function HtvShell() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [state.selectedLayerIds, state.layers, state.canvas.zoom, handleSaveDesign, handleExport]);
 
+  // On a phone, adding something (text, a shape, a file…) moves on to the inspector so it can be edited at once.
+  const showInspectorOnPhone = () => {
+    if (isMobile) setMobilePanel('inspect');
+  };
+
   const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
   const htvStatus = summarizeHtvStatus(state.layers, state.garment.placementZone, sizeSummary);
 
@@ -572,17 +583,17 @@ export default function HtvShell() {
         guidance={htvStatus.guidance}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">
+        <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'add' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0`}>
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
             libraryAssets={libraryAssets}
-            onAddText={handleAddText}
-            onImportFile={handleImportFile}
-            onAddShape={handleAddShape}
-            onAddTemplate={handleAddTemplate}
-            onAddLibraryAsset={handleAddLibraryAsset}
+            onAddText={(...args) => { showInspectorOnPhone(); return handleAddText(...args); }}
+            onImportFile={(...args) => { showInspectorOnPhone(); return handleImportFile(...args); }}
+            onAddShape={(...args) => { showInspectorOnPhone(); return handleAddShape(...args); }}
+            onAddTemplate={(...args) => { showInspectorOnPhone(); return handleAddTemplate(...args); }}
+            onAddLibraryAsset={(...args) => { showInspectorOnPhone(); return handleAddLibraryAsset(...args); }}
             designSurface={designSurface}
             onToggleDesignSurface={setDesignSurface}
             placementOverlayMode={placementOverlayMode}
@@ -590,7 +601,7 @@ export default function HtvShell() {
           />
         </div>
 
-        <main id="main-content" tabIndex={-1} aria-label="Design surface" className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
+        <main id="main-content" tabIndex={-1} aria-label="Design surface" className="order-1 min-h-[58vh] min-w-0 flex-1 max-lg:min-h-0 lg:order-none lg:min-h-0">
           <h1 className="sr-only">HTV Studio</h1>
           {designSurface === 'garment' ? (
             <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
@@ -604,7 +615,7 @@ export default function HtvShell() {
           )}
         </main>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
+        <div className={`order-3 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'inspect' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0`}>
           <HtvInspectorPanel
             state={state}
             dispatch={dispatch}
@@ -680,13 +691,21 @@ export default function HtvShell() {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
+          className={`fixed bottom-4 max-lg:bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
             toast.tone === 'success' ? 'bg-success-600 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-600 text-ink-inverse' : 'bg-danger-600 text-ink-inverse'
           }`}
         >
           {toast.message}
         </div>
       )}
+
+      <MobileStudioBar
+        items={[
+          { id: 'add', label: 'Add', icon: Plus, active: mobilePanel === 'add', onSelect: () => setMobilePanel((current) => (current === 'add' ? 'none' : 'add')) },
+          { id: 'inspect', label: 'Inspect', icon: SlidersHorizontal, active: mobilePanel === 'inspect', onSelect: () => setMobilePanel((current) => (current === 'inspect' ? 'none' : 'inspect')) },
+          { id: 'export', label: 'Export', icon: Download, primary: true, disabled: activePlacementLayers.length === 0, onSelect: handleExport },
+        ]}
+      />
     </div>
   );
 }

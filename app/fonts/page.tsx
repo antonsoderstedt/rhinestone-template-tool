@@ -545,7 +545,7 @@ export default function FontsPage() {
         </WorkspaceSurface>
 
         {shownFamilies.length > 0 && (
-          <section className="grid gap-5 xl:grid-cols-2" aria-label="Imported font families">
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2" aria-label="Imported font families">
             {shownFamilies.map((family) => {
               const expanded = expandedFamilies[family.familyKey] ?? false;
               const unavailable = fileUnavailable(family.representative);
@@ -626,7 +626,7 @@ export default function FontsPage() {
           </section>
         )}
 
-        <section className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3" aria-label="Fonts">
+        <section className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3" aria-label="Fonts">
           {shownStandalone.map((font) => {
             const unavailable = fileUnavailable(font);
             const editable = font.source !== 'bundled';

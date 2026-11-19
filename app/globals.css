@@ -125,6 +125,39 @@ body {
   }
 }
 
+/*
+ * Touch layout. On phones and tablets (narrow viewports) and on any touch-first device, controls
+ * get at least a 44 x 44 px target (WCAG 2.5.5 / Apple HIG) and text fields use 16px so iOS does
+ * not zoom the page when one is focused. These rules are unlayered on purpose: they must beat
+ * utilities like `h-8` or `text-xs` that are tuned for a mouse. Inline text links are exempt.
+ */
+@media (max-width: 1023px), (pointer: coarse) {
+  :where(button, [role='tab'], [role='button'], summary, select, input:not([type='checkbox'], [type='radio'], [type='hidden'], [type='file'])) {
+    min-height: 44px;
+  }
+
+  :where(button, [role='tab'], [role='button'], summary) {
+    min-width: 44px;
+  }
+
+  :where(nav a, a.inline-flex, a.flex, a.block) {
+    min-height: 44px;
+  }
+
+  :where(input[type='checkbox'], input[type='radio']) {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  :where(label:has(> input[type='checkbox']), label:has(> input[type='radio'])) {
+    min-height: 44px;
+  }
+
+  :where(input:not([type='checkbox'], [type='radio'], [type='range'], [type='hidden'], [type='file']), select, textarea) {
+    font-size: 16px;
+  }
+}
+
 ::selection {
   background: var(--color-accent-100);
   color: var(--color-accent-700);

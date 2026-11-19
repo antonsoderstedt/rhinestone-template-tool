@@ -55,6 +55,38 @@ export function calculateDisplayedCanvasViewBox(
 }
 
 /**
+ * Grows `viewBox` (about its centre) to the aspect ratio `widthOverHeight` of the element that
+ * draws it, never shrinking either side. The canvas SVG uses this as its `viewBox`, so the view box
+ * fills the element exactly: there are no letterbox bands, and screen ↔ mm conversion (which divides
+ * by the element's size) is exact on any screen shape, including a tall phone.
+ */
+/**
+ * Zoom limits for interactive zooming (buttons, wheel, pinch, shortcuts). The upper limit matches "fit to
+ * screen", which can need a high zoom for a small design on a big canvas (a 70 mm word on a phone is ~6x).
+ * Before this was shared, fit could produce a zoom above the 5x that the controls allowed, so the first
+ * pinch or wheel tick snapped the view back out.
+ */
+export const MIN_CANVAS_ZOOM = 0.1;
+export const MAX_CANVAS_ZOOM = 100;
+
+export function expandViewBoxToAspect(
+  viewBox: CanvasWorkspaceBounds,
+  widthOverHeight: number,
+): CanvasWorkspaceBounds {
+  if (!Number.isFinite(widthOverHeight) || widthOverHeight <= 0 || viewBox.width <= 0 || viewBox.height <= 0) {
+    return viewBox;
+  }
+  const width = Math.max(viewBox.width, viewBox.height * widthOverHeight);
+  const height = width / widthOverHeight;
+  return {
+    x: viewBox.x + viewBox.width / 2 - width / 2,
+    y: viewBox.y + viewBox.height / 2 - height / 2,
+    width,
+    height,
+  };
+}
+
+/**
  * Convert screen coordinates (mouse event) to SVG viewBox coordinates
  */
 export function screenToViewBox(
@@ -206,10 +238,10 @@ export function calculateFitViewTransform(
     viewBoxWidth = viewBoxHeight * viewportAspect;
   }
 
-  const exactFitZoom = Math.min(
-    workspace.width / viewBoxWidth,
-    workspace.height / viewBoxHeight,
-  );
+  // The canvas shows `expandViewBoxToAspect(workspace / zoom, viewportAspect)`, whose width is
+  // max(workspace.width, workspace.height * aspect) / zoom. Solve for the zoom that makes it
+  // exactly the width needed to hold the content.
+  const exactFitZoom = Math.max(workspace.width, workspace.height * viewportAspect) / viewBoxWidth;
   const zoom = Math.min(Math.max(exactFitZoom, minZoom), maxZoom);
   const panX = workspace.x + workspace.width / 2 - (content.x + content.width / 2);
   const panY = workspace.y + workspace.height / 2 - (content.y + content.height / 2);

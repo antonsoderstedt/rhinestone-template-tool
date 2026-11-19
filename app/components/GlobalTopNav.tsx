@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FolderOpen, Gem, LibraryBig, Ruler, Settings2, ShieldAlert, Sparkles, SwatchBook, Type } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FolderOpen, Gem, LibraryBig, Menu, Ruler, Settings2, ShieldAlert, Sparkles, SwatchBook, Type, X } from 'lucide-react';
 import { readActiveCalibrationProfile } from '@/app/lib/workspaceVault';
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { href: '/', label: 'Start', shortLabel: 'Start', icon: Sparkles },
   { href: '/rhinestone', label: 'Rhinestone Studio', shortLabel: 'Stone', icon: Gem },
   { href: '/htv', label: 'HTV Studio', shortLabel: 'HTV', icon: SwatchBook },
@@ -145,6 +145,19 @@ export function getModeMeta(pathname: string, activeCalibrationProfile: ReturnTy
 export default function GlobalTopNav() {
   const pathname = usePathname();
   const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(null);
+  // The menu is open only for the page it was opened on, so navigating closes it without an effect.
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const menuOpen = menuOpenFor === pathname;
+  const studioRoute = pathname.startsWith('/rhinestone') || pathname.startsWith('/htv');
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpenFor(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     const syncProfile = () => setActiveCalibrationProfile(readActiveCalibrationProfile());
@@ -184,7 +197,7 @@ export default function GlobalTopNav() {
             : 'Workspace ready';
 
   return (
-    <header data-focus-surface="dark" className="sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl">
+    <header data-focus-surface="dark" className={`sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl ${studioRoute ? 'max-lg:hidden' : ''}`}>
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
@@ -217,6 +230,17 @@ export default function GlobalTopNav() {
             );
           })}
         </nav>
+
+        <button
+          type="button"
+          onClick={() => setMenuOpenFor(menuOpen ? null : pathname)}
+          aria-expanded={menuOpen}
+          aria-controls="global-nav-menu"
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-medium text-zinc-200 transition hover:bg-white/10 xl:hidden"
+        >
+          {menuOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
+          Menu
+        </button>
 
         <div className="hidden items-center gap-2 lg:flex">
           <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
@@ -257,30 +281,30 @@ export default function GlobalTopNav() {
         </div>
       </div>
 
-      <div className={`overflow-x-auto border-t border-white/10 xl:hidden ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : ''}`}>
-        <nav aria-label="Main" className="mx-auto flex w-max min-w-full gap-1 px-2 py-1.5 sm:px-3">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition sm:gap-2 sm:px-3 sm:text-sm ${
-                  active
-                    ? 'bg-violet-500/35 text-white'
-                    : 'text-zinc-400 hover:bg-white/10 hover:text-zinc-100'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="sm:hidden">{item.shortLabel}</span>
-                <span className="hidden sm:inline">{item.label}</span>
-              </Link>
-            );
-          })}
+      {menuOpen && (
+        <nav id="global-nav-menu" aria-label="Main" className="border-t border-white/10 bg-[#121215] px-3 py-2 xl:hidden">
+          <ul className="mx-auto grid max-w-[1600px] gap-1 sm:grid-cols-2">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-base font-medium transition ${
+                      active ? 'bg-violet-500/35 text-white' : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
-      </div>
+      )}
     </header>
   );
 }

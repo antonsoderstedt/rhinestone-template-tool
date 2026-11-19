@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
 import { GETTING_STARTED_STEPS, readOnboardingDismissed, writeOnboardingDismissed } from '../lib/onboarding';
 
 /**
@@ -10,6 +11,9 @@ import { GETTING_STARTED_STEPS, readOnboardingDismissed, writeOnboardingDismisse
  */
 export default function GettingStartedGuide() {
   const [dismissed, setDismissed] = useState<boolean | null>(null);
+  // On a phone the four steps start collapsed so the canvas keeps its space.
+  const isMobile = useIsMobileStudio();
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => setDismissed(readOnboardingDismissed(globalThis.localStorage)));
@@ -24,8 +28,14 @@ export default function GettingStartedGuide() {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Your first design in 4 steps</h2>
-          <ol className="mt-1.5 grid gap-x-4 gap-y-1 text-xs text-[var(--studio-ink-secondary)] sm:grid-cols-2 xl:grid-cols-4">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
+            {isMobile ? (
+              <button type="button" onClick={() => setExpanded((open) => !open)} aria-expanded={expanded} className="uppercase tracking-[0.16em]">
+                Your first design in 4 steps {expanded ? '▴' : '▾'}
+              </button>
+            ) : 'Your first design in 4 steps'}
+          </h2>
+          <ol hidden={isMobile && !expanded} className="mt-1.5 grid gap-x-4 gap-y-1 text-xs text-[var(--studio-ink-secondary)] sm:grid-cols-2 xl:grid-cols-4">
             {GETTING_STARTED_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-2">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-200">{index + 1}</span>

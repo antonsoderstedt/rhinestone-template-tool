@@ -53,6 +53,9 @@ import PromptDialog from '../components/PromptDialog';
 import { readSvgSizeMm } from '../components/exportDialogHelpers';
 import EditorToast from './EditorToast';
 import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import { Download, ScanSearch, SlidersHorizontal, Wrench } from 'lucide-react';
+import MobileStudioBar from '../components/MobileStudioBar';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
 import {
   RHINESTONE_NUDGE_SHIFT_STEP_MM,
   RHINESTONE_NUDGE_STEP_MM,
@@ -81,6 +84,8 @@ import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } fr
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
 import {
   calculateCanvasWorkspaceBounds,
+  MAX_CANVAS_ZOOM,
+  MIN_CANVAS_ZOOM,
   validatePersistedCanvasView,
 } from './canvasCoordinates';
 
@@ -109,6 +114,9 @@ export default function EditorShell() {
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
   const [fitRequestId, setFitRequestId] = useState(0);
+  // Phones and tablets: which panel the bottom bar has open under the canvas.
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('none');
+  const isMobile = useIsMobileStudio();
   const [spacingAdjustmentNote, setSpacingAdjustmentNote] = useState<string | null>(null);
   const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
   const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
@@ -1511,8 +1519,8 @@ export default function EditorShell() {
           const zoom = shortcut.type === 'zoom-reset'
             ? 1
             : shortcut.type === 'zoom-in'
-              ? Math.min(state.canvas.zoom * 1.2, 5)
-              : Math.max(state.canvas.zoom / 1.2, 0.1);
+              ? Math.min(state.canvas.zoom * 1.2, MAX_CANVAS_ZOOM)
+              : Math.max(state.canvas.zoom / 1.2, MIN_CANVAS_ZOOM);
           const view = shortcut.type === 'zoom-reset'
             ? { zoom, panX: 0, panY: 0 }
             : { zoom, panX: state.canvas.panX, panY: state.canvas.panY };
@@ -1700,7 +1708,7 @@ export default function EditorShell() {
       />
 
       {toast && (
-        <div className="absolute bottom-20 right-4 z-30">
+        <div className="absolute bottom-20 right-4 z-30 max-lg:bottom-32 max-lg:left-4">
           <EditorToast
             message={toast.message}
             tone={toast.tone}
@@ -1710,18 +1718,31 @@ export default function EditorShell() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
-        <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">
+        <StudioToolRail
+          activeTool={state.activeTool}
+          mobileOpen={mobilePanel === 'tools'}
+          onSelectTool={(tool) => {
+            dispatch({ type: 'SET_ACTIVE_TOOL', tool });
+            // On a phone, picking a tool opens that tool's settings (or the inspector for Select).
+            setMobilePanel(tool === 'select' ? 'inspect' : 'design');
+          }}
+        />
 
-        <main id="main-content" tabIndex={-1} aria-label="Canvas" className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+        <main id="main-content" tabIndex={-1} aria-label="Canvas" className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] max-lg:min-h-0 lg:order-none lg:min-h-0">
           <h1 className="sr-only">Rhinestone Studio</h1>
-          <GettingStartedGuide />
-          <CanvasActionStrip
-            activeTool={state.activeTool}
-            hasTemplate={Boolean(effectiveTemplate)}
-            isEditable={state.editableTemplate.isEditable}
-            dispatch={editorDispatch}
-          />
+          {/* With a panel open on a phone the canvas needs every pixel, so the guide and the hint strip step aside. */}
+          {!(isMobile && mobilePanel !== 'none') && (
+            <>
+              <GettingStartedGuide />
+              <CanvasActionStrip
+                activeTool={state.activeTool}
+                hasTemplate={Boolean(effectiveTemplate)}
+                isEditable={state.editableTemplate.isEditable}
+                dispatch={editorDispatch}
+              />
+            </>
+          )}
           <EditorCanvas
             state={state}
             dispatch={editorDispatch}
@@ -1739,6 +1760,7 @@ export default function EditorShell() {
           dispatch={editorDispatch}
           outlineFontStatus={outlineFontStatus}
           exportReadiness={exportReadiness}
+          mobilePanel={mobilePanel}
         />
       </div>
 
@@ -1754,26 +1776,74 @@ export default function EditorShell() {
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
       />
+
+      <MobileStudioBar
+        items={[
+          {
+            id: 'tools',
+            label: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.label ?? 'Tools',
+            icon: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.icon ?? Wrench,
+            active: mobilePanel === 'tools',
+            onSelect: () => setMobilePanel((current) => (current === 'tools' ? 'none' : 'tools')),
+          },
+          {
+            id: 'design',
+            label: 'Design',
+            icon: SlidersHorizontal,
+            active: mobilePanel === 'design',
+            onSelect: () => setMobilePanel((current) => (current === 'design' ? 'none' : 'design')),
+          },
+          {
+            id: 'inspect',
+            label: 'Inspect',
+            icon: ScanSearch,
+            active: mobilePanel === 'inspect',
+            onSelect: () => setMobilePanel((current) => (current === 'inspect' ? 'none' : 'inspect')),
+          },
+          {
+            id: 'export',
+            label: 'Export',
+            icon: Download,
+            primary: true,
+            disabled: !effectiveTemplate,
+            onSelect: handleExport,
+          },
+        ]}
+      />
     </div>
   );
 }
 
-function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_EDITOR_STATE.activeTool; dispatch: React.Dispatch<EditorAction> }) {
+type MobilePanel = 'none' | 'tools' | 'design' | 'inspect';
+
+function StudioToolRail({
+  activeTool,
+  mobileOpen,
+  onSelectTool,
+}: {
+  activeTool: typeof DEFAULT_EDITOR_STATE.activeTool;
+  /** Phones/tablets: the Tools tab is open, so the rail shows as a grid under the canvas. */
+  mobileOpen: boolean;
+  onSelectTool: (tool: typeof DEFAULT_EDITOR_STATE.activeTool) => void;
+}) {
   return (
-    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-2 lg:order-none lg:h-full lg:w-[68px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
+    <nav
+      className={`order-2 shrink-0 border-[var(--studio-border)] bg-[var(--studio-well)] max-lg:max-h-[44dvh] max-lg:overflow-y-auto max-lg:border-t max-lg:p-3 ${mobileOpen ? 'max-lg:grid max-lg:grid-cols-3 max-lg:gap-2 sm:max-lg:grid-cols-5' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:w-[68px] lg:flex-col lg:gap-1 lg:border-r lg:px-1.5 lg:py-2`}
+      aria-label="Studio tools"
+    >
       {EDITOR_TOOLS.map((tool) => {
         const Icon = tool.icon;
         const active = activeTool === tool.id;
         return (
           <button
             key={tool.id}
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
+            onClick={() => onSelectTool(tool.id)}
             title={tool.description}
             aria-label={tool.label}
             aria-pressed={active}
-            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-xs transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+            className={`flex min-h-16 flex-col items-center justify-center rounded-md px-2 py-2 text-xs transition lg:min-h-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5 lg:h-4 lg:w-4" />
             <span className="mt-1 truncate">{tool.label}</span>
           </button>
         );
@@ -1790,11 +1860,14 @@ function StudioContextPanel({
   dispatch,
   outlineFontStatus,
   exportReadiness,
+  mobilePanel,
 }: {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus: OutlineFontStatus;
   exportReadiness: ExportReadinessResult | null;
+  /** Phones/tablets: which bottom-bar panel is open. `'none'` on desktop, where both tabs are visible. */
+  mobilePanel: 'none' | 'tools' | 'design' | 'inspect';
 }) {
   // Auto-switch: Inspect when select tool is active, Design (source settings) for generators.
   const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
@@ -1804,12 +1877,15 @@ function StudioContextPanel({
     setPrevTool(state.activeTool);
     setManualTab(null);
   }
-  const tab = manualTab ?? autoTab;
+  // On a phone the bottom bar picks the tab; on desktop the tab strip does.
+  const isMobile = useIsMobileStudio();
+  const tab = isMobile && mobilePanel === 'design' ? 'source' : isMobile && mobilePanel === 'inspect' ? 'inspector' : (manualTab ?? autoTab);
+  const mobileVisible = mobilePanel === 'design' || mobilePanel === 'inspect';
 
   return (
-    <aside aria-label="Design and inspector" className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
+    <aside aria-label="Design and inspector" className={`order-2 min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobileVisible ? 'max-lg:flex' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0`}>
       {/* Tabs */}
-      <div role="tablist" aria-label="Panel" className="flex shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)]">
+      <div role="tablist" aria-label="Panel" className="flex shrink-0 border-b max-lg:hidden border-[var(--studio-border)] bg-[var(--studio-well)]">
         {(['source', 'inspector'] as const).map((t) => (
           <button
             key={t}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppFrame from "./components/AppFrame";
 import "./globals.css";
@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Rhinestone Template Tool",
   description: "Precision SVG templates for Cricut Maker 3 + Magic Flock",
+};
+
+// Real device width, and let the page draw under the notch / home indicator (the studios pad their
+// bottom bar with env(safe-area-inset-bottom)). Zooming is left enabled for accessibility.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
