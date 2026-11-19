@@ -22,8 +22,17 @@ logo too small for the stone simply came out as scattered dots with no explanati
 4. **Say it before generating it:** a feasibility analysis per stone size gives the share of detail thinner than a stone, the
    shapes that get none, and the width at which it works. The panel offers "Make it N mm wide" and "Use SS6 stones".
 5. **The tool keeps its stored fields** (coverage mode, contour settings): Outline, Rows and Solid map onto them, so every
-   saved project opens. New persisted field: `layerRoles`. Raster images still use the older sampler (plan J13).
+   saved project opens. New persisted field: `layerRoles`. Raster images join the same pipeline (plan J13, below).
 6. The old generators stay in the engine for text and other tools, and in the quality harness for comparison.
+
+## Raster images (J13, J14)
+
+`buildRasterLayers` (artwork/rasterLayers.ts): the image is box-filtered to at most 1200 px, the background removed (transparent
+pixels, or the colour that fills 85 % of the border; a picture with neither is cut by a brightness cutoff, with a note), the
+rest reduced to 1-4 colours by a deterministic k-means (start: quantiles of brightness), smoothed according to `detail`, and
+placed on the millimetre grid as one mask per colour. From there it is the same layout as SVG artwork. A newly chosen image starts
+as Solid. The colour-count buttons show their state, the panel has the same look, colour list, size advice and mm / in switch as
+SVG artwork.
 
 ## Results (full matrix, 16 fixtures, 90 runs per look; `npm run quality`)
 
@@ -43,5 +52,5 @@ feasibility analysis 50-170 ms.
 - Small text lines in a large logo (for example "DEMON HUNTERS" under a big "KPOP") are shown as single dotted lines; that is
   what the stone size allows, and the advice says so by shape count, not by area share.
 - Corners come from a 35° turn on the simplified contour; very soft corners are rounded.
-- Not yet: colours as separate stone colours (B4), raster images through the same pipeline (J13), a worker for large designs
+- Not yet: colours as separate stone colours (B4), a worker for large designs
   (C4), and a preview of the source behind the stones (J3 extension).

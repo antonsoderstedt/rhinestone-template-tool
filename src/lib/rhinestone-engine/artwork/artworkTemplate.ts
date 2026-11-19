@@ -13,7 +13,7 @@ import type { Polyline } from '../path/polyline';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import { getMinimumCenterDistance, getRecommendedCenterDistance, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
 import { getDensitySpacing, type DensityPreset } from '../spacing/density';
-import { buildArtworkLayers, type ArtworkLayer, type BuildLayersOptions } from './layers';
+import { buildArtworkLayers, type ArtworkLayer, type ArtworkLayers, type BuildLayersOptions } from './layers';
 import { buildRegionField, emptyMask, type RegionField } from './regionField';
 import { analyseFeasibility, type FeasibilityReport } from './feasibility';
 import { layoutRows, type StoneKind } from './rowsLayout';
@@ -23,7 +23,10 @@ export type ArtworkLook = 'outline' | 'rows' | 'solid';
 export interface CreateArtworkTemplateOptions {
   id: string;
   name: string;
-  shapes: readonly ImportedShape[];
+  /** The artwork as shapes (SVG). Give either this or `layers`. */
+  shapes?: readonly ImportedShape[];
+  /** The artwork as ready-made colour layers (a raster image); size options are then already applied. */
+  layers?: ArtworkLayers;
   stoneSize: StoneSizeId;
   look: ArtworkLook;
   /** Number of rows for the `rows` look. Default 3. */
@@ -94,13 +97,15 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
       ? Math.max(minCentre, options.customSpacingMm)
       : recommended;
 
-  const built = buildArtworkLayers(shapes, {
-    widthMm: options.widthMm,
-    heightMm: options.heightMm,
-    preserveAspectRatio: options.preserveAspectRatio,
-    ignoreBackground: options.ignoreBackground,
-    grid: options.grid,
-  });
+  const built =
+    options.layers ??
+    buildArtworkLayers(shapes ?? [], {
+      widthMm: options.widthMm,
+      heightMm: options.heightMm,
+      preserveAspectRatio: options.preserveAspectRatio,
+      ignoreBackground: options.ignoreBackground,
+      grid: options.grid,
+    });
   const warnings = [...built.warnings];
 
   // Layers painted later are on top: they get their stones first, and lower layers give way where they meet.

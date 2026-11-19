@@ -225,6 +225,8 @@ export type { ArtworkLook, CreateArtworkTemplateOptions, ArtworkTemplateResult }
 export { createArtworkTemplate } from './artwork/artworkTemplate';
 export type { ArtworkLayer, ArtworkLayers, BuildLayersOptions } from './artwork/layers';
 export { buildArtworkLayers } from './artwork/layers';
+export type { RasterImage, RasterLayersOptions } from './artwork/rasterLayers';
+export { buildRasterLayers } from './artwork/rasterLayers';
 export type { FeasibilityReport, FeasibilityVerdict, StoneSizeFeasibility, FeasibilityOptions } from './artwork/feasibility';
 export { analyseFeasibility } from './artwork/feasibility';
 

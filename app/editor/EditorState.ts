@@ -471,6 +471,17 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     next.targetHeightMm = defaults.heightMm;
   }
 
+  // A picture is usually a logo to fill, so a newly chosen image starts as Solid (a restored design brings its own mode).
+  if (
+    typeof updates.uploadedImageDataUrl === 'string'
+    && updates.uploadedImageDataUrl.length > 0
+    && updates.renderMode === undefined
+    && updates.coverageMode === undefined
+  ) {
+    next.renderMode = 'artwork-dots';
+    applyArtworkDotsPreset();
+  }
+
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
     next.fillMode = updates.coverageMode;
   } else if (updates.fillMode !== undefined && updates.coverageMode === undefined) {

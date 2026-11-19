@@ -313,11 +313,15 @@ describe('main editor integration — raster artwork', () => {
     expect(html).toContain('Upload artwork');
     expect(html).toContain('Drag and drop or paste artwork here.');
     expect(html).toContain('Original image');
-    expect(html).toContain('Number of stone colors');
-    expect(html).toContain('Threshold');
-    expect(html).toContain('Refine details');
-    expect(html).toContain('Invert fill');
+    expect(html).toContain('Number of stone colours');
+    expect(html).toContain('Brightness cutoff');
+    expect(html).toContain('Detail');
+    expect(html).toContain('Stones on the background');
     expect(html).toContain('Lock ratio');
+    // the look and the unit switch are there too, and the chosen colour count is marked
+    expect(html).toContain('aria-label="Look"');
+    expect(html).toContain('aria-label="Unit"');
+    expect(html).toMatch(/aria-pressed="true"[^>]*>3<\/button>/);
     expect(html).toContain('photo.png');
   });
 

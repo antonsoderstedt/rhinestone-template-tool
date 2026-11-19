@@ -25,7 +25,6 @@ import {
   createRhinestoneFontTemplate,
   createSvgAlphabetTemplate,
   createLetterStencilTemplate,
-  createRasterArtworkTemplate,
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
   validateAssetUpload,
@@ -69,7 +68,7 @@ import {
 } from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import { useStableValue } from './useStableValue';
-import { generateSvgArtwork, type ArtworkInfo } from './artworkGeneration';
+import { generateRasterArtwork, generateSvgArtwork, type ArtworkInfo } from './artworkGeneration';
 // Dialogs are loaded when first opened, keeping the first load of the studio smaller.
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
 const SplitExportPanel = dynamic(() => import('./SplitExportPanel'));
@@ -365,20 +364,10 @@ export default function EditorShell() {
           case 'svg':
             if (generationSvgTool.assetKind === 'image' && generationSvgTool.uploadedImageDataUrl) {
               const rasterImage = await decodeRasterImageDataUrl(generationSvgTool.uploadedImageDataUrl);
-              const rasterResult = createRasterArtworkTemplate({
-                image: rasterImage,
-                name: generationSvgTool.imageFileName || 'Image Artwork Preview',
-                stoneSize: generationSvgTool.stoneSize,
-                spacingMm: typeof generationSvgTool.customSpacingMm === 'number' ? generationSvgTool.customSpacingMm : 4,
-                threshold: generationSvgTool.imageThreshold,
-                detail: generationSvgTool.imageDetail,
-                invert: generationSvgTool.imageInvert,
-                colorCount: generationSvgTool.imageColorCount,
-                targetWidthMm: typeof generationSvgTool.targetWidthMm === 'number' ? generationSvgTool.targetWidthMm : undefined,
-                targetHeightMm: typeof generationSvgTool.targetHeightMm === 'number' ? generationSvgTool.targetHeightMm : undefined,
-                preserveAspectRatio: generationSvgTool.preserveAspectRatio,
-              });
-              template = rasterResult.template;
+              if (requestId !== generationRequestRef.current) return;
+              const generated = generateRasterArtwork(generationSvgTool, rasterImage);
+              template = generated.template;
+              if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
             } else if (generationSvgTool.uploadedSvgText) {
               const generated = generateSvgArtwork(generationSvgTool);
               template = generated.template;

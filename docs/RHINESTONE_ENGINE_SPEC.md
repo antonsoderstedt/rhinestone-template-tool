@@ -699,7 +699,13 @@ overlapping shapes, holes, touching letters and narrow necks need no polygon cli
 5. **Feasibility (`feasibility.ts`)**: for each stone size, the share of the artwork's area thinner than one hole (morphological
    opening by half a hole on a coarse grid of at most 600 cells), the number of separate shapes whose thickest part is thinner
    than a hole (they get no stone), a verdict (`good` up to 4.2 %, `some-detail-lost` up to 15 %, else `too-small`) and the
-   width at which about 3 % would be too thin (found by bracketing and bisection, +5 % margin, so following it ends in `good`).
+   width at which about 3 % would be too thin (found by bracketing and bisection, +10 % margin, so following it ends in `good`).
+
+6. **Raster (`rasterLayers.ts`)**: an image is box-filtered to at most 1200 px; the background is removed (alpha under 128, or the
+   border colour when 85 % of the border is within 40 of its median; otherwise a brightness cutoff, with a warning); the rest is
+   reduced to 1-4 colours by k-means starting from brightness quantiles (10 iterations, no randomness); a 3x3 majority
+   filter runs 0, 1 or 2 times by `detail` (at least 192, at least 96, below); the labels are placed on the millimetre grid. The
+   result is `ArtworkLayers`, laid out exactly like SVG layers.
 
 All of it is pure and deterministic. The Artwork tool maps its three looks onto the stored coverage mode (`outline`, `contour`
 = Rows with `contourSettings.rowCount`, `outline-fill` / `fill` = Solid) so saved projects still open; `layerRoles` (colour to

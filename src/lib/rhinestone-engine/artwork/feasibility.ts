@@ -25,7 +25,7 @@ export interface StoneSizeFeasibility {
   /** Separate shapes in the artwork, not counting specks. */
   totalShapes: number;
   verdict: FeasibilityVerdict;
-  /** Width the artwork would need for about 3 % of it to be too thin (with a margin of 5 %); null when it cannot be told. */
+  /** Width the artwork would need for about 3 % of it to be too thin (with a margin of 10 %); null when it cannot be told. */
   suggestedWidthMm: number | null;
 }
 
@@ -197,7 +197,7 @@ export function analyseFeasibility(layers: readonly ArtworkLayer[], options: Fea
     // A little above the target still counts as good, so following the advice always ends in a good verdict.
     const verdict: FeasibilityVerdict = share <= tolerance * 1.4 ? 'good' : share <= 0.15 ? 'some-detail-lost' : 'too-small';
     let suggestedWidthMm: number | null = null;
-    if (verdict !== 'good' && crossing !== null && crossing > 0) suggestedWidthMm = Math.max(widthMm, ((widthMm * (hole / 2)) / crossing) * 1.05);
+    if (verdict !== 'good' && crossing !== null && crossing > 0) suggestedWidthMm = Math.max(widthMm, ((widthMm * (hole / 2)) / crossing) * 1.1);
     const lostShapes = thicknesses.filter((t) => t < hole).length;
     return { stoneSize, holeDiameterMm: hole, thinAreaShare: share, lostShapes, totalShapes: thicknesses.length, verdict, suggestedWidthMm };
   });
