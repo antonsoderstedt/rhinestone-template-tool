@@ -55,7 +55,9 @@ const EXPORT_ISSUE_SUGGESTIONS: Record<string, string> = {
   INVALID_HOLE_DIAMETER: 'Give each stone a valid positive hole diameter in millimeters.',
   EMPTY_ID: 'Give the template a non-empty id before exporting.',
   EMPTY_NAME: 'Give the template a non-empty name before exporting.',
+  STONE_OVERLAP: 'Separate overlapping stones or increase the spacing between them.',
   STONE_COLLISION: 'Separate overlapping stones or increase the spacing between them.',
+  STONE_TIGHT_GAP: 'Increase the gap between the marked stones to the minimum material spacing.',
   DUPLICATE_STONE_ID: 'Ensure every stone has a unique id before export.',
   INSUFFICIENT_STONES: 'Add more stones or lower the minimum threshold for this export check.',
   EXCEEDS_MAX_WIDTH: 'Reduce the design width or increase the allowed export limit for this material.',
@@ -177,17 +179,21 @@ export function checkExportReadiness(
     minGapMm: materialProfile.minimumEdgeSpacingMm,
   });
   for (const issue of validationResult.issues) {
+    const exportedCode = issue.code === 'STONE_OVERLAP' ? 'STONE_COLLISION' : issue.code;
     issues.push({
-      severity: 'error',
-      code: issue.code,
+      severity: issue.severity,
+      code: exportedCode,
       message: issue.message,
-      suggestion: EXPORT_ISSUE_SUGGESTIONS[issue.code],
+      suggestion: EXPORT_ISSUE_SUGGESTIONS[exportedCode],
       stoneIds: issue.stoneIds,
     });
   }
 
-  // Derive collision flag from validation issues
-  const hasCollisions = validationResult.issues.some((i) => i.code === 'STONE_COLLISION');
+  // Derive collision flag from validation issues. Tight gaps are spacing issues,
+  // not geometric collisions; a negative edge gap is a real overlap.
+  const hasCollisions = validationResult.issues.some(
+    (i) => i.code === 'STONE_OVERLAP' || i.code === 'STONE_COLLISION',
+  );
 
   // ── Physical size ─────────────────────────────────────────────────────────
   const physicalSize = getTemplatePhysicalSize(template);

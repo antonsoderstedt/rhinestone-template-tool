@@ -43,6 +43,7 @@ interface ResolvedOptions {
   includeLabels: boolean;
   paddingMm: number;
   decimalPlaces: number;
+  uncalibratedOverride: boolean;
 }
 
 function resolveOptions(options: ExportOptions): ResolvedOptions {
@@ -51,6 +52,7 @@ function resolveOptions(options: ExportOptions): ResolvedOptions {
     includeLabels: options.includeLabels ?? false,
     paddingMm: options.paddingMm ?? 5,
     decimalPlaces: options.decimalPlaces ?? 3,
+    uncalibratedOverride: options.uncalibratedOverride ?? false,
   };
 }
 
@@ -280,9 +282,14 @@ export function createBasicSvgExport(
     `  data-template-id="${safeTemplateId}"`,
     `  data-template-name="${safeTemplateName}"`,
     `  data-unit="mm"`,
+    ...(opts.uncalibratedOverride ? [`  data-calibration="uncalibrated-override"`] : []),
     `>`,
     `  <title>${safeTemplateName}</title>`,
-    `  <desc>Rhinestone template — ${safeTemplateName} — ${template.stones.length} stone(s)</desc>`,
+    `  <desc>Rhinestone template — ${safeTemplateName} — ${template.stones.length} stone(s)${
+      opts.uncalibratedOverride
+        ? ' — exported WITHOUT an approved calibration profile (user override); hole sizes are unverified defaults'
+        : ''
+    }</desc>`,
     ...lines,
     `</svg>`,
   ];

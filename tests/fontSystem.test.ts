@@ -9,10 +9,12 @@ import {
   clearOutlineFontCacheForTests,
   createOutlineTextTemplate,
   createOutlineTextTemplateAsync,
+  getOutlineFontDefinition,
   getPreferredTextCoverageMode,
   getPreferredRhinestoneFontStoneSize,
   getSupportedRhinestoneFontStoneSizes,
   getSupportedTextCoverageModes,
+  isKnownOutlineFontId,
   listRhinestoneFonts,
   listCachedFontIds,
   listOutlineFonts,
@@ -22,6 +24,15 @@ import {
 describe('font system', () => {
   beforeEach(() => {
     clearOutlineFontCacheForTests();
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: () => null,
+        setItem: () => undefined,
+        removeItem: () => undefined,
+      },
+      configurable: true,
+      writable: true,
+    });
   });
 
   it('has unique stable font IDs', () => {
@@ -246,6 +257,48 @@ describe('font system', () => {
     await loadOutlineFont('archivo-black');
     await loadOutlineFont('archivo-black');
     expect(listCachedFontIds()).toEqual(['archivo-black']);
+  });
+
+  it('recognizes installed workspace fonts registered in local storage', () => {
+    const store = new Map<string, string>();
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => { store.set(key, value); },
+        removeItem: (key: string) => { store.delete(key); },
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    localStorage.setItem('rhinestone-workspace-vault', JSON.stringify({
+      uploadedFonts: [{
+        fontId: 'installed-always-script-font-imported',
+        name: 'Always Script',
+        familyName: 'Always Script',
+        variantName: 'Regular',
+        fileName: 'always-script.ttf',
+        mimeType: 'font/ttf',
+        sizeBytes: 128000,
+        sourceKind: 'workspace-installed',
+        category: 'Script',
+        styleLabel: 'Regular',
+        tags: ['script'],
+        favorite: false,
+        archived: false,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        previewFamily: 'Always Script',
+        previewText: 'Sulay 123',
+        licenseSource: 'Installed font import',
+        note: 'Imported local font',
+        preferredTextCoverageMode: 'outline',
+        supportedTextCoverageModes: ['outline', 'fill', 'outline-fill', 'contour'],
+      }],
+    }));
+
+    expect(isKnownOutlineFontId('installed-always-script-font-imported')).toBe(true);
+    expect(getOutlineFontDefinition('installed-always-script-font-imported').fontId).toBe('installed-always-script-font-imported');
   });
 
   it('rejects invalid font IDs safely', async () => {

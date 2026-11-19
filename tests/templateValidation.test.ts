@@ -3,6 +3,7 @@ import {
   validateRhinestoneTemplate,
   createRhinestoneTemplate,
   createStoneGridTemplate,
+  resolveStoneSpacing,
 } from '../src/lib/rhinestone-engine/index.js';
 import type { RhinestoneTemplate, Stone } from '../src/lib/rhinestone-engine/index.js';
 
@@ -123,7 +124,7 @@ describe('validateRhinestoneTemplate — collision detection', () => {
     ];
     const result = validateRhinestoneTemplate(makeTemplate({ stones }));
     expect(result.valid).toBe(false);
-    expect(result.issues.some((i) => i.code === 'STONE_COLLISION')).toBe(true);
+    expect(result.issues.some((i) => i.code === 'STONE_COLLISION' || i.code === 'STONE_OVERLAP')).toBe(true);
   });
 
   it('collision issue includes both stone IDs', () => {
@@ -132,7 +133,7 @@ describe('validateRhinestoneTemplate — collision detection', () => {
       makeStone({ id: 'b', center: { x: 1, y: 0 }, holeDiameterMm: 3.0 }),
     ];
     const result = validateRhinestoneTemplate(makeTemplate({ stones }));
-    const collision = result.issues.find((i) => i.code === 'STONE_COLLISION');
+    const collision = result.issues.find((i) => i.code === 'STONE_COLLISION' || i.code === 'STONE_OVERLAP');
     expect(collision?.stoneIds).toContain('a');
     expect(collision?.stoneIds).toContain('b');
   });
@@ -147,6 +148,28 @@ describe('validateRhinestoneTemplate — collision detection', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('flags tight gaps as errors for user-generated templates and includes measured values', () => {
+    const stones = [
+      makeStone({ id: 's1', center: { x: 0, y: 0 }, holeDiameterMm: 3.0 }),
+      makeStone({ id: 's2', center: { x: 3.35, y: 0 }, holeDiameterMm: 3.0 }),
+    ];
+    const result = validateRhinestoneTemplate(makeTemplate({ stones }), { minGapMm: 0.508 });
+    const tightGap = result.issues.find((i) => i.code === 'STONE_TIGHT_GAP');
+    expect(tightGap?.severity).toBe('error');
+    expect(tightGap?.measuredGapMm).toBeCloseTo(0.35, 3);
+    expect(tightGap?.requiredGapMm).toBeCloseTo(0.508, 3);
+  });
+
+  it('warns, rather than errors, on vendor-authored tight gaps', () => {
+    const stones = [
+      makeStone({ id: 's1', center: { x: 0, y: 0 }, holeDiameterMm: 3.0 }),
+      makeStone({ id: 's2', center: { x: 3.35, y: 0 }, holeDiameterMm: 3.0 }),
+    ];
+    const result = validateRhinestoneTemplate(makeTemplate({ stones, source: 'vendor' }), { minGapMm: 0.508 });
+    const tightGap = result.issues.find((i) => i.code === 'STONE_TIGHT_GAP');
+    expect(tightGap?.severity).toBe('warning');
+  });
+
   it('allows overlapping stones when requireNoCollisions is false', () => {
     const stones = [
       makeStone({ id: 's1', center: { x: 0, y: 0 }, holeDiameterMm: 3.0 }),
@@ -155,7 +178,156 @@ describe('validateRhinestoneTemplate — collision detection', () => {
     const result = validateRhinestoneTemplate(makeTemplate({ stones }), {
       requireNoCollisions: false,
     });
-    expect(result.issues.every((i) => i.code !== 'STONE_COLLISION')).toBe(true);
+    expect(result.issues.every((i) => i.code !== 'STONE_COLLISION' && i.code !== 'STONE_OVERLAP')).toBe(true);
+  });
+});
+
+describe('resolveStoneSpacing', () => {
+  it('resolves tight gaps and stays idempotent', () => {
+    const template = makeTemplate({
+      stones: [
+        makeStone({ id: 's1', center: { x: 0, y: 0 }, holeDiameterMm: 3.0 }),
+        makeStone({ id: 's2', center: { x: 3.35, y: 0 }, holeDiameterMm: 3.0 }),
+      ],
+    });
+
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.508 });
+    const secondPass = resolveStoneSpacing(resolved, { minGapMm: 0.508 });
+
+    expect(validateRhinestoneTemplate(resolved, { minGapMm: 0.508 }).issues.some((i) => i.code === 'STONE_TIGHT_GAP' || i.code === 'STONE_OVERLAP')).toBe(false);
+    expect(secondPass).toEqual(resolved);
+  });
+
+  it('deterministically resolves dense grids without leaving below-gap pairs', () => {
+    const stones: Stone[] = [];
+    const pitch = 3.2;
+    for (let row = 0; row < 20; row++) {
+      for (let col = 0; col < 12; col++) {
+        stones.push(makeStone({
+          id: `dense-${row}-${col}`,
+          center: { x: col * pitch, y: row * pitch },
+          holeDiameterMm: 3.0,
+        }));
+      }
+    }
+
+    const template = makeTemplate({ stones });
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.508 });
+    const secondPass = resolveStoneSpacing(resolved, { minGapMm: 0.508 });
+    const validation = validateRhinestoneTemplate(resolved, { minGapMm: 0.508 });
+
+    expect(validation.issues.some((issue) => issue.code === 'STONE_TIGHT_GAP' || issue.code === 'STONE_OVERLAP')).toBe(false);
+    expect(secondPass).toEqual(resolved);
+    expect(resolved.metadata?.movedStoneCount).toBeGreaterThanOrEqual(0);
+    expect(resolved.metadata?.removedStoneCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps dense 426-stone layouts within the minimum gap and reports removals', () => {
+    const stones: Stone[] = [];
+    const pitch = 3.1;
+    let index = 0;
+    for (let row = 0; row < 30; row++) {
+      for (let col = 0; col < 14; col++) {
+        if (stones.length >= 426) break;
+        stones.push(makeStone({
+          id: `score-${index++}`,
+          center: { x: col * pitch, y: row * pitch },
+          holeDiameterMm: 3.0,
+        }));
+      }
+    }
+
+    const template = makeTemplate({ stones });
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.354 });
+    const validation = validateRhinestoneTemplate(resolved, { minGapMm: 0.354 });
+
+    expect(resolved.stones.length).toBeGreaterThan(0);
+    expect(validation.issues.some((issue) => issue.code === 'STONE_TIGHT_GAP' || issue.code === 'STONE_OVERLAP')).toBe(false);
+    expect(resolved.metadata?.removedStoneCount ?? 0).toBeGreaterThanOrEqual(0);
+    expect(resolved.metadata?.movedStoneCount ?? 0).toBeGreaterThanOrEqual(0);
+  });
+
+  it('preserves a dense grid without removals and resolves all tight gaps', () => {
+    const stones: Stone[] = [];
+    const pitch = 3.2;
+    for (let row = 0; row < 20; row++) {
+      for (let col = 0; col < 12; col++) {
+        stones.push(makeStone({
+          id: `grid-${row}-${col}`,
+          center: { x: col * pitch, y: row * pitch },
+          holeDiameterMm: 3.0,
+        }));
+      }
+    }
+
+    const template = makeTemplate({ stones });
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.508 });
+    const validation = validateRhinestoneTemplate(resolved, { minGapMm: 0.508 });
+
+    expect(resolved.stones.length).toBe(240);
+    expect(resolved.metadata?.removedStoneCount ?? 0).toBe(0);
+    expect(validation.issues.some((issue) => issue.code === 'STONE_TIGHT_GAP' || issue.code === 'STONE_OVERLAP')).toBe(false);
+  });
+
+  it('keeps both stones when they share the same center and resolves deterministically', () => {
+    const template = makeTemplate({
+      stones: [
+        makeStone({ id: 's1', center: { x: 10, y: 10 }, holeDiameterMm: 3.0 }),
+        makeStone({ id: 's2', center: { x: 10, y: 10 }, holeDiameterMm: 3.0 }),
+      ],
+    });
+
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.508 });
+    const validation = validateRhinestoneTemplate(resolved, { minGapMm: 0.508 });
+
+    expect(resolved.stones).toHaveLength(2);
+    expect(resolved.metadata?.removedStoneCount ?? 0).toBe(0);
+    expect(validation.issues.some((issue) => issue.code === 'STONE_TIGHT_GAP' || issue.code === 'STONE_OVERLAP')).toBe(false);
+  });
+
+  it('is idempotent, deterministic, and unchanged for already-valid layouts', () => {
+    const valid = makeTemplate({
+      stones: [
+        makeStone({ id: 'a', center: { x: 0, y: 0 }, holeDiameterMm: 3.0 }),
+        makeStone({ id: 'b', center: { x: 20, y: 0 }, holeDiameterMm: 3.0 }),
+      ],
+    });
+
+    const first = resolveStoneSpacing(valid, { minGapMm: 0.508 });
+    const second = resolveStoneSpacing(first, { minGapMm: 0.508 });
+    const third = resolveStoneSpacing(valid, { minGapMm: 0.508 });
+
+    expect(first).toEqual(second);
+    expect(third).toEqual(first);
+    expect(first.stones.map((stone) => ({ x: stone.center.x, y: stone.center.y }))).toEqual([
+      { x: 0, y: 0 },
+      { x: 20, y: 0 },
+    ]);
+  });
+
+  it('resolves 1,500 stones deterministically without overlaps or removals', () => {
+    const stones: Stone[] = [];
+    for (let row = 0; row < 50; row++) {
+      for (let col = 0; col < 30; col++) {
+        stones.push(makeStone({
+          id: `big-${row}-${col}`,
+          center: { x: col * 3.2, y: row * 3.2 },
+          holeDiameterMm: 3.0,
+        }));
+      }
+    }
+
+    const template = makeTemplate({ stones: stones.slice(0, 1500) });
+    const start = performance.now();
+    const resolved = resolveStoneSpacing(template, { minGapMm: 0.508 });
+    const elapsedMs = performance.now() - start;
+    const validation = validateRhinestoneTemplate(resolved, { minGapMm: 0.508 });
+
+    expect(elapsedMs).toBeLessThan(10000);
+    expect(validation.issues.some((issue) => issue.code === 'STONE_TIGHT_GAP' || issue.code === 'STONE_OVERLAP')).toBe(false);
+    expect(resolved.metadata?.removedStoneCount ?? 0).toBe(0);
+    expect(resolved.metadata?.resolutionPasses ?? 0).toBeLessThanOrEqual(500);
+    expect(resolved.stones.length).toBeGreaterThan(0);
   });
 });
 

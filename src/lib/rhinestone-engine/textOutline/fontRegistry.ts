@@ -336,8 +336,7 @@ export function getOutlineFontDefinition(fontId: string | undefined | null): Out
   if (!fontId) {
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
-  return FONT_MAP.get(fontId as OutlineFontId)
-    ?? listUploadedOutlineFonts().find((font) => font.fontId === fontId)
+  return listOutlineFonts().find((font) => font.fontId === fontId)
     ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
 }
 
@@ -350,7 +349,8 @@ export function getSupportedTextCoverageModes(fontId: string | undefined | null)
 }
 
 export function isKnownOutlineFontId(fontId: string | undefined | null): fontId is OutlineFontId {
-  return typeof fontId === 'string' && FONT_MAP.has(fontId as OutlineFontId);
+  if (typeof fontId !== 'string') return false;
+  return FONT_MAP.has(fontId as OutlineFontId) || listUploadedOutlineFonts().some((font) => font.fontId === fontId);
 }
 
 export function isAvailableOutlineFontId(fontId: string | undefined | null): boolean {

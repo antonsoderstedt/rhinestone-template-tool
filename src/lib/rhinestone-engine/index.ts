@@ -191,6 +191,8 @@ export {
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';
+export type { ResolveStoneSpacingOptions, ResolveStoneSpacingStrategy } from './spacing/resolveStoneSpacing';
+export { resolveStoneSpacing } from './spacing/resolveStoneSpacing';
 
 // Export readiness / Cricut QA
 export type {
@@ -224,6 +226,7 @@ export {
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
   isKnownOutlineFontId,
+  isAvailableOutlineFontId,
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
@@ -277,6 +280,17 @@ export type { FillPlacementPattern, RadialPlacementSettings } from './fill/place
 export { generatePlacedFillStones } from './fill/placementPatterns';
 export type { ContourDirection, ContourCoverageOptions } from './fill/contourPlacement';
 export { createContourRhinestoneTemplate } from './fill/contourPlacement';
+
+// Asset library upload validation
+export type {
+  AssetUploadValidationCode,
+  AssetUploadValidationInput,
+  AssetUploadValidationResult,
+} from './assetLibrary/assetUploadValidation';
+export {
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+  validateAssetUpload,
+} from './assetLibrary/assetUploadValidation';
 
 // Manual Stone Editor
 export type {

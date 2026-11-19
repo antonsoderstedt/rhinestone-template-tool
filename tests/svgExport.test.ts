@@ -237,3 +237,38 @@ describe('createBasicSvgExport — determinism', () => {
     expect(createBasicSvgExport(template, opts)).toBe(createBasicSvgExport(template, opts));
   });
 });
+
+// ─── Uncalibrated override metadata ───────────────────────────────────────────
+
+describe('createBasicSvgExport — uncalibrated override', () => {
+  it('does not add calibration metadata by default', () => {
+    const svg = createBasicSvgExport(makeTemplate());
+    expect(svg).not.toContain('data-calibration');
+    expect(svg).not.toContain('WITHOUT an approved calibration profile');
+  });
+
+  it('marks the root element and description when exported as an uncalibrated override', () => {
+    const svg = createBasicSvgExport(makeTemplate(), { uncalibratedOverride: true });
+    expect(svg).toContain('data-calibration="uncalibrated-override"');
+    expect(svg).toContain('WITHOUT an approved calibration profile');
+  });
+
+  it('keeps the override export Cricut-safe: mm size, circles only, no use/nested svg/opacity', () => {
+    const svg = createBasicSvgExport(makeTemplate(), { uncalibratedOverride: true });
+    expect(svg).toMatch(/width="[\d.]+mm"/);
+    expect(svg).toMatch(/height="[\d.]+mm"/);
+    expect(svg).toContain('<circle');
+    expect(svg).not.toContain('<use');
+    expect(svg.match(/<svg/g)).toHaveLength(1);
+    expect(svg).not.toContain('opacity');
+  });
+
+  it('only differs from the normal export by the calibration metadata', () => {
+    const template = makeTemplate();
+    const normal = createBasicSvgExport(template);
+    const override = createBasicSvgExport(template, { uncalibratedOverride: true });
+    expect(override).not.toBe(normal);
+    const stonesOf = (svg: string) => svg.slice(svg.indexOf('<g id="stones">'));
+    expect(stonesOf(override)).toBe(stonesOf(normal));
+  });
+});

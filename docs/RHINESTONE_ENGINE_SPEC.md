@@ -59,6 +59,21 @@ on top of this floor for a comfortable default — always ≥ the physical minim
 
 Collision detection must run even after path filtering, because grid positions near path boundaries may be closer than the grid spacing suggests when both paths and offset grids are involved.
 
+### Gap semantics
+
+The engine distinguishes between true overlap and a tight but non-overlapping gap:
+
+- `STONE_OVERLAP`: edge gap < 0 mm. Always a blocking error.
+- `STONE_TIGHT_GAP`: 0 <= edge gap < `minimumEdgeSpacingMm`. A blocking error for user-generated templates, a warning for vendor-authored templates (`template.source = 'vendor'` or metadata source `vendor`).
+
+The measured gap is computed in millimeters from the center distance of the two holes:
+
+```
+measuredGapMm = centerDistanceMm - (radiusA + radiusB)
+```
+
+This value is carried on validation issues and surfaced in user copy as `"Stones 12 and 13 are 0.35 mm apart (minimum 0.51 mm)"`.
+
 ---
 
 ## Path Fill Filter
@@ -135,18 +150,34 @@ Checks a `RhinestoneTemplate` against the material profile and physical constrai
 - `INVALID_UNIT`: unit is not `"mm"`
 - `NO_STONES`: template is empty
 - `INSUFFICIENT_STONES`: fewer than `minStoneCount`
-- Validation errors from `validateRhinestoneTemplate` (duplicate IDs, invalid hole sizes, `STONE_COLLISION`)
+- Validation errors from `validateRhinestoneTemplate` (duplicate IDs, invalid hole sizes, `STONE_OVERLAP`, `STONE_TIGHT_GAP` for user-generated templates, legacy `STONE_COLLISION` alias)
 
 **Warnings** (do not block export):
 - `REQUIRES_CALIBRATION`: material profile needs physical calibration
 - `EXCEEDS_MAX_WIDTH`/`BELOW_MIN_WIDTH`: physical size out of range
 - `EXCEEDS_MAX_HEIGHT`/`BELOW_MIN_HEIGHT`: same for height
 - `UNSUPPORTED_STONE_SIZE`: stone size not in material profile's supported list
+- `STONE_TIGHT_GAP` on vendor-authored templates
 
 **Info** (always present):
 - `PHYSICAL_SIZE`: estimated output dimensions including hole radii
 
 The summary object includes `widthMm`, `heightMm`, `stoneCount`, `materialProfileId`, `cutter`, `stoneSizes`, `hasCollisions`, `hasCalibrationWarning`.
+
+### Calibration gate and the uncalibrated override (UI contract, decision D2)
+
+`REQUIRES_APPROVED_CALIBRATION_PROFILE` is an engine-level error, but the UI treats it as a *separate export step*, not
+a design error (`summarizeExportStatus` → `needsCalibration`, `designErrors`). The Export action (`getExportGate`) behaves as follows:
+
+- Real design errors (overlap, invalid holes, ...) always block and can never be overridden.
+- When calibration is the only blocker, the user may choose **"Export anyway (uncalibrated) — I understand"**.
+  This calls `createBasicSvgExport(template, { uncalibratedOverride: true })`, which adds
+  `data-calibration="uncalibrated-override"` to the root `<svg>` and a note to `<desc>`. Geometry is unchanged, and the file stays
+  Cricut-safe (mm size, circles only, no `<use>`, no nested `<svg>`, no opacity). The download is named `<name>-uncalibrated.svg`.
+- Confidence labels are honest: the software verifies geometry only, so it reports "Design checks passed",
+  "Uncalibrated defaults", "Needs review" or "Blocked" (`getExportConfidence`) — never "high confidence" for the physical cut.
+- Approving a calibration profile is self-attested ("not verified by software"); the UI requires the user to confirm the
+  stone fit before the Approve button is enabled.
 
 ### Calibration sheet special case
 
@@ -182,6 +213,44 @@ When a density preset is used, the template metadata includes:
 - `densityPreset`: the preset name
 - `resolvedSpacingMm`: the actual spacing used
 - `densityWarning`: present only if dense was clamped
+
+For spacing auto-fixes, `resolveStoneSpacing(template, { minGapMm, strategy: 'nudge' })` returns a new template with deterministic metadata:
+
+- `resolvedSpacingMm`
+- `spacingStrategy`
+- `movedStoneCount`
+- `removedStoneCount`
+- `maxDisplacementMm`
+- `resolutionPasses`
+- `tooDenseForStoneSize`
+
+### `resolveStoneSpacing` final algorithm
+
+1. Sort stones in stable order (`id`, then `y`, then `x`).
+2. Build a spatial hash grid and find violating pairs (`edgeGapMm < minGapMm`) in O(n)-style neighborhood scans.
+3. Run iterative relaxation (max 500 passes):
+   - For each violating pair, compute the separation direction.
+   - Accumulate displacement vectors for both stones.
+   - Apply all displacement vectors simultaneously.
+   - Identical centers use a deterministic direction derived from stone IDs.
+4. If violations remain after the pass cap, remove the lesser stone for each remaining pair as a last resort (`remove-lesser` fallback).
+
+The resolver is pure, deterministic, and idempotent. A valid input returns unchanged coordinates.
+
+### Editor application scope
+
+Automatic spacing resolution is applied only to generated templates:
+
+- text (outline + dot-matrix)
+- artwork fill (`svg`)
+- SVG alphabet text (`svg-alphabet`)
+- letter stencil (`letter-stencil`)
+
+Automatic spacing resolution is intentionally **not** applied to:
+
+- `grid` tool output
+- `template-import` output
+- vendor-authored templates (`source: 'vendor'`)
 
 ---
 

@@ -5,6 +5,7 @@ import type { RhinestoneTemplate, Stone } from '../types/index';
 export interface CreateRhinestoneTemplateInput {
   id: string;
   name: string;
+  source?: 'user' | 'vendor';
   stones: Stone[];
   widthMm?: number;
   heightMm?: number;
@@ -93,6 +94,7 @@ export function createRhinestoneTemplate(
     id: input.id,
     name: input.name,
     unit: 'mm',
+    source: input.source,
     stones,
   };
 

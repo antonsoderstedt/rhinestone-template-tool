@@ -306,6 +306,19 @@ function extractPathStone(
 
 // ─── Main Import Function ─────────────────────────────────────────────────────
 
+const IDENTITY_TRANSFORM: SvgTransform = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
+function combineTransforms(parent: SvgTransform, local: SvgTransform): SvgTransform {
+  return {
+    a: parent.a * local.a + parent.c * local.b,
+    b: parent.b * local.a + parent.d * local.b,
+    c: parent.a * local.c + parent.c * local.d,
+    d: parent.b * local.c + parent.d * local.d,
+    e: parent.a * local.e + parent.c * local.f + parent.e,
+    f: parent.b * local.e + parent.d * local.f + parent.f,
+  };
+}
+
 export function importRhinestoneTemplate(options: TemplateImportOptions): TemplateImportResult {
   const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE } = options;
   const sanitizedSvgText = stripSvgStyleElements(svgText);
@@ -324,79 +337,68 @@ export function importRhinestoneTemplate(options: TemplateImportOptions): Templa
   const viewBox = viewBoxMatch ? parseViewBox(viewBoxMatch[1]) : null;
   const viewBoxWidth = viewBox?.width ?? null;
 
-  // Extract elements (simplified regex-based approach)
   let elementIndex = 0;
-  const transformStack: SvgTransform[] = [{ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }];
+  const transformStack: SvgTransform[] = [IDENTITY_TRANSFORM];
   const groupStack: string[] = [];
+  const tagPattern = /<\s*(\/?)\s*(g|circle|ellipse|path)\b[^>]*>/gi;
 
-  const lines = sanitizedSvgText.split('\n');
-  for (const line of lines) {
-    // Handle group start
-    const groupMatch = line.match(/<g\s+([^>]+)>/i);
-    if (groupMatch) {
-      const attrs = parseSvgAttributes(groupMatch[1]!);
-      const groupTransform = attrs.transform ? parseSvgTransform(attrs.transform) : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+  for (const match of sanitizedSvgText.matchAll(tagPattern)) {
+    const rawTag = match[0]!;
+    const closing = match[1] === '/';
+    const tag = match[2]!.toLowerCase();
+
+    if (tag === 'g') {
+      if (closing) {
+        if (transformStack.length > 1) {
+          transformStack.pop();
+          groupStack.pop();
+        }
+        continue;
+      }
+
+      if (/\/\s*>$/.test(rawTag)) {
+        continue;
+      }
+
+      const attrs = parseSvgAttributes(rawTag);
+      const groupTransform = attrs.transform ? parseSvgTransform(attrs.transform) : IDENTITY_TRANSFORM;
       const parentTransform = transformStack[transformStack.length - 1]!;
-      const combinedTransform = {
-        a: parentTransform.a * groupTransform.a + parentTransform.c * groupTransform.b,
-        b: parentTransform.b * groupTransform.a + parentTransform.d * groupTransform.b,
-        c: parentTransform.a * groupTransform.c + parentTransform.c * groupTransform.d,
-        d: parentTransform.b * groupTransform.c + parentTransform.d * groupTransform.d,
-        e: parentTransform.a * groupTransform.e + parentTransform.c * groupTransform.f + parentTransform.e,
-        f: parentTransform.b * groupTransform.e + parentTransform.d * groupTransform.f + parentTransform.f,
-      };
-      transformStack.push(combinedTransform);
+      transformStack.push(combineTransforms(parentTransform, groupTransform));
       groupStack.push(attrs.id || `group-${groupStack.length}`);
       continue;
     }
 
-    // Handle group end
-    if (line.includes('</g>')) {
-      transformStack.pop();
-      groupStack.pop();
-      continue;
+    const attrs = parseSvgAttributes(rawTag);
+    const elementTransform = attrs.transform ? parseSvgTransform(attrs.transform) : IDENTITY_TRANSFORM;
+    const parentTransform = transformStack[transformStack.length - 1]!;
+    const combinedTransform = combineTransforms(parentTransform, elementTransform);
+    const groupPath = groupStack.length > 0 ? groupStack.join('/') : null;
+
+    let stone: ImportedStone | null = null;
+    if (tag === 'circle') {
+      stone = extractCircleStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
+    } else if (tag === 'ellipse') {
+      stone = extractEllipseStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
+    } else if (tag === 'path') {
+      stone = extractPathStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
     }
 
-    // Handle circle, ellipse, path
-    const shapeMatch = line.match(/<(circle|ellipse|path)\s+([^>]+)>/i);
-    if (shapeMatch) {
-      const tag = shapeMatch[1]!.toLowerCase();
-      const attrs = parseSvgAttributes(shapeMatch[2]!);
-      const elementTransform = attrs.transform ? parseSvgTransform(attrs.transform) : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
-      const parentTransform = transformStack[transformStack.length - 1]!;
-      const combinedTransform = {
-        a: parentTransform.a * elementTransform.a + parentTransform.c * elementTransform.b,
-        b: parentTransform.b * elementTransform.a + parentTransform.d * elementTransform.b,
-        c: parentTransform.a * elementTransform.c + parentTransform.c * elementTransform.d,
-        d: parentTransform.b * elementTransform.c + parentTransform.d * elementTransform.d,
-        e: parentTransform.a * elementTransform.e + parentTransform.c * elementTransform.f + parentTransform.e,
-        f: parentTransform.b * elementTransform.e + parentTransform.d * elementTransform.f + parentTransform.f,
-      };
-
-      const groupPath = groupStack.length > 0 ? groupStack.join('/') : null;
-
-      let stone: ImportedStone | null = null;
-      if (tag === 'circle') {
-        stone = extractCircleStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      } else if (tag === 'ellipse') {
-        stone = extractEllipseStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      } else if (tag === 'path') {
-        stone = extractPathStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      }
-
-      if (stone) {
-        stones.push(stone);
-      } else {
-        ignoredElements++;
-      }
-
-      elementIndex++;
-
-      if (stones.length > MAX_STONES) {
-        warnings.push(`Maximum stone count (${MAX_STONES}) exceeded. Import truncated.`);
-        break;
-      }
+    if (stone) {
+      stones.push(stone);
+    } else {
+      ignoredElements++;
     }
+
+    elementIndex++;
+
+    if (stones.length > MAX_STONES) {
+      warnings.push(`Maximum stone count (${MAX_STONES}) exceeded. Import truncated.`);
+      break;
+    }
+  }
+
+  if (stones.length === 0) {
+    warnings.push('No supported circular stone shapes were found in this SVG.');
   }
 
   // Deduplicate

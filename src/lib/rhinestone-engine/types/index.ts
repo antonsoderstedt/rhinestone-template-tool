@@ -156,6 +156,8 @@ export interface RhinestoneTemplate {
   name: string;
   /** Internal unit — always "mm". */
   unit: 'mm';
+  /** Source of the design, used to apply vendor warnings for tight gaps. */
+  source?: 'user' | 'vendor';
   stones: Stone[];
   cutShapes?: CutShape[];
   widthMm?: number;
@@ -174,4 +176,10 @@ export interface ExportOptions {
   paddingMm?: number;
   /** Number of decimal places in coordinate output. Default: 4. */
   decimalPlaces?: number;
+  /**
+   * Marks the file as exported without an approved calibration profile
+   * (explicit user override). Adds `data-calibration="uncalibrated-override"`
+   * to the root element and a note to `<desc>`. Default: false.
+   */
+  uncalibratedOverride?: boolean;
 }
