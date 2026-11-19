@@ -767,6 +767,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
     
     case 'SET_TEMPLATE':
+      // Generation sets `null` again for every settings change on an empty design; no new state, no render.
+      if (state.template === action.template) return state;
       return { ...state, template: action.template };
     
     case 'UPDATE_CANVAS':
