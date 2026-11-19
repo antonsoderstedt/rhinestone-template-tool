@@ -36,7 +36,7 @@ import {
   editorSelectClassName,
   editorTextareaClassName,
 } from './controls/controlStyles';
-import { EDITOR_TOOLS, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
+import { TEXT_EXAMPLES, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
 
@@ -86,43 +86,12 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activeTool']; dispatch: React.Dispatch<EditorAction> }) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {EDITOR_TOOLS.map((tool) => {
-        const Icon = tool.icon;
-        return (
-          <button
-            key={tool.id}
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
-            className={`${editorSegmentBaseClassName} ${activeTool === tool.id ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
-            title={tool.description}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{tool.label}</span>
-              </div>
-              {activeTool === tool.id ? <span className="h-2 w-2 rounded-full bg-accent-500" /> : null}
-            </div>
-            <p className="mt-2 text-[11px] text-ink-muted">{tool.description}</p>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
       <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
-
-        <PanelSection title="Tools" description="Choose how you want to work with this design." defaultOpen={false}>
-          <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
-        </PanelSection>
 
         {state.activeTool === 'select' ? (
           <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
@@ -284,10 +253,23 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           value={textTool.text}
           onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: e.target.value } })}
           rows={3}
-          placeholder="Enter text..."
+          placeholder="Your name"
           className={`${editorTextareaClassName} resize-none font-mono`}
         />
       </label>
+      <div className="flex flex-wrap items-center gap-1.5" aria-label="Try an example">
+        <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Try</span>
+        {TEXT_EXAMPLES.map((example) => (
+          <button
+            key={example.label}
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: example.text } })}
+            className="rounded-full border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-1 text-[11px] text-[var(--studio-ink-secondary)] transition hover:border-violet-400/50 hover:text-[var(--studio-ink)]"
+          >
+            {example.label}
+          </button>
+        ))}
+      </div>
 
       {textTool.mode === 'outline' && outlineFontStatus && (
         <FontPicker

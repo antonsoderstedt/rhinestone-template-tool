@@ -22,6 +22,7 @@ import {
   workspaceInputClassName,
 } from '../components/workspace/WorkspaceChrome';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import { resetOnboarding } from '../lib/onboarding';
 import {
   DEFAULT_WORKSPACE_SETTINGS,
   SETTINGS_DENSITY_PRESETS,
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [guideReset, setGuideReset] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -160,6 +162,17 @@ export default function SettingsPage() {
           >
             Reset to recommended defaults
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetOnboarding(globalThis.localStorage);
+              setGuideReset(true);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+          >
+            Show the quick-start guide again
+          </button>
+          {guideReset && <span role="status" className="text-sm text-success-600">The guide will show the next time you open the studio.</span>}
         </div>
 
         {/* ── Calibration Profiles ──────────────────────────────────────────── */}

@@ -2,6 +2,8 @@
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
+import GettingStartedGuide from './GettingStartedGuide';
+import EmptyCanvasPrompt from './EmptyCanvasPrompt';
 import { useSearchParams } from 'next/navigation';
 import {
   editorReducer,
@@ -186,7 +188,7 @@ export default function EditorShell() {
     // user wants that design, so it wins over restoring the last session. The last
     // session is not thrown away: it is copied into My Designs first.
     const params = new URLSearchParams(globalThis.location?.search ?? '');
-    const hasLaunchIntent = ['designId', 'asset', 'font', 'text'].some((key) => params.has(key));
+    const hasLaunchIntent = ['designId', 'asset', 'font', 'text', 'tool'].some((key) => params.has(key));
     const entry = hasLaunchIntent ? null : previousSession;
     let keptPreviousSession = false;
     if (hasLaunchIntent && previousSession && !launchIntentHandledRef.current) {
@@ -1133,12 +1135,20 @@ export default function EditorShell() {
     const assetId = searchParams.get('asset');
     const fontId = searchParams.get('font');
     const launchText = searchParams.get('text');
-    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}`;
+    const toolParam = searchParams.get('tool');
+    const launchTool = EDITOR_TOOLS.find((tool) => tool.id === toolParam)?.id ?? null;
+    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}|${launchTool ?? ''}`;
 
-    if (queryKey === '|||') return;
+    if (queryKey === '||||') return;
     if (handledQueryRef.current === queryKey) return;
 
     const applyQueryIntent = async () => {
+      if (launchTool && !designId && !assetId && !fontId) {
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: launchTool });
+        handledQueryRef.current = queryKey;
+        return;
+      }
+
       if (designId && templateLibraryRepositoryRef.current) {
         const entry = await templateLibraryRepositoryRef.current.get(designId);
         if (entry) {
@@ -1624,7 +1634,8 @@ export default function EditorShell() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
         <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
 
-        <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+        <main className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
+          <GettingStartedGuide />
           <CanvasActionStrip
             activeTool={state.activeTool}
             hasTemplate={Boolean(effectiveTemplate)}
@@ -1638,6 +1649,9 @@ export default function EditorShell() {
             fitRequestId={fitRequestId}
             onManualViewChange={persistManualCanvasView}
           />
+          {state.activeTool === 'text' && state.textTool.text.trim() === '' && !effectiveTemplate && (
+            <EmptyCanvasPrompt onText={(text) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text } })} />
+          )}
         </main>
 
         <StudioContextPanel
@@ -1701,7 +1715,7 @@ function StudioContextPanel({
   outlineFontStatus: OutlineFontStatus;
   exportReadiness: ExportReadinessResult | null;
 }) {
-  // Auto-switch: Inspect when select tool is active, Generate for generators.
+  // Auto-switch: Inspect when select tool is active, Design (source settings) for generators.
   const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
   const [manualTab, setManualTab] = useState<'source' | 'inspector' | null>(null);
   const [prevTool, setPrevTool] = useState(state.activeTool);
@@ -1721,7 +1735,7 @@ function StudioContextPanel({
             onClick={() => setManualTab(t === autoTab ? null : t)}
             className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
-            {t === 'source' ? 'Generate' : 'Inspect'}
+            {t === 'source' ? 'Design' : 'Inspect'}
           </button>
         ))}
       </div>

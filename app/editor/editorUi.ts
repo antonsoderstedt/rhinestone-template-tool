@@ -124,7 +124,7 @@ export function getSelectionEmptyState(isEditable: boolean) {
       title: 'Generated output',
       description: 'Review the generated result, then make it editable when you need per-stone control.',
       tips: [
-        'Switch between Text, SVG, Grid, or Manual to change the source.',
+        'Use the tool rail to switch between Text, Stone Font, Artwork, Grid and Pen.',
         'Use Make Editable to enable per-stone selection and movement.',
       ],
     };
@@ -168,14 +168,30 @@ export function getToolShortcutLabel(tool: EditorTool): string | null {
 const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
   select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
   manual: 'Click or drag to place stones. Hold Space/middle mouse or use wheel to pan. Ctrl/Cmd + wheel zooms.',
-  text: 'Adjust the text settings on the left, then Generate to see your design here.',
+  text: 'Type your text in the panel on the right. The design updates as you type.',
   'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
-  'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',
-  'letter-stencil': 'Spell a word with letter stencils on the left, then Generate to preview it here.',
-  svg: 'Upload artwork on the left, then Generate to fill it with stones.',
+  'svg-alphabet': 'Type a word in the panel on the right to compose it from the SVG alphabet.',
+  'letter-stencil': 'Type a word in the panel on the right to spell it with letter stencils.',
+  svg: 'Upload artwork in the panel on the right to fill it with stones.',
   'template-import': 'Import an existing SVG template to bring its stones in here.',
-  grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
+  grid: 'Set rows, columns and spacing in the panel on the right to get an even stone grid.',
 };
+
+/** Short, plain-language meanings for terms beginners meet in the studio. */
+export const GLOSSARY = {
+  stoneSize: 'SS6–SS20 is the rhinestone size. A bigger number means a bigger stone and a bigger hole in the template.',
+  spacing: 'Spacing is the distance between stone centres. Tighter looks fuller but can tear the flock; Safe leaves extra room.',
+  collision: 'Two stones are in collision when their holes are too close to cut cleanly.',
+  calibration: 'Calibration means cutting a test sheet and measuring the real hole sizes, so your export fits your stones.',
+} as const;
+
+/** One-tap examples for an empty design. */
+export const TEXT_EXAMPLES: readonly { label: string; text: string }[] = [
+  { label: 'A name', text: 'EMMA' },
+  { label: 'Jersey number', text: '07' },
+  { label: 'Team + year', text: 'TIGERS 2026' },
+  { label: 'A word', text: 'LOVE' },
+];
 
 export function getCanvasHint(activeTool: EditorTool): string {
   return TOOL_CANVAS_HINTS[activeTool] ?? 'Pan, zoom, and fit the current design without leaving the editor.';

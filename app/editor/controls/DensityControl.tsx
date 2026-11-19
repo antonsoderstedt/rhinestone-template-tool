@@ -5,6 +5,7 @@
 import type { DensityPreset } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+import { GLOSSARY } from '../editorUi';
 
 interface DensityControlProps {
   densityPreset: DensityPreset;
@@ -30,7 +31,7 @@ export default function DensityControl({
   return (
     <div className="space-y-3">
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Density</span>
+        <span className={`${editorFieldLabelClassName} cursor-help`} title={GLOSSARY.spacing}>Spacing</span>
         <select
           value={densityPreset}
           onChange={(e) => onDensityChange(e.target.value as DensityPreset)}

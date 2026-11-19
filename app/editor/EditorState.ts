@@ -330,7 +330,7 @@ function getDefaultSvgUploadTargetDimensions(
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   outlineTextStyle: 'outline',
-  text: 'SMOOCH',
+  text: 'YOUR NAME',
   stoneSize: 'SS10',
   fontId: LEGACY_OUTLINE_FONT_ID,
   unsupportedCharacters: [],
