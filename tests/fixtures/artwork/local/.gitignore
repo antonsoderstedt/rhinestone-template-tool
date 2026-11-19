@@ -1,0 +1,4 @@
+# Third-party artwork (logos with trademarks) kept out of the repository. The quality harness uses what is here when present.
+*
+!.gitignore
+!README.md

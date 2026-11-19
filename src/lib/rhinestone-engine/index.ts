@@ -213,6 +213,10 @@ export {
 export type { SplitMat, SplitOptions, DesignPart, SplitPlan } from './split/splitForMat';
 export { planSplitForMat, buildPartTemplate } from './split/splitForMat';
 
+// Artwork quality measurement
+export type { QualityStone, ArtworkQualityOptions, ArtworkQuality } from './quality/artworkQuality';
+export { measureArtworkQuality, rasterizeSilhouette } from './quality/artworkQuality';
+
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';

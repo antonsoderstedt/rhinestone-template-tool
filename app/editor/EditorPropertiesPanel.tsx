@@ -1299,8 +1299,12 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           type="file"
           accept=".svg,image/svg+xml,.png,.jpg,.jpeg,.webp,.bmp,.gif,image/png,image/jpeg,image/webp,image/bmp,image/gif"
           onChange={handleFileSelect}
-          className="text-xs text-ink-secondary file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-accent-500 file:text-ink-inverse file:text-xs file:font-medium hover:file:bg-accent-600 file:cursor-pointer cursor-pointer"
+          className="peer sr-only"
         />
+        {/* The browser's own file button is in the browser's language; this one is ours. */}
+        <span className="inline-flex w-fit cursor-pointer items-center rounded-md bg-accent-500 px-3 py-2 text-xs font-medium text-ink-inverse hover:bg-accent-600 peer-focus-visible:ring-2">
+          Choose a file
+        </span>
         <span className="text-xs text-ink-muted">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
         {uploadError && (
           <span role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-2 text-xs text-danger-600">{uploadError}</span>

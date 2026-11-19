@@ -95,7 +95,7 @@ export default function PlacementModeControl({
             label="Placement pattern"
             help="How the inside is filled: regular rows (Default), staggered honeycomb-style rows (Hexagonal), or concentric rings (Radial)."
           />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2">
             {visiblePatterns.map((option) => (
               <button
                 key={option.value}
@@ -106,7 +106,7 @@ export default function PlacementModeControl({
                 title={option.help}
               >
                 <div className="text-sm font-medium">{option.label}</div>
-                <p className="mt-1 text-xs text-ink-muted">{option.help}</p>
+                <p className="mt-1 break-words text-xs text-ink-muted">{option.help}</p>
               </button>
             ))}
           </div>

@@ -41,6 +41,9 @@ interface EditorCanvasProps {
   onManualViewChange?: (view: { zoom: number; panX: number; panY: number }) => void;
 }
 
+/** Width of the line drawn around a stone, in mm. The line sits inside the hole so the picture is to scale. */
+const STONE_STROKE_MM = 0.22;
+
 const RULER_BAND_PX = 32;
 const RULER_NICE_STEPS_MM = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const RULER_TARGET_LABEL_COUNT = 14;
@@ -1479,19 +1482,20 @@ export default function EditorCanvas({
                   />
                 )}
 
-                {/* Stone hole */}
+                {/* Stone hole: drawn to scale. The outer edge of the stroke is the hole, so the gap between two
+                    stones on the canvas is the real gap (a thicker stroke made a cuttable layout look overlapped). */}
                 <circle
                   cx={displayX}
                   cy={displayY}
-                  r={r}
+                  r={r - STONE_STROKE_MM / 2}
                   fill={isPendingErase ? 'rgba(228,69,59,0.18)' : baseColor}
-                  fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.42 : isRecentlyPlaced ? 0.56 : 0.36}
+                  fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
                   stroke={
                     isPendingErase
                       ? '#e4453b'
                       : baseColor
                   }
-                  strokeWidth={isPendingErase ? '0.65' : isSelected ? '0.95' : isRecentlyPlaced ? '1' : '0.72'}
+                  strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
                   className={state.activeTool === 'select' ? 'cursor-pointer transition' : ''}
                   onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}
@@ -1673,33 +1677,17 @@ export default function EditorCanvas({
             </g>
           )}
 
-          {/* Empty State */}
-          {stones.length === 0 && (
-            <g>
-              <text
-                x={viewBox.x + viewBox.width / 2}
-                y={viewBox.y + viewBox.height / 2 - 20}
-                textAnchor="middle"
-                fill="#a1a1aa"
-                style={{ fontSize: '14px', fontWeight: 600 }}
-              >
-                Ready canvas
-              </text>
-              <text
-                x={viewBox.x + viewBox.width / 2}
-                y={viewBox.y + viewBox.height / 2}
-                textAnchor="middle"
-                fill="#71717a"
-                style={{ fontSize: '11px' }}
-              >
-                Text, artwork, grid, or pen tools are available in Source controls
-              </text>
-            </g>
-          )}
         </svg>
           </div>
         </div>
       </div>
+
+      {stones.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-8 text-center">
+          <p className="text-base font-semibold text-[var(--studio-ink-secondary)]">Nothing here yet</p>
+          <p className="max-w-sm text-sm text-[var(--studio-ink-muted)]">Type a text, upload artwork or pick a starter in the panel on the right.</p>
+        </div>
+      )}
 
       {/* Zoom Indicator */}
       <div className="absolute bottom-3 right-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2.5 py-1 text-xs font-medium tabular-nums text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4">

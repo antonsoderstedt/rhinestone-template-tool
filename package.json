@@ -13,7 +13,8 @@
     "generate:examples": "tsx scripts/generate-examples.ts",
     "scan:letter-assets": "tsx scripts/scan-letter-assets.ts",
     "curate:letter-assets": "tsx scripts/generate-letter-asset-curation.ts",
-    "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts"
+    "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts",
+    "quality": "tsx scripts/quality-report.ts"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
