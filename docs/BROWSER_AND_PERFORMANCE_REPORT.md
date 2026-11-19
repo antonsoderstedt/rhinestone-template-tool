@@ -1,6 +1,6 @@
 # Browser, device and performance report
 
-**Date:** 2026-11-19 · **Method:** production build (`next build` + `next start`) in a clean clone, Lighthouse 12 (Chrome,
+**Date:** 2026-11-19 · **Method:** production build (`next build` + `next start`) in a clean clone, Lighthouse 13.6 (Chrome 157,
 default mobile profile = simulated slow 4G and 4x CPU slowdown, and the desktop preset), and a Playwright smoke test
 (`scripts/e2e-smoke.mjs`) in real browser engines.
 
@@ -13,11 +13,11 @@ renders (or falls back) → Fonts page → Setup page.
 
 | Configuration | Engine | Result |
 |---|---|---|
-| Desktop 1440 × 900 | Chrome (Chromium) | 13 / 13 |
-| Desktop 1440 × 900 | Firefox 150 | 13 / 13 |
+| Desktop 1440 × 900 | Chrome 157 | 13 / 13 |
+| Desktop 1440 × 900 | Firefox 159 | 13 / 13 |
 | Desktop 1440 × 900 | WebKit 27 (Safari's engine) | 13 / 13 |
 | iPhone 15 (touch, 393 px) | WebKit | 13 / 13 |
-| iPad Pro 11 | WebKit | 13 / 13 |
+| iPad Pro 11 | WebKit 27.2 | 13 / 13 |
 | Pixel 7 | Chrome | 13 / 13 |
 | 390 px window | Firefox | 13 / 13 |
 
