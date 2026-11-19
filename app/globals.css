@@ -212,6 +212,19 @@ body {
 }
 
 /*
+ * Light studio: several studio components were written against the dark studio and use pale
+ * text colours (violet-100..300, amber, emerald, rose) that are unreadable on the light surfaces.
+ * Inside a light studio these utilities get darker equivalents (all >= 4.5:1 on white, the light
+ * well and the translucent violet/amber/emerald chips). Dialogs are portalled to <body>, outside
+ * [data-theme], so the always-dark export dialog keeps its pale text.
+ */
+[data-theme='light'] :is(.text-violet-100, .text-violet-200, .text-violet-300) { color: #4b2fb4; }
+[data-theme='light'] :is(.text-rose-300, .text-rose-400) { color: #a31f3a; }
+[data-theme='light'] :is(.text-amber-100, .text-amber-200, .text-amber-400) { color: #7a4a00; }
+[data-theme='light'] :is(.text-emerald-200, .text-emerald-400) { color: #0c5a3b; }
+[data-theme='light'] :is(.bg-violet-500\/35, .bg-violet-500\/30).text-white { color: #2e1a7a; }
+
+/*
  * .rhinestone-studio-panel / .htv-studio-panel (formerly *-dark-panel,
  * renamed since they now follow the toggle in both directions): the
  * inspector/tools <aside> panels embed shared components authored against

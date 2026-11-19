@@ -27,7 +27,7 @@ import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
 import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
-import { loadOutlineFont } from './fontLoader';
+import { findUnsupportedCharacters, loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
 import { createPolylineFilledRhinestoneTemplate } from '../fill/fillTemplate';
@@ -562,9 +562,17 @@ export async function createOutlineTextTemplateAsync(
     return createOutlineTextTemplate(normalized);
   }
 
-  const loadedFont = await loadOutlineFont(normalized.fontId);
+  // A font that lacks Å Ä Ö or punctuation is still fine for text that does not use them.
+  const loadedFont = await loadOutlineFont(normalized.fontId, { allowMissingExtendedCharacters: true });
   if (!loadedFont.font) {
     return createOutlineTextTemplate({ ...normalized, fontId: LEGACY_OUTLINE_FONT_ID });
+  }
+
+  const unsupported = findUnsupportedCharacters(loadedFont.font, normalized.text);
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Font ${fontDefinition.displayName} has no glyph for: ${unsupported.join(' ')}. Remove ${unsupported.length === 1 ? 'it' : 'them'} from the text or choose another font.`,
+    );
   }
 
   const polylines = layoutTextToOpenTypePolylines({

@@ -365,6 +365,17 @@ Outline stones have priority (they come first in the combined array).
 
 ## Font Outline Text Module (v1 — Font Outline Foundation)
 
+### Font coverage (`textOutline/fontLoader.ts`, ADR 0017)
+
+`loadOutlineFont(fontId, options?)` parses a font once (cached) and checks coverage on every call:
+
+- Always required: `A–Z a–z 0–9`. A font without them is broken and is rejected.
+- Extended set `Å Ä Ö å ä ö` and ` .,!?-_`: required by default (HTV keeps this rule), but with
+  `allowMissingExtendedCharacters: true` (used by `createOutlineTextTemplateAsync`) a font that lacks them still loads.
+- `findUnsupportedCharacters(font, text)` lists the characters of `text` with no glyph (whitespace ignored).
+  `createOutlineTextTemplateAsync` throws `Font X has no glyph for: … Remove … from the text or choose another font.` when the typed
+  text needs a glyph the font lacks; text the font can draw is generated normally.
+
 ### Why TTF/OTF is deferred
 
 Real font parsing requires either shipping a large WebAssembly binary (HarfBuzz ~2MB)

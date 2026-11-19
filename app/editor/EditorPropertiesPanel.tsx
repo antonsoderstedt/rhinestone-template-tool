@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { CopyPlus, DiamondMinus, Hand, MoveHorizontal, MoveVertical, PenLine, ScanSearch, Sparkles } from 'lucide-react';
 import {
   createImportedTemplate,
@@ -16,6 +17,8 @@ import {
   listSvgAlphabets,
   getSvgAlphabetDefinition,
   TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
+  validateAssetUpload,
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
 } from '@/src/lib/rhinestone-engine/index';
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import ExportReadinessPanel from '../components/ExportReadinessPanel';
@@ -1177,6 +1180,8 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
 
 function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
   const { svgTool } = state;
+  // Why the last file was refused, shown under the file picker until a good file is loaded.
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const currentTemplateSize = state.template ? getTemplatePhysicalSize(state.template) : null;
   const scaledWidthMm = typeof svgTool.targetWidthMm === 'number'
     ? svgTool.targetWidthMm
@@ -1204,10 +1209,23 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
     const lowerName = file.name.toLowerCase();
     const isSvg = file.type === 'image/svg+xml' || lowerName.endsWith('.svg');
 
+    // A file that is too large is refused before it is read; an SVG is also checked once its text is known.
+    if (file.size > DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES) {
+      setUploadError(`${file.name}: ${validateAssetUpload({ fileName: file.name, sizeBytes: file.size, svgText: null }).message}`);
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => setUploadError(`${file.name}: the file could not be read.`);
     reader.onload = () => {
       if (isSvg) {
         const svgText = reader.result as string;
+        const check = validateAssetUpload({ fileName: file.name, mimeType: file.type, sizeBytes: file.size, svgText });
+        if (!check.valid) {
+          setUploadError(`${file.name}: ${check.message} Nothing was changed — pick a different file.`);
+          return;
+        }
+        setUploadError(null);
         dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
@@ -1219,6 +1237,7 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           },
         });
       } else {
+        setUploadError(null);
         dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
@@ -1279,6 +1298,9 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           className="text-xs text-ink-secondary file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-accent-500 file:text-ink-inverse file:text-xs file:font-medium hover:file:bg-accent-600 file:cursor-pointer cursor-pointer"
         />
         <span className="text-xs text-ink-muted">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
+        {uploadError && (
+          <span role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-2 text-xs text-danger-600">{uploadError}</span>
+        )}
         {currentArtworkName && (
           <span className="text-xs text-ink-secondary mt-1">📄 {currentArtworkName}</span>
         )}
