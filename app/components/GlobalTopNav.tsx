@@ -7,7 +7,7 @@ import { AlertTriangle, CheckCircle2, FolderOpen, Gem, LibraryBig, Menu, Ruler, 
 import { readActiveCalibrationProfile } from '@/app/lib/workspaceVault';
 
 export const NAV_ITEMS = [
-  { href: '/', label: 'Start', shortLabel: 'Start', icon: Sparkles },
+  { href: '/', label: 'Start page', shortLabel: 'Start', icon: Sparkles },
   { href: '/rhinestone', label: 'Rhinestone Studio', shortLabel: 'Stone', icon: Gem },
   { href: '/htv', label: 'HTV Studio', shortLabel: 'HTV', icon: SwatchBook },
   { href: '/library', label: 'Library', shortLabel: 'Library', icon: LibraryBig },
@@ -215,7 +215,7 @@ export default function GlobalTopNav() {
   return (
     <header data-focus-surface="dark" className={`sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl ${studioRoute ? 'max-lg:hidden' : ''}`}>
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
-        <Link href="/" aria-label="Rhinestone Studio, start page" className="flex min-w-0 items-center gap-3">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
             RT
           </div>

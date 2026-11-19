@@ -113,7 +113,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
           type="button"
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-label="Choose outline font"
+          title="Choose outline font"
           onClick={() => (open ? setOpen(false) : openPicker())}
           onKeyDown={handleButtonKeyDown}
           className={`${editorInputClassName} flex items-center justify-between text-left`}
