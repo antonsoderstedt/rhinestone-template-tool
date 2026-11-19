@@ -1379,21 +1379,39 @@ export default function EditorShell() {
       return;
     }
 
-    const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
-    applyProjectToEditor(project);
-    setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
-    setTemplateLibraryOpen(false);
-    setToast({ message: 'Design opened.', tone: 'success' });
+    try {
+      const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
+      applyProjectToEditor(project);
+      setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
+      setTemplateLibraryOpen(false);
+      setToast({ message: 'Design opened.', tone: 'success' });
+    } catch (err) {
+      setToast({ message: `This design could not be opened: ${err instanceof Error ? err.message.replace(/^\[Project\]\s*/, '') : 'unknown error'}`, tone: 'error' });
+    }
   }, [applyProjectToEditor]);
 
   const handleLoadAutosave = useCallback(() => {
     if (!autosaveEntry) return;
-    const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
-    applyProjectToEditor(project);
-    setActiveLibraryTemplateId(null);
-    setTemplateLibraryOpen(false);
-    setToast({ message: 'Autosave opened.', tone: 'success' });
-  }, [applyProjectToEditor, autosaveEntry]);
+    try {
+      const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
+      applyProjectToEditor(project);
+      setActiveLibraryTemplateId(null);
+      setTemplateLibraryOpen(false);
+      setToast({ message: 'Autosave opened.', tone: 'success' });
+    } catch (err) {
+      // A saved session that cannot be read must never take the page down. Keep a copy of it (the next autosave
+      // would overwrite it) and carry on with a fresh editor.
+      try {
+        globalThis.localStorage?.setItem(`${AUTOSAVE_STORAGE_KEY}-unreadable`, JSON.stringify(autosaveEntry));
+      } catch {
+        // storage full or blocked: nothing more to do
+      }
+      setToast({
+        message: `Your last session could not be restored (${err instanceof Error ? err.message.replace(/^\[Project\]\s*/, '') : 'unknown error'}). A copy was kept.`,
+        tone: 'error',
+      });
+    }
+  }, [AUTOSAVE_STORAGE_KEY, applyProjectToEditor, autosaveEntry]);
 
   useEffect(() => {
     if (autosaveDecision !== 'restored' || !autosaveEntry || initialAutosaveRestoreRef.current) return;

@@ -561,6 +561,41 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
   };
 }
 
+function validateSvgAlphabet(s: UnknownRecord): SvgAlphabetProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'svg-alphabet',
+    text: requireString(s, 'text', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
+    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateLetterStencil(s: UnknownRecord): LetterStencilProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'letter-stencil',
+    sourceType: requireEnum<'svg-alphabet' | 'rhinestone-font'>(s, 'sourceType', ctx, new Set(['svg-alphabet', 'rhinestone-font'])),
+    text: requireString(s, 'text', ctx),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    cardPaddingMm: requireFiniteNumber(s, 'cardPaddingMm', ctx),
+    cardCornerRadiusMm: requireFiniteNumber(s, 'cardCornerRadiusMm', ctx),
+    minCardWidthMm: requireFiniteNumber(s, 'minCardWidthMm', ctx),
+    layoutMode: requireEnum<'preview' | 'cut-sheet'>(s, 'layoutMode', ctx, new Set(['preview', 'cut-sheet'])),
+    cutSheetGapMm: requireFiniteNumber(s, 'cutSheetGapMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
 function validateRhinestoneFont(s: UnknownRecord): RhinestoneFontProjectState {
   const ctx = 'generatorState';
   return {
@@ -640,6 +675,10 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateManualEditor(s);
     case 'rhinestone-font':
       return validateRhinestoneFont(s);
+    case 'svg-alphabet':
+      return validateSvgAlphabet(s);
+    case 'letter-stencil':
+      return validateLetterStencil(s);
     case 'template-import':
       return validateTemplateImport(s);
     default:
