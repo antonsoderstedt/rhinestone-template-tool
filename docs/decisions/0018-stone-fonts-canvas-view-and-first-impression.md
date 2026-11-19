@@ -20,18 +20,24 @@ lumps with "BLOCKED (1)", and several smaller defects. This ADR records what was
    the top-left of wherever the view was, and nothing limited panning. The grid now covers the visible view box, and
    `clampCanvasPan` (pure, idempotent, tested) keeps the centre of the view within 30 % of a screen of the design's edges. It is
    applied in one place, wrappers around `dispatch` and `onManualViewChange`, so wheel, drag, pinch and cursor-zoom all obey it.
-3. **Stone fonts: shown as drawn, enlargement is a choice.** Measured with the library on this machine: only TRW Clean Stone (in
-   the repository) has stones that do not overlap; Blessed, Forever, Cheer Block, Outline, Small Line, Atletico Real, Bride and
-   Old English place stones at 0.2–0.65 × the stone diameter, so the template is BLOCKED. This is identical on `main`.
-   **A first attempt enlarged these designs automatically; that was wrong.** The overlapping dots are the artwork: shown as drawn
-   they are solid, legible letters, while the enlarged version is the same letters built from a coarse lattice and 2–3 times
-   larger, which the user rightly called ruined. Fonts are now generated and shown exactly as before. When stones overlap like
-   artwork (a dry run of `enlargeToCuttableSpacing` gives a factor of 1.3 or more) the Quick fixes panel, and the "Fix errors
-   before export" dialog, offer **"Enlarge ×N to make cuttable"**, which the user chooses and can undo (one undo step). For a few
-   stones that merely sit too close the ordinary nudge ("Fix spacing automatically") is still what is offered.
-   Also: the "Test Fixture Font" (a font file that only exists for the test suite) was listed in the font picker and failed with
-   "no browser asset URL"; it is hidden from the picker. A generator that produces no stones (a digits-only font given letters)
-   now means "no design" (neutral), not a blocking error.
+3. **Stone fonts: the real cause was the scale.** `layoutRhinestoneFontText` scaled every font by a constant taken from TRW
+   Clean Stone (72 font units per stone at 2048 per em). The vendor packages draw their stones 22 units wide (SS10) or 14
+   (SS6) at 1000 per em, so their holes came out about three times too big for the spacing between them and every stone
+   overlapped, and every design was BLOCKED. Measured in the font files themselves (using the engine's own extraction), the
+   stones in all of them are separate (centre distance / diameter 1.07-2.3); the vendor READMEs and previews confirm dotted,
+   cuttable letters (SS6 stones 2.1 mm, SS10 3.3 mm at 420 pt). The scale is now `target stone size / measured circle
+   diameter of the font` (`measureNativeStoneDiameterFontUnits`, the median over the stones of the text; TRW's 72 is only the
+   fallback), which is also what the code's comment always said it did. Result: no overlaps and no errors in any font at SS6
+   and SS10, TRW Clean Stone unchanged, and sizes that match the designed 420 pt (Old English "Sulay" SS10 is 425 x 192 mm,
+   an em of 148 mm). The designs are physically large; a smaller stone size gives a smaller design.
+   Two earlier attempts were wrong and are recorded so they are not repeated: thinning dropped stones and destroyed the
+   letters, and automatic enlargement (a guess at the scale) was applied by default and the user rightly called it ruined
+   because the old overlapping view was what they had been looking at. The opt-in, undoable **"Enlarge ×N to make cuttable"**
+   quick fix (`enlargeToCuttableSpacing`) stays for other layouts whose stones overlap, but no stone font needs it now.
+   The Alphabet tool (SVG alphabets) was measured too and was already correct.
+   Also: the "Test Fixture Font" (it only exists for the test suite) was listed in the font picker and failed with "no browser
+   asset URL"; it is hidden. A generator that produces no stones (a digits-only font given letters) now means "no design"
+   (neutral), not a blocking error.
 4. **Calm chrome.** The "Live editor"/"Layer editor" badges squeezed the project name to a few letters and are gone. The
    amber "WARNING" pill on a normal first visit now says "Not calibrated" in a quiet tone (the full text is its tooltip) and
    no longer wraps; "Open Studio" is hidden on the studio page, "Manage Assets" and the studio label below 1280 px, and the topbar

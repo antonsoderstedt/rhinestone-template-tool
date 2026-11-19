@@ -71,8 +71,10 @@ export const TRW_STONE_SIZE_CALIBRATION = {
 } as const;
 
 /**
- * TRW Clean Stone uses approximately 72 font units per stone.
- * This is measured from the actual font file and validated by testing.
+ * TRW Clean Stone uses approximately 72 font units per stone (2048 units per em). This is only the fallback for a
+ * text with no measurable stones: every other font has its own circle size (the vendor SS10 packages draw their
+ * stones 22 units wide at 1000 units per em, SS6 packages 14), so scaling them by TRW's number made the holes about
+ * three times too big for the spacing between them and every stone overlapped.
  */
 const TRW_ESTIMATED_STONE_DIAMETER_FONT_UNITS = 72;
 
@@ -321,12 +323,28 @@ export interface RhinestoneFontTextOptions {
   lineSpacingMm: number;
 }
 
+/**
+ * The diameter, in font units, of the stones the font draws for these characters: the median of the measured
+ * circle contours (robust to the odd stray contour). Null when none of the characters has a stone.
+ */
+export function measureNativeStoneDiameterFontUnits(font: opentype.Font, text: string): number | null {
+  const diameters: number[] = [];
+  for (const character of new Set(text.replace(/\s/g, ''))) {
+    for (const stone of extractStonesFromGlyph(font, character).stones) diameters.push(stone.diameterFontUnits);
+  }
+  if (diameters.length === 0) return null;
+  diameters.sort((a, b) => a - b);
+  return diameters[Math.floor(diameters.length / 2)]!;
+}
+
 export function layoutRhinestoneFontText(options: RhinestoneFontTextOptions): RhinestoneFontTextLayout {
   const { text, font, targetStoneSizeMm, letterSpacingMm, lineSpacingMm } = options;
 
-  // Calculate scale factor from font units to mm based on target stone size
-  // We measure the actual stone diameter in the font and scale to match target
-  const scaleFactor = targetStoneSizeMm / TRW_ESTIMATED_STONE_DIAMETER_FONT_UNITS;
+  // Scale factor from font units to mm: the stones the font draws get exactly the target diameter, and everything
+  // else (spacing between stones, advance widths, line height) scales with them, so a font designed with
+  // separate stones stays separate.
+  const nativeDiameter = measureNativeStoneDiameterFontUnits(font, text) ?? TRW_ESTIMATED_STONE_DIAMETER_FONT_UNITS;
+  const scaleFactor = targetStoneSizeMm / nativeDiameter;
 
   const stones: RhinestoneFontTextLayout['stones'] = [];
   const unsupportedCharacters: string[] = [];

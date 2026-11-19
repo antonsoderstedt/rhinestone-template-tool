@@ -240,6 +240,14 @@ For spacing auto-fixes, `resolveStoneSpacing(template, { minGapMm, strategy: 'nu
 - `resolutionPasses`
 - `tooDenseForStoneSize`
 
+### Rhinestone font scale (`rhinestoneFont/glyphExtraction.ts`, ADR 0018)
+
+`layoutRhinestoneFontText` converts font units to millimetres with `scale = targetStoneSizeMm / nativeDiameter`, where
+`nativeDiameter = measureNativeStoneDiameterFontUnits(font, text)`: the median diameter of the circular contours of the glyphs of
+the typed text. The stones the font draws therefore get exactly the target diameter, and the spacing between stones, advance
+widths and line height scale with them, so a font designed with separate stones stays separate. TRW Clean Stone's 72 font units
+is used only when the text has no measurable stone.
+
 ### `enlargeToCuttableSpacing(template, { minGapMm })` (stone fonts, ADR 0018)
 
 Vendor rhinestone fonts are often artwork made of dots that overlap on purpose, so the holes of a template made from them

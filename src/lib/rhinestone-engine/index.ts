@@ -391,6 +391,7 @@ export {
   TRW_STONE_SIZE_CALIBRATION,
   extractStonesFromGlyph,
   layoutRhinestoneFontText,
+  measureNativeStoneDiameterFontUnits,
 } from './rhinestoneFont/glyphExtraction';
 export type {
   CreateRhinestoneFontTemplateOptions,
