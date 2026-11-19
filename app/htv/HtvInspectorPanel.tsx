@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import {
   AlignCenterHorizontal,
   AlignCenterVertical,
@@ -195,7 +196,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
 
 function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'text' }>; dispatch: React.Dispatch<HtvAction> }) {
   const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), []);
-  const previewText = layer.text.trim() || 'Sulay 123';
+  const previewText = layer.text.trim() || DEFAULT_PREVIEW_TEXT;
   const selectedFont = getOutlineFontDefinition(layer.fontId);
 
   return (

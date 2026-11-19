@@ -31,6 +31,8 @@ import {
   calculatePolylineBounds,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
+import { applyWorkspaceDefaults } from './newProjectDefaults';
+import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
@@ -656,6 +658,7 @@ export type EditorAction =
   | { type: 'UNDO' }
   | { type: 'REDO' }
   | { type: 'LOAD_PROJECT_STATE'; state: Partial<EditorState> }
+  | { type: 'APPLY_WORKSPACE_DEFAULTS'; settings: WorkspaceSettings } // new-project defaults from Settings; keeps everything else
   | { type: 'RESET_EDITOR' };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -1215,6 +1218,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'LOAD_PROJECT_STATE':
       return { ...state, ...action.state };
     
+    case 'APPLY_WORKSPACE_DEFAULTS':
+      return applyWorkspaceDefaults(state, action.settings);
+
     case 'RESET_EDITOR':
       return { ...DEFAULT_EDITOR_STATE };
     

@@ -301,7 +301,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
       {textTool.mode === 'outline' && textTool.unsupportedCharacters.length > 0 && (
         <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
           Unsupported characters: {textTool.unsupportedCharacters.join(', ')}.
-          The Legacy font doesn&apos;t have a glyph for {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} — a &apos;?&apos; is drawn instead. Try a bundled font, or remove {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} from the text.
+          The built-in simple font doesn&apos;t have a glyph for {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} — a &apos;?&apos; is drawn instead. Try a bundled font, or remove {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} from the text.
         </div>
       )}
 

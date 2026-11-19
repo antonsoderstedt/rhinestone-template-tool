@@ -1,5 +1,6 @@
 import type { TemplateCoverageMode, TemplateFillMode } from '@/src/lib/rhinestone-engine/index';
 import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
+import { DEFAULT_PREVIEW_TEXT } from './fontLaunch';
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
 import {
   DEFAULT_WORKSPACE_SETTINGS,
@@ -158,7 +159,7 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
         sourceKind: font.sourceKind === 'workspace-installed' ? 'workspace-installed' : 'browser-uploaded',
         category: typeof font.category === 'string' && font.category.length > 0 ? font.category : 'Display',
         styleLabel: typeof font.styleLabel === 'string' && font.styleLabel.length > 0 ? font.styleLabel : 'Uploaded',
-        previewText: typeof font.previewText === 'string' && font.previewText.length > 0 ? font.previewText : 'Sulay 123',
+        previewText: typeof font.previewText === 'string' && font.previewText.length > 0 ? font.previewText : DEFAULT_PREVIEW_TEXT,
         licenseSource: typeof font.licenseSource === 'string' && font.licenseSource.length > 0 ? font.licenseSource : 'User uploaded local workspace asset',
         note: typeof font.note === 'string' && font.note.length > 0 ? font.note : 'Review the generated outlines before production cutting.',
         preferredTextCoverageMode:

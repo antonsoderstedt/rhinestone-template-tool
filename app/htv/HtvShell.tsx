@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useSearchParams } from 'next/navigation';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
 import {
@@ -472,7 +473,7 @@ export default function HtvShell() {
           type: 'ADD_LAYERS',
           layers: [createHtvTextLayer({
             id: createLayerId('text'),
-            text: launchText ?? 'Sulay 123',
+            text: launchText ?? DEFAULT_PREVIEW_TEXT,
             fontId: resolvedFontId,
             placementId: state.garment.placementZone,
           })],

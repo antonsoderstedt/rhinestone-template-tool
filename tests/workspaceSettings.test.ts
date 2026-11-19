@@ -4,7 +4,7 @@ import {
   WORKSPACE_SETTING_LIMITS,
   sanitizeWorkspaceSettings,
 } from '../app/lib/workspaceSettings';
-import { applyWorkspaceDefaults, workspaceDefaultsPatch } from '../app/editor/newProjectDefaults';
+import { applyWorkspaceDefaults } from '../app/editor/newProjectDefaults';
 import { DEFAULT_EDITOR_STATE, editorReducer } from '../app/editor/EditorState';
 
 describe('sanitizeWorkspaceSettings', () => {
@@ -84,13 +84,16 @@ describe('applyWorkspaceDefaults', () => {
     );
   });
 
-  it('the dispatchable patch only contains tool slices', () => {
-    const patch = workspaceDefaultsPatch(DEFAULT_EDITOR_STATE, settings);
-    expect(Object.keys(patch).sort()).toEqual([
-      'gridTool', 'letterStencilTool', 'manualTool', 'rhinestoneFontTool', 'svgAlphabetTool', 'svgTool', 'templateImportTool', 'textTool',
-    ]);
-    const state = editorReducer(DEFAULT_EDITOR_STATE, { type: 'LOAD_PROJECT_STATE', state: patch });
+  it('the reducer action keeps a launched font and text (new-project defaults never overwrite them)', () => {
+    const launched = editorReducer(DEFAULT_EDITOR_STATE, {
+      type: 'UPDATE_TEXT_TOOL',
+      updates: { text: 'Go Team 7', fontId: 'fredoka-one' },
+    });
+    const state = editorReducer(launched, { type: 'APPLY_WORKSPACE_DEFAULTS', settings });
+    expect(state.textTool.text).toBe('Go Team 7');
+    expect(state.textTool.fontId).toBe('fredoka-one');
     expect(state.textTool.stoneSize).toBe('SS16');
+    expect(state.textTool.densityPreset).toBe('safe');
     expect(state.template).toBeNull();
   });
 
@@ -102,5 +105,23 @@ describe('applyWorkspaceDefaults', () => {
 
     const withoutSetting = editorReducer(DEFAULT_EDITOR_STATE, { type: 'UPDATE_SVG_TOOL', updates: { uploadedSvgText: svg, svgFileName: 'box.svg' } });
     expect(Math.max(Number(withoutSetting.svgTool.targetWidthMm), Number(withoutSetting.svgTool.targetHeightMm))).toBe(100);
+  });
+});
+
+describe('applyWorkspaceDefaults is idempotent', () => {
+  it('returns the very same state object when the defaults are already applied', () => {
+    const once = applyWorkspaceDefaults(DEFAULT_EDITOR_STATE, { ...DEFAULT_WORKSPACE_SETTINGS, defaultStoneSize: 'SS12' });
+    const twice = applyWorkspaceDefaults(once, { ...DEFAULT_WORKSPACE_SETTINGS, defaultStoneSize: 'SS12' });
+    expect(twice).toBe(once);
+    expect(twice.textTool).toBe(once.textTool);
+  });
+
+  it('leaves state untouched when the defaults equal what it already has', () => {
+    const same = applyWorkspaceDefaults(
+      { ...DEFAULT_EDITOR_STATE, svgTool: { ...DEFAULT_EDITOR_STATE.svgTool, uploadLongestSideMm: 100 } },
+      DEFAULT_WORKSPACE_SETTINGS,
+    );
+    expect(same.textTool).toBe(DEFAULT_EDITOR_STATE.textTool);
+    expect(same.gridTool).toBe(DEFAULT_EDITOR_STATE.gridTool);
   });
 });

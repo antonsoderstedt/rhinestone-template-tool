@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useSearchParams } from 'next/navigation';
 import {
   editorReducer,
@@ -66,7 +67,6 @@ import {
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
 import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
-import { workspaceDefaultsPatch } from './newProjectDefaults';
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
 import {
   calculateCanvasWorkspaceBounds,
@@ -86,6 +86,7 @@ export default function EditorShell() {
   const generationRequestRef = useRef(0);
   const lastSpacingAdjustmentCountRef = useRef<number | null>(null);
   const handledQueryRef = useRef<string | null>(null);
+  const launchIntentHandledRef = useRef(false);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -179,19 +180,42 @@ export default function EditorShell() {
     templateLibraryRepositoryRef.current = new LocalStorageTemplateLibraryRepository();
     void refreshTemplateLibrary();
     const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
-    const entry = readRhinestoneAutosave(rawAutosave);
+    const previousSession = readRhinestoneAutosave(rawAutosave);
+
+    // Arriving with a launch link (a font, an asset or a saved design) means the
+    // user wants that design, so it wins over restoring the last session. The last
+    // session is not thrown away: it is copied into My Designs first.
+    const params = new URLSearchParams(globalThis.location?.search ?? '');
+    const hasLaunchIntent = ['designId', 'asset', 'font', 'text'].some((key) => params.has(key));
+    const entry = hasLaunchIntent ? null : previousSession;
+    let keptPreviousSession = false;
+    if (hasLaunchIntent && previousSession && !launchIntentHandledRef.current) {
+      launchIntentHandledRef.current = true;
+      keptPreviousSession = true;
+      const baseName = previousSession.name.replace(/\s*\(Autosave\)$/, '');
+      void templateLibraryRepositoryRef.current?.save({
+        ...previousSession,
+        templateId: `previous-session-${previousSession.updatedAt}`,
+        name: `${baseName} (previous session)`,
+        readOnly: false,
+        tags: previousSession.tags.filter((tag) => tag !== 'autosave'),
+      }).then(() => refreshTemplateLibrary());
+    }
+
+    // A first visit (nothing to restore) starts from the Settings defaults. Dispatched
+    // synchronously so it is applied before the launch-link effect below sets its text/font.
+    if (!entry) dispatch({ type: 'APPLY_WORKSPACE_DEFAULTS', settings: readWorkspaceSettings() });
     queueMicrotask(() => {
-      // A first visit (nothing to restore) starts from the Settings defaults.
-      if (!entry) dispatch({ type: 'LOAD_PROJECT_STATE', state: workspaceDefaultsPatch(DEFAULT_EDITOR_STATE, readWorkspaceSettings()) });
       setAutosaveEntry(entry);
       setAutosaveDecision(entry ? 'restored' : 'ready');
+      if (keptPreviousSession) setToast({ message: 'Your previous session was saved in My Designs.', tone: 'info' });
     });
   }, [refreshTemplateLibrary]);
 
   /** Blank project that starts from the Settings defaults (stone size, density, artwork size). */
   const resetToNewProject = useCallback(() => {
     dispatch({ type: 'RESET_EDITOR' });
-    dispatch({ type: 'LOAD_PROJECT_STATE', state: workspaceDefaultsPatch(DEFAULT_EDITOR_STATE, readWorkspaceSettings()) });
+    dispatch({ type: 'APPLY_WORKSPACE_DEFAULTS', settings: readWorkspaceSettings() });
   }, []);
 
   // ─── Template Generation ───────────────────────────────────────────────────
@@ -1197,7 +1221,7 @@ export default function EditorShell() {
           updates: {
             mode: 'outline',
             fontId: resolvedFontId,
-            text: launchText ?? 'Sulay 123',
+            text: launchText ?? DEFAULT_PREVIEW_TEXT,
           },
         });
         handledQueryRef.current = queryKey;

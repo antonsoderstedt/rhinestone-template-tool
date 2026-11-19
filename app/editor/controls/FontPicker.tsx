@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, ChevronDown, Loader2, Type } from 'lucide-react';
+import { DEFAULT_PREVIEW_TEXT } from '../../lib/fontLaunch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getOutlineFontFaceCss,
@@ -43,7 +44,7 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const fonts = useMemo(() => listOutlineFonts(), []);
   const selectedFont = getOutlineFontDefinition(value);
-  const safePreviewText = previewText.trim() || 'Sulay 2026 ÅÄÖ';
+  const safePreviewText = previewText.trim() || DEFAULT_PREVIEW_TEXT;
   const selectedIndex = Math.max(0, fonts.findIndex((font) => font.fontId === value));
 
   useEffect(() => {

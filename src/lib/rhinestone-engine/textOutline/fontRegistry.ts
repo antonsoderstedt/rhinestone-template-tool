@@ -49,14 +49,20 @@ export const LEGACY_OUTLINE_FONT_ID: OutlineFontId = 'legacy-original';
 export const DEFAULT_OUTLINE_FONT_ID: OutlineFontId = LEGACY_OUTLINE_FONT_ID;
 const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
 
+/**
+ * Bump the version when the served bytes change: the route sends
+ * `immutable` caching, so browsers keep an older (possibly rejected) copy otherwise.
+ */
+const FONT_ASSET_VERSION = 2;
+
 function localFontAssetUrl(fontId: Exclude<OutlineFontId, 'legacy-original'>): string {
-  return `/api/outline-fonts/${fontId}`;
+  return `/api/outline-fonts/${fontId}?v=${FONT_ASSET_VERSION}`;
 }
 
 export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
   {
     fontId: 'legacy-original',
-    displayName: 'Legacy / Original',
+    displayName: 'Simple block (built-in)',
     category: 'Legacy',
     fontFamily: 'Built-in Vector Outline v1',
     previewFontFamily: 'system-ui',

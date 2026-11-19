@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 import * as opentype from 'opentype.js';
+import { inspectFontBytes, repairFontBytes } from '../src/lib/rhinestone-engine/textOutline/fontInspection';
 
 const DEFAULT_INPUT_DIR = '/Users/sulaysoderstedt/Desktop/FONTS';
 const OUTPUT_DIR = join(process.cwd(), 'public', 'fonts', 'workspace-installed');
@@ -46,6 +47,8 @@ interface InstalledWorkspaceFontManifest {
     skippedCount: number;
     zipArchiveCount: number;
     sourceDirectory: string;
+    excludedCount: number;
+    excluded: { fileName: string; zipName: string; reason: string }[];
   };
   fonts: InstalledWorkspaceFontManifestEntry[];
 }
@@ -126,6 +129,7 @@ async function main() {
   const seenFontIds = new Set<string>();
   let importedCount = 0;
   let skippedCount = 0;
+  const excluded: { fileName: string; zipName: string; reason: string }[] = [];
 
   for (const zipName of zipFiles) {
     const zipPath = join(inputDir, zipName);
@@ -134,7 +138,14 @@ async function main() {
       const extension = extname(archiveEntry).toLowerCase();
       if (!SUPPORTED_EXTENSIONS.has(extension)) continue;
 
-      const fileBuffer = readZipEntryBuffer(zipPath, archiveEntry);
+      let fileBuffer = readZipEntryBuffer(zipPath, archiveEntry);
+      const inspection = inspectFontBytes(new Uint8Array(fileBuffer));
+      if (!inspection.ok && !inspection.repairable) {
+        skippedCount += 1;
+        excluded.push({ fileName: archiveEntry, zipName, reason: inspection.issues.map((issue) => issue.message).join('; ') });
+        continue;
+      }
+      if (inspection.repairable) fileBuffer = Buffer.from(repairFontBytes(new Uint8Array(fileBuffer)));
       let parsedFont: opentype.Font;
       try {
         parsedFont = opentype.parse(bufferToArrayBuffer(fileBuffer));
@@ -181,7 +192,7 @@ async function main() {
         createdAt: now,
         updatedAt: now,
         previewFamily: `WorkspaceInstalled_${slugify(postscript).replace(/-/g, '_')}`,
-        previewText: 'Sulay 123',
+        previewText: 'Your Text',
         licenseSource: `Imported from ${zipName}`,
         note: `Imported from ${zipName}. Review outline quality before production cutting.`,
         preferredTextCoverageMode,
@@ -199,6 +210,8 @@ async function main() {
       generatedAt: new Date().toISOString(),
       importedCount,
       skippedCount,
+      excludedCount: excluded.length,
+      excluded,
       zipArchiveCount: zipFiles.length,
       sourceDirectory: inputDir,
     },

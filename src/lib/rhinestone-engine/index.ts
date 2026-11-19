@@ -230,6 +230,8 @@ export {
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
 export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
+export type { FontInspection, FontIssue, FontIssueCode } from './textOutline/fontInspection';
+export { inspectFontBytes, repairFontBytes } from './textOutline/fontInspection';
 export type { OutlineTextAlign, OutlineTextStyle, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
 export type { OpenTypeTextLayoutOptions } from './textOutline/openTypeGeometry';

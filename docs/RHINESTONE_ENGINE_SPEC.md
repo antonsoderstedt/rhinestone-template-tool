@@ -359,6 +359,14 @@ attack surface. The built-in vector font proves the complete end-to-end pipeline
 Future phases: real font parsing, font upload, fill mode, centerline mode, better
 kerning, text warping.
 
+### Font file integrity (`textOutline/fontInspection.ts`)
+
+`inspectFontBytes(bytes)` is a pure check run before a font is used or added (import script, upload, `npm run audit:fonts`).
+It reports: `woff-length-trailing-bytes` (header declares fewer bytes than the file has; browsers refuse it; repairable with
+`repairFontBytes`, which trims to the declared length), `woff-truncated` (not repairable), `unparseable`, and `no-outlines`
+(none of `A a O o 1 S` has an outline, e.g. an empty glyph table). It does not change how outlines are converted to stones;
+it only decides whether a font file may enter that pipeline.
+
 ### Built-in Vector Outline Font
 
 ```
