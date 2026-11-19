@@ -70,6 +70,7 @@ import {
   resolveStudioShortcut,
 } from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
+import { useStableValue } from './useStableValue';
 // Dialogs are loaded when first opened, keeping the first load of the studio smaller.
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
 const GarmentPreviewPanel = dynamic(() => import('../components/GarmentPreviewPanel'), { ssr: false });
@@ -98,6 +99,14 @@ import {
 
 /** Deleting at least this many stones in one step shows an Undo toast (every delete does). */
 const DELETE_UNDO_THRESHOLD = 1;
+
+type OutlineFontStatusState = { status: 'idle' | 'loading' | 'error'; message: string | null; fontId: string };
+
+/** State updater that keeps the current object when nothing changed, so React skips the render. */
+function replaceOutlineFontStatus(next: OutlineFontStatusState) {
+  return (current: OutlineFontStatusState): OutlineFontStatusState =>
+    current.status === next.status && current.message === next.message && current.fontId === next.fontId ? current : next;
+}
 
 export default function EditorShell() {
   const { theme, toggleTheme } = useStudioTheme();
@@ -254,6 +263,12 @@ export default function EditorShell() {
 
   const sourceTool = useMemo(() => getSourcePanelTool(state), [state]);
 
+  // The generation effect is keyed on tool *content*, not slice identity: while an update is stuck waiting for
+  // its lane React rebuilds `state` on every render, so identical settings arrive as new objects (see useStableValue).
+  const generationGridTool = useStableValue(state.gridTool);
+  const generationTextTool = useStableValue(state.textTool);
+  const generationSvgTool = useStableValue(state.svgTool);
+
   /**
    * Generate template based on active tool and its state.
    * This runs whenever tool state changes.
@@ -271,50 +286,50 @@ export default function EditorShell() {
             template = createStoneGridTemplate({
               id: 'grid-preview',
               name: 'Grid Preview',
-              stoneSize: state.gridTool.stoneSize,
-              columns: state.gridTool.columns,
-              rows: state.gridTool.rows,
-              densityPreset: state.gridTool.densityPreset,
-              customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : undefined,
+              stoneSize: generationGridTool.stoneSize,
+              columns: generationGridTool.columns,
+              rows: generationGridTool.rows,
+              densityPreset: generationGridTool.densityPreset,
+              customSpacingMm: typeof generationGridTool.customSpacingMm === 'number' ? generationGridTool.customSpacingMm : undefined,
             });
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'text':
-            if (state.textTool.text.trim()) {
-              if (state.textTool.mode === 'outline') {
-                const usesBundledFont = state.textTool.fontId !== LEGACY_OUTLINE_FONT_ID;
-                setOutlineFontStatus({
+            if (generationTextTool.text.trim()) {
+              if (generationTextTool.mode === 'outline') {
+                const usesBundledFont = generationTextTool.fontId !== LEGACY_OUTLINE_FONT_ID;
+                setOutlineFontStatus(replaceOutlineFontStatus({
                   status: usesBundledFont ? 'loading' : 'idle',
                   message: usesBundledFont ? 'Loading font geometry…' : null,
-                  fontId: state.textTool.fontId,
-                });
+                  fontId: generationTextTool.fontId,
+                }));
                 template = await createOutlineTextTemplateAsync({
                   id: 'text-outline-preview',
                   name: 'Text Outline Preview',
-                  text: state.textTool.text,
-                  stoneSize: state.textTool.stoneSize,
-                  outlineTextStyle: state.textTool.outlineTextStyle,
-                  fontId: state.textTool.fontId,
-                  fontSizeMm: typeof state.textTool.fontSizeMm === 'number' ? state.textTool.fontSizeMm : 25,
-                  align: state.textTool.align,
-                  letterSpacingMm: typeof state.textTool.letterSpacingMm === 'number' ? state.textTool.letterSpacingMm : 0,
-                  lineSpacingMm: typeof state.textTool.lineSpacingMm === 'number' ? state.textTool.lineSpacingMm : 10,
-                  curveAmount: state.textTool.curveAmount,
-                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.textTool.preserveAspectRatio,
-                  coverageMode: state.textTool.coverageMode,
-                  densityPreset: state.textTool.densityPreset,
-                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
-                  fillMode: state.textTool.fillMode,
-                  fillPattern: state.textTool.fillPattern,
-                  placementPattern: state.textTool.placementPattern,
-                  contourSettings: state.textTool.contourSettings,
-                  radialSettings: state.textTool.radialSettings,
+                  text: generationTextTool.text,
+                  stoneSize: generationTextTool.stoneSize,
+                  outlineTextStyle: generationTextTool.outlineTextStyle,
+                  fontId: generationTextTool.fontId,
+                  fontSizeMm: typeof generationTextTool.fontSizeMm === 'number' ? generationTextTool.fontSizeMm : 25,
+                  align: generationTextTool.align,
+                  letterSpacingMm: typeof generationTextTool.letterSpacingMm === 'number' ? generationTextTool.letterSpacingMm : 0,
+                  lineSpacingMm: typeof generationTextTool.lineSpacingMm === 'number' ? generationTextTool.lineSpacingMm : 10,
+                  curveAmount: generationTextTool.curveAmount,
+                  targetWidthMm: typeof generationTextTool.targetWidthMm === 'number' ? generationTextTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof generationTextTool.targetHeightMm === 'number' ? generationTextTool.targetHeightMm : undefined,
+                  preserveAspectRatio: generationTextTool.preserveAspectRatio,
+                  coverageMode: generationTextTool.coverageMode,
+                  densityPreset: generationTextTool.densityPreset,
+                  customSpacingMm: typeof generationTextTool.customSpacingMm === 'number' ? generationTextTool.customSpacingMm : undefined,
+                  fillMode: generationTextTool.fillMode,
+                  fillPattern: generationTextTool.fillPattern,
+                  placementPattern: generationTextTool.placementPattern,
+                  contourSettings: generationTextTool.contourSettings,
+                  radialSettings: generationTextTool.radialSettings,
                 });
                 if (requestId !== generationRequestRef.current) return;
-                setOutlineFontStatus({ status: 'idle', message: null, fontId: state.textTool.fontId });
+                setOutlineFontStatus(replaceOutlineFontStatus({ status: 'idle', message: null, fontId: generationTextTool.fontId }));
 
                 // Legacy vector font only: characters with no real glyph
                 // silently fell back to '?' — surface that instead of
@@ -324,88 +339,88 @@ export default function EditorShell() {
                 const unsupportedCharacters = typeof rawUnsupported === 'string' && rawUnsupported.length > 0
                   ? rawUnsupported.split(',')
                   : [];
-                if (JSON.stringify(state.textTool.unsupportedCharacters) !== JSON.stringify(unsupportedCharacters)) {
+                if (JSON.stringify(generationTextTool.unsupportedCharacters) !== JSON.stringify(unsupportedCharacters)) {
                   dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { unsupportedCharacters } });
                 }
               } else {
                 template = createDotMatrixTextTemplate({
                   id: 'text-dotmatrix-preview',
                   name: 'Dot Matrix Text Preview',
-                  text: state.textTool.text,
-                  stoneSize: state.textTool.stoneSize,
-                  letterSpacingColumns: state.textTool.letterSpacingColumns,
-                  lineSpacingRows: state.textTool.lineSpacingRows,
-                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.textTool.preserveAspectRatio,
-                  densityPreset: state.textTool.densityPreset,
-                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
+                  text: generationTextTool.text,
+                  stoneSize: generationTextTool.stoneSize,
+                  letterSpacingColumns: generationTextTool.letterSpacingColumns,
+                  lineSpacingRows: generationTextTool.lineSpacingRows,
+                  targetWidthMm: typeof generationTextTool.targetWidthMm === 'number' ? generationTextTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof generationTextTool.targetHeightMm === 'number' ? generationTextTool.targetHeightMm : undefined,
+                  preserveAspectRatio: generationTextTool.preserveAspectRatio,
+                  densityPreset: generationTextTool.densityPreset,
+                  customSpacingMm: typeof generationTextTool.customSpacingMm === 'number' ? generationTextTool.customSpacingMm : undefined,
                 });
-                setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+                setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
               }
             }
             break;
 
           case 'svg':
-            if (state.svgTool.assetKind === 'image' && state.svgTool.uploadedImageDataUrl) {
-              const rasterImage = await decodeRasterImageDataUrl(state.svgTool.uploadedImageDataUrl);
+            if (generationSvgTool.assetKind === 'image' && generationSvgTool.uploadedImageDataUrl) {
+              const rasterImage = await decodeRasterImageDataUrl(generationSvgTool.uploadedImageDataUrl);
               const rasterResult = createRasterArtworkTemplate({
                 image: rasterImage,
-                name: state.svgTool.imageFileName || 'Image Artwork Preview',
-                stoneSize: state.svgTool.stoneSize,
-                spacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4,
-                threshold: state.svgTool.imageThreshold,
-                detail: state.svgTool.imageDetail,
-                invert: state.svgTool.imageInvert,
-                colorCount: state.svgTool.imageColorCount,
-                targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
-                targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
-                preserveAspectRatio: state.svgTool.preserveAspectRatio,
+                name: generationSvgTool.imageFileName || 'Image Artwork Preview',
+                stoneSize: generationSvgTool.stoneSize,
+                spacingMm: typeof generationSvgTool.customSpacingMm === 'number' ? generationSvgTool.customSpacingMm : 4,
+                threshold: generationSvgTool.imageThreshold,
+                detail: generationSvgTool.imageDetail,
+                invert: generationSvgTool.imageInvert,
+                colorCount: generationSvgTool.imageColorCount,
+                targetWidthMm: typeof generationSvgTool.targetWidthMm === 'number' ? generationSvgTool.targetWidthMm : undefined,
+                targetHeightMm: typeof generationSvgTool.targetHeightMm === 'number' ? generationSvgTool.targetHeightMm : undefined,
+                preserveAspectRatio: generationSvgTool.preserveAspectRatio,
               });
               template = rasterResult.template;
-            } else if (state.svgTool.uploadedSvgText) {
-              const polylines = svgStringToPolylines(state.svgTool.uploadedSvgText, {
-                cleanupOptions: state.svgTool.cleanupEnabled
+            } else if (generationSvgTool.uploadedSvgText) {
+              const polylines = svgStringToPolylines(generationSvgTool.uploadedSvgText, {
+                cleanupOptions: generationSvgTool.cleanupEnabled
                   ? {
-                      simplify: state.svgTool.cleanupSimplify,
-                      simplifyToleranceMm: state.svgTool.cleanupSimplifyTol,
-                      removeTinyPolylines: state.svgTool.cleanupRemoveTiny,
-                      minPolylineLengthMm: state.svgTool.cleanupMinLength,
-                      removeDuplicatePoints: state.svgTool.cleanupRemoveDups,
-                      duplicatePointToleranceMm: state.svgTool.cleanupDupTol,
+                      simplify: generationSvgTool.cleanupSimplify,
+                      simplifyToleranceMm: generationSvgTool.cleanupSimplifyTol,
+                      removeTinyPolylines: generationSvgTool.cleanupRemoveTiny,
+                      minPolylineLengthMm: generationSvgTool.cleanupMinLength,
+                      removeDuplicatePoints: generationSvgTool.cleanupRemoveDups,
+                      duplicatePointToleranceMm: generationSvgTool.cleanupDupTol,
                     }
                   : undefined,
               });
 
               let scaledPolylines = polylines;
               if (
-                (typeof state.svgTool.targetWidthMm === 'number' || typeof state.svgTool.targetHeightMm === 'number') &&
+                (typeof generationSvgTool.targetWidthMm === 'number' || typeof generationSvgTool.targetHeightMm === 'number') &&
                 polylines.length > 0
               ) {
                 scaledPolylines = scalePolylinesToFit(polylines, {
-                  targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.svgTool.preserveAspectRatio,
+                  targetWidthMm: typeof generationSvgTool.targetWidthMm === 'number' ? generationSvgTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof generationSvgTool.targetHeightMm === 'number' ? generationSvgTool.targetHeightMm : undefined,
+                  preserveAspectRatio: generationSvgTool.preserveAspectRatio,
                 });
               }
 
               template = createPolylineFilledRhinestoneTemplate({
                 id: 'svg-preview',
-                name: state.svgTool.svgFileName || 'SVG Preview',
+                name: generationSvgTool.svgFileName || 'SVG Preview',
                 polylines: scaledPolylines,
-                stoneSize: state.svgTool.stoneSize,
-                coverageMode: state.svgTool.coverageMode,
-                fillMode: state.svgTool.fillMode,
-                fillPattern: state.svgTool.fillPattern,
-                placementPattern: state.svgTool.placementPattern,
-                contourSettings: state.svgTool.contourSettings,
-                radialSettings: state.svgTool.radialSettings,
-                densityPreset: state.svgTool.densityPreset,
-                customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
-                fillEdgeInsetMm: state.svgTool.renderMode === 'artwork-dots' ? 0 : undefined,
+                stoneSize: generationSvgTool.stoneSize,
+                coverageMode: generationSvgTool.coverageMode,
+                fillMode: generationSvgTool.fillMode,
+                fillPattern: generationSvgTool.fillPattern,
+                placementPattern: generationSvgTool.placementPattern,
+                contourSettings: generationSvgTool.contourSettings,
+                radialSettings: generationSvgTool.radialSettings,
+                densityPreset: generationSvgTool.densityPreset,
+                customSpacingMm: typeof generationSvgTool.customSpacingMm === 'number' ? generationSvgTool.customSpacingMm : undefined,
+                fillEdgeInsetMm: generationSvgTool.renderMode === 'artwork-dots' ? 0 : undefined,
               });
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'rhinestone-font':
@@ -445,7 +460,7 @@ export default function EditorShell() {
                 });
               }
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'svg-alphabet':
@@ -557,7 +572,7 @@ export default function EditorShell() {
                 });
               }
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           default:
@@ -601,11 +616,11 @@ export default function EditorShell() {
       } catch (err) {
         if (requestId !== generationRequestRef.current) return;
         console.error('Template generation error:', err);
-        setOutlineFontStatus({
+        setOutlineFontStatus(replaceOutlineFontStatus({
           status: 'error',
           message: err instanceof Error ? err.message : String(err),
-          fontId: state.textTool.fontId,
-        });
+          fontId: generationTextTool.fontId,
+        }));
         if (sourceTool !== 'rhinestone-font' && sourceTool !== 'template-import') {
           dispatch({ type: 'SET_TEMPLATE', template: null });
         }
@@ -617,13 +632,13 @@ export default function EditorShell() {
     requestCanvasFit,
     autosaveDecision,
     sourceTool,
-    state.gridTool,
-    state.textTool,
-    state.textTool.contourSettings,
-    state.textTool.radialSettings,
-    state.svgTool,
-    state.svgTool.contourSettings,
-    state.svgTool.radialSettings,
+    generationGridTool,
+    generationTextTool,
+    generationTextTool.contourSettings,
+    generationTextTool.radialSettings,
+    generationSvgTool,
+    generationSvgTool.contourSettings,
+    generationSvgTool.radialSettings,
     state.rhinestoneFontTool.text,
     state.rhinestoneFontTool.rhinestoneFontId,
     state.rhinestoneFontTool.presentationMode,

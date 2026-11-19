@@ -346,3 +346,13 @@ describe('editorReducer', () => {
     expect(findNearestValidStonePosition(30, 30, 1.5, stones)).toEqual({ x: 30, y: 30 });
   });
 });
+
+describe('SET_TEMPLATE', () => {
+  it('returns the same state when the template is unchanged, so an empty design does not re-render', () => {
+    expect(editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_TEMPLATE', template: null })).toBe(DEFAULT_EDITOR_STATE);
+    const template = makeTemplate([stone('a', 0, 0)]);
+    const withTemplate = editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_TEMPLATE', template });
+    expect(withTemplate.template).toBe(template);
+    expect(editorReducer(withTemplate, { type: 'SET_TEMPLATE', template })).toBe(withTemplate);
+  });
+});
