@@ -219,3 +219,71 @@ export function measureArtworkQuality(options: ArtworkQualityOptions): ArtworkQu
     silhouetteAreaMm2: areaCells * grid.cell * grid.cell,
   };
 }
+
+// ─── The same measures, on a raster silhouette ────────────────────────────────
+
+export interface MaskQualityInput {
+  /** A signed distance field of the silhouette (positive inside), see artwork/regionField. */
+  field: {
+    originX: number;
+    originY: number;
+    cell: number;
+    cols: number;
+    rows: number;
+    mask: Uint8Array;
+    sdf: Float32Array;
+  };
+  stones: readonly QualityStone[];
+  pitchMm: number;
+}
+
+/** As `measureArtworkQuality`, for artwork that is already a raster (several colours painted over each other, or an image). */
+export function measureMaskQuality({ field, stones, pitchMm }: MaskQualityInput): ArtworkQuality {
+  const { originX, originY, cell, cols, rows, mask, sdf } = field;
+  const centres = stones.map((s) => s.center);
+  const index = new StoneIndex(centres, Math.max(pitchMm, 0.5));
+  const reach = pitchMm * 0.75;
+
+  let areaCells = 0;
+  let coveredCells = 0;
+  let edgeCells = 0;
+  let edgeCovered = 0;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const i = row * cols + col;
+      if (!mask[i]) continue;
+      areaCells++;
+      const x = originX + (col + 0.5) * cell;
+      const y = originY + (row + 0.5) * cell;
+      if (index.nearest(x, y, reach) <= reach) coveredCells++;
+      if (sdf[i]! < cell * 1.01) {
+        edgeCells++;
+        if (index.nearest(x, y, pitchMm * 1.5) <= pitchMm * 1.5) edgeCovered++;
+      }
+    }
+  }
+
+  let outside = 0;
+  let strays = 0;
+  let minGap = Infinity;
+  centres.forEach((c, i) => {
+    const col = Math.floor((c.x - originX) / cell);
+    const row = Math.floor((c.y - originY) / cell);
+    const depth = col >= 0 && col < cols && row >= 0 && row < rows ? sdf[row * cols + col]! : -Infinity;
+    const half = stones[i]!.holeDiameterMm / 2;
+    if (depth < -(half + 0.01)) outside++;
+    const nn = index.nearest(c.x, c.y, pitchMm * 2, i);
+    if (nn > pitchMm * 2) strays++;
+    if (nn < Infinity) minGap = Math.min(minGap, nn - half * 2);
+  });
+
+  return {
+    stoneCount: stones.length,
+    areaCoverage: areaCells === 0 ? NaN : coveredCells / areaCells,
+    outlineCoverage: edgeCells === 0 ? NaN : edgeCovered / edgeCells,
+    outsideStones: outside,
+    strayStones: strays,
+    minGapMm: minGap,
+    silhouetteAreaMm2: areaCells * cell * cell,
+  };
+}

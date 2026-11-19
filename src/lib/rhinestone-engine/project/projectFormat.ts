@@ -147,6 +147,8 @@ export interface SvgUploadProjectState {
   placementPattern?: FillPlacementPattern;
   contourSettings?: ContourCoverageSettings;
   radialSettings?: RadialPlacementSettings;
+  /** Colours the user switched on or off in an uploaded artwork. */
+  layerRoles?: Record<string, 'stones' | 'ignore'>;
 }
 
 export interface SavedStone {
@@ -529,7 +531,20 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
     contourSettings: parseContourSettings(s.contourSettings, ctx),
     radialSettings: parseRadialSettings(s.radialSettings, ctx),
+    layerRoles: parseLayerRoles(s.layerRoles, ctx),
   };
+}
+
+function parseLayerRoles(value: unknown, ctx: string): Record<string, 'stones' | 'ignore'> | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value, `${ctx}.layerRoles`);
+  const roles: Record<string, 'stones' | 'ignore'> = {};
+  for (const [colour, role] of Object.entries(record)) {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) throw new Error(`[Project] ${ctx}.layerRoles has a key that is not a colour: ${colour}`);
+    if (role !== 'stones' && role !== 'ignore') throw new Error(`[Project] ${ctx}.layerRoles["${colour}"] must be "stones" or "ignore"`);
+    roles[colour.toLowerCase()] = role;
+  }
+  return roles;
 }
 
 function validateSavedStone(v: unknown, idx: number): SavedStone {

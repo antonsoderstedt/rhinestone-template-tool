@@ -421,6 +421,22 @@ describe('project round-trip for editable designs', () => {
     expectRoundTrip(state);
   });
 
+  it('keeps which colours of an artwork were switched on or off, and refuses a bad value', () => {
+    const state = cloneState();
+    state.activeTool = 'svg';
+    state.svgTool.uploadedSvgText = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10"><path d="M0 0h30v10z" fill="#ffaef0"/></svg>';
+    state.svgTool.layerRoles = { '#ffaef0': 'stones', '#1A1033': 'ignore' };
+    const file = buildProjectFileFromEditorState(state)!;
+    const restored = parseRhinestoneProject(serializeRhinestoneProject(file));
+    expect(restored.generatorState).toMatchObject({ generatorId: 'svg-upload', layerRoles: { '#ffaef0': 'stones', '#1a1033': 'ignore' } });
+
+    const broken = JSON.parse(serializeRhinestoneProject(file)) as { generatorState: { layerRoles: Record<string, string> } };
+    broken.generatorState.layerRoles = { '#ffaef0': 'maybe' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/layerRoles/);
+    broken.generatorState.layerRoles = { red: 'stones' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/colour/);
+  });
+
   it('round-trips a fully manual editable design', () => {
     let state = cloneState();
     state.activeTool = 'manual';

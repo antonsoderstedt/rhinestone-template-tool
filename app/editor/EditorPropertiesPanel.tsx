@@ -34,6 +34,8 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import PlacementModeControl from './controls/PlacementModeControl';
+import { ArtworkAdvice, ArtworkLayersList, ArtworkLookControl } from './controls/ArtworkControls';
+import { ARTWORK_LOOKS, lookFromCoverage, type ArtworkInfo } from './artworkGeneration';
 import {
   editorFieldLabelClassName,
   editorSegmentActiveClassName,
@@ -51,6 +53,7 @@ interface EditorPropertiesPanelProps {
   dispatch: React.Dispatch<EditorAction>;
   mode: 'source' | 'inspector';
   outlineFontStatus?: OutlineFontStatus;
+  artworkInfo?: ArtworkInfo | null;
   exportReadiness?: ExportReadinessResult | null;
   /** Stones of the design as it will be exported, for the "stones to buy" estimate. */
   stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
@@ -65,6 +68,7 @@ interface ToolPropertiesProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus?: OutlineFontStatus;
+  artworkInfo?: ArtworkInfo | null;
 }
 
 function PanelSection({ title, description, children, defaultOpen = true }: { title: string; description?: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -99,7 +103,7 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, stones, onQuickFix, canResize = false, overlapEnlargement = null }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, artworkInfo, exportReadiness, stones, onQuickFix, canResize = false, overlapEnlargement = null }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
@@ -127,7 +131,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
-              {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} artworkInfo={artworkInfo} />}
               {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
@@ -1182,7 +1186,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
   );
 }
 
-function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
+function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolPropertiesProps) {
   const { svgTool } = state;
   // Why the last file was refused, shown under the file picker until a good file is loaded.
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -1194,7 +1198,6 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
     ? svgTool.targetHeightMm
     : currentTemplateSize?.heightMm ?? null;
   const scaledStoneCount = state.template?.stones.length ?? 0;
-  const svgCapabilities = getGeneratorCapabilityProfile('svg');
   const currentArtworkName = svgTool.assetKind === 'image' ? svgTool.imageFileName : svgTool.svgFileName;
   const uploadInputId = 'artwork-upload-input';
   const displayUnit = svgTool.dimensionUnit;
@@ -1444,32 +1447,22 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
       {svgTool.assetKind === 'svg' && svgTool.uploadedSvgText && (
         <>
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-ink-secondary">SVG mode</span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'vector-layout' } })}
-                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${svgTool.renderMode === 'vector-layout' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
-              >
-                <div className="font-medium">Vector layout</div>
-                <div className="mt-1 text-xs text-ink-muted">Contour-aware placement from SVG paths</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'artwork-dots' } })}
-                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${svgTool.renderMode === 'artwork-dots' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
-              >
-                <div className="font-medium">Artwork dots</div>
-                <div className="mt-1 text-xs text-ink-muted">Dense fill-first sampling for logos and badges</div>
-              </button>
-            </div>
-            <p className="text-xs text-ink-muted">
-              {svgTool.renderMode === 'artwork-dots'
-                ? 'Artwork dots uses fill-only hexagonal sampling and is intended to mimic image-to-dot style rhinestone layouts.'
-                : 'Vector layout keeps the SVG as vector artwork and is better for cleaner outline-driven results. Uploading a solid logo or badge? Try Artwork dots below for a denser, more polished look, or switch Fill mode to "Fill" on this side.'}
-            </p>
-          </div>
+          <ArtworkLookControl
+            look={lookFromCoverage(svgTool.coverageMode)}
+            rowCount={svgTool.contourSettings.rowCount}
+            onLookChange={(look) => {
+              const option = ARTWORK_LOOKS.find((entry) => entry.look === look)!;
+              dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode: option.coverageMode, fillMode: look === 'outline' ? 'outline' : 'outline-fill' } });
+            }}
+            onRowCountChange={(rowCount) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings: { ...svgTool.contourSettings, rowCount } } })}
+          />
+
+          {artworkInfo && (
+            <ArtworkLayersList
+              layers={artworkInfo.layers}
+              onToggle={(colour, role) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { layerRoles: { ...svgTool.layerRoles, [colour]: role } } })}
+            />
+          )}
 
           {/* Stone Size */}
           <StoneProfileControl
@@ -1492,15 +1485,24 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
             onPreserveAspectRatioChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: val } })}
           />
 
-          {svgTool.renderMode === 'vector-layout' && (
-            <FillModeControl
-              fillMode={svgTool.fillMode}
-              fillPattern={svgTool.fillPattern}
-              availableModes={svgCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
-              availablePatterns={svgCapabilities.supportedFillPatterns}
-              onFillModeChange={(mode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillMode: mode } })}
-              onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillPattern: pattern } })}
+          {artworkInfo && (
+            <ArtworkAdvice
+              info={artworkInfo}
+              stoneSize={svgTool.stoneSize}
+              onSetWidth={(widthMm) => {
+                const ratio = artworkInfo.feasibility ? artworkInfo.feasibility.heightMm / Math.max(artworkInfo.feasibility.widthMm, 1e-6) : 1;
+                dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: widthMm, targetHeightMm: svgTool.preserveAspectRatio ? Number((widthMm * ratio).toFixed(1)) : svgTool.targetHeightMm } });
+              }}
+              onSetStoneSize={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
             />
+          )}
+
+          {artworkInfo && artworkInfo.warnings.length > 0 && (
+            <ul className="space-y-1 text-xs text-ink-muted" aria-label="Notes about this file">
+              {artworkInfo.warnings.slice(0, 4).map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
           )}
 
           {/* Density */}
@@ -1511,107 +1513,6 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
             onCustomSpacingChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: val } })}
           />
 
-          {svgTool.renderMode === 'vector-layout' ? (
-            <PlacementModeControl
-              coverageMode={svgTool.coverageMode}
-              availableCoverageModes={svgCapabilities.supportedCoverageModes}
-              placementPattern={svgTool.placementPattern}
-              availablePlacementPatterns={svgCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
-              contourSettings={svgTool.contourSettings}
-              radialSettings={svgTool.radialSettings}
-              onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode } })}
-              onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { placementPattern } })}
-              onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings } })}
-              onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { radialSettings } })}
-            />
-          ) : (
-            <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-xs text-ink-secondary">
-              Artwork dots currently uses fill-only coverage with a hexagonal placement pattern.
-            </div>
-          )}
-
-          {/* Advanced - Cleanup Options */}
-          <AdvancedSection title="Cleanup Options">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={svgTool.cleanupEnabled}
-                onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupEnabled: e.target.checked } })}
-                className="h-3.5 w-3.5 rounded"
-              />
-              <span className="text-sm text-ink-secondary">Enable Cleanup</span>
-            </label>
-
-            {svgTool.cleanupEnabled && (
-              <div className="space-y-3 mt-3 pl-2 border-l-2 border-border">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupSimplify}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupSimplify: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Simplify (RDP)</span>
-                </label>
-
-                {svgTool.cleanupSimplify && (
-                  <NumericInput
-                    label="Simplify Tolerance"
-                    value={svgTool.cleanupSimplifyTol}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupSimplifyTol: typeof val === 'number' ? val : 0.1 } })}
-                    unit="mm"
-                    min={0.01}
-                    max={5}
-                    step={0.1}
-                  />
-                )}
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupRemoveTiny}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupRemoveTiny: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Remove Tiny Lines</span>
-                </label>
-
-                {svgTool.cleanupRemoveTiny && (
-                  <NumericInput
-                    label="Min Line Length"
-                    value={svgTool.cleanupMinLength}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupMinLength: typeof val === 'number' ? val : 1 } })}
-                    unit="mm"
-                    min={0.1}
-                    max={10}
-                    step={0.1}
-                  />
-                )}
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupRemoveDups}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupRemoveDups: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Deduplicate Points</span>
-                </label>
-
-                {svgTool.cleanupRemoveDups && (
-                  <NumericInput
-                    label="Duplicate Tolerance"
-                    value={svgTool.cleanupDupTol}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupDupTol: typeof val === 'number' ? val : 0.01 } })}
-                    unit="mm"
-                    min={0.001}
-                    max={1}
-                    step={0.01}
-                  />
-                )}
-              </div>
-            )}
-          </AdvancedSection>
         </>
       )}
     </div>

@@ -15,9 +15,6 @@ import {
   createStoneGridTemplate,
   createOutlineTextTemplateAsync,
   createDotMatrixTextTemplate,
-  svgStringToPolylines,
-  createPolylineFilledRhinestoneTemplate,
-  scalePolylinesToFit,
   checkExportReadiness,
   createTemplateLibraryEntry,
   parseRhinestoneProject,
@@ -72,6 +69,7 @@ import {
 } from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import { useStableValue } from './useStableValue';
+import { generateSvgArtwork, type ArtworkInfo } from './artworkGeneration';
 // Dialogs are loaded when first opened, keeping the first load of the studio smaller.
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
 const SplitExportPanel = dynamic(() => import('./SplitExportPanel'));
@@ -141,6 +139,7 @@ export default function EditorShell() {
   const [autosaveDecision, setAutosaveDecision] = useState<'deciding' | 'ready' | 'restored'>('deciding');
   const initialAutosaveRestoreRef = useRef(false);
   const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
+  const [artworkInfo, setArtworkInfo] = useState<ArtworkInfo | null>(null);
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
     message: string | null;
@@ -381,46 +380,9 @@ export default function EditorShell() {
               });
               template = rasterResult.template;
             } else if (generationSvgTool.uploadedSvgText) {
-              const polylines = svgStringToPolylines(generationSvgTool.uploadedSvgText, {
-                cleanupOptions: generationSvgTool.cleanupEnabled
-                  ? {
-                      simplify: generationSvgTool.cleanupSimplify,
-                      simplifyToleranceMm: generationSvgTool.cleanupSimplifyTol,
-                      removeTinyPolylines: generationSvgTool.cleanupRemoveTiny,
-                      minPolylineLengthMm: generationSvgTool.cleanupMinLength,
-                      removeDuplicatePoints: generationSvgTool.cleanupRemoveDups,
-                      duplicatePointToleranceMm: generationSvgTool.cleanupDupTol,
-                    }
-                  : undefined,
-              });
-
-              let scaledPolylines = polylines;
-              if (
-                (typeof generationSvgTool.targetWidthMm === 'number' || typeof generationSvgTool.targetHeightMm === 'number') &&
-                polylines.length > 0
-              ) {
-                scaledPolylines = scalePolylinesToFit(polylines, {
-                  targetWidthMm: typeof generationSvgTool.targetWidthMm === 'number' ? generationSvgTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof generationSvgTool.targetHeightMm === 'number' ? generationSvgTool.targetHeightMm : undefined,
-                  preserveAspectRatio: generationSvgTool.preserveAspectRatio,
-                });
-              }
-
-              template = createPolylineFilledRhinestoneTemplate({
-                id: 'svg-preview',
-                name: generationSvgTool.svgFileName || 'SVG Preview',
-                polylines: scaledPolylines,
-                stoneSize: generationSvgTool.stoneSize,
-                coverageMode: generationSvgTool.coverageMode,
-                fillMode: generationSvgTool.fillMode,
-                fillPattern: generationSvgTool.fillPattern,
-                placementPattern: generationSvgTool.placementPattern,
-                contourSettings: generationSvgTool.contourSettings,
-                radialSettings: generationSvgTool.radialSettings,
-                densityPreset: generationSvgTool.densityPreset,
-                customSpacingMm: typeof generationSvgTool.customSpacingMm === 'number' ? generationSvgTool.customSpacingMm : undefined,
-                fillEdgeInsetMm: generationSvgTool.renderMode === 'artwork-dots' ? 0 : undefined,
-              });
+              const generated = generateSvgArtwork(generationSvgTool);
+              template = generated.template;
+              if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
             }
             setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
@@ -1119,6 +1081,7 @@ export default function EditorShell() {
             placementPattern: project.generatorState.placementPattern ?? 'default',
             contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
             radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
+            layerRoles: project.generatorState.layerRoles ?? {},
             densityPreset: project.generatorState.densityPreset,
             customSpacingMm: project.generatorState.customSpacingMm,
             imageColorCount: project.generatorState.imageColorCount ?? 1,
@@ -1916,6 +1879,7 @@ export default function EditorShell() {
           state={state}
           dispatch={editorDispatch}
           outlineFontStatus={outlineFontStatus}
+          artworkInfo={artworkInfo}
           exportReadiness={exportReadiness}
           stones={effectiveTemplate?.stones}
           onQuickFix={handleQuickFix}
@@ -2020,6 +1984,7 @@ function StudioContextPanel({
   state,
   dispatch,
   outlineFontStatus,
+  artworkInfo,
   exportReadiness,
   stones,
   onQuickFix,
@@ -2030,6 +1995,7 @@ function StudioContextPanel({
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus: OutlineFontStatus;
+  artworkInfo: ArtworkInfo | null;
   exportReadiness: ExportReadinessResult | null;
   stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
   onQuickFix: (action: import('./quickFixItems').QuickFixAction) => void;
@@ -2076,6 +2042,7 @@ function StudioContextPanel({
           dispatch={dispatch}
           mode={tab}
           outlineFontStatus={outlineFontStatus}
+          artworkInfo={artworkInfo}
           exportReadiness={tab === 'inspector' ? exportReadiness : null}
           stones={tab === 'inspector' ? stones : undefined}
           onQuickFix={onQuickFix}

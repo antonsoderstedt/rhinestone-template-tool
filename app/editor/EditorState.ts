@@ -127,6 +127,8 @@ export interface SvgToolState {
   placementPattern: FillPlacementPattern;
   contourSettings: ContourCoverageSettings;
   radialSettings: RadialPlacementSettings;
+  /** Colours (`#rrggbb`) the user turned on or off, overriding what the importer decided (e.g. a white background). */
+  layerRoles: Record<string, 'stones' | 'ignore'>;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
@@ -444,10 +446,14 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     next.densityPreset = 'dense';
   };
 
-  if (updates.renderMode === 'vector-layout') {
-    applyVectorLayoutPreset();
-  } else if (updates.renderMode === 'artwork-dots') {
-    applyArtworkDotsPreset();
+  // A render mode brings its preset along unless the same update says how to cover the shape: restoring a saved design
+  // passes both, and the saved choice (for example Rows) must win.
+  if (updates.coverageMode === undefined) {
+    if (updates.renderMode === 'vector-layout') {
+      applyVectorLayoutPreset();
+    } else if (updates.renderMode === 'artwork-dots') {
+      applyArtworkDotsPreset();
+    }
   }
 
   if (
@@ -514,6 +520,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
     centerOffsetYmm: 0,
     includeCenterStone: true,
   },
+  layerRoles: {},
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {

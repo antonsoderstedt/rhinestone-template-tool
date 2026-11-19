@@ -106,7 +106,9 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | J1 fixture corpus, J2 quality harness | **Done** (ADR 0020, `npm run quality`, regression test) |
 | J3 honest renderer, J4 canvas / panel polish, H5 error boundaries | **Done** |
 | J5 importer | **Done** (ADR 0020) |
-| J6 layers, J7 feasibility, J8–J11 generators, J12 panel | Next |
+| J6 colour layers, J7 feasibility, J8 centre line, J9 fill, J10 contour, J11 one spacing rule | **Done** (ADR 0021): one pipeline, 100 % cuttable on the corpus |
+| J12 Artwork panel | **Done in part**: three looks, colour list, advice; preview of the source behind the stones and a look gallery with thumbnails remain |
+| J13–J15, phases 2-7 | Next |
 
 ## 4. Phases
 

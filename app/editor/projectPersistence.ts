@@ -172,6 +172,7 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         placementPattern: state.svgTool.placementPattern,
         contourSettings: state.svgTool.contourSettings,
         radialSettings: state.svgTool.radialSettings,
+        layerRoles: state.svgTool.layerRoles,
         densityPreset: state.svgTool.densityPreset,
         customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4.0,
         imageColorCount: state.svgTool.imageColorCount,

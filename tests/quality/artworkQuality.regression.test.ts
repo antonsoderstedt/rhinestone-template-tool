@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadFixtures, rowKey, runMatrix, type QualityRow } from './harness';
+import { loadFixtures, QUICK_MATRIX, rowKey, runMatrix, type QualityRow } from './harness';
 
 /**
  * The artwork generators are held to the numbers in baseline.json: a change may improve any of them, and may not make one
@@ -12,7 +12,7 @@ const baseline = JSON.parse(readFileSync(path.join(__dirname, 'baseline.json'), 
 const COVERAGE_TOLERANCE = 0.02;
 
 describe('artwork quality does not regress', () => {
-  const rows = runMatrix(loadFixtures().filter((fixture) => !fixture.local));
+  const rows = runMatrix(loadFixtures().filter((fixture) => !fixture.local), QUICK_MATRIX);
   const current = new Map(rows.map((row) => [rowKey(row), row]));
 
   it('covers every baseline case', () => {

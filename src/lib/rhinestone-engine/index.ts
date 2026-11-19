@@ -215,7 +215,18 @@ export { planSplitForMat, buildPartTemplate } from './split/splitForMat';
 
 // Artwork quality measurement
 export type { QualityStone, ArtworkQualityOptions, ArtworkQuality } from './quality/artworkQuality';
-export { measureArtworkQuality, rasterizeSilhouette } from './quality/artworkQuality';
+export { measureArtworkQuality, measureMaskQuality, rasterizeSilhouette } from './quality/artworkQuality';
+export type { MaskQualityInput } from './quality/artworkQuality';
+
+// SVG artwork import and the row-based artwork layout
+export type { ImportedShape, SvgImportResult, SvgImportOptions } from './svg/svgImport';
+export { importSvgArtwork, findUnsafeSvgContent } from './svg/svgImport';
+export type { ArtworkLook, CreateArtworkTemplateOptions, ArtworkTemplateResult } from './artwork/artworkTemplate';
+export { createArtworkTemplate } from './artwork/artworkTemplate';
+export type { ArtworkLayer, ArtworkLayers, BuildLayersOptions } from './artwork/layers';
+export { buildArtworkLayers } from './artwork/layers';
+export type { FeasibilityReport, FeasibilityVerdict, StoneSizeFeasibility, FeasibilityOptions } from './artwork/feasibility';
+export { analyseFeasibility } from './artwork/feasibility';
 
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';

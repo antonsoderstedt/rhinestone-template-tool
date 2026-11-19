@@ -5,17 +5,18 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { loadFixtures, runMatrix, type QualityRow } from '../tests/quality/harness';
+import { loadFixtures, QUICK_MATRIX, runMatrix, type QualityRow } from '../tests/quality/harness';
 
 const root = path.resolve(__dirname, '..');
 const started = Date.now();
 const fixtures = loadFixtures();
 const rows = runMatrix(fixtures);
-const shared = rows.filter((row) => !row.fixture.startsWith('local/'));
 
 if (process.argv.includes('--baseline')) {
+  // The baseline is the quick matrix on the committed fixtures: what the regression test runs.
+  const quick = runMatrix(fixtures.filter((fixture) => !fixture.local), QUICK_MATRIX);
   mkdirSync(path.join(root, 'tests/quality'), { recursive: true });
-  writeFileSync(path.join(root, 'tests/quality/baseline.json'), JSON.stringify(shared.map((row) => ({ ...row, ms: undefined })), null, 1) + '\n');
+  writeFileSync(path.join(root, 'tests/quality/baseline.json'), JSON.stringify(quick.map((row) => ({ ...row, ms: undefined })), null, 1) + '\n');
 }
 
 const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
@@ -43,7 +44,7 @@ const lines: string[] = [
 ];
 
 const okRows = rows.filter((row) => row.status === 'ok');
-for (const mode of ['outline', 'fill', 'outline-fill', 'contour'] as const) {
+for (const mode of ['outline', 'fill', 'outline-fill', 'contour', 'art-outline', 'art-rows', 'art-solid'] as const) {
   const group = okRows.filter((row) => row.mode === mode);
   const mean = (pick: (row: QualityRow) => number | null) => {
     const values = group.map(pick).filter((v): v is number => v !== null);

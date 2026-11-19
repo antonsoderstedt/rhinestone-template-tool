@@ -138,6 +138,17 @@ describe('editorReducer', () => {
     expect(state.svgTool.targetHeightMm).toBe(100);
   });
 
+  it('a saved coverage mode wins over the render-mode preset when both arrive together (restoring a design)', () => {
+    const restored = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { renderMode: 'vector-layout', coverageMode: 'contour', fillMode: 'outline-fill' },
+    });
+    expect(restored.svgTool.coverageMode).toBe('contour');
+    // while a render mode on its own still applies its preset
+    const preset = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), { type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'vector-layout' } });
+    expect(preset.svgTool.coverageMode).toBe('outline-fill');
+  });
+
   it('switches SVG render mode presets cleanly', () => {
     const artwork = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_SVG_TOOL',

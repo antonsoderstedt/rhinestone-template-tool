@@ -672,6 +672,39 @@ polyline cleanup.
   `javascript:`, `data:`, `@import`, any `href` or `url()` that does not start with `#`.
 - Fill rule, stroke width (scaled by the transform) and opacity are kept on each shape for the colour-layer step.
 
+## Artwork layout module (`artwork/`)
+
+Replaces the clipped-grid fill and per-vertex offsets for SVG artwork. Everything works on a raster of the artwork, so
+overlapping shapes, holes, touching letters and narrow necks need no polygon clipping.
+
+1. **Layers (`layers.ts`)**: the imported shapes are scaled to the requested width and painted onto one grid in document
+   order (a later shape covers an earlier one; an even-odd or opposite-winding hole shows what is underneath; strokes are
+   painted as lines of their width with round ends). One mask per colour. White, and a first shape that covers 97 % of the
+   artwork, are left out as background (with a reason) unless the user switches them on; if that would leave nothing, nothing is
+   left out.
+2. **Region field (`regionField.ts`)**: a mask becomes a signed distance field (exact Euclidean distance transform), in mm,
+   positive inside. Cell size is the longer side / 1200 within 0.15-0.4 mm.
+3. **Rows (`rowsLayout.ts`, `contours.ts`)**: row k is the iso-contour of the field at depth `edgeInset + k * pitch` (edge
+   inset = half a hole, so stones lie just inside the edge). Each contour loop gets one stone at every corner (turn above 35°)
+   and stones evenly spaced between, never closer than the pitch along the path. `rows` = 1 is the Outline look, a few rows the
+   Rows look, `all` plus a hex lattice over what is left (points deep enough and clear of every stone) the Solid look.
+   - A candidate closer than the minimum centre distance to a placed stone of the same row is merged with it (one stone halfway)
+     when that keeps the spacing: on a part too narrow for two rows the two sides become one row down the middle.
+   - Stones in a part that cannot hold a second row (`depth < inset + pitch / 2`) are moved uphill along the field to its
+     ridge, i.e. centred, when that keeps the spacing.
+   - Every stone is at least `hole / 2 - 1 cell` deep; no two are closer than `minCentreDistance` (hole + minimum edge gap).
+4. **Template (`artworkTemplate.ts`)**: layers painted later are laid out first and lower layers give way where they meet
+   (one occupancy grid across layers). Stones carry `layerColour`, `layerIndex`, `row` and `placement` metadata. A colour that
+   gets no stones is reported.
+5. **Feasibility (`feasibility.ts`)**: for each stone size, the share of the artwork's area thinner than one hole (morphological
+   opening by half a hole on a coarse grid of at most 600 cells), the number of separate shapes whose thickest part is thinner
+   than a hole (they get no stone), a verdict (`good` up to 4.2 %, `some-detail-lost` up to 15 %, else `too-small`) and the
+   width at which about 3 % would be too thin (found by bracketing and bisection, +5 % margin, so following it ends in `good`).
+
+All of it is pure and deterministic. The Artwork tool maps its three looks onto the stored coverage mode (`outline`, `contour`
+= Rows with `contourSettings.rowCount`, `outline-fill` / `fill` = Solid) so saved projects still open; `layerRoles` (colour to
+`stones` / `ignore`) is the only new persisted field.
+
 ### Artwork quality (`quality/artworkQuality.ts`)
 
 `measureArtworkQuality({ polylines, stones, pitchMm })` scores a layout against its source: `areaCoverage` (share of the
