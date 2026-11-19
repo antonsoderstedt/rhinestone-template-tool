@@ -345,6 +345,9 @@ describe('project round-trip for editable designs', () => {
     state.activeTool = 'text';
     state.textTool.mode = 'outline';
     state.textTool.text = 'HI';
+    // This test builds the design synchronously, which only the built-in font supports; the default is a bundled font.
+    state.textTool.fontId = LEGACY_OUTLINE_FONT_ID;
+    state.textTool.fontSizeMm = 25;
     state.template = createOutlineTextTemplate({
       id: 'text-outline-preview',
       name: 'Outline',

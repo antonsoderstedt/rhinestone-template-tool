@@ -122,10 +122,7 @@ export default function HtvTopbar({
           <StudioMenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} sections={menuSections} theme={theme} onToggleTheme={onToggleTheme} />
         </div>
 
-        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
-          <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-xs font-medium uppercase tracking-[0.14em] text-violet-200">
-            Layer editor
-          </span>
+        <div className="flex min-w-[200px] max-w-[360px] flex-1 items-center gap-2 rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm">
           <input
             type="text"
             value={projectName}

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Expand, Minus, Plus, Scan } from 'lucide-react';
 import { expandSelectionToGroups, type HtvAction, type HtvLayer, type HtvState } from './HtvState';
 import HtvLayerShape from './HtvLayerShape';
+import { pickArtboard } from './artboard';
+import { getHtvColor } from './htvMaterialCatalog';
 import { fitRect, useTouchViewGestures } from '../lib/touchGestures';
 import { approximateLayerBounds, computeDesignBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
 
@@ -261,6 +263,12 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
     return () => svg.removeEventListener('wheel', handleWheel);
   }, [dispatch, state.canvas.panX, state.canvas.panY, state.canvas.zoom, viewBoxSize]);
 
+  // The sheet the design is drawn on follows the vinyl colour, so black (or white) vinyl is never invisible.
+  const artboard = useMemo(
+    () => pickArtboard(placementLayers.filter((layer) => layer.visible).map((layer) => getHtvColor(layer.colorId).hex)),
+    [placementLayers],
+  );
+
   const singleSelectedLayer =
     state.selectedLayerIds.size === 1 ? placementLayers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
@@ -283,7 +291,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         onPointerDown={handleBackgroundPointerDown}
       >
         <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} style={{ fill: 'var(--studio-surface)' }} />
-        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} style={{ fill: 'var(--studio-surface-2)', stroke: 'var(--studio-border)' }} />
+        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill={artboard.fill} stroke={artboard.stroke} />
 
         {placementLayers.map((layer) => {
           if (!layer.visible) return null;

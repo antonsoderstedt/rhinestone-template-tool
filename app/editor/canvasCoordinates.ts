@@ -212,6 +212,40 @@ export function calculateCanvasWorkspaceBounds(
   };
 }
 
+/**
+ * Keeps the design in reach. However the view is moved (wheel, drag, pinch, zoom about the cursor), the
+ * centre of what is shown may not go further than `overscan` of a screen beyond the design's edges, so
+ * the design can never be scrolled out of sight into empty space. Idempotent, and a view that already
+ * satisfies it (such as the one "fit to screen" produces) is returned unchanged.
+ */
+export function clampCanvasPan(args: {
+  workspace: CanvasWorkspaceBounds;
+  /** Bounds of the stones, or of the workspace when there are none. */
+  content: CanvasWorkspaceBounds;
+  zoom: number;
+  panX: number;
+  panY: number;
+  /** Width over height of the element that shows the view, when known. */
+  aspect?: number | null;
+  overscan?: number;
+}): { panX: number; panY: number } {
+  const { workspace, content, zoom, panX, panY, aspect = null, overscan = 0.3 } = args;
+  if (![panX, panY, zoom].every(Number.isFinite)) return { panX: 0, panY: 0 };
+
+  const base = calculateDisplayedCanvasViewBox(workspace, zoom, panX, panY);
+  const shown = aspect && aspect > 0 ? expandViewBoxToAspect(base, aspect) : base;
+  const centerX = shown.x + shown.width / 2;
+  const centerY = shown.y + shown.height / 2;
+
+  const clampedX = Math.min(Math.max(centerX, content.x - overscan * shown.width), content.x + content.width + overscan * shown.width);
+  const clampedY = Math.min(Math.max(centerY, content.y - overscan * shown.height), content.y + content.height + overscan * shown.height);
+
+  return {
+    panX: clampedX === centerX ? panX : workspace.x + workspace.width / 2 - clampedX,
+    panY: clampedY === centerY ? panY : workspace.y + workspace.height / 2 - clampedY,
+  };
+}
+
 export function calculateFitViewTransform(
   workspace: CanvasWorkspaceBounds,
   content: CanvasWorkspaceBounds,

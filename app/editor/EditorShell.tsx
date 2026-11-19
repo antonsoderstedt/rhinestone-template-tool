@@ -570,23 +570,34 @@ export default function EditorShell() {
 
         const spacingAdjustment = generationResult.spacingAdjustment;
         const adjustedStoneCount = spacingAdjustment?.adjustedStoneCount ?? 0;
-        if (adjustedStoneCount > 0) {
-          const message = spacingAdjustment?.tooDenseForStoneSize
+        // Nudging a few stones apart is routine (the result is always cuttable), so it is not announced. Say
+        // something only when stones had to be removed or the design is too dense for the stone size.
+        const enlargedBy = spacingAdjustment?.enlargedByFactor ?? 0;
+        const worthMentioning = enlargedBy > 0 || (spacingAdjustment?.removedStoneCount ?? 0) > 0 || Boolean(spacingAdjustment?.tooDenseForStoneSize);
+        if ((adjustedStoneCount > 0 || enlargedBy > 0) && worthMentioning) {
+          const message = enlargedBy > 0
+            ? `The dots of this font overlap at ${state.rhinestoneFontTool.stoneSize}, so the design was enlarged ×${enlargedBy.toFixed(1)} (about ${Math.round(generationResult.template?.widthMm ?? 0)} mm wide) to make the stones cuttable. A smaller stone size gives a smaller design.`
+            : spacingAdjustment?.tooDenseForStoneSize
             ? `Adjusted ${adjustedStoneCount} stones for minimum spacing. This design is too dense for this stone size — increase the size or use a smaller stone.`
             : `Adjusted ${adjustedStoneCount} stones for minimum spacing.`;
           setSpacingAdjustmentNote(message);
 
-          if (lastSpacingAdjustmentCountRef.current !== adjustedStoneCount) {
+          // Enlargement can leave the removed count at 0, so the announce-once key includes the factor.
+          const announceKey = adjustedStoneCount + Math.round(enlargedBy * 100);
+          if (lastSpacingAdjustmentCountRef.current !== announceKey) {
             setToast({ message, tone: spacingAdjustment?.tooDenseForStoneSize ? 'warning' : 'info' });
-            lastSpacingAdjustmentCountRef.current = adjustedStoneCount;
+            lastSpacingAdjustmentCountRef.current = announceKey;
           }
         } else {
           setSpacingAdjustmentNote(null);
           lastSpacingAdjustmentCountRef.current = 0;
         }
 
-        dispatch({ type: 'SET_TEMPLATE', template });
-        if (template) {
+        // A generator that produced no stones (for example a digits-only font given letters) has made no design,
+        // which is not an error: the panel says why, and the status stays neutral instead of "BLOCKED".
+        const producedDesign = template && template.stones.length > 0 ? template : null;
+        dispatch({ type: 'SET_TEMPLATE', template: producedDesign });
+        if (producedDesign) {
           requestCanvasFit();
         }
       } catch (err) {

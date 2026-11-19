@@ -55,7 +55,7 @@ describe('first-run copy', () => {
   });
 
   it('starts with neutral sample text, not a personal or brand word', () => {
-    expect(DEFAULT_TEXT_TOOL_STATE.text).toBe('YOUR NAME');
+    expect(DEFAULT_TEXT_TOOL_STATE.text).toBe('YOUR\nNAME');
   });
 
   it('offers examples and plain-language terms', () => {

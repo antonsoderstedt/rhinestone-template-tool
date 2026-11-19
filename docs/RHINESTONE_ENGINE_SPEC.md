@@ -240,6 +240,18 @@ For spacing auto-fixes, `resolveStoneSpacing(template, { minGapMm, strategy: 'nu
 - `resolutionPasses`
 - `tooDenseForStoneSize`
 
+### `enlargeToCuttableSpacing(template, { minGapMm })` (stone fonts, ADR 0018)
+
+Vendor rhinestone fonts are often artwork made of dots that overlap on purpose, so the holes of a template made from them
+would merge and cannot be cut. `hasOverlappingStones(stones)` detects this. `enlargeToCuttableSpacing` then enlarges the
+whole layout, about its top-left corner, by `scale = max(1, (maxHoleDiameter + minGapMm) / p5NearestNeighbour * 1.002)`
+(the 5th percentile of each stone's nearest-neighbour distance, so one odd pair does not blow the design up), keeps every stone
+and every hole size, and finally runs `thinStonesToSpacing` to drop the few stones still closer than `minGapMm` (walking the
+stones in their original order, keeping a stone only if it is far enough from all kept ones). A layout with no overlaps is
+returned unchanged (same object, `scale` 1). The result records `metadata.enlargedByFactor`. Pure and deterministic.
+It is applied by the editor to the stone-font tool only (`generateAndResolveTemplate`); `createRhinestoneFontTemplate` itself
+is unchanged. TRW Clean Stone, whose stones do not overlap, is unaffected.
+
 ### `resolveStoneSpacing` final algorithm
 
 1. Sort stones in stable order (`id`, then `y`, then `x`).

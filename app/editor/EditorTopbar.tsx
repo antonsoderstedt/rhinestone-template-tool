@@ -155,10 +155,7 @@ export default function EditorTopbar({
         <StudioMenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} sections={menuSections} theme={theme} onToggleTheme={onToggleTheme} />
       </div>
 
-      <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm max-lg:hidden">
-        <span className="rounded border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-xs font-medium uppercase tracking-[0.14em] text-violet-200">
-          Live editor
-        </span>
+      <div className="flex min-w-[200px] max-w-[360px] flex-1 items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1 shadow-sm max-lg:hidden">
         <input
           type="text"
           value={projectName}
@@ -303,7 +300,7 @@ export default function EditorTopbar({
 
         <Link
           href="/htv"
-          className="ml-2 hidden rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] md:inline-flex"
+          className="ml-2 hidden rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] xl:inline-flex"
         >
           HTV Studio
         </Link>
@@ -313,7 +310,7 @@ export default function EditorTopbar({
           title="Open calibration and setup"
         >
           <Settings2 className="h-4 w-4" />
-          Setup
+          <span className="max-xl:sr-only">Setup</span>
         </button>
         <KeyboardShortcutsButton />
         <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />

@@ -7,6 +7,7 @@ import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './Edit
 import {
   calculateCanvasWorkspaceBounds,
   calculateFitViewTransform,
+  clampCanvasPan,
   calculateDisplayedCanvasViewBox,
   expandViewBoxToAspect,
   MAX_CANVAS_ZOOM,
@@ -72,17 +73,50 @@ function getStoneCanvasColor(stone: EditableStone): string {
 
 export default function EditorCanvas({
   state,
-  dispatch,
+  dispatch: rawDispatch,
   onNotify,
   fitRequestId = 0,
-  onManualViewChange,
+  onManualViewChange: rawOnManualViewChange,
 }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const suppressNextClickRef = useRef(false);
   const nextStoneIdRef = useRef(0);
-  
+
+  // Every way of moving the view (wheel, drag, pinch, zoom about the cursor) goes through these two
+  // wrappers, which keep the design in reach: it can never be scrolled out of sight (clampCanvasPan).
+  const clampContextRef = useRef<{
+    workspace: { x: number; y: number; width: number; height: number };
+    content: { x: number; y: number; width: number; height: number };
+    aspect: number | null;
+    zoom: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const clampView = useCallback((view: { zoom: number; panX: number; panY: number }) => {
+    const ctx = clampContextRef.current;
+    if (!ctx) return view;
+    return { ...view, ...clampCanvasPan({ workspace: ctx.workspace, content: ctx.content, aspect: ctx.aspect, ...view }) };
+  }, []);
+  const dispatch = useCallback((action: EditorAction) => {
+    const ctx = clampContextRef.current;
+    if (ctx && action.type === 'UPDATE_CANVAS' && (action.updates.panX !== undefined || action.updates.panY !== undefined)) {
+      const view = clampView({
+        zoom: action.updates.zoom ?? ctx.zoom,
+        panX: action.updates.panX ?? ctx.panX,
+        panY: action.updates.panY ?? ctx.panY,
+      });
+      rawDispatch({ type: 'UPDATE_CANVAS', updates: { ...action.updates, panX: view.panX, panY: view.panY } });
+      return;
+    }
+    rawDispatch(action);
+  }, [clampView, rawDispatch]);
+  const onManualViewChange = useCallback(
+    (view: { zoom: number; panX: number; panY: number }) => rawOnManualViewChange?.(clampView(view)),
+    [clampView, rawOnManualViewChange],
+  );
+
   // Hover state for manual tool
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoverSuggestedFrom, setHoverSuggestedFrom] = useState<{ x: number; y: number } | null>(null);
@@ -420,7 +454,32 @@ export default function EditorCanvas({
   useEffect(() => {
     viewBoxRef.current = viewBox;
     workspaceBoundsRef.current = workspaceBounds;
-  }, [viewBox, workspaceBounds]);
+
+    // What the pan limit works from: the stones' bounds (or the workspace when empty) and the current view.
+    let content = workspaceBounds;
+    if (stones.length > 0) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const stone of stones) {
+        const radius = stone.holeDiameterMm / 2;
+        minX = Math.min(minX, stone.center.x - radius);
+        minY = Math.min(minY, stone.center.y - radius);
+        maxX = Math.max(maxX, stone.center.x + radius);
+        maxY = Math.max(maxY, stone.center.y + radius);
+      }
+      content = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    clampContextRef.current = {
+      workspace: workspaceBounds,
+      content,
+      aspect: viewportSize ? viewportSize.width / viewportSize.height : null,
+      zoom: state.canvas.zoom,
+      panX: state.canvas.panX,
+      panY: state.canvas.panY,
+    };
+  }, [viewBox, workspaceBounds, stones, viewportSize, state.canvas.zoom, state.canvas.panX, state.canvas.panY]);
 
   useEffect(() => {
     const element = viewportRef.current;
@@ -1339,8 +1398,9 @@ export default function EditorCanvas({
           )}
           {state.canvas.showGrid && (
             <>
-              <rect width="100%" height="100%" fill="url(#grid-minor)" />
-              <rect width="100%" height="100%" fill="url(#grid-major)" opacity="0.95" />
+              {/* Covers the whole visible area, wherever the view is, so panning never leaves the grid. */}
+              <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-minor)" />
+              <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-major)" opacity="0.95" />
             </>
           )}
 

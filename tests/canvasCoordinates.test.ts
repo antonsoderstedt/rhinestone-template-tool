@@ -291,3 +291,34 @@ describe('expandViewBoxToAspect', () => {
     expect(expandViewBoxToAspect(box, Number.NaN)).toBe(box);
   });
 });
+
+import { clampCanvasPan } from '../app/editor/canvasCoordinates';
+
+describe('clampCanvasPan', () => {
+  const workspace = { x: 0, y: 0, width: 900, height: 700 };
+  const content = { x: 100, y: 100, width: 200, height: 40 };
+  const base = { workspace, content, zoom: 4, aspect: 2 };
+
+  it('leaves a view that already shows the design alone', () => {
+    expect(clampCanvasPan({ ...base, panX: 250, panY: 280 })).toEqual({ panX: 250, panY: 280 });
+  });
+
+  it('stops the view moving far past the design in any direction', () => {
+    const far = clampCanvasPan({ ...base, panX: -5000, panY: 5000 });
+    const shown = calculateDisplayedCanvasViewBox(workspace, 4, far.panX, far.panY);
+    const cx = shown.x + shown.width / 2;
+    const cy = shown.y + shown.height / 2;
+    // base view box at aspect 2: width = max(900, 700 * 2) / 4 = 350, height = 175 (after expansion)
+    expect(cx).toBeLessThanOrEqual(content.x + content.width + 0.3 * 350 + 1e-6);
+    expect(cy).toBeGreaterThanOrEqual(content.y - 0.3 * 175 - 1e-6);
+  });
+
+  it('is idempotent', () => {
+    const once = clampCanvasPan({ ...base, panX: -3000, panY: 2000 });
+    expect(clampCanvasPan({ ...base, ...once })).toEqual(once);
+  });
+
+  it('copes with nonsense', () => {
+    expect(clampCanvasPan({ ...base, panX: Number.NaN, panY: 0 })).toEqual({ panX: 0, panY: 0 });
+  });
+});

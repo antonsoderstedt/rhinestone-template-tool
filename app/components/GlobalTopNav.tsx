@@ -22,6 +22,22 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * The status pill sits on the always-dark navigation bar. "Warning" in a bright amber pill read as an error
+ * on a perfectly normal first visit, so it says what is actually wanted and uses a quiet tone; the full
+ * sentence is in the tooltip.
+ */
+export function getNavStatusLabel(status: string, statusText: string): string {
+  if (status !== 'Warning') return status;
+  return /calibration/i.test(statusText) ? 'Not calibrated' : 'Review';
+}
+
+export function getNavStatusClassName(status: string): string {
+  return status === 'Ready'
+    ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200'
+    : 'border-amber-400/30 bg-amber-500/10 text-amber-200';
+}
+
 export function getModeMeta(pathname: string, activeCalibrationProfile: ReturnType<typeof readActiveCalibrationProfile> | null) {
   if (pathname.startsWith('/htv')) {
     if (!activeCalibrationProfile) {
@@ -242,28 +258,31 @@ export default function GlobalTopNav() {
           Menu
         </button>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+        <div className="hidden items-center gap-2 whitespace-nowrap lg:flex">
+          <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
             {modeMeta.studioLabel}
           </span>
 
-          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${modeMeta.statusClassName}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${getNavStatusClassName(modeMeta.status)}`} title={modeMeta.statusText}>
             <StatusIcon className="h-3.5 w-3.5" />
-            {modeMeta.status}
+            {getNavStatusLabel(modeMeta.status, modeMeta.statusText)}
           </span>
 
           <Link
             href="/library"
-            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100"
+            className="hidden rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 xl:inline-flex"
           >
             Manage Assets
           </Link>
-          <Link
-            href="/rhinestone"
-            className="rounded-md bg-violet-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-violet-500"
-          >
-            Open Studio
-          </Link>
+          {/* Pointless on the studio page itself. */}
+          {!pathname.startsWith('/rhinestone') && (
+            <Link
+              href="/rhinestone"
+              className="rounded-md bg-violet-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-violet-500"
+            >
+              Open Studio
+            </Link>
+          )}
         </div>
       </div>
 

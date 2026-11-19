@@ -216,6 +216,8 @@ export type { ResolveStoneSpacingOptions, ResolveStoneSpacingStrategy } from './
 export { resolveStoneSpacing } from './spacing/resolveStoneSpacing';
 export type { AutoFixSpacingOptions, AutoFixSpacingResult } from './spacing/autoFix';
 export { autoFixSpacing } from './spacing/autoFix';
+export type { ThinStonesOptions, ThinStonesResult, EnlargeToCuttableResult } from './spacing/thinStones';
+export { thinStonesToSpacing, hasOverlappingStones, enlargeToCuttableSpacing } from './spacing/thinStones';
 
 // Export readiness / Cricut QA
 export type {

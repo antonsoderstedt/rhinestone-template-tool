@@ -18,7 +18,6 @@ import {
   TextAlign as OutlineTextAlign,
   Stone,
   type GeneratorId,
-  LEGACY_OUTLINE_FONT_ID,
   DEFAULT_SVG_ALPHABET_ID,
   suggestSvgUploadMode,
   getPreferredTextCoverageMode,
@@ -327,15 +326,20 @@ function getDefaultSvgUploadTargetDimensions(
 
 // ─── Default States ───────────────────────────────────────────────────────────
 
+export const DEFAULT_TEXT_FONT_ID = 'archivo-black';
+
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   outlineTextStyle: 'outline',
-  text: 'YOUR NAME',
+  // The first thing a new user sees has to look good right away: a heavy bundled font, large enough that each
+  // letter gets two clean rows of stones (at 25 mm the rows touch and the letters turn to mush), on two lines so
+  // it still fits a 12 x 12 in mat (about 207 x 118 mm).
+  text: 'YOUR\nNAME',
   stoneSize: 'SS10',
-  fontId: LEGACY_OUTLINE_FONT_ID,
+  fontId: DEFAULT_TEXT_FONT_ID,
   unsupportedCharacters: [],
   warnings: [],
-  fontSizeMm: 25,
+  fontSizeMm: 60,
   align: 'left',
   letterSpacingMm: 2,
   lineSpacingMm: 8,

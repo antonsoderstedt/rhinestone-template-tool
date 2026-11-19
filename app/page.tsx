@@ -6,10 +6,12 @@ import { buildFontLaunchUrl } from './lib/fontLaunch';
 
 const EXAMPLE_FONT_ID = 'archivo-black';
 const EXAMPLE_TEXT = 'YOUR NAME';
+// On two lines the rhinestone example is large enough to look clean and still fits a 12 x 12 in mat.
+const RHINESTONE_EXAMPLE_TEXT = 'YOUR\nNAME';
 
 const goals = [
   {
-    href: buildFontLaunchUrl('rhinestone', EXAMPLE_FONT_ID, EXAMPLE_TEXT),
+    href: buildFontLaunchUrl('rhinestone', EXAMPLE_FONT_ID, RHINESTONE_EXAMPLE_TEXT),
     title: 'Make a rhinestone template from text',
     copy: 'Type a name, number or word and get a cut-ready template of stone holes. Opens with an example you can change.',
     icon: Type,
