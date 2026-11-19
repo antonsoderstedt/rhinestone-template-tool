@@ -21,10 +21,12 @@ import HtvInspectorPanel from './HtvInspectorPanel';
 import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import HtvGarmentStage from './HtvGarmentStage';
-import HtvGarment3D from './HtvGarment3D';
+import dynamic from 'next/dynamic';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import { createHtvSvgExport, type HtvExportOptions } from './htvExport';
-import ExportDialog from '../components/ExportDialog';
+// Loaded when first needed: three.js alone is ~300 KiB and most visits never open the 3D tab or the export dialog.
+const HtvGarment3D = dynamic(() => import('./HtvGarment3D'), { ssr: false });
+const ExportDialog = dynamic(() => import('../components/ExportDialog'));
 import { sanitizeExportFilename } from '../components/exportDialogHelpers';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';

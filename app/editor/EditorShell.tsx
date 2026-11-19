@@ -53,7 +53,7 @@ import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
 import { buildFitToMatPlan, canResizeDesign } from './fitToMat';
 import { hasSpacingIssues, type QuickFixAction } from './quickFixItems';
-import ExportDialog from '../components/ExportDialog';
+import dynamic from 'next/dynamic';
 import PromptDialog from '../components/PromptDialog';
 import { readSvgSizeMm } from '../components/exportDialogHelpers';
 import EditorToast from './EditorToast';
@@ -70,7 +70,9 @@ import {
   resolveStudioShortcut,
 } from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
-import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
+// Dialogs are loaded when first opened, keeping the first load of the studio smaller.
+const ExportDialog = dynamic(() => import('../components/ExportDialog'));
+const GarmentPreviewPanel = dynamic(() => import('../components/GarmentPreviewPanel'), { ssr: false });
 import { getExportFilename, getExportGate, summarizeExportStatus } from '../components/summarizeExportStatus';
 import {
   resolveGeneratorMutationDecision,
@@ -1414,14 +1416,15 @@ export default function EditorShell() {
     }
   }, [applyProjectToEditor]);
 
-  const handleLoadAutosave = useCallback(() => {
-    if (!autosaveEntry) return;
+  const handleLoadAutosave = useCallback((): boolean => {
+    if (!autosaveEntry) return false;
     try {
       const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
       applyProjectToEditor(project);
       setActiveLibraryTemplateId(null);
       setTemplateLibraryOpen(false);
       setToast({ message: 'Autosave opened.', tone: 'success' });
+      return true;
     } catch (err) {
       // A saved session that cannot be read must never take the page down. Keep a copy of it (the next autosave
       // would overwrite it) and carry on with a fresh editor.
@@ -1434,14 +1437,32 @@ export default function EditorShell() {
         message: `Your last session could not be restored (${err instanceof Error ? err.message.replace(/^\[Project\]\s*/, '') : 'unknown error'}). A copy was kept.`,
         tone: 'error',
       });
+      return false;
     }
   }, [AUTOSAVE_STORAGE_KEY, applyProjectToEditor, autosaveEntry]);
+
+  // The first visit after a session was saved: say so in a toast (a banner row above the canvas pushed the whole
+  // studio down after it loaded) and offer a clean start.
+  const startFreshFromAutosave = useCallback(() => {
+    globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
+    setAutosaveEntry(null);
+    setAutosaveDecision('ready');
+    resetToNewProject();
+    setToast({ message: 'Started fresh.', tone: 'info' });
+  }, [AUTOSAVE_STORAGE_KEY, resetToNewProject]);
 
   useEffect(() => {
     if (autosaveDecision !== 'restored' || !autosaveEntry || initialAutosaveRestoreRef.current) return;
     initialAutosaveRestoreRef.current = true;
-    handleLoadAutosave();
-  }, [autosaveDecision, autosaveEntry, handleLoadAutosave]);
+    if (handleLoadAutosave()) {
+      const name = autosaveEntry.name;
+      queueMicrotask(() => setToast({
+        message: `Restored your last session · ${name}`,
+        tone: 'info',
+        action: { label: 'Start fresh', onClick: startFreshFromAutosave },
+      }));
+    }
+  }, [autosaveDecision, autosaveEntry, handleLoadAutosave, startFreshFromAutosave]);
 
   const handleDialogConfirm = useCallback(() => {
     if (!pendingDialog) return;
@@ -1728,24 +1749,6 @@ export default function EditorShell() {
         onToggleTheme={toggleTheme}
       />
 
-      {autosaveDecision === 'restored' && autosaveEntry && (
-        <div role="status" className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
-          <span>Restored your last session · {autosaveEntry.name}</span>
-          <button
-            type="button"
-            onClick={() => {
-              globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
-              setAutosaveEntry(null);
-              setAutosaveDecision('ready');
-              resetToNewProject();
-              setToast({ message: 'Started fresh.', tone: 'info' });
-            }}
-            className="rounded-md border border-[var(--studio-border)] px-2.5 py-1 font-medium text-[var(--studio-ink)] hover:bg-[var(--studio-hover-overlay)]"
-          >
-            Start fresh
-          </button>
-        </div>
-      )}
 
       <GarmentPreviewPanel
         open={garmentPreviewOpen}

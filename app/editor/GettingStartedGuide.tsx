@@ -20,9 +20,11 @@ export default function GettingStartedGuide() {
   if (dismissed !== false) return null;
 
   return (
+    // An overlay on the canvas, not a row above it: the guide appears after the saved "dismissed" choice has been
+    // read, and a row inserted then pushed the whole studio down (a layout shift of 0.13 in Lighthouse).
     <section
       aria-label="Getting started"
-      className="shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2"
+      className="absolute left-1/2 top-12 z-20 w-[min(46rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-lg border border-[var(--studio-border-strong)] bg-[var(--studio-surface)]/95 px-3 py-2 shadow-lg backdrop-blur"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
