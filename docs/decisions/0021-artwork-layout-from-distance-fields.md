@@ -25,7 +25,7 @@ logo too small for the stone simply came out as scattered dots with no explanati
    saved project opens. New persisted field: `layerRoles`. Raster images still use the older sampler (plan J13).
 6. The old generators stay in the engine for text and other tools, and in the quality harness for comparison.
 
-## Results (quick matrix, 16 fixtures; `npm run quality`)
+## Results (full matrix, 16 fixtures, 90 runs per look; `npm run quality`)
 
 | Look | Cuttable runs | Outside | Strays |
 |---|---|---|---|
