@@ -648,6 +648,8 @@ export type EditorAction =
   | { type: 'DISCARD_EDITABLE_CHANGES' }
   | { type: 'ADD_STONES'; stones: EditableStone[] }
   | { type: 'DELETE_STONES'; stoneIds: string[] }
+  /** Replaces every stone at once (auto-fix). Converts a generated design to editable first. One undo step. */
+  | { type: 'REPLACE_STONES'; stones: EditableStone[] }
   | { type: 'MOVE_STONES'; moves: Array<{ id: string; toX: number; toY: number }> }
   | { type: 'UPDATE_STONE'; id: string; updates: Partial<EditableStone> }
   | { type: 'DUPLICATE_STONES'; stoneIds: string[] }
@@ -866,6 +868,39 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
     }
     
+    case 'REPLACE_STONES': {
+      if (!state.template && !state.editableTemplate.isEditable) return state;
+
+      const wasEditable = state.editableTemplate.isEditable;
+      // Undo must bring back the stones as they were before the fix, also when the design was generated.
+      const stonesBefore = wasEditable
+        ? state.editableTemplate.stones
+        : (state.template?.stones ?? []).map((stone) => ({ ...stone }));
+      const historyEntry: HistoryEntry = {
+        stones: stonesBefore,
+        selectedIds: new Set(state.selectedStoneIds),
+      };
+
+      return {
+        ...state,
+        editableTemplate: wasEditable
+          ? { ...state.editableTemplate, stones: action.stones }
+          : {
+              isEditable: true,
+              stones: action.stones,
+              originalTemplate: state.template,
+              sourceGenerator: inferEditableSourceGenerator(state),
+            },
+        selectedStoneIds: new Set(
+          [...state.selectedStoneIds].filter((id) => action.stones.some((stone) => stone.id === id)),
+        ),
+        history: {
+          past: [...state.history.past, historyEntry],
+          future: [],
+        },
+      };
+    }
+
     case 'DELETE_STONES': {
       if (!state.editableTemplate.isEditable) return state;
       

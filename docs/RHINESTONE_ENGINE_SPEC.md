@@ -157,12 +157,28 @@ Checks a `RhinestoneTemplate` against the material profile and physical constrai
 - `EXCEEDS_MAX_WIDTH`/`BELOW_MIN_WIDTH`: physical size out of range
 - `EXCEEDS_MAX_HEIGHT`/`BELOW_MIN_HEIGHT`: same for height
 - `UNSUPPORTED_STONE_SIZE`: stone size not in material profile's supported list
+- `HIGH_STONE_COUNT`: more than `HIGH_STONE_COUNT_THRESHOLD` (1500) stones — slow to cut, weed and set
+- `EXCEEDS_MAT_SIZE`: the physical size does not fit the largest Cricut mat (12 × 24 in, usable 292.1 × 596.9 mm) in either orientation. A design that fits a 12 × 24 mat but not a 12 × 12 one gets no readiness issue; the export dialog and the Quick fixes panel say which mat it needs
 - `STONE_TIGHT_GAP` on vendor-authored templates
 
 **Info** (always present):
 - `PHYSICAL_SIZE`: estimated output dimensions including hole radii
 
 The summary object includes `widthMm`, `heightMm`, `stoneCount`, `materialProfileId`, `cutter`, `stoneSizes`, `hasCollisions`, `hasCalibrationWarning`.
+
+### Mat fit, stone estimate and spacing auto-fix (Phase 12, ADR 0016)
+
+All pure, deterministic and in millimetres.
+
+- `sizing/matFit.ts`: `getMatFit(widthMm, heightMm)` → `fits-12x12 | fits-12x24 | too-large | unknown` (both orientations tried, rotation reported);
+  `getFitToMatScale(widthMm, heightMm, mat, marginFraction?)` → the largest uniform scale ≤ 1 at which the size fits `'12x12'` or `'12x24'`.
+  Stones are **not** squeezed closer to fit a mat: the UI regenerates the design smaller by changing the producing tool's target size.
+- `estimate/stoneEstimate.ts`: `estimateStoneUsage(stones, { wastePercent = 10, packSizeStones = 144, pricePerPackBySize })` →
+  per stone size: count, count plus spare (rounded up), gross (2 decimals), whole packs and cost. A size with no price has no cost and
+  the engine never supplies a price; `totalCost` is `null` without any price and `costComplete` is false while some sizes are unpriced.
+- `spacing/autoFix.ts`: `autoFixSpacing(template, { minGapMm })` runs `resolveStoneSpacing` (strategy `nudge`) on an existing
+  template and reports `issuesBefore`, `movedStoneCount`, `removedStoneCount`, `maxDisplacementMm` and `remainingIssues` from a fresh
+  `validateRhinestoneTemplate`. A clean template is returned as is. Collision detection is not bypassed.
 
 ### Calibration gate and the uncalibrated override (UI contract, decision D2)
 

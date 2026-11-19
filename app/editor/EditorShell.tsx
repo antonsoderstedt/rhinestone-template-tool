@@ -34,6 +34,8 @@ import {
   TRW_STONE_SIZE_CALIBRATION,
   DEFAULT_OUTLINE_FONT_ID,
   isAvailableOutlineFontId,
+  autoFixSpacing,
+  getDefaultMaterialProfile,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
   RhinestoneTemplate,
@@ -48,6 +50,8 @@ import EditorPropertiesPanel from './EditorPropertiesPanel';
 import type { OutlineFontStatus } from './controls/FontPicker';
 import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
+import { buildFitToMatPlan, canResizeDesign } from './fitToMat';
+import { hasSpacingIssues, type QuickFixAction } from './quickFixItems';
 import ExportDialog from '../components/ExportDialog';
 import PromptDialog from '../components/PromptDialog';
 import { readSvgSizeMm } from '../components/exportDialogHelpers';
@@ -163,10 +167,16 @@ export default function EditorShell() {
   const editableStoneCount = state.editableTemplate.stones.length;
   const historyDepth = state.history.past.length;
   const previousStoneStatsRef = useRef({ stoneCount: editableStoneCount, historyDepth });
+  const suppressDeleteToastRef = useRef(false);
   useEffect(() => {
     const previous = previousStoneStatsRef.current;
     previousStoneStatsRef.current = { stoneCount: editableStoneCount, historyDepth };
     const removed = previous.stoneCount - editableStoneCount;
+    if (suppressDeleteToastRef.current) {
+      // An auto-fix removed stones and already told the user; do not call that a "delete".
+      suppressDeleteToastRef.current = false;
+      return;
+    }
     if (removed >= DELETE_UNDO_THRESHOLD && historyDepth === previous.historyDepth + 1) {
       setToast({
         message: removed === 1 ? 'Deleted 1 stone.' : `Deleted ${removed} stones.`,
@@ -819,6 +829,57 @@ export default function EditorShell() {
     }
     dispatch(action);
   }, [state]);
+
+  // One-click fixes offered by the Quick fixes panel and the "fix errors before export" dialog.
+  const handleAutoFixSpacing = useCallback(() => {
+    if (!effectiveTemplate) return;
+    const result = autoFixSpacing(effectiveTemplate, { minGapMm: getDefaultMaterialProfile().minimumEdgeSpacingMm });
+    if (!result.changed) {
+      setToast({ message: 'Nothing to fix: no stones are too close together.', tone: 'info' });
+      return;
+    }
+
+    suppressDeleteToastRef.current = true;
+    dispatch({ type: 'REPLACE_STONES', stones: result.template.stones });
+
+    const moved = result.movedStoneCount;
+    const removed = result.removedStoneCount;
+    const parts = [
+      moved > 0 ? `moved ${moved} ${moved === 1 ? 'stone' : 'stones'}` : null,
+      removed > 0 ? `removed ${removed} that could not fit` : null,
+    ].filter(Boolean).join(' and ');
+    const stillWrong = result.remainingIssues.some((issue) => issue.severity === 'error');
+    setToast({
+      message: `Fixed spacing: ${parts}.${stillWrong ? ' Some problems remain; see the checks in the Inspect panel.' : ''}`,
+      tone: removed > 0 || stillWrong ? 'warning' : 'success',
+      action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+    });
+  }, [effectiveTemplate]);
+
+  const canResize = useMemo(() => canResizeDesign(state), [state]);
+
+  const handleFitToMat = useCallback((mat: '12x12' | '12x24') => {
+    if (!exportReadiness) return;
+    const plan = buildFitToMatPlan(
+      state,
+      { widthMm: exportReadiness.summary.widthMm, heightMm: exportReadiness.summary.heightMm },
+      mat,
+    );
+    if (!plan) {
+      setToast({ message: 'This design cannot be resized automatically. Change its size in the Design panel, or delete stones.', tone: 'warning' });
+      return;
+    }
+    editorDispatch(plan.action);
+    setToast({
+      message: `Resizing to about ${Math.round(plan.scale * 100)} % (${plan.targetWidthMm} × ${plan.targetHeightMm} mm) to fit a ${mat === '12x12' ? '12 × 12' : '12 × 24'} in mat.`,
+      tone: 'info',
+    });
+  }, [editorDispatch, exportReadiness, state]);
+
+  const handleQuickFix = useCallback((action: QuickFixAction) => {
+    if (action === 'auto-fix-spacing') handleAutoFixSpacing();
+    else handleFitToMat(action === 'fit-12x12' ? '12x12' : '12x24');
+  }, [handleAutoFixSpacing, handleFitToMat]);
 
   const applyPendingGeneratorAction = useCallback((mode: 'replace' | 'keep' | 'cancel') => {
     if (!pendingGeneratorAction) return;
@@ -1477,6 +1538,9 @@ export default function EditorShell() {
         confirmLabel: 'Review issues',
         confirmTone: 'default',
         icon: 'warning',
+        tertiaryAction: hasSpacingIssues(exportReadiness)
+          ? { label: 'Fix spacing automatically', onClick: () => { setPendingDialog(null); handleAutoFixSpacing(); } }
+          : undefined,
       });
       return;
     }
@@ -1484,7 +1548,7 @@ export default function EditorShell() {
     // Ready, warnings-only and "needs calibration" all go through the export dialog,
     // which previews the file and shows size, mat fit, warnings and calibration state.
     setExportDialogOpen(true);
-  }, [effectiveTemplate, exportStatusSummary]);
+  }, [effectiveTemplate, exportReadiness, exportStatusSummary, handleAutoFixSpacing]);
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
@@ -1760,6 +1824,9 @@ export default function EditorShell() {
           dispatch={editorDispatch}
           outlineFontStatus={outlineFontStatus}
           exportReadiness={exportReadiness}
+          stones={effectiveTemplate?.stones}
+          onQuickFix={handleQuickFix}
+          canResize={canResize}
           mobilePanel={mobilePanel}
         />
       </div>
@@ -1860,12 +1927,18 @@ function StudioContextPanel({
   dispatch,
   outlineFontStatus,
   exportReadiness,
+  stones,
+  onQuickFix,
+  canResize,
   mobilePanel,
 }: {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus: OutlineFontStatus;
   exportReadiness: ExportReadinessResult | null;
+  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
+  onQuickFix: (action: import('./quickFixItems').QuickFixAction) => void;
+  canResize: boolean;
   /** Phones/tablets: which bottom-bar panel is open. `'none'` on desktop, where both tabs are visible. */
   mobilePanel: 'none' | 'tools' | 'design' | 'inspect';
 }) {
@@ -1908,6 +1981,9 @@ function StudioContextPanel({
           mode={tab}
           outlineFontStatus={outlineFontStatus}
           exportReadiness={tab === 'inspector' ? exportReadiness : null}
+          stones={tab === 'inspector' ? stones : undefined}
+          onQuickFix={onQuickFix}
+          canResize={canResize}
         />
       </div>
     </aside>

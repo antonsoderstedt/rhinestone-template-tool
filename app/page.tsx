@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
 import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
+import RecentDesigns from './components/RecentDesigns';
 import { buildFontLaunchUrl } from './lib/fontLaunch';
 
 const EXAMPLE_FONT_ID = 'archivo-black';
@@ -81,6 +82,8 @@ export default function Home() {
           );
         })}
       </section>
+
+      <RecentDesigns />
 
       <section aria-label="How it works" className="rounded-[2rem] border border-border/80 bg-surface-raised p-6">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">How it works</h2>

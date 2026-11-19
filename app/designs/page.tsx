@@ -26,6 +26,7 @@ import {
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
 import PromptDialog from '../components/PromptDialog';
+import BackupPanel from '../components/BackupPanel';
 import UndoToast from '../components/UndoToast';
 import { formatRelativeTime } from '../lib/relativeTime';
 import {
@@ -281,6 +282,13 @@ export default function DesignsPage() {
           <WorkspaceMetricCard label="HTV" value={vault.htvDesigns.length} />
           <WorkspaceMetricCard label="Calibration" value={calibrationGate.approvedCalibrationCount > 0 ? `${calibrationGate.approvedCalibrationCount} approved` : 'Pending'} />
         </section>
+
+        <BackupPanel
+          onRestored={() => {
+            setVault(readWorkspaceVault());
+            void new LocalStorageTemplateLibraryRepository().list().then((record) => setRhinestoneDesigns(record.userTemplates));
+          }}
+        />
 
         <WorkspaceSurface className="p-5">
           <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">

@@ -10,6 +10,7 @@ import type { RhinestoneTemplate, StoneSizeId } from '../types/index';
 import { validateRhinestoneTemplate } from '../validation/templateValidation';
 import { getMaterialProfile, getDefaultMaterialProfile, isHolePresetProvisional } from '../profiles/materialProfiles';
 import { getTemplatePhysicalSize } from '../sizing/templateSizing';
+import { HIGH_STONE_COUNT_THRESHOLD, getMatFit } from '../sizing/matFit';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,8 @@ const EXPORT_ISSUE_SUGGESTIONS: Record<string, string> = {
   REQUIRES_CALIBRATION: 'Cut a calibration sheet and confirm the stone-to-hole fit before production use.',
   UNSUPPORTED_STONE_SIZE: 'Switch to a material-supported stone size or validate the fit with a test cut.',
   PROVISIONAL_HOLE_PRESET: 'Run a calibration sheet and confirm the actual hole size before moving into production.',
+  HIGH_STONE_COUNT: 'Use a larger stone size or a smaller design, or split the design into parts that are cut and weeded one at a time.',
+  EXCEEDS_MAT_SIZE: 'Make the design smaller (Fit to mat does it for you) or split it into parts.',
   TEXT_LABELS_NOT_CRICUT_SAFE: 'Turn labels off or verify that the exported SVG opens correctly in Cricut Design Space before cutting.',
 };
 
@@ -233,6 +236,31 @@ export function checkExportReadiness(
         `Template height (${physicalSize.heightMm.toFixed(1)} mm) is below minimum (${minHeightMm} mm).`,
       suggestion: 'Increase the height or lower the minimum threshold for this material.',
     });
+  }
+
+  // ── Very large designs ────────────────────────────────────────────────────
+  if (template.stones.length > HIGH_STONE_COUNT_THRESHOLD) {
+    issues.push({
+      severity: 'warning',
+      code: 'HIGH_STONE_COUNT',
+      message:
+        `This design has ${template.stones.length} stones (more than ${HIGH_STONE_COUNT_THRESHOLD}). ` +
+        `It will take a long time to cut and weed, and a lot of stones to set.`,
+      suggestion: EXPORT_ISSUE_SUGGESTIONS.HIGH_STONE_COUNT,
+    });
+  }
+
+  if (template.stones.length > 0) {
+    const matFit = getMatFit(physicalSize.widthMm, physicalSize.heightMm);
+    if (matFit.status === 'too-large') {
+      issues.push({
+        severity: 'warning',
+        code: 'EXCEEDS_MAT_SIZE',
+        message:
+          `The design is ${physicalSize.widthMm.toFixed(1)} × ${physicalSize.heightMm.toFixed(1)} mm. ${matFit.message}`,
+        suggestion: EXPORT_ISSUE_SUGGESTIONS.EXCEEDS_MAT_SIZE,
+      });
+    }
   }
 
   // ── Calibration warning ───────────────────────────────────────────────────

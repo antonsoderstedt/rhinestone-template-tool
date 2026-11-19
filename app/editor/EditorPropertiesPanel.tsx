@@ -19,6 +19,9 @@ import {
 } from '@/src/lib/rhinestone-engine/index';
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import ExportReadinessPanel from '../components/ExportReadinessPanel';
+import QuickFixes from './QuickFixes';
+import StoneEstimateCard from './StoneEstimateCard';
+import { getQuickFixes, type QuickFixAction } from './quickFixItems';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
 import DensityControl from './controls/DensityControl';
@@ -46,6 +49,11 @@ interface EditorPropertiesPanelProps {
   mode: 'source' | 'inspector';
   outlineFontStatus?: OutlineFontStatus;
   exportReadiness?: ExportReadinessResult | null;
+  /** Stones of the design as it will be exported, for the "stones to buy" estimate. */
+  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
+  /** One-click fixes (spacing, fit to mat). `canResize` is false for hand-made designs. */
+  onQuickFix?: (action: QuickFixAction) => void;
+  canResize?: boolean;
 }
 
 interface ToolPropertiesProps {
@@ -86,7 +94,7 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, stones, onQuickFix, canResize = false }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
@@ -126,8 +134,15 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
   }
 
   if (mode === 'inspector') {
+    const quickFixes = getQuickFixes(exportReadiness ?? null);
     return (
       <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
+        {quickFixes.length > 0 && onQuickFix && (
+          <PanelSection title="Quick fixes" description="Problems found in this design, and one-click ways to fix them.">
+            <QuickFixes items={quickFixes} canResize={canResize} onAction={onQuickFix} />
+          </PanelSection>
+        )}
+
         <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
@@ -169,6 +184,12 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
             step={0.5}
           />
         </PanelSection>
+
+        {stones && stones.length > 0 && (
+          <PanelSection title="Stones to buy" description="How many stones and packs this design needs." defaultOpen={false}>
+            <StoneEstimateCard stones={stones} />
+          </PanelSection>
+        )}
 
         {exportReadiness && (
           <PanelSection title="Export readiness" description="Cricut-safe checks for the current design." defaultOpen={false}>

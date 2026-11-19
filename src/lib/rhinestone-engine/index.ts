@@ -188,11 +188,34 @@ export {
   estimateTemplatePhysicalSizeFromStones,
 } from './sizing/templateSizing';
 
+// Mat fit (Cricut mats) and fit-to-mat scaling
+export type { MatFit, MatFitStatus, MatId, MatArea, FitToMatResult } from './sizing/matFit';
+export {
+  CRICUT_MAT_12X12_USABLE_MM,
+  CRICUT_MAT_12X24_USABLE_MM,
+  HIGH_STONE_COUNT_THRESHOLD,
+  MAT_AREAS,
+  MAT_LABELS,
+  getMatFit,
+  getFitToMatScale,
+} from './sizing/matFit';
+
+// Stone usage / cost estimate
+export type { StoneUsageInput, StoneUsageOptions, StoneUsageLine, StoneUsageEstimate } from './estimate/stoneEstimate';
+export {
+  STONES_PER_GROSS,
+  DEFAULT_WASTE_PERCENT,
+  MAX_WASTE_PERCENT,
+  estimateStoneUsage,
+} from './estimate/stoneEstimate';
+
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';
 export type { ResolveStoneSpacingOptions, ResolveStoneSpacingStrategy } from './spacing/resolveStoneSpacing';
 export { resolveStoneSpacing } from './spacing/resolveStoneSpacing';
+export type { AutoFixSpacingOptions, AutoFixSpacingResult } from './spacing/autoFix';
+export { autoFixSpacing } from './spacing/autoFix';
 
 // Export readiness / Cricut QA
 export type {

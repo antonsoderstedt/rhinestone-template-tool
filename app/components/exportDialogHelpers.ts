@@ -3,55 +3,17 @@
  * All measurements are in millimetres.
  */
 
-/**
- * Usable cutting areas of the standard Cricut mats. A mat is 12 in wide but the
- * machine only cuts ~11.5 in across it; 12x24 mats cut ~11.5 x 23.5 in.
- */
-export const CRICUT_MAT_12X12_USABLE_MM = { shortSide: 292.1, longSide: 292.1 } as const;
-export const CRICUT_MAT_12X24_USABLE_MM = { shortSide: 292.1, longSide: 596.9 } as const;
+import {
+  CRICUT_MAT_12X12_USABLE_MM,
+  CRICUT_MAT_12X24_USABLE_MM,
+  getMatFit,
+  type MatFit,
+  type MatFitStatus,
+} from '@/src/lib/rhinestone-engine/index';
 
-export type MatFitStatus = 'fits-12x12' | 'fits-12x24' | 'too-large' | 'unknown';
-
-export interface MatFit {
-  status: MatFitStatus;
-  /** True when the design only fits after turning it 90 degrees. */
-  needsRotation: boolean;
-  message: string;
-}
-
-function fitsWithin(widthMm: number, heightMm: number, area: { shortSide: number; longSide: number }) {
-  if (widthMm <= area.shortSide && heightMm <= area.longSide) return { fits: true, rotated: false };
-  if (heightMm <= area.shortSide && widthMm <= area.longSide) return { fits: true, rotated: true };
-  return { fits: false, rotated: false };
-}
-
-export function getMatFit(widthMm: number, heightMm: number): MatFit {
-  if (!Number.isFinite(widthMm) || !Number.isFinite(heightMm) || widthMm <= 0 || heightMm <= 0) {
-    return { status: 'unknown', needsRotation: false, message: 'Size unknown.' };
-  }
-
-  const small = fitsWithin(widthMm, heightMm, CRICUT_MAT_12X12_USABLE_MM);
-  if (small.fits) {
-    return { status: 'fits-12x12', needsRotation: small.rotated, message: 'Fits a 12 × 12 in mat.' };
-  }
-
-  const large = fitsWithin(widthMm, heightMm, CRICUT_MAT_12X24_USABLE_MM);
-  if (large.fits) {
-    return {
-      status: 'fits-12x24',
-      needsRotation: large.rotated,
-      message: large.rotated
-        ? 'Too big for a 12 × 12 in mat. Fits a 12 × 24 in mat when turned 90°.'
-        : 'Too big for a 12 × 12 in mat. Use a 12 × 24 in mat.',
-    };
-  }
-
-  return {
-    status: 'too-large',
-    needsRotation: false,
-    message: 'Larger than a 12 × 24 in mat (usable area about 292 × 597 mm). Make the design smaller or split it into parts.',
-  };
-}
+// The mat definitions live in the engine so the readiness check and this dialog agree.
+export { CRICUT_MAT_12X12_USABLE_MM, CRICUT_MAT_12X24_USABLE_MM, getMatFit };
+export type { MatFit, MatFitStatus };
 
 const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|\u0000-\u001f]+/g;
 
