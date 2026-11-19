@@ -269,8 +269,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         onPointerUp={handlePointerUp}
         onPointerDown={handleBackgroundPointerDown}
       >
-        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} fill="#202024" />
-        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill="#2a2b31" stroke="rgba(255,255,255,0.08)" />
+        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} style={{ fill: 'var(--studio-surface)' }} />
+        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} style={{ fill: 'var(--studio-surface-2)', stroke: 'var(--studio-border)' }} />
 
         {placementLayers.map((layer) => {
           if (!layer.visible) return null;

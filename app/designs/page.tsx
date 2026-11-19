@@ -265,7 +265,7 @@ export default function DesignsPage() {
                 <button
                   type="button"
                   onClick={() => router.push(recoveryAction.href)}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-600),var(--color-accent-600))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
                 >
                   <FolderHeart className="h-4 w-4" />
                   {recoveryAction.label}
@@ -375,7 +375,7 @@ export default function DesignsPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <button
                   onClick={() => router.push(design.studio === 'rhinestone' ? `/rhinestone?designId=${design.id}` : `/htv?designId=${design.id}`)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-500),var(--color-accent-500))] px-4 py-3 text-sm font-semibold text-ink-inverse"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-600),var(--color-accent-600))] px-4 py-3 text-sm font-semibold text-ink-inverse"
                 >
                   <FolderHeart className="h-4 w-4" />
                   Open and continue

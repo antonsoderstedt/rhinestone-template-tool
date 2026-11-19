@@ -107,8 +107,8 @@ function PackItemCard({ item }: { item: PackItemView }) {
       <div
         className={`px-4 py-2 text-xs font-semibold flex items-center gap-1.5 ${
           readiness.ready
-            ? 'bg-success-500 text-ink-inverse'
-            : 'bg-danger-500 text-ink-inverse'
+            ? 'bg-success-600 text-ink-inverse'
+            : 'bg-danger-600 text-ink-inverse'
         }`}
       >
         {readiness.ready ? '✓ Ready' : '✗ Has errors'}

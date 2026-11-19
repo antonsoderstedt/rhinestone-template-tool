@@ -1587,10 +1587,10 @@ export default function EditorCanvas({
         <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           <div>Click to place {state.manualTool.addStoneSize} stone</div>
           {state.manualTool.snapToGrid && (
-            <div className="mt-1 text-ink-muted">Snap: {state.manualTool.gridSnapSize}mm grid</div>
+            <div className="mt-1 text-[var(--studio-ink-muted)]">Snap: {state.manualTool.gridSnapSize}mm grid</div>
           )}
           {hoverPosition && (
-            <div className="mt-1 font-mono tabular-nums text-ink-muted">
+            <div className="mt-1 font-mono tabular-nums text-[var(--studio-ink-muted)]">
               X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
             </div>
           )}
@@ -1604,7 +1604,7 @@ export default function EditorCanvas({
       {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
         <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
-          <div className="mt-1 text-ink-muted">Delete or drag to move</div>
+          <div className="mt-1 text-[var(--studio-ink-muted)]">Delete or drag to move</div>
         </div>
       )}
     </div>

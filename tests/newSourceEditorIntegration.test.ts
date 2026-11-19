@@ -57,7 +57,7 @@ describe('main editor integration — rhinestone font', () => {
       }),
     );
     expect(html).toContain('aria-label="Stone Font"');
-    expect(html).toContain('bg-accent-500');
+    expect(html).toContain('bg-purple-600');
   });
 
   it('renders font, text, current registry fonts, and spacing controls', () => {

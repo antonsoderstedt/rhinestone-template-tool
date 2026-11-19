@@ -98,10 +98,10 @@ export default function EditorStatusBar({
         <span>My Designs: <span className="font-medium text-[var(--studio-ink-secondary)]">{activeLibraryName ?? 'Not saved yet'}</span></span>
         <span>Zoom: <span className="font-mono text-[var(--studio-ink-secondary)]">{Math.round(canvas.zoom * 100)}%</span></span>
         {canvas.showGrid && (
-          <span className="text-ink-muted">Grid: {canvas.gridSizeMm}mm</span>
+          <span className="text-[var(--studio-ink-muted)]">Grid: {canvas.gridSizeMm}mm</span>
         )}
         {canvas.showRulers && (
-          <span className="text-ink-muted">Rulers on</span>
+          <span className="text-[var(--studio-ink-muted)]">Rulers on</span>
         )}
       </div>
     </footer>

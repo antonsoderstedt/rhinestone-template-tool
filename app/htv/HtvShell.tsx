@@ -589,7 +589,7 @@ export default function HtvShell() {
           onDownload={handleExportDownload}
           onClose={() => setExportDialogOpen(false)}
         >
-          <label className="flex items-center gap-2 text-xs text-zinc-200">
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
               checked={htvExportOptions.mirror}
@@ -597,7 +597,7 @@ export default function HtvShell() {
             />
             Mirror horizontally (recommended for iron-on vinyl)
           </label>
-          <label className="flex items-center gap-2 text-xs text-zinc-200">
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
               checked={htvExportOptions.weedBorder}
@@ -605,7 +605,7 @@ export default function HtvShell() {
             />
             Weed border (cut line around the design)
           </label>
-          <label className="flex items-center gap-2 text-xs text-zinc-200">
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
               checked={htvExportOptions.registrationMarks}
@@ -621,7 +621,7 @@ export default function HtvShell() {
       {toast && (
         <div
           className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
-            toast.tone === 'success' ? 'bg-success-500 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-500 text-ink-inverse' : 'bg-danger-500 text-ink-inverse'
+            toast.tone === 'success' ? 'bg-success-600 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-600 text-ink-inverse' : 'bg-danger-600 text-ink-inverse'
           }`}
         >
           {toast.message}

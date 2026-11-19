@@ -29,8 +29,8 @@
   --color-surface-inverse: var(--color-sand-800);
 
   --color-ink: var(--color-sand-900);
-  --color-ink-secondary: var(--color-sand-600);
-  --color-ink-muted: var(--color-sand-500);
+  --color-ink-secondary: var(--color-sand-700); /* ≥ 7:1 on every surface */
+  --color-ink-muted: var(--color-sand-600); /* ≥ 4.5:1 on white/sand-50/sand-100 */
   --color-ink-inverse: #ffffff;
 
   --color-border: var(--color-sand-200);
@@ -56,19 +56,23 @@
   /* ─── Semantic states ───────────────────────────────────────────────────── */
   --color-success-50: #e7f7ee;
   --color-success-500: #1fa971;
-  --color-success-600: #178556;
+  --color-success-600: #11704a; /* ≥ 4.5:1 on success-50 */
+  --color-success-700: #0c5a3b;
 
   --color-warning-50: #fff6e5;
   --color-warning-500: #e8960b;
-  --color-warning-600: #bc7908;
+  --color-warning-600: #8a5700; /* ≥ 4.5:1 on warning-50 */
+  --color-warning-700: #6e4400;
 
   --color-danger-50: #fdeaea;
   --color-danger-500: #e4453b;
   --color-danger-600: #c22f26;
+  --color-danger-700: #9c2018;
 
   --color-info-50: #e9f3ff;
   --color-info-500: #2f8cf0;
-  --color-info-600: #1d6fd1;
+  --color-info-600: #1a62bb; /* ≥ 4.5:1 on info-50 */
+  --color-info-700: #144d94;
 
   /* ─── Shape ─────────────────────────────────────────────────────────────── */
   --radius-sm: 0.5rem;
@@ -123,7 +127,7 @@ body {
   --studio-ink: #f4f4f5;
   --studio-ink-secondary: #d4d4d8;
   --studio-ink-muted: #a1a1aa;
-  --studio-ink-subtle: #71717a;
+  --studio-ink-subtle: #909099; /* ≥ 4.5:1 on the dark surfaces */
   --studio-border: rgba(255, 255, 255, 0.1);
   --studio-border-strong: rgba(255, 255, 255, 0.2);
   --studio-hover-overlay: rgba(255, 255, 255, 0.1);
@@ -138,8 +142,8 @@ body {
   --studio-well: #faf8f5;
   --studio-ink: #241f17;
   --studio-ink-secondary: #3a3226;
-  --studio-ink-muted: #756757;
-  --studio-ink-subtle: #96876f;
+  --studio-ink-muted: #5f5445;
+  --studio-ink-subtle: #6e6150; /* ≥ 4.5:1 on every light surface */
   --studio-border: rgba(36, 31, 23, 0.1);
   --studio-border-strong: rgba(36, 31, 23, 0.18);
   --studio-hover-overlay: rgba(36, 31, 23, 0.06);

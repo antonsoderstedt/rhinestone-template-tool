@@ -193,7 +193,7 @@ export default function TemplateLibraryPanel({
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--studio-border)] px-4 py-2">
           <button
             onClick={onSaveCurrent}
-            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400"
+            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-500"
           >
             <Save className="h-3.5 w-3.5" />
             Save to My Designs

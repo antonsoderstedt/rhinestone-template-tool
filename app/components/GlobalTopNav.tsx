@@ -235,7 +235,7 @@ export default function GlobalTopNav() {
           </Link>
           <Link
             href="/rhinestone"
-            className="rounded-md bg-violet-500 px-3.5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-violet-400"
+            className="rounded-md bg-violet-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-violet-500"
           >
             Open Studio
           </Link>

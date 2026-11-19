@@ -2,8 +2,10 @@
  * Fill mode and pattern control for SVG and polyline templates
  */
 
+import { useId } from 'react';
 import type { TemplateFillMode, FillPattern } from '@/src/lib/rhinestone-engine/index';
-import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+import { editorSelectClassName } from './controlStyles';
+import FieldHeader from './FieldHeader';
 
 interface FillModeControlProps {
   fillMode: TemplateFillMode;
@@ -33,15 +35,22 @@ export default function FillModeControl({
   onFillModeChange,
   onFillPatternChange,
 }: FillModeControlProps) {
+  const modeId = useId();
+  const patternId = useId();
   const showPatternControl = fillMode === 'fill' || fillMode === 'outline-fill';
   const visibleModes = FILL_MODES.filter((mode) => availableModes.includes(mode.value));
   const visiblePatterns = FILL_PATTERNS.filter((pattern) => availablePatterns.includes(pattern.value));
 
   return (
     <div className="space-y-3">
-      <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Fill Mode</span>
+      <div className="flex flex-col gap-1.5">
+        <FieldHeader
+          label="Fill mode"
+          htmlFor={modeId}
+          help="Outline puts stones along the edges only. Fill covers the inside. Outline + Fill does both."
+        />
         <select
+          id={modeId}
           value={fillMode}
           onChange={(e) => onFillModeChange(e.target.value as TemplateFillMode)}
           className={editorSelectClassName}
@@ -52,12 +61,17 @@ export default function FillModeControl({
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
       {showPatternControl && (
-        <label className="flex flex-col gap-1.5">
-          <span className={editorFieldLabelClassName}>Fill Pattern</span>
+        <div className="flex flex-col gap-1.5">
+          <FieldHeader
+            label="Fill pattern"
+            htmlFor={patternId}
+            help="Grid lines stones up in rows and columns. Offset grid staggers every other row so stones pack closer together."
+          />
           <select
+            id={patternId}
             value={fillPattern}
             onChange={(e) => onFillPatternChange(e.target.value as FillPattern)}
             className={editorSelectClassName}
@@ -68,7 +82,7 @@ export default function FillModeControl({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       )}
     </div>
   );

@@ -75,8 +75,8 @@ import {
   validatePersistedCanvasView,
 } from './canvasCoordinates';
 
-/** Deleting at least this many stones in one step shows an Undo toast. */
-const BULK_DELETE_UNDO_THRESHOLD = 10;
+/** Deleting at least this many stones in one step shows an Undo toast (every delete does). */
+const DELETE_UNDO_THRESHOLD = 1;
 
 export default function EditorShell() {
   const { theme, toggleTheme } = useStudioTheme();
@@ -141,8 +141,8 @@ export default function EditorShell() {
     return `rhinestone-canvas-view:${normalizedName}`;
   }, [state.projectName]);
 
-  // A bulk delete (e.g. Select all + Delete) is easy to do by accident, so
-  // offer a one-click Undo. History already supports undo; this only surfaces it.
+  // Deleting stones is easy to do by accident (and Select all + Delete removes everything),
+  // so every delete offers a one-click Undo. History already supports undo; this only surfaces it.
   const editableStoneCount = state.editableTemplate.stones.length;
   const historyDepth = state.history.past.length;
   const previousStoneStatsRef = useRef({ stoneCount: editableStoneCount, historyDepth });
@@ -150,9 +150,9 @@ export default function EditorShell() {
     const previous = previousStoneStatsRef.current;
     previousStoneStatsRef.current = { stoneCount: editableStoneCount, historyDepth };
     const removed = previous.stoneCount - editableStoneCount;
-    if (removed >= BULK_DELETE_UNDO_THRESHOLD && historyDepth === previous.historyDepth + 1) {
+    if (removed >= DELETE_UNDO_THRESHOLD && historyDepth === previous.historyDepth + 1) {
       setToast({
-        message: `Deleted ${removed} stones.`,
+        message: removed === 1 ? 'Deleted 1 stone.' : `Deleted ${removed} stones.`,
         tone: 'info',
         action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
       });
@@ -796,6 +796,9 @@ export default function EditorShell() {
     if (shouldPromptForGeneratorMutation(state, action)) {
       setPendingGeneratorAction(action);
       return;
+    }
+    if (action.type === 'CONVERT_TO_EDITABLE' && !state.editableTemplate.isEditable) {
+      setToast({ message: 'You can now select and move individual stones. Changing the text or artwork settings will ask before replacing your edits.', tone: 'info' });
     }
     dispatch(action);
   }, [state]);

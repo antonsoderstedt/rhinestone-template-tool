@@ -552,7 +552,7 @@ export default function HtvGarment3D({ state }: { state: HtvState }) {
           <button
             type="button"
             onClick={retry}
-            className="rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400"
+            className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-500"
           >
             Reload 3D preview
           </button>

@@ -2086,7 +2086,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <div className="rounded-md border border-violet-400/30 bg-violet-500/15 p-4">
           <button
             onClick={() => dispatch({ type: 'CONVERT_TO_EDITABLE' })}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-400"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500"
             title="Convert the generated output into individually editable stones"
           >
             <Hand className="h-4 w-4" />

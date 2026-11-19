@@ -32,8 +32,8 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
     <aside
       className={
         isHorizontal
-          ? 'flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/90 px-2 py-2 shadow-sm backdrop-blur-sm'
-          : 'flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-2'
+          ? 'flex items-center gap-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] px-2 py-2 shadow-sm backdrop-blur-sm'
+          : 'flex flex-col gap-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-well)] p-2'
       }
       aria-label={isHorizontal ? 'Canvas and source tools' : 'Source tools'}
     >
@@ -44,8 +44,8 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
           aria-label={tool.label}
           className={`group flex ${isHorizontal ? 'h-11 min-w-[72px] flex-col px-3' : 'h-14 w-full'} items-center justify-center rounded-lg text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${
             activeTool === tool.id
-              ? 'bg-accent-500 bg-purple-600 text-ink-inverse shadow-md shadow-accent-950/30'
-              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              ? 'bg-purple-600 text-white shadow-md'
+              : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'
           }`}
           title={[tool.tooltip, getToolShortcutLabel(tool.id)].filter(Boolean).join(' • ')}
         >
@@ -55,8 +55,8 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
       ))}
 
       {isHorizontal && (
-        <div className="ml-2 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
-          <Hand className="h-3.5 w-3.5 text-zinc-500" />
+        <div className="ml-2 flex items-center gap-2 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-xs text-[var(--studio-ink-muted)]">
+          <Hand className="h-3.5 w-3.5 text-[var(--studio-ink-subtle)]" />
           <span>Pan with Space/middle mouse or wheel • Ctrl/Cmd + wheel zooms</span>
         </div>
       )}

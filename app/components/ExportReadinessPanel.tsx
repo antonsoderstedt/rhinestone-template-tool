@@ -25,9 +25,9 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
   const confidence = getExportConfidence(summary);
   const confidenceTextClass = confidence.tone === 'success' ? 'text-success-600' : confidence.tone === 'danger' ? 'text-danger-600' : 'text-warning-600';
   const statusBarClass = confidence.tone === 'success'
-    ? 'bg-success-500 text-ink-inverse'
+    ? 'bg-success-600 text-ink-inverse'
     : confidence.tone === 'danger'
-      ? 'bg-danger-500 text-ink-inverse'
+      ? 'bg-danger-600 text-ink-inverse'
       : 'bg-warning-50 text-warning-700 border-b border-warning-500/30';
   const statusIcon = confidence.tone === 'success' ? '✓' : confidence.tone === 'danger' ? '✗' : '!';
 

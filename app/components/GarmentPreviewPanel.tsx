@@ -72,7 +72,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
             <div>
               <h2 id="garment-preview-title" className="text-sm font-semibold">Garment preview</h2>
               <p className="mt-0.5 text-xs text-ink-muted">
-                Flat mockup — swap in real product photos once you have them.
+                Shows where your design sits on a garment and roughly how big it is. Sizes are approximate — measure the real garment before cutting.
               </p>
             </div>
           </div>

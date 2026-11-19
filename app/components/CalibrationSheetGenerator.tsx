@@ -79,8 +79,8 @@ export default function CalibrationSheetGenerator() {
           correct diameter for your specific machine and material batch.
         </p>
         <p>
-          Record that offset as the <span className="font-mono text-xs">kerfCompensationMm</span> for
-          your material profile.
+          Use that hole diameter in the next step. The difference from the standard value is your
+          <strong> blade cut offset</strong> — how much larger or smaller than designed your machine actually cuts.
         </p>
       </div>
 
