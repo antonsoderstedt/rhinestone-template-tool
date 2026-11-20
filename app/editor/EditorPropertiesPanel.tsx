@@ -126,7 +126,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               </div>
             </PanelSection>
 
-            <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
+            <PanelSection title={getToolTitle(sourceTool)}>
               {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}

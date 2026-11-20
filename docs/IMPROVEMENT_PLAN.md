@@ -109,7 +109,8 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | J6 colour layers, J7 feasibility, J8 centre line, J9 fill, J10 contour, J11 one spacing rule | **Done** (ADR 0021): one pipeline, 100 % cuttable on the corpus |
 | J12 Artwork panel | **Done in part**: three looks, colour list, advice; preview of the source behind the stones and a look gallery with thumbnails remain |
 | J13 raster into the same pipeline, J14 raster controls | **Done** (ADR 0021) |
-| J15 elements model, phases 3-7 | Next |
+| A2 panel boilerplate removed ("Driven by generator settings", "These settings control the generated baseline…") | **Done** |
+| J15 elements model, rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases
 

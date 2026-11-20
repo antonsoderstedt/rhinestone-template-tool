@@ -113,7 +113,7 @@ export function getEditableStatusCopy(isEditable: boolean): StatusCopy {
       }
     : {
         label: 'Generated',
-        description: 'Driven by generator settings.',
+        description: 'Changes to the settings below update the design.',
         actionHint: 'Adjust the source settings or make the result editable to fine-tune stones.',
       };
 }

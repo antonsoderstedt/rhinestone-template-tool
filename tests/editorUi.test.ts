@@ -41,7 +41,7 @@ describe('editorUi helpers', () => {
   it('returns clear Generated and Editable status copy', () => {
     expect(getEditableStatusCopy(false)).toEqual({
       label: 'Generated',
-      description: 'Driven by generator settings.',
+      description: 'Changes to the settings below update the design.',
       actionHint: 'Adjust the source settings or make the result editable to fine-tune stones.',
     });
 
