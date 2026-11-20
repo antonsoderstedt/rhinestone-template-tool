@@ -16,9 +16,9 @@
  * whole garment.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
 import { getGarmentColor, getPrintAreaMm, normalizeGarmentType, type SelectableGarmentType } from '../components/garmentPreview/garmentCatalog';
 import type { GarmentSize } from '../components/garmentPreview/garmentCatalog';
@@ -26,6 +26,7 @@ import { HTV_WORKSPACE_SIZE_MM, polylinesToPathD } from './htvGeometry';
 import { getHtvColor } from './htvMaterialCatalog';
 import { loadOutlineFont, layoutTextToOpenTypePolylines, type Polyline } from '@/src/lib/rhinestone-engine/index';
 import type { HtvLayer, HtvState } from './HtvState';
+import { describe3dFailure, isWebglAvailable, type Preview3dFailure } from './webglSupport';
 
 const TEXTURE_PX = 768;
 
@@ -510,58 +511,124 @@ function useWebglContextRecovery() {
     canvasEl.addEventListener('webglcontextrestored', handleRestored);
   }, []);
 
-  const retry = useCallback(() => {
+  const remount = useCallback(() => {
     setLost(false);
     setRemountKey((k) => k + 1);
   }, []);
 
-  return { lost, remountKey, onCreated, retry };
+  return { lost, remountKey, onCreated, remount };
 }
 
-export default function HtvGarment3D({ state }: { state: HtvState }) {
-  const { canvas: textureCanvas, texture, markDirty } = useMutableCanvasTexture();
-  const { lost, remountKey, onCreated, retry } = useWebglContextRecovery();
+/**
+ * Catches anything the 3D scene throws while rendering — most importantly the
+ * WebGL context failing to be created, and a garment model failing to load —
+ * so it turns into a message and the flat view instead of an empty pane.
+ */
+class Preview3dErrorBoundary extends Component<{ onError: (error: Error) => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
 
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+/** Models that failed once stay failed in drei's cache; clearing them is what lets "Retry 3D" actually retry. */
+const clearGltfCache = useGLTF.clear;
+
+function LoadingBadge() {
+  const { active, progress } = useProgress();
+  if (!active) return null;
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 30%, #2c2c33, #17171a 72%)' }}>
-      <Canvas
-        key={remountKey}
-        camera={{ position: [0, 0.05, 3.4], fov: 30 }}
-        dpr={1}
-        gl={{ powerPreference: 'low-power', antialias: true }}
-        onCreated={onCreated}
-      >
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[3, 5, 5]} intensity={1.2} />
-        <directionalLight position={[-4, 1.5, -3]} intensity={0.35} />
-        <SlowSpin spinning={false}>
-          <GarmentMesh state={state} texture={texture} />
-        </SlowSpin>
-        <OrbitControls
-          enablePan={false}
-          minDistance={2.1}
-          maxDistance={6}
-          minPolarAngle={Math.PI / 3.6}
-          maxPolarAngle={Math.PI / 1.65}
-        />
-      </Canvas>
-      <FrontDesignRasterizer state={state} canvas={textureCanvas} onDraw={markDirty} />
-      {lost ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--studio-well)]/90">
-          <p className="text-sm text-[var(--studio-ink-secondary)]">The 3D preview lost its graphics context.</p>
+    <div role="status" className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/60 px-3 py-1 text-xs font-medium text-white">
+      Loading 3D model… {Math.round(progress)}%
+    </div>
+  );
+}
+
+/**
+ * @param fallback What to show when 3D cannot run — the flat garment view, so the
+ *   user can still see their design on the garment.
+ */
+export default function HtvGarment3D({ state, fallback }: { state: HtvState; fallback: ReactNode }) {
+  const { canvas: textureCanvas, texture, markDirty } = useMutableCanvasTexture();
+  const { lost, remountKey, onCreated, remount } = useWebglContextRecovery();
+  // Only mounted after the user opens the 3D tab (never server-rendered), so probing during init is safe.
+  const [webglAvailable, setWebglAvailable] = useState(() => (typeof document === 'undefined' ? true : isWebglAvailable()));
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  const failure: Preview3dFailure | null = !webglAvailable ? 'unsupported' : renderError !== null ? 'error' : lost ? 'lost' : null;
+
+  const retry = useCallback(() => {
+    for (const url of Object.values(REAL_MODEL_URL)) if (url) clearGltfCache(url);
+    setRenderError(null);
+    setWebglAvailable(isWebglAvailable());
+    remount();
+  }, [remount]);
+
+  const handleRenderError = useCallback((error: Error) => {
+    setRenderError(error.message || 'unknown error');
+  }, []);
+
+  if (failure) {
+    return (
+      <div className="relative h-full w-full" data-testid="htv-3d-fallback">
+        {fallback}
+        <div
+          role="status"
+          className="absolute left-1/2 top-3 z-10 flex w-max max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] px-4 py-2.5 shadow-lg"
+        >
+          <p className="max-w-md text-xs leading-5 text-[var(--studio-ink)]">
+            {describe3dFailure(failure, renderError)} Showing the flat garment view instead.
+          </p>
           <button
             type="button"
             onClick={retry}
-            className="rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400"
+            className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
-            Reload 3D preview
+            Retry 3D
           </button>
         </div>
-      ) : (
-        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/40 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">
-          Drag to rotate · scroll to zoom
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 30%, #2c2c33, #17171a 72%)' }}>
+      <Preview3dErrorBoundary key={remountKey} onError={handleRenderError}>
+        <Canvas
+          camera={{ position: [0, 0.05, 3.4], fov: 30 }}
+          dpr={1}
+          gl={{ powerPreference: 'low-power', antialias: true }}
+          onCreated={onCreated}
+        >
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[3, 5, 5]} intensity={1.2} />
+          <directionalLight position={[-4, 1.5, -3]} intensity={0.35} />
+          <SlowSpin spinning={false}>
+            <GarmentMesh state={state} texture={texture} />
+          </SlowSpin>
+          <OrbitControls
+            enablePan={false}
+            minDistance={2.1}
+            maxDistance={6}
+            minPolarAngle={Math.PI / 3.6}
+            maxPolarAngle={Math.PI / 1.65}
+          />
+        </Canvas>
+      </Preview3dErrorBoundary>
+      <FrontDesignRasterizer state={state} canvas={textureCanvas} onDraw={markDirty} />
+      <LoadingBadge />
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/40 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">
+        Drag to rotate · scroll to zoom
+      </div>
     </div>
   );
 }

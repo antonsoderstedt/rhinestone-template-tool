@@ -6,6 +6,7 @@ import type {
   TemplateCoverageMode,
 } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
+import FieldHeader from './FieldHeader';
 import {
   editorFieldLabelClassName,
   editorSegmentActiveClassName,
@@ -67,7 +68,10 @@ export default function PlacementModeControl({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <span className={editorFieldLabelClassName}>Coverage</span>
+        <FieldHeader
+          label="Coverage"
+          help="Where the stones go inside your shape: along the outline, inside it, both, or in repeated rings (Contour)."
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           {visibleCoverage.map((option) => (
             <button
@@ -79,7 +83,7 @@ export default function PlacementModeControl({
               title={option.help}
             >
               <div className="text-sm font-medium">{option.label}</div>
-              <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+              <p className="mt-1 text-xs text-ink-muted">{option.help}</p>
             </button>
           ))}
         </div>
@@ -87,8 +91,11 @@ export default function PlacementModeControl({
 
       {usesFillPattern && visiblePatterns.length > 0 && (
         <div className="space-y-2">
-          <span className={editorFieldLabelClassName}>Placement pattern</span>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <FieldHeader
+            label="Placement pattern"
+            help="How the inside is filled: regular rows (Default), staggered honeycomb-style rows (Hexagonal), or concentric rings (Radial)."
+          />
+          <div className="grid gap-2">
             {visiblePatterns.map((option) => (
               <button
                 key={option.value}
@@ -99,7 +106,7 @@ export default function PlacementModeControl({
                 title={option.help}
               >
                 <div className="text-sm font-medium">{option.label}</div>
-                <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+                <p className="mt-1 break-words text-xs text-ink-muted">{option.help}</p>
               </button>
             ))}
           </div>

@@ -188,9 +188,57 @@ export {
   estimateTemplatePhysicalSizeFromStones,
 } from './sizing/templateSizing';
 
+// Mat fit (Cricut mats) and fit-to-mat scaling
+export type { MatFit, MatFitStatus, MatId, MatArea, FitToMatResult } from './sizing/matFit';
+export {
+  CRICUT_MAT_12X12_USABLE_MM,
+  CRICUT_MAT_12X24_USABLE_MM,
+  HIGH_STONE_COUNT_THRESHOLD,
+  MAT_AREAS,
+  MAT_LABELS,
+  getMatFit,
+  getFitToMatScale,
+} from './sizing/matFit';
+
+// Stone usage / cost estimate
+export type { StoneUsageInput, StoneUsageOptions, StoneUsageLine, StoneUsageEstimate } from './estimate/stoneEstimate';
+export {
+  STONES_PER_GROSS,
+  DEFAULT_WASTE_PERCENT,
+  MAX_WASTE_PERCENT,
+  estimateStoneUsage,
+} from './estimate/stoneEstimate';
+
+// Splitting a design across several cutting mats
+export type { SplitMat, SplitOptions, DesignPart, SplitPlan } from './split/splitForMat';
+export { planSplitForMat, buildPartTemplate } from './split/splitForMat';
+
+// Artwork quality measurement
+export type { QualityStone, ArtworkQualityOptions, ArtworkQuality } from './quality/artworkQuality';
+export { measureArtworkQuality, measureMaskQuality, rasterizeSilhouette } from './quality/artworkQuality';
+export type { MaskQualityInput } from './quality/artworkQuality';
+
+// SVG artwork import and the row-based artwork layout
+export type { ImportedShape, SvgImportResult, SvgImportOptions } from './svg/svgImport';
+export { importSvgArtwork, findUnsafeSvgContent } from './svg/svgImport';
+export type { ArtworkLook, CreateArtworkTemplateOptions, ArtworkTemplateResult } from './artwork/artworkTemplate';
+export { createArtworkTemplate } from './artwork/artworkTemplate';
+export type { ArtworkLayer, ArtworkLayers, BuildLayersOptions } from './artwork/layers';
+export { buildArtworkLayers } from './artwork/layers';
+export type { RasterImage, RasterLayersOptions } from './artwork/rasterLayers';
+export { buildRasterLayers } from './artwork/rasterLayers';
+export type { FeasibilityReport, FeasibilityVerdict, StoneSizeFeasibility, FeasibilityOptions } from './artwork/feasibility';
+export { analyseFeasibility } from './artwork/feasibility';
+
 // Spacing / density controls
 export type { DensityPreset, GetDensitySpacingOptions, DensitySpacingResult } from './spacing/density';
 export { getDensitySpacing, getDensityPresetOptions } from './spacing/density';
+export type { ResolveStoneSpacingOptions, ResolveStoneSpacingStrategy } from './spacing/resolveStoneSpacing';
+export { resolveStoneSpacing } from './spacing/resolveStoneSpacing';
+export type { AutoFixSpacingOptions, AutoFixSpacingResult } from './spacing/autoFix';
+export { autoFixSpacing } from './spacing/autoFix';
+export type { ThinStonesOptions, ThinStonesResult, EnlargeToCuttableResult } from './spacing/thinStones';
+export { thinStonesToSpacing, hasOverlappingStones, enlargeToCuttableSpacing } from './spacing/thinStones';
 
 // Export readiness / Cricut QA
 export type {
@@ -224,9 +272,13 @@ export {
   getPreferredTextCoverageMode,
   getSupportedTextCoverageModes,
   isKnownOutlineFontId,
+  isAvailableOutlineFontId,
   getOutlineFontFaceCss,
 } from './textOutline/fontRegistry';
-export { loadOutlineFont, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
+export type { LoadOutlineFontOptions } from './textOutline/fontLoader';
+export { loadOutlineFont, findUnsupportedCharacters, clearOutlineFontCacheForTests, listCachedFontIds } from './textOutline/fontLoader';
+export type { FontInspection, FontIssue, FontIssueCode } from './textOutline/fontInspection';
+export { inspectFontBytes, repairFontBytes } from './textOutline/fontInspection';
 export type { OutlineTextAlign, OutlineTextStyle, CreateOutlineTextTemplateOptions } from './textOutline/outlineTextTemplate';
 export { createOutlineTextTemplate, createOutlineTextTemplateAsync } from './textOutline/outlineTextTemplate';
 export type { OpenTypeTextLayoutOptions } from './textOutline/openTypeGeometry';
@@ -277,6 +329,17 @@ export type { FillPlacementPattern, RadialPlacementSettings } from './fill/place
 export { generatePlacedFillStones } from './fill/placementPatterns';
 export type { ContourDirection, ContourCoverageOptions } from './fill/contourPlacement';
 export { createContourRhinestoneTemplate } from './fill/contourPlacement';
+
+// Asset library upload validation
+export type {
+  AssetUploadValidationCode,
+  AssetUploadValidationInput,
+  AssetUploadValidationResult,
+} from './assetLibrary/assetUploadValidation';
+export {
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+  validateAssetUpload,
+} from './assetLibrary/assetUploadValidation';
 
 // Manual Stone Editor
 export type {
@@ -349,6 +412,7 @@ export {
   TRW_STONE_SIZE_CALIBRATION,
   extractStonesFromGlyph,
   layoutRhinestoneFontText,
+  measureNativeStoneDiameterFontUnits,
 } from './rhinestoneFont/glyphExtraction';
 export type {
   CreateRhinestoneFontTemplateOptions,

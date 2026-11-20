@@ -526,6 +526,7 @@ export async function createLetterStencilTemplate(
   const template = createRhinestoneTemplate({
     id: 'letter-stencil-preview',
     name: `Letter Stencils: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`,
+    source: 'vendor',
     stones,
     widthMm,
     heightMm,

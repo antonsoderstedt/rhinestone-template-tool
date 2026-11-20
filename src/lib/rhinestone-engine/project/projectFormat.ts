@@ -147,6 +147,8 @@ export interface SvgUploadProjectState {
   placementPattern?: FillPlacementPattern;
   contourSettings?: ContourCoverageSettings;
   radialSettings?: RadialPlacementSettings;
+  /** Colours the user switched on or off in an uploaded artwork. */
+  layerRoles?: Record<string, 'stones' | 'ignore'>;
 }
 
 export interface SavedStone {
@@ -529,7 +531,20 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
     contourSettings: parseContourSettings(s.contourSettings, ctx),
     radialSettings: parseRadialSettings(s.radialSettings, ctx),
+    layerRoles: parseLayerRoles(s.layerRoles, ctx),
   };
+}
+
+function parseLayerRoles(value: unknown, ctx: string): Record<string, 'stones' | 'ignore'> | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value, `${ctx}.layerRoles`);
+  const roles: Record<string, 'stones' | 'ignore'> = {};
+  for (const [colour, role] of Object.entries(record)) {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) throw new Error(`[Project] ${ctx}.layerRoles has a key that is not a colour: ${colour}`);
+    if (role !== 'stones' && role !== 'ignore') throw new Error(`[Project] ${ctx}.layerRoles["${colour}"] must be "stones" or "ignore"`);
+    roles[colour.toLowerCase()] = role;
+  }
+  return roles;
 }
 
 function validateSavedStone(v: unknown, idx: number): SavedStone {
@@ -557,6 +572,41 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
     generatorId: 'manual-editor',
     stones: stonesRaw.map((item, i) => validateSavedStone(item, i)),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateSvgAlphabet(s: UnknownRecord): SvgAlphabetProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'svg-alphabet',
+    text: requireString(s, 'text', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
+    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateLetterStencil(s: UnknownRecord): LetterStencilProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'letter-stencil',
+    sourceType: requireEnum<'svg-alphabet' | 'rhinestone-font'>(s, 'sourceType', ctx, new Set(['svg-alphabet', 'rhinestone-font'])),
+    text: requireString(s, 'text', ctx),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    cardPaddingMm: requireFiniteNumber(s, 'cardPaddingMm', ctx),
+    cardCornerRadiusMm: requireFiniteNumber(s, 'cardCornerRadiusMm', ctx),
+    minCardWidthMm: requireFiniteNumber(s, 'minCardWidthMm', ctx),
+    layoutMode: requireEnum<'preview' | 'cut-sheet'>(s, 'layoutMode', ctx, new Set(['preview', 'cut-sheet'])),
+    cutSheetGapMm: requireFiniteNumber(s, 'cutSheetGapMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
   };
 }
@@ -640,6 +690,10 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateManualEditor(s);
     case 'rhinestone-font':
       return validateRhinestoneFont(s);
+    case 'svg-alphabet':
+      return validateSvgAlphabet(s);
+    case 'letter-stencil':
+      return validateLetterStencil(s);
     case 'template-import':
       return validateTemplateImport(s);
     default:

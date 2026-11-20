@@ -9,10 +9,12 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "audit:fonts": "tsx scripts/audit-fonts.ts",
     "generate:examples": "tsx scripts/generate-examples.ts",
     "scan:letter-assets": "tsx scripts/scan-letter-assets.ts",
     "curate:letter-assets": "tsx scripts/generate-letter-asset-curation.ts",
-    "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts"
+    "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts",
+    "quality": "tsx scripts/quality-report.ts"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -30,6 +32,8 @@
     "@fontsource/patua-one": "^5.3.0",
     "@fontsource/pirata-one": "^5.3.0",
     "@fontsource/righteous": "^5.3.0",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "class-variance-authority": "^0.7.1",
     "clipper-lib": "^6.4.2",
     "clsx": "^2.1.1",
@@ -37,10 +41,12 @@
     "next": "16.2.10",
     "opentype.js": "^2.0.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.3",
     "@types/clipper-lib": "^6.4.0",
     "@types/node": "^20",
     "@types/opentype.js": "^1.3.10",
@@ -48,6 +54,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",

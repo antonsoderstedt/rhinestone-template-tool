@@ -1,43 +1,40 @@
 import type { RhinestoneTemplate } from '../types/index';
-import { circleToStoneCircle } from '../geometry/circle';
-import { hasCircleCollisions, findOverlappingCirclePairs } from '../geometry/collision';
+import { distanceBetweenPoints } from '../geometry/distance';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+function getTemplateSource(template: RhinestoneTemplate): 'user' | 'vendor' | 'unknown' {
+  const source = template.source ?? (typeof template.metadata?.source === 'string' ? template.metadata.source : undefined);
+  if (source === 'vendor') return 'vendor';
+  if (source === 'user') return 'user';
+  return 'unknown';
+}
+
+function getStoneEdgeGapMm(a: RhinestoneTemplate['stones'][number], b: RhinestoneTemplate['stones'][number]): number {
+  const centerDistanceMm = distanceBetweenPoints(a.center, b.center);
+  const radiusSumMm = a.holeDiameterMm / 2 + b.holeDiameterMm / 2;
+  return centerDistanceMm - radiusSumMm;
+}
 
 export type TemplateValidationSeverity = 'error' | 'warning';
 
 export interface TemplateValidationIssue {
   severity: TemplateValidationSeverity;
-  /** Short machine-readable code for the issue type. */
   code: string;
   message: string;
-  /** IDs of the stones involved in the issue (if applicable). */
   stoneIds?: string[];
+  measuredGapMm?: number;
+  requiredGapMm?: number;
 }
 
 export interface TemplateValidationResult {
-  /** True when there are no issues with severity "error". */
   valid: boolean;
   issues: TemplateValidationIssue[];
 }
 
 export interface TemplateValidationOptions {
-  /**
-   * Minimum required gap between hole edges (mm).
-   * Passed to collision detection. Default: 0.
-   */
   minGapMm?: number;
-  /**
-   * Require all stone ids to be unique. Default: true.
-   */
   requireUniqueStoneIds?: boolean;
-  /**
-   * Require that no two stone circles overlap. Default: true.
-   */
   requireNoCollisions?: boolean;
 }
-
-// ─── Resolved options ─────────────────────────────────────────────────────────
 
 interface ResolvedValidationOptions {
   minGapMm: number;
@@ -53,16 +50,6 @@ function resolveOptions(opts: TemplateValidationOptions = {}): ResolvedValidatio
   };
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
-/**
- * Validates a RhinestoneTemplate and returns a structured result.
- *
- * A template is `valid` when it has no issues with severity `"error"`.
- * Warnings do not affect validity.
- *
- * Run this before exporting any template to SVG to catch errors early.
- */
 export function validateRhinestoneTemplate(
   template: RhinestoneTemplate,
   options: TemplateValidationOptions = {},
@@ -70,7 +57,6 @@ export function validateRhinestoneTemplate(
   const opts = resolveOptions(options);
   const issues: TemplateValidationIssue[] = [];
 
-  // ── Unit check ─────────────────────────────────────────────────────────────
   if (template.unit !== 'mm') {
     issues.push({
       severity: 'error',
@@ -79,7 +65,6 @@ export function validateRhinestoneTemplate(
     });
   }
 
-  // ── Non-empty id / name ────────────────────────────────────────────────────
   if (typeof template.id !== 'string' || template.id.trim().length === 0) {
     issues.push({
       severity: 'error',
@@ -96,25 +81,19 @@ export function validateRhinestoneTemplate(
     });
   }
 
-  // ── Per-stone checks ───────────────────────────────────────────────────────
   const seenIds = new Set<string>();
-
   for (let i = 0; i < template.stones.length; i++) {
     const stone = template.stones[i]!;
 
-    // Hole diameter
     if (typeof stone.holeDiameterMm !== 'number' || stone.holeDiameterMm <= 0) {
       issues.push({
         severity: 'error',
         code: 'INVALID_HOLE_DIAMETER',
-        message:
-          `Stone "${stone.id}" at index ${i} has invalid holeDiameterMm (${stone.holeDiameterMm}). ` +
-          `Must be a positive number.`,
+        message: `Stone "${stone.id}" at index ${i} has invalid holeDiameterMm (${stone.holeDiameterMm}). Must be a positive number.`,
         stoneIds: [stone.id],
       });
     }
 
-    // Duplicate IDs
     if (opts.requireUniqueStoneIds) {
       if (seenIds.has(stone.id)) {
         issues.push({
@@ -128,27 +107,43 @@ export function validateRhinestoneTemplate(
     }
   }
 
-  // ── Collision detection ────────────────────────────────────────────────────
   if (opts.requireNoCollisions && template.stones.length > 1) {
-    const circles = template.stones.map(circleToStoneCircle);
-    if (hasCircleCollisions(circles, opts.minGapMm)) {
-      const pairs = findOverlappingCirclePairs(circles, opts.minGapMm);
-      for (const [i, j] of pairs) {
-        const idA = template.stones[i]!.id;
-        const idB = template.stones[j]!.id;
-        issues.push({
-          severity: 'error',
-          code: 'STONE_COLLISION',
-          message:
-            `Stones "${idA}" and "${idB}" overlap (indices ${i} and ${j}). ` +
-            `Overlapping holes will tear the material.`,
-          stoneIds: [idA, idB],
-        });
+    const source = getTemplateSource(template);
+
+    for (let i = 0; i < template.stones.length; i++) {
+      for (let j = i + 1; j < template.stones.length; j++) {
+        const a = template.stones[i]!;
+        const b = template.stones[j]!;
+        const measuredGapMm = getStoneEdgeGapMm(a, b);
+        const requiredGapMm = opts.minGapMm;
+
+        if (measuredGapMm < 0) {
+          issues.push({
+            severity: 'error',
+            code: 'STONE_OVERLAP',
+            message: `Stones "${a.id}" and "${b.id}" are ${measuredGapMm.toFixed(3)} mm apart (minimum 0.00 mm). Overlapping holes will tear the material.`,
+            stoneIds: [a.id, b.id],
+            measuredGapMm,
+            requiredGapMm: 0,
+          });
+          continue;
+        }
+
+        if (measuredGapMm < requiredGapMm) {
+          const severity = source === 'vendor' ? 'warning' : 'error';
+          issues.push({
+            severity,
+            code: 'STONE_TIGHT_GAP',
+            message: `Stones "${a.id}" and "${b.id}" are ${measuredGapMm.toFixed(3)} mm apart (minimum ${requiredGapMm.toFixed(3)} mm).`,
+            stoneIds: [a.id, b.id],
+            measuredGapMm,
+            requiredGapMm,
+          });
+        }
       }
     }
   }
 
   const valid = issues.every((issue) => issue.severity !== 'error');
-
   return { valid, issues };
 }

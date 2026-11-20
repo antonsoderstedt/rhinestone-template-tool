@@ -2,9 +2,12 @@
  * Reusable density preset + custom spacing control
  */
 
+import { useId } from 'react';
 import type { DensityPreset } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
-import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+import { editorSelectClassName } from './controlStyles';
+import { GLOSSARY } from '../editorUi';
+import FieldHeader from './FieldHeader';
 
 interface DensityControlProps {
   densityPreset: DensityPreset;
@@ -27,11 +30,17 @@ export default function DensityControl({
   onDensityChange,
   onCustomSpacingChange,
 }: DensityControlProps) {
+  const selectId = useId();
   return (
     <div className="space-y-3">
-      <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Density</span>
+      <div className="flex flex-col gap-1.5">
+        <FieldHeader
+          label="Spacing"
+          htmlFor={selectId}
+          help={`${GLOSSARY.spacing} Safe and Loose leave more room, Dense packs stones tighter, Custom lets you type a distance.`}
+        />
         <select
+          id={selectId}
           value={densityPreset}
           onChange={(e) => onDensityChange(e.target.value as DensityPreset)}
           className={editorSelectClassName}
@@ -42,7 +51,7 @@ export default function DensityControl({
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
       {densityPreset === 'custom' && (
         <NumericInput

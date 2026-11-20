@@ -1,11 +1,11 @@
 export const workspaceInputClassName =
-  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm outline-none transition placeholder:text-ink-muted focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
+  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm transition placeholder:text-ink-muted focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
 
 export const workspaceSelectClassName =
-  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
+  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm transition focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
 
 export const workspaceTextAreaClassName =
-  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm outline-none transition placeholder:text-ink-muted focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
+  'w-full rounded-[1.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] px-4 py-3 text-sm text-ink shadow-sm transition placeholder:text-ink-muted focus:border-accent-300 focus:bg-surface-raised focus:ring-2 focus:ring-accent-100';
 
 export function WorkspacePage({
   children,
@@ -68,7 +68,7 @@ export function WorkspaceSurface({ children, className = '' }: { children: React
 export function WorkspaceMetricCard({ label, value, description }: { label: string; value: string | number; description?: string }) {
   return (
     <div className="rounded-[1.6rem] border border-border/80 bg-[rgba(255,255,255,0.86)] px-5 py-5 shadow-sm">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">{label}</div>
       <div className="mt-3 text-4xl font-semibold text-ink">{value}</div>
       {description ? <p className="mt-2 text-sm leading-6 text-ink-secondary">{description}</p> : null}
     </div>
@@ -84,7 +84,7 @@ export function WorkspaceEmptyState({
 }) {
   return (
     <section className="rounded-[2rem] border border-dashed border-border-strong bg-[rgba(255,255,255,0.72)] px-8 py-16 text-center shadow-sm">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace cue</div>
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace cue</div>
       <h2 className="mt-3 text-2xl font-semibold text-ink">{title}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-ink-secondary">{description}</p>
     </section>

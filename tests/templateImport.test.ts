@@ -49,6 +49,44 @@ describe('Template Import', () => {
       expect(result.ignoredElements).toBe(0);
     });
 
+    it('should import all circles when they are on a single line', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1"/><circle cx="20" cy="10" r="1"/><circle cx="30" cy="10" r="1"/><circle cx="40" cy="10" r="1"/><circle cx="50" cy="10" r="1"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(5);
+      expect(result.warnings.some((warning) => /No supported circular stone shapes/i.test(warning))).toBe(false);
+    });
+
+    it('should ignore self-closing groups without pushing transform state', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g id="self-close" transform="translate(10 20)" /><circle cx="15" cy="15" r="1" /></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(1);
+      expect(result.stones[0]!.center.x).toBeGreaterThanOrEqual(0);
+      expect(result.stones[0]!.center.y).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should import minified SVGs and mixed circular shapes across tags', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50"><circle cx="10" cy="10" r="1"/><ellipse cx="20" cy="10" rx="1" ry="1"/><path d="M 30 9 C 32 5, 35 5, 35 9 C 35 13, 32 15, 30 15 C 28 15, 25 13, 25 9 C 25 5, 28 5, 30 9 Z" fill="green"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(3);
+      expect(result.detectedColors).toContain('green');
+      expect(result.ignoredElements).toBe(0);
+    });
+
+    it('should report no supported shapes instead of silently succeeding', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"><rect x="0" y="0" width="10" height="10"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(0);
+      expect(result.warnings.some((warning) => warning.toLowerCase().includes('no supported circular stone shapes'))).toBe(true);
+    });
+
     it('should normalize stone positions to origin', () => {
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">

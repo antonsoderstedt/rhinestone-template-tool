@@ -28,6 +28,12 @@ export interface CanvasWorkspaceBounds {
   height: number;
 }
 
+export interface FitViewResult {
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
 export function calculateDisplayedCanvasViewBox(
   workspace: CanvasWorkspaceBounds,
   zoom: number,
@@ -43,6 +49,38 @@ export function calculateDisplayedCanvasViewBox(
   return {
     x: centerX - width / 2,
     y: centerY - height / 2,
+    width,
+    height,
+  };
+}
+
+/**
+ * Grows `viewBox` (about its centre) to the aspect ratio `widthOverHeight` of the element that
+ * draws it, never shrinking either side. The canvas SVG uses this as its `viewBox`, so the view box
+ * fills the element exactly: there are no letterbox bands, and screen ↔ mm conversion (which divides
+ * by the element's size) is exact on any screen shape, including a tall phone.
+ */
+/**
+ * Zoom limits for interactive zooming (buttons, wheel, pinch, shortcuts). The upper limit matches "fit to
+ * screen", which can need a high zoom for a small design on a big canvas (a 70 mm word on a phone is ~6x).
+ * Before this was shared, fit could produce a zoom above the 5x that the controls allowed, so the first
+ * pinch or wheel tick snapped the view back out.
+ */
+export const MIN_CANVAS_ZOOM = 0.1;
+export const MAX_CANVAS_ZOOM = 100;
+
+export function expandViewBoxToAspect(
+  viewBox: CanvasWorkspaceBounds,
+  widthOverHeight: number,
+): CanvasWorkspaceBounds {
+  if (!Number.isFinite(widthOverHeight) || widthOverHeight <= 0 || viewBox.width <= 0 || viewBox.height <= 0) {
+    return viewBox;
+  }
+  const width = Math.max(viewBox.width, viewBox.height * widthOverHeight);
+  const height = width / widthOverHeight;
+  return {
+    x: viewBox.x + viewBox.width / 2 - width / 2,
+    y: viewBox.y + viewBox.height / 2 - height / 2,
     width,
     height,
   };
@@ -172,6 +210,113 @@ export function calculateCanvasWorkspaceBounds(
     width,
     height,
   };
+}
+
+/**
+ * Keeps the design in reach. However the view is moved (wheel, drag, pinch, zoom about the cursor), the
+ * centre of what is shown may not go further than `overscan` of a screen beyond the design's edges, so
+ * the design can never be scrolled out of sight into empty space. Idempotent, and a view that already
+ * satisfies it (such as the one "fit to screen" produces) is returned unchanged.
+ */
+export function clampCanvasPan(args: {
+  workspace: CanvasWorkspaceBounds;
+  /** Bounds of the stones, or of the workspace when there are none. */
+  content: CanvasWorkspaceBounds;
+  zoom: number;
+  panX: number;
+  panY: number;
+  /** Width over height of the element that shows the view, when known. */
+  aspect?: number | null;
+  overscan?: number;
+}): { panX: number; panY: number } {
+  const { workspace, content, zoom, panX, panY, aspect = null, overscan = 0.3 } = args;
+  if (![panX, panY, zoom].every(Number.isFinite)) return { panX: 0, panY: 0 };
+
+  const base = calculateDisplayedCanvasViewBox(workspace, zoom, panX, panY);
+  const shown = aspect && aspect > 0 ? expandViewBoxToAspect(base, aspect) : base;
+  const centerX = shown.x + shown.width / 2;
+  const centerY = shown.y + shown.height / 2;
+
+  const clampedX = Math.min(Math.max(centerX, content.x - overscan * shown.width), content.x + content.width + overscan * shown.width);
+  const clampedY = Math.min(Math.max(centerY, content.y - overscan * shown.height), content.y + content.height + overscan * shown.height);
+
+  return {
+    panX: clampedX === centerX ? panX : workspace.x + workspace.width / 2 - clampedX,
+    panY: clampedY === centerY ? panY : workspace.y + workspace.height / 2 - clampedY,
+  };
+}
+
+export function calculateFitViewTransform(
+  workspace: CanvasWorkspaceBounds,
+  content: CanvasWorkspaceBounds,
+  viewport: { widthPx: number; heightPx: number },
+  options?: { margin?: number; minZoom?: number; maxZoom?: number },
+): FitViewResult {
+  const margin = options?.margin ?? 0.92;
+  const minZoom = options?.minZoom ?? 0.1;
+  const maxZoom = options?.maxZoom ?? 5;
+  const contentWidth = Math.max(content.width, 1e-6);
+  const contentHeight = Math.max(content.height, 1e-6);
+  const viewportWidth = Math.max(viewport.widthPx, 1);
+  const viewportHeight = Math.max(viewport.heightPx, 1);
+  const viewportAspect = viewportWidth / viewportHeight;
+  const contentAspect = contentWidth / contentHeight;
+
+  let viewBoxWidth: number;
+  let viewBoxHeight: number;
+  if (contentAspect >= viewportAspect) {
+    viewBoxWidth = contentWidth / margin;
+    viewBoxHeight = viewBoxWidth / viewportAspect;
+  } else {
+    viewBoxHeight = contentHeight / margin;
+    viewBoxWidth = viewBoxHeight * viewportAspect;
+  }
+
+  // The canvas shows `expandViewBoxToAspect(workspace / zoom, viewportAspect)`, whose width is
+  // max(workspace.width, workspace.height * aspect) / zoom. Solve for the zoom that makes it
+  // exactly the width needed to hold the content.
+  const exactFitZoom = Math.max(workspace.width, workspace.height * viewportAspect) / viewBoxWidth;
+  const zoom = Math.min(Math.max(exactFitZoom, minZoom), maxZoom);
+  const panX = workspace.x + workspace.width / 2 - (content.x + content.width / 2);
+  const panY = workspace.y + workspace.height / 2 - (content.y + content.height / 2);
+  return { zoom, panX, panY };
+}
+
+export function validatePersistedCanvasView(
+  value: unknown,
+  workspace: CanvasWorkspaceBounds,
+  content: CanvasWorkspaceBounds,
+): FitViewResult | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { manual?: unknown; zoom?: unknown; panX?: unknown; panY?: unknown };
+  if (candidate.manual !== true) return null;
+  if (
+    typeof candidate.zoom !== 'number'
+    || !Number.isFinite(candidate.zoom)
+    || candidate.zoom < 0.1
+    || candidate.zoom > 5
+    || typeof candidate.panX !== 'number'
+    || !Number.isFinite(candidate.panX)
+    || typeof candidate.panY !== 'number'
+    || !Number.isFinite(candidate.panY)
+  ) {
+    return null;
+  }
+
+  const viewBox = calculateDisplayedCanvasViewBox(
+    workspace,
+    candidate.zoom,
+    candidate.panX,
+    candidate.panY,
+  );
+  const intersects =
+    content.x <= viewBox.x + viewBox.width
+    && content.x + content.width >= viewBox.x
+    && content.y <= viewBox.y + viewBox.height
+    && content.y + content.height >= viewBox.y;
+  return intersects
+    ? { zoom: candidate.zoom, panX: candidate.panX, panY: candidate.panY }
+    : null;
 }
 
 /**

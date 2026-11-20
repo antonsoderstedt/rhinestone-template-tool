@@ -29,8 +29,8 @@
   --color-surface-inverse: var(--color-sand-800);
 
   --color-ink: var(--color-sand-900);
-  --color-ink-secondary: var(--color-sand-600);
-  --color-ink-muted: var(--color-sand-500);
+  --color-ink-secondary: var(--color-sand-700); /* ≥ 7:1 on every surface */
+  --color-ink-muted: var(--color-sand-600); /* ≥ 4.5:1 on white/sand-50/sand-100 */
   --color-ink-inverse: #ffffff;
 
   --color-border: var(--color-sand-200);
@@ -56,19 +56,23 @@
   /* ─── Semantic states ───────────────────────────────────────────────────── */
   --color-success-50: #e7f7ee;
   --color-success-500: #1fa971;
-  --color-success-600: #178556;
+  --color-success-600: #11704a; /* ≥ 4.5:1 on success-50 */
+  --color-success-700: #0c5a3b;
 
   --color-warning-50: #fff6e5;
   --color-warning-500: #e8960b;
-  --color-warning-600: #bc7908;
+  --color-warning-600: #8a5700; /* ≥ 4.5:1 on warning-50 */
+  --color-warning-700: #6e4400;
 
   --color-danger-50: #fdeaea;
   --color-danger-500: #e4453b;
   --color-danger-600: #c22f26;
+  --color-danger-700: #9c2018;
 
   --color-info-50: #e9f3ff;
   --color-info-500: #2f8cf0;
-  --color-info-600: #1d6fd1;
+  --color-info-600: #1a62bb; /* ≥ 4.5:1 on info-50 */
+  --color-info-700: #144d94;
 
   /* ─── Shape ─────────────────────────────────────────────────────────────── */
   --radius-sm: 0.5rem;
@@ -98,6 +102,62 @@ body {
   color: var(--color-ink);
 }
 
+/*
+ * Keyboard focus ring. One token, used by every control that does not draw its
+ * own ring: a 2px outline offset by 2px, which stays visible on light pages and
+ * on the dark studio and top bar. It lives in the base layer, so a component's
+ * own `focus-visible:ring-*` / `focus-visible:outline-*` utilities still win;
+ * `outline-none` without a replacement is a bug (see tests/focusStyleGuard.test.ts).
+ */
+:root {
+  --focus-ring: #6d28d9; /* violet-700: 7.1:1 on white, 6.4:1 on the sand surface */
+}
+
+[data-theme='dark'],
+[data-focus-surface='dark'] {
+  --focus-ring: #c4b5fd; /* violet-300: 9:1 on the dark surfaces */
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Touch layout. On phones and tablets (narrow viewports) and on any touch-first device, controls
+ * get at least a 44 x 44 px target (WCAG 2.5.5 / Apple HIG) and text fields use 16px so iOS does
+ * not zoom the page when one is focused. These rules are unlayered on purpose: they must beat
+ * utilities like `h-8` or `text-xs` that are tuned for a mouse. Inline text links are exempt.
+ */
+@media (max-width: 1023px), (pointer: coarse) {
+  :where(button, [role='tab'], [role='button'], summary, select, input:not([type='checkbox'], [type='radio'], [type='hidden'], [type='file'])) {
+    min-height: 44px;
+  }
+
+  :where(button, [role='tab'], [role='button'], summary) {
+    min-width: 44px;
+  }
+
+  :where(nav a, a.inline-flex, a.flex, a.block) {
+    min-height: 44px;
+  }
+
+  :where(input[type='checkbox'], input[type='radio']) {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  :where(label:has(> input[type='checkbox']), label:has(> input[type='radio'])) {
+    min-height: 44px;
+  }
+
+  :where(input:not([type='checkbox'], [type='radio'], [type='range'], [type='hidden'], [type='file']), select, textarea) {
+    font-size: 16px;
+  }
+}
+
 ::selection {
   background: var(--color-accent-100);
   color: var(--color-accent-700);
@@ -123,7 +183,7 @@ body {
   --studio-ink: #f4f4f5;
   --studio-ink-secondary: #d4d4d8;
   --studio-ink-muted: #a1a1aa;
-  --studio-ink-subtle: #71717a;
+  --studio-ink-subtle: #909099; /* ≥ 4.5:1 on the dark surfaces */
   --studio-border: rgba(255, 255, 255, 0.1);
   --studio-border-strong: rgba(255, 255, 255, 0.2);
   --studio-hover-overlay: rgba(255, 255, 255, 0.1);
@@ -138,8 +198,8 @@ body {
   --studio-well: #faf8f5;
   --studio-ink: #241f17;
   --studio-ink-secondary: #3a3226;
-  --studio-ink-muted: #756757;
-  --studio-ink-subtle: #96876f;
+  --studio-ink-muted: #5f5445;
+  --studio-ink-subtle: #6e6150; /* ≥ 4.5:1 on every light surface */
   --studio-border: rgba(36, 31, 23, 0.1);
   --studio-border-strong: rgba(36, 31, 23, 0.18);
   --studio-hover-overlay: rgba(36, 31, 23, 0.06);
@@ -150,6 +210,19 @@ body {
 [data-theme='dark'] {
   color-scheme: dark;
 }
+
+/*
+ * Light studio: several studio components were written against the dark studio and use pale
+ * text colours (violet-100..300, amber, emerald, rose) that are unreadable on the light surfaces.
+ * Inside a light studio these utilities get darker equivalents (all >= 4.5:1 on white, the light
+ * well and the translucent violet/amber/emerald chips). Dialogs are portalled to <body>, outside
+ * [data-theme], so the always-dark export dialog keeps its pale text.
+ */
+[data-theme='light'] :is(.text-violet-100, .text-violet-200, .text-violet-300) { color: #4b2fb4; }
+[data-theme='light'] :is(.text-rose-300, .text-rose-400) { color: #a31f3a; }
+[data-theme='light'] :is(.text-amber-100, .text-amber-200, .text-amber-400) { color: #7a4a00; }
+[data-theme='light'] :is(.text-emerald-200, .text-emerald-400) { color: #0c5a3b; }
+[data-theme='light'] :is(.bg-violet-500\/35, .bg-violet-500\/30).text-white { color: #2e1a7a; }
 
 /*
  * .rhinestone-studio-panel / .htv-studio-panel (formerly *-dark-panel,

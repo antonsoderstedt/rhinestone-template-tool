@@ -11,7 +11,6 @@ import {
   getStoneSizeProfile,
   isHolePresetProvisional,
   MAGIC_FLOCK_CRICUT_MAKER_PROFILE,
-  MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION,
 } from '@/src/lib/rhinestone-engine/index';
 import type { StoneSizeId, ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import {
@@ -26,7 +25,6 @@ import {
 import type { CalibrationProfile } from '@/app/lib/workspaceVault';
 import ExportReadinessPanel from './ExportReadinessPanel';
 import SvgExportActions from './SvgExportActions';
-import MachineCutSettingsCard from './MachineCutSettingsCard';
 import Badge from '@/app/editor/ui/Badge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -90,24 +88,40 @@ function defaultHoleMap(): HoleMap {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CalibrationWorkflow() {
+export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'measure' | 'approve' }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [holeMap, setHoleMap] = useState<HoleMap>(() => readStoredCalibration() ?? defaultHoleMap());
+  const [holeMap, setHoleMap] = useState<HoleMap>(defaultHoleMap());
   const [profileName, setProfileName] = useState('My calibrated setup');
-  const [savedProfiles, setSavedProfiles] = useState<CalibrationProfile[]>(() => readWorkspaceVault().calibrationProfiles);
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => readActiveCalibrationProfileId());
+  const [savedProfiles, setSavedProfiles] = useState<CalibrationProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [fitConfirmed, setFitConfirmed] = useState(false);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    const vault = readWorkspaceVault();
+    const holeMap = readStoredCalibration() ?? defaultHoleMap();
+    const activeProfileId = readActiveCalibrationProfileId();
+    queueMicrotask(() => {
+      setHoleMap(holeMap);
+      setSavedProfiles(vault.calibrationProfiles);
+      setActiveProfileId(activeProfileId);
+      hydratedRef.current = true;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !hydratedRef.current) return;
     window.localStorage.setItem(CALIBRATION_STORAGE_KEY, JSON.stringify(holeMap));
   }, [holeMap]);
 
   useEffect(() => {
+    if (!hydratedRef.current) return;
     setActiveCalibrationProfile(activeProfileId);
   }, [activeProfileId]);
 
   useEffect(() => {
+    if (!hydratedRef.current) return;
     const vault = readWorkspaceVault();
     writeWorkspaceVault({ ...vault, calibrationProfiles: savedProfiles });
   }, [savedProfiles]);
@@ -324,56 +338,14 @@ export default function CalibrationWorkflow() {
   const activeProfile = savedProfiles.find((profile) => profile.id === activeProfileId) ?? null;
   const approvedProfiles = savedProfiles.filter((profile) => profile.approvedAt);
   const productionReady = Boolean(activeProfile?.approvedAt);
-  const hasMeasuredValues = STONE_SIZES.some((size) => {
-    const value = Number.parseFloat(holeMap[size]);
-    return Number.isFinite(value) && value > 0;
-  });
-  const gateStatus = productionReady
-    ? 'Ready to produce'
-    : activeProfile
-      ? 'Approval needed'
-      : hasMeasuredValues
-        ? 'Save and approve'
-        : 'Cut and measure first';
 
   return (
     <div className="flex flex-col gap-6">
-      <div className={`rounded-2xl border p-5 ${productionReady ? 'border-emerald-400/40 bg-emerald-500/10' : activeProfile ? 'border-amber-400/40 bg-amber-500/10' : 'border-border bg-sand-50'}`}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Production gate</p>
-            <h3 className="mt-2 text-2xl font-semibold text-ink">{gateStatus}</h3>
-          </div>
-          <Badge tone={productionReady ? 'success' : activeProfile ? 'warning' : 'info'}>
-            {productionReady ? 'Approved' : activeProfile ? 'Pending approval' : 'Not started'}
-          </Badge>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className={`rounded-xl border p-3 ${hasMeasuredValues ? 'border-emerald-300 bg-emerald-50' : 'border-border bg-white'}`}>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 1</div>
-            <div className="mt-2 text-sm font-semibold text-ink">Cut calibration sheet</div>
-            <p className="mt-1 text-xs text-ink-secondary">{hasMeasuredValues ? 'Measured values are present.' : 'Use the calibration sheet before production.'}</p>
-          </div>
-          <div className={`rounded-xl border p-3 ${hasMeasuredValues ? 'border-emerald-300 bg-emerald-50' : 'border-border bg-white'}`}>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 2</div>
-            <div className="mt-2 text-sm font-semibold text-ink">Validate hole sizes</div>
-            <p className="mt-1 text-xs text-ink-secondary">{hasMeasuredValues ? 'The current values are ready for preview.' : 'Enter measured hole diameters in mm.'}</p>
-          </div>
-          <div className={`rounded-xl border p-3 ${productionReady ? 'border-emerald-300 bg-emerald-50' : activeProfile ? 'border-amber-300 bg-amber-50' : 'border-border bg-white'}`}>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Step 3</div>
-            <div className="mt-2 text-sm font-semibold text-ink">Approve profile</div>
-            <p className="mt-1 text-xs text-ink-secondary">{productionReady ? 'This profile is approved and ready.' : activeProfile ? 'Approve the active profile before export.' : 'Save a profile and approve it when the cut passes.'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Machine cut settings (separate from template settings below) ──── */}
-      <MachineCutSettingsCard recommendation={MAGIC_FLOCK_CRICUT_MAKER_3_RECOMMENDATION} />
-
+      {view === 'measure' && (
+ <>
       {/* ── Explanation ──────────────────────────────────────────────────── */}
       <div className="rounded-lg bg-warning-50 border border-warning-500/30 px-5 py-4 text-sm text-warning-600 leading-relaxed">
-        <p className="font-semibold mb-1">Template settings — how to calibrate hole diameter</p>
+        <p className="font-semibold mb-1">How to find your hole diameters</p>
         <ol className="ml-4 list-decimal space-y-1 text-xs">
           <li>Download and cut the <strong>Calibration Sheet</strong> on a scrap of Magic Flock.</li>
           <li>Place stones in each hole and find which diameter seats correctly.</li>
@@ -389,7 +361,12 @@ export default function CalibrationWorkflow() {
       {/* ── Input fields ─────────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-ink-secondary">Enter calibrated hole diameters (mm)</h3>
+          <div>
+            <h3 className="text-sm font-semibold text-ink-secondary">Enter the hole diameters that worked (mm)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              <strong>Stone diameter</strong> is the size of the rhinestone itself. <strong>Hole diameter</strong> is the size of the hole the machine cuts; it is a little larger so the stone seats firmly.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleReset}
@@ -416,7 +393,7 @@ export default function CalibrationWorkflow() {
             return (
               <div key={size} className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-ink-muted flex items-center gap-1.5" htmlFor={`hole-${size}`}>
-                  {size} <span className="text-ink-secondary">({physicalDiameter(size)} mm stone)</span>
+                  {size} <span className="text-ink-secondary">(stone {physicalDiameter(size)} mm)</span>
                   {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
                 </label>
                 <input
@@ -438,7 +415,7 @@ export default function CalibrationWorkflow() {
                   </span>
                 )}
                 {invalid && (
-                  <span className="text-xs text-danger-500">Enter a value &gt; 0</span>
+                  <span className="text-xs text-danger-700">Enter a value &gt; 0</span>
                 )}
               </div>
             );
@@ -446,6 +423,77 @@ export default function CalibrationWorkflow() {
         </div>
       </div>
 
+      {/* ── Comparison table ─────────────────────────────────────────────── */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-xs">
+              <th className="text-left px-3 py-2">Size</th>
+              <th className="text-right px-3 py-2">Stone diameter</th>
+              <th className="text-right px-3 py-2">Recommended hole diameter</th>
+              <th className="text-right px-3 py-2">Your hole diameter</th>
+              <th className="text-right px-3 py-2">Δ</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {STONE_SIZES.map((size) => {
+              const rec  = recommended(size);
+              const num  = parseFloat(holeMap[size]);
+              const invalid = isNaN(num) || num <= 0;
+              const diff = !invalid ? num - rec : null;
+              return (
+                <tr key={size} className="hover:bg-sand-50">
+                  <td className="px-3 py-2 font-semibold text-ink">
+                    <span className="flex items-center gap-1.5">
+                      {size}
+                      {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
+                  <td className="px-3 py-2 text-right text-ink-muted">{rec.toFixed(2)} mm</td>
+                  <td className="px-3 py-2 text-right font-medium text-ink">
+                    {invalid ? <span className="text-danger-700">—</span> : `${num.toFixed(2)} mm`}
+                  </td>
+                  <td className={`px-3 py-2 text-right font-mono ${
+                    diff === null ? 'text-ink-secondary' :
+                    Math.abs(diff) < 0.001 ? 'text-ink-secondary' :
+                    diff > 0 ? 'text-warning-600' : 'text-info-600'
+                  }`}>
+                    {diff === null ? '—' : `${diff >= 0 ? '+' : ''}${diff.toFixed(3)}`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Calibrated preview ───────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-ink-secondary mb-3">
+          Calibrated SS10 Test Grid (5×3)
+        </h3>
+
+        {!calibResult.ok ? (
+          <div className="rounded border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-600">
+            {calibResult.error}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <ExportReadinessPanel result={calibResult.readiness} showCalibrationStep={false} />
+            <SvgExportActions
+              svg={calibResult.svg}
+              filename={`rhinestone-calibrated-ss10-5x3.svg`}
+              disabled={!calibResult.readiness.ready}
+            />
+          </div>
+        )}
+      </div>
+
+      </>
+      )}
+      {view === 'approve' && (
+ <>
       {/* ── Production checklist ─────────────────────────────────────────── */}
       <div className={`rounded-lg border p-4 ${productionReady ? 'border-success-400 bg-success-50' : activeProfile ? 'border-warning-400 bg-warning-50' : 'border-border bg-sand-50'}`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -521,6 +569,18 @@ export default function CalibrationWorkflow() {
         {savedProfiles.length > 0 && (
           <div className="mt-4 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Saved profiles</p>
+            <label className="flex items-start gap-2 rounded border border-warning-500/30 bg-warning-50 p-3 text-xs text-warning-700">
+              <input
+                type="checkbox"
+                checked={fitConfirmed}
+                onChange={(event) => setFitConfirmed(event.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                I cut the calibration sheet and confirmed my stones seat correctly in these hole sizes.
+                <span className="block text-warning-600">Self-attested: this is not verified by software.</span>
+              </span>
+            </label>
             {savedProfiles.map((profile) => {
               const isActive = activeProfileId === profile.id;
               const status = getProfileStatus(profile);
@@ -547,7 +607,9 @@ export default function CalibrationWorkflow() {
                     </button>
                     <button
                       onClick={() => handleToggleApproval(profile)}
-                      className="rounded border border-border px-2.5 py-1.5 text-xs text-ink hover:bg-sand-50"
+                      disabled={!profile.approvedAt && !fitConfirmed}
+                      title={!profile.approvedAt && !fitConfirmed ? 'Confirm the stone fit above before approving.' : undefined}
+                      className="rounded border border-border px-2.5 py-1.5 text-xs text-ink hover:bg-sand-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {profile.approvedAt ? 'Unapprove' : 'Approve'}
                     </button>
@@ -565,73 +627,8 @@ export default function CalibrationWorkflow() {
         )}
       </div>
 
-      {/* ── Comparison table ─────────────────────────────────────────────── */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-[10px]">
-              <th className="text-left px-3 py-2">Size</th>
-              <th className="text-right px-3 py-2">Stone Ø</th>
-              <th className="text-right px-3 py-2">Recommended hole</th>
-              <th className="text-right px-3 py-2">Calibrated hole</th>
-              <th className="text-right px-3 py-2">Δ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {STONE_SIZES.map((size) => {
-              const rec  = recommended(size);
-              const num  = parseFloat(holeMap[size]);
-              const invalid = isNaN(num) || num <= 0;
-              const diff = !invalid ? num - rec : null;
-              return (
-                <tr key={size} className="hover:bg-sand-50">
-                  <td className="px-3 py-2 font-semibold text-ink">
-                    <span className="flex items-center gap-1.5">
-                      {size}
-                      {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
-                  <td className="px-3 py-2 text-right text-ink-muted">{rec.toFixed(2)} mm</td>
-                  <td className="px-3 py-2 text-right font-medium text-ink">
-                    {invalid ? <span className="text-danger-500">—</span> : `${num.toFixed(2)} mm`}
-                  </td>
-                  <td className={`px-3 py-2 text-right font-mono ${
-                    diff === null ? 'text-ink-secondary' :
-                    Math.abs(diff) < 0.001 ? 'text-ink-secondary' :
-                    diff > 0 ? 'text-warning-600' : 'text-info-600'
-                  }`}>
-                    {diff === null ? '—' : `${diff >= 0 ? '+' : ''}${diff.toFixed(3)}`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Calibrated preview ───────────────────────────────────────────── */}
-      <div>
-        <h3 className="text-sm font-semibold text-ink-secondary mb-3">
-          Calibrated SS10 Test Grid (5×3)
-        </h3>
-
-        {!calibResult.ok ? (
-          <div className="rounded border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-600">
-            {calibResult.error}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <ExportReadinessPanel result={calibResult.readiness} />
-            <SvgExportActions
-              svg={calibResult.svg}
-              filename={`rhinestone-calibrated-ss10-5x3.svg`}
-              disabled={!calibResult.readiness.ready}
-            />
-          </div>
-        )}
-      </div>
-
+      </>
+      )}
     </div>
   );
 }

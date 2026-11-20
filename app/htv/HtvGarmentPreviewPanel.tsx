@@ -17,6 +17,7 @@ import HtvLayerShape from './HtvLayerShape';
 import HtvMockupImage from './HtvMockupImage';
 import type { HtvState } from './HtvState';
 import { getHtvMockupView, HTV_MOCKUP_IMAGE_SIZE } from './htvMockupRegistry';
+import Modal from '../editor/ui/Modal';
 
 interface HtvGarmentPreviewPanelProps {
   open: boolean;
@@ -61,13 +62,15 @@ export default function HtvGarmentPreviewPanel({ open, state, showAllPlacementOv
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 p-6 backdrop-blur-sm">
-      <div className="flex h-full max-h-[640px] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl">
+    <Modal open={open} onClose={onClose} titleId="htv-garment-preview-title" overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2 text-ink">
             <Shirt className="h-4 w-4 text-accent-600" />
             <div>
-              <h2 className="text-sm font-semibold">Garment preview</h2>
+              <h2 id="htv-garment-preview-title" className="text-sm font-semibold">Garment preview</h2>
               <p className="mt-0.5 text-xs text-ink-muted">
                 {garmentDefinition.displayName} · {garment.size} · {color.name} · {view}
               </p>
@@ -120,6 +123,6 @@ export default function HtvGarmentPreviewPanel({ open, state, showAllPlacementOv
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

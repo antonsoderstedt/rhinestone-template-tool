@@ -41,7 +41,7 @@ describe('editorUi helpers', () => {
   it('returns clear Generated and Editable status copy', () => {
     expect(getEditableStatusCopy(false)).toEqual({
       label: 'Generated',
-      description: 'Driven by generator settings.',
+      description: 'Changes to the settings below update the design.',
       actionHint: 'Adjust the source settings or make the result editable to fine-tune stones.',
     });
 
@@ -79,13 +79,13 @@ describe('editorUi helpers', () => {
       status: 'Warning',
     });
 
-    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: undefined } as any)).toMatchObject({
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: undefined } as never)).toMatchObject({
       studioLabel: 'HTV Studio',
       status: 'Warning',
       statusText: 'Pending calibration: Magic Flock',
     });
 
-    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: '2025-01-01T00:00:00.000Z' } as any)).toMatchObject({
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: '2025-01-01T00:00:00.000Z' } as never)).toMatchObject({
       studioLabel: 'HTV Studio',
       status: 'Ready',
       statusText: 'Production ready: Magic Flock',
@@ -107,7 +107,7 @@ describe('editor UI rendering', () => {
         dispatch: vi.fn() as never,
         onNewProject: vi.fn(),
         onOpenProject: vi.fn(),
-        onSaveProject: vi.fn(),
+        onSave: vi.fn(),
         onExport: vi.fn(),
         onOpenSetup: vi.fn(),
       }),
@@ -141,7 +141,7 @@ describe('editor UI rendering', () => {
     );
 
     expect(html).toContain('aria-label="Select"');
-    expect(html).toContain('Pan with Space or middle mouse');
+    expect(html).toContain('Ctrl/Cmd + wheel zooms');
     expect(html).toContain('bg-purple-600');
   });
 

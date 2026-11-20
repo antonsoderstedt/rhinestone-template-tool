@@ -59,6 +59,21 @@ on top of this floor for a comfortable default — always ≥ the physical minim
 
 Collision detection must run even after path filtering, because grid positions near path boundaries may be closer than the grid spacing suggests when both paths and offset grids are involved.
 
+### Gap semantics
+
+The engine distinguishes between true overlap and a tight but non-overlapping gap:
+
+- `STONE_OVERLAP`: edge gap < 0 mm. Always a blocking error.
+- `STONE_TIGHT_GAP`: 0 <= edge gap < `minimumEdgeSpacingMm`. A blocking error for user-generated templates, a warning for vendor-authored templates (`template.source = 'vendor'` or metadata source `vendor`).
+
+The measured gap is computed in millimeters from the center distance of the two holes:
+
+```
+measuredGapMm = centerDistanceMm - (radiusA + radiusB)
+```
+
+This value is carried on validation issues and surfaced in user copy as `"Stones 12 and 13 are 0.35 mm apart (minimum 0.51 mm)"`.
+
 ---
 
 ## Path Fill Filter
@@ -135,18 +150,50 @@ Checks a `RhinestoneTemplate` against the material profile and physical constrai
 - `INVALID_UNIT`: unit is not `"mm"`
 - `NO_STONES`: template is empty
 - `INSUFFICIENT_STONES`: fewer than `minStoneCount`
-- Validation errors from `validateRhinestoneTemplate` (duplicate IDs, invalid hole sizes, `STONE_COLLISION`)
+- Validation errors from `validateRhinestoneTemplate` (duplicate IDs, invalid hole sizes, `STONE_OVERLAP`, `STONE_TIGHT_GAP` for user-generated templates, legacy `STONE_COLLISION` alias)
 
 **Warnings** (do not block export):
 - `REQUIRES_CALIBRATION`: material profile needs physical calibration
 - `EXCEEDS_MAX_WIDTH`/`BELOW_MIN_WIDTH`: physical size out of range
 - `EXCEEDS_MAX_HEIGHT`/`BELOW_MIN_HEIGHT`: same for height
 - `UNSUPPORTED_STONE_SIZE`: stone size not in material profile's supported list
+- `HIGH_STONE_COUNT`: more than `HIGH_STONE_COUNT_THRESHOLD` (1500) stones — slow to cut, weed and set
+- `EXCEEDS_MAT_SIZE`: the physical size does not fit the largest Cricut mat (12 × 24 in, usable 292.1 × 596.9 mm) in either orientation. A design that fits a 12 × 24 mat but not a 12 × 12 one gets no readiness issue; the export dialog and the Quick fixes panel say which mat it needs
+- `STONE_TIGHT_GAP` on vendor-authored templates
 
 **Info** (always present):
 - `PHYSICAL_SIZE`: estimated output dimensions including hole radii
 
 The summary object includes `widthMm`, `heightMm`, `stoneCount`, `materialProfileId`, `cutter`, `stoneSizes`, `hasCollisions`, `hasCalibrationWarning`.
+
+### Mat fit, stone estimate and spacing auto-fix (Phase 12, ADR 0016)
+
+All pure, deterministic and in millimetres.
+
+- `sizing/matFit.ts`: `getMatFit(widthMm, heightMm)` → `fits-12x12 | fits-12x24 | too-large | unknown` (both orientations tried, rotation reported);
+  `getFitToMatScale(widthMm, heightMm, mat, marginFraction?)` → the largest uniform scale ≤ 1 at which the size fits `'12x12'` or `'12x24'`.
+  Stones are **not** squeezed closer to fit a mat: the UI regenerates the design smaller by changing the producing tool's target size.
+- `estimate/stoneEstimate.ts`: `estimateStoneUsage(stones, { wastePercent = 10, packSizeStones = 144, pricePerPackBySize })` →
+  per stone size: count, count plus spare (rounded up), gross (2 decimals), whole packs and cost. A size with no price has no cost and
+  the engine never supplies a price; `totalCost` is `null` without any price and `costComplete` is false while some sizes are unpriced.
+- `spacing/autoFix.ts`: `autoFixSpacing(template, { minGapMm })` runs `resolveStoneSpacing` (strategy `nudge`) on an existing
+  template and reports `issuesBefore`, `movedStoneCount`, `removedStoneCount`, `maxDisplacementMm` and `remainingIssues` from a fresh
+  `validateRhinestoneTemplate`. A clean template is returned as is. Collision detection is not bypassed.
+
+### Calibration gate and the uncalibrated override (UI contract, decision D2)
+
+`REQUIRES_APPROVED_CALIBRATION_PROFILE` is an engine-level error, but the UI treats it as a *separate export step*, not
+a design error (`summarizeExportStatus` → `needsCalibration`, `designErrors`). The Export action (`getExportGate`) behaves as follows:
+
+- Real design errors (overlap, invalid holes, ...) always block and can never be overridden.
+- When calibration is the only blocker, the user may choose **"Export anyway (uncalibrated) — I understand"**.
+  This calls `createBasicSvgExport(template, { uncalibratedOverride: true })`, which adds
+  `data-calibration="uncalibrated-override"` to the root `<svg>` and a note to `<desc>`. Geometry is unchanged, and the file stays
+  Cricut-safe (mm size, circles only, no `<use>`, no nested `<svg>`, no opacity). The download is named `<name>-uncalibrated.svg`.
+- Confidence labels are honest: the software verifies geometry only, so it reports "Design checks passed",
+  "Uncalibrated defaults", "Needs review" or "Blocked" (`getExportConfidence`) — never "high confidence" for the physical cut.
+- Approving a calibration profile is self-attested ("not verified by software"); the UI requires the user to confirm the
+  stone fit before the Approve button is enabled.
 
 ### Calibration sheet special case
 
@@ -183,6 +230,65 @@ When a density preset is used, the template metadata includes:
 - `resolvedSpacingMm`: the actual spacing used
 - `densityWarning`: present only if dense was clamped
 
+For spacing auto-fixes, `resolveStoneSpacing(template, { minGapMm, strategy: 'nudge' })` returns a new template with deterministic metadata:
+
+- `resolvedSpacingMm`
+- `spacingStrategy`
+- `movedStoneCount`
+- `removedStoneCount`
+- `maxDisplacementMm`
+- `resolutionPasses`
+- `tooDenseForStoneSize`
+
+### Rhinestone font scale (`rhinestoneFont/glyphExtraction.ts`, ADR 0018)
+
+`layoutRhinestoneFontText` converts font units to millimetres with `scale = targetStoneSizeMm / nativeDiameter`, where
+`nativeDiameter = measureNativeStoneDiameterFontUnits(font, text)`: the median diameter of the circular contours of the glyphs of
+the typed text. The stones the font draws therefore get exactly the target diameter, and the spacing between stones, advance
+widths and line height scale with them, so a font designed with separate stones stays separate. TRW Clean Stone's 72 font units
+is used only when the text has no measurable stone.
+
+### `enlargeToCuttableSpacing(template, { minGapMm })` (stone fonts, ADR 0018)
+
+Vendor rhinestone fonts are often artwork made of dots that overlap on purpose, so the holes of a template made from them
+would merge and cannot be cut. `hasOverlappingStones(stones)` detects this. `enlargeToCuttableSpacing` then enlarges the
+whole layout, about its top-left corner, by `scale = max(1, (maxHoleDiameter + minGapMm) / p5NearestNeighbour * 1.002)`
+(the 5th percentile of each stone's nearest-neighbour distance, so one odd pair does not blow the design up), keeps every stone
+and every hole size, and finally runs `thinStonesToSpacing` to drop the few stones still closer than `minGapMm` (walking the
+stones in their original order, keeping a stone only if it is far enough from all kept ones). A layout with no overlaps is
+returned unchanged (same object, `scale` 1). The result records `metadata.enlargedByFactor`. Pure and deterministic.
+It is **never applied automatically**: stone fonts are shown as drawn. The editor offers it as a user-chosen, undoable quick fix
+("Enlarge ×N to make cuttable") when a dry run gives a factor of at least 1.3. `createRhinestoneFontTemplate` is unchanged.
+TRW Clean Stone, whose stones do not overlap, is unaffected.
+
+### `resolveStoneSpacing` final algorithm
+
+1. Sort stones in stable order (`id`, then `y`, then `x`).
+2. Build a spatial hash grid and find violating pairs (`edgeGapMm < minGapMm`) in O(n)-style neighborhood scans.
+3. Run iterative relaxation (max 500 passes):
+   - For each violating pair, compute the separation direction.
+   - Accumulate displacement vectors for both stones.
+   - Apply all displacement vectors simultaneously.
+   - Identical centers use a deterministic direction derived from stone IDs.
+4. If violations remain after the pass cap, remove the lesser stone for each remaining pair as a last resort (`remove-lesser` fallback).
+
+The resolver is pure, deterministic, and idempotent. A valid input returns unchanged coordinates.
+
+### Editor application scope
+
+Automatic spacing resolution is applied only to generated templates:
+
+- text (outline + dot-matrix)
+- artwork fill (`svg`)
+- SVG alphabet text (`svg-alphabet`)
+- letter stencil (`letter-stencil`)
+
+Automatic spacing resolution is intentionally **not** applied to:
+
+- `grid` tool output
+- `template-import` output
+- vendor-authored templates (`source: 'vendor'`)
+
 ---
 
 ## Sizing Module
@@ -210,6 +316,27 @@ Input polylines are never mutated. Output is a new array with rounded (4dp) coor
 ### `getTemplatePhysicalSize(template)`
 
 Returns `{ widthMm, heightMm }` measured from stone hole circles (includes radius). This is an estimate — actual cut dimensions depend on calibration.
+
+### Split module: `planSplitForMat(template, mat, options?)` and `buildPartTemplate(template, plan, part)`
+
+A design that does not fit one cutting mat is cut in parts. Cricut usable areas: 12 × 12 in = 292.1 × 292.1 mm, 12 × 24 in =
+292.1 × 596.9 mm (the caller subtracts the export padding on each side, so the exported file, not just the stones, fits).
+
+- **A stone is never cut.** Each stone goes whole to exactly one part, the side its centre is on. The union of all parts is
+  exactly the input stones, each once; no stone is added, moved or resized.
+- **Seams run between stones.** Along an axis the seam is searched in the window `[lo + (max − rMax) / 2, lo + max − rMax]`
+  (`lo` = start of the remaining stones, `max` = mat length on that axis, `rMax` = the largest stone radius) in steps of
+  0.25 mm; the position crossed by the fewest circles wins, and the farthest position that no circle touches ends the search,
+  so there are as few parts as possible. Seam crossings (circles a seam passes through, kept whole on one side) are reported.
+- **Order:** columns by X first, then rows by Y within each column. Both orientations of the mat are tried; the one with fewer
+  parts, then fewer crossings, wins. A part that only fits turned 90° reports `needsTurn`.
+- **Every part fits the mat**, radii included. If the stones are larger than the mat can hold (`maxLen <= 2 × rMax`), the plan
+  reports `splittable: false`. A design that already fits returns one part and `fitsWhole: true`. An empty template returns no
+  parts.
+- Pure and deterministic: millimetres, no randomness, no clock. Cut shapes belong to the whole design and are dropped from the
+  parts (the UI says so).
+- Each part keeps the original coordinates, so its offset from the design's top-left is `part.minX/minY − design minX/minY`;
+  the app writes these offsets, the part sizes and a "turn 90°" hint into `<name>-layout.txt` inside the zip.
 
 ---
 
@@ -280,6 +407,17 @@ Outline stones have priority (they come first in the combined array).
 
 ## Font Outline Text Module (v1 — Font Outline Foundation)
 
+### Font coverage (`textOutline/fontLoader.ts`, ADR 0017)
+
+`loadOutlineFont(fontId, options?)` parses a font once (cached) and checks coverage on every call:
+
+- Always required: `A–Z a–z 0–9`. A font without them is broken and is rejected.
+- Extended set `Å Ä Ö å ä ö` and ` .,!?-_`: required by default (HTV keeps this rule), but with
+  `allowMissingExtendedCharacters: true` (used by `createOutlineTextTemplateAsync`) a font that lacks them still loads.
+- `findUnsupportedCharacters(font, text)` lists the characters of `text` with no glyph (whitespace ignored).
+  `createOutlineTextTemplateAsync` throws `Font X has no glyph for: … Remove … from the text or choose another font.` when the typed
+  text needs a glyph the font lacks; text the font can draw is generated normally.
+
 ### Why TTF/OTF is deferred
 
 Real font parsing requires either shipping a large WebAssembly binary (HarfBuzz ~2MB)
@@ -289,6 +427,14 @@ attack surface. The built-in vector font proves the complete end-to-end pipeline
 
 Future phases: real font parsing, font upload, fill mode, centerline mode, better
 kerning, text warping.
+
+### Font file integrity (`textOutline/fontInspection.ts`)
+
+`inspectFontBytes(bytes)` is a pure check run before a font is used or added (import script, upload, `npm run audit:fonts`).
+It reports: `woff-length-trailing-bytes` (header declares fewer bytes than the file has; browsers refuse it; repairable with
+`repairFontBytes`, which trims to the declared length), `woff-truncated` (not repairable), `unparseable`, and `no-outlines`
+(none of `A a O o 1 S` has an outline, e.g. an empty glyph table). It does not change how outlines are converted to stones;
+it only decides whether a font file may enter that pipeline.
 
 ### Built-in Vector Outline Font
 
@@ -500,6 +646,77 @@ Compose order: left-to-right in attribute string (same as SVG spec). Throws on `
 ### svgUnits.ts (groundwork)
 
 Provides `parseSvgViewBox` and `getSvgRootAttributes` for reading the root SVG's `viewBox`, `width`, and `height`. These are not yet used for coordinate rescaling but provide the foundation for future physical-size normalization.
+
+---
+
+## SVG Import Module (v3, `svg/svgImport.ts`)
+
+`importSvgArtwork(svgText)` reads an SVG as a viewer would, as far as artwork for stones needs, and returns `shapes` (document
+order = paint order), the `viewBox`, `naturalSizeMm`, `userUnitMm` and plain-language `warnings`. `svgStringToPolylines` is a
+thin wrapper that flattens the shapes to polylines (user units, one unit = one mm until the caller scales) and runs the
+polyline cleanup.
+
+- **Tree and transforms:** a tolerant tokenizer builds the element tree; the transform of every enclosing group is applied
+  (`translate`, `scale`, `rotate`, `skewX`, `skewY`, `matrix`, lists). An unknown transform function is skipped with a warning.
+- **`<use>` / `<defs>` / `<symbol>`:** local references (`#id`) are instanced with the use's `x`, `y` and transform; things
+  only inside `defs` are not drawn; depth is limited to 8 and instances to 5,000.
+- **Styles:** presentation attributes < `<style>` rules (tag, `.class`, `#id`, `tag.class`, by specificity then order) < inline
+  `style`. Inherited: `fill`, `stroke`, `stroke-width`, `fill-rule`, `visibility`; `opacity` multiplies down the tree.
+  Colours are normalised to `#rrggbb` (hex, rgb(), names). Gradients and patterns become one flat grey with a warning.
+- **Visibility:** `display:none`, `visibility:hidden`, zero opacity, and shapes with neither a visible fill nor a stroke are
+  skipped. Text is skipped with a message on how to convert it to outlines.
+- **Paths:** M L H V C S Q T and elliptical arcs `A` (spec F.6, flags may be written without separators); extra pairs after
+  `M` are line-tos; a subpath after `Z` starts at the previous start; a closed path that repeats its first point drops the copy.
+- **Size:** `width` / `height` with units give `naturalSizeMm`; otherwise the viewBox at 96 dpi; `userUnitMm` is mm per user unit.
+- **Refused (`findUnsafeSvgContent`):** `<script>`, `<foreignObject>`, `<image>`, entity declarations, event handlers,
+  `javascript:`, `data:`, `@import`, any `href` or `url()` that does not start with `#`.
+- Fill rule, stroke width (scaled by the transform) and opacity are kept on each shape for the colour-layer step.
+
+## Artwork layout module (`artwork/`)
+
+Replaces the clipped-grid fill and per-vertex offsets for SVG artwork. Everything works on a raster of the artwork, so
+overlapping shapes, holes, touching letters and narrow necks need no polygon clipping.
+
+1. **Layers (`layers.ts`)**: the imported shapes are scaled to the requested width and painted onto one grid in document
+   order (a later shape covers an earlier one; an even-odd or opposite-winding hole shows what is underneath; strokes are
+   painted as lines of their width with round ends). One mask per colour. White, and a first shape that covers 97 % of the
+   artwork, are left out as background (with a reason) unless the user switches them on; if that would leave nothing, nothing is
+   left out.
+2. **Region field (`regionField.ts`)**: a mask becomes a signed distance field (exact Euclidean distance transform), in mm,
+   positive inside. Cell size is the longer side / 1200 within 0.15-0.4 mm.
+3. **Rows (`rowsLayout.ts`, `contours.ts`)**: row k is the iso-contour of the field at depth `edgeInset + k * pitch` (edge
+   inset = half a hole, so stones lie just inside the edge). Each contour loop gets one stone at every corner (turn above 35°)
+   and stones evenly spaced between, never closer than the pitch along the path. `rows` = 1 is the Outline look, a few rows the
+   Rows look, `all` plus a hex lattice over what is left (points deep enough and clear of every stone) the Solid look.
+   - A candidate closer than the minimum centre distance to a placed stone of the same row is merged with it (one stone halfway)
+     when that keeps the spacing: on a part too narrow for two rows the two sides become one row down the middle.
+   - Stones in a part that cannot hold a second row (`depth < inset + pitch / 2`) are moved uphill along the field to its
+     ridge, i.e. centred, when that keeps the spacing.
+   - Every stone is at least `hole / 2 - 1 cell` deep; no two are closer than `minCentreDistance` (hole + minimum edge gap).
+4. **Template (`artworkTemplate.ts`)**: layers painted later are laid out first and lower layers give way where they meet
+   (one occupancy grid across layers). Stones carry `layerColour`, `layerIndex`, `row` and `placement` metadata. A colour that
+   gets no stones is reported.
+5. **Feasibility (`feasibility.ts`)**: for each stone size, the share of the artwork's area thinner than one hole (morphological
+   opening by half a hole on a coarse grid of at most 600 cells), the number of separate shapes whose thickest part is thinner
+   than a hole (they get no stone), a verdict (`good` up to 4.2 %, `some-detail-lost` up to 15 %, else `too-small`) and the
+   width at which about 3 % would be too thin (found by bracketing and bisection, +10 % margin, so following it ends in `good`).
+
+6. **Raster (`rasterLayers.ts`)**: an image is box-filtered to at most 1200 px; the background is removed (alpha under 128, or the
+   border colour when 85 % of the border is within 40 of its median; otherwise a brightness cutoff, with a warning); the rest is
+   reduced to 1-4 colours by k-means starting from brightness quantiles (10 iterations, no randomness); a 3x3 majority
+   filter runs 0, 1 or 2 times by `detail` (at least 192, at least 96, below); the labels are placed on the millimetre grid. The
+   result is `ArtworkLayers`, laid out exactly like SVG layers.
+
+All of it is pure and deterministic. The Artwork tool maps its three looks onto the stored coverage mode (`outline`, `contour`
+= Rows with `contourSettings.rowCount`, `outline-fill` / `fill` = Solid) so saved projects still open; `layerRoles` (colour to
+`stones` / `ignore`) is the only new persisted field.
+
+### Artwork quality (`quality/artworkQuality.ts`)
+
+`measureArtworkQuality({ polylines, stones, pitchMm })` scores a layout against its source: `areaCoverage` (share of the
+even-odd silhouette within 0.75 pitch of a stone), `outlineCoverage` (share of the outline within one pitch of a stone),
+`outsideStones`, `strayStones` (no neighbour within two pitches) and `minGapMm`. Pure and deterministic. The regression test
+`tests/quality/` holds every generator to `tests/quality/baseline.json`; `npm run quality` writes `docs/QUALITY_REPORT.md`.
 
 ---
 

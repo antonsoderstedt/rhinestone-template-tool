@@ -5,6 +5,7 @@ import {
   getWorkspaceRecoverySummary,
 } from '../app/lib/workspaceRecovery';
 import type { WorkspaceVault } from '../app/lib/workspaceVault';
+import { DEFAULT_WORKSPACE_SETTINGS } from '../app/lib/workspaceSettings';
 
 const baseVault: WorkspaceVault = {
   version: 1,
@@ -37,19 +38,7 @@ const baseVault: WorkspaceVault = {
     { designKey: 'rhinestone-1', archived: false },
     { designKey: 'rhinestone-2', archived: false },
   ],
-  settings: {
-    machineModel: 'Cricut Maker 3',
-    cuttingMat: 'StandardGrip 12x12',
-    bladeStrategy: 'Fresh fine-point blade before production runs',
-    defaultMaterial: 'Magic Flock',
-    defaultFlock: 'Magic Flock template material',
-    defaultStoneSize: 'SS10',
-    defaultRhinestoneSpacingMm: 4,
-    defaultHtvCarrier: 'Hot peel performance vinyl',
-    htvWeedMarginMm: 6,
-    outputFolderHint: 'Jobs/Ready To Cut',
-    qualityChecklist: 'Check font coverage, preview garment placement, verify labels off for Cricut, confirm material preset, cut a calibration test for new batches.',
-  },
+  settings: { ...DEFAULT_WORKSPACE_SETTINGS },
   calibrationProfiles: [
     {
       id: 'profile-1',

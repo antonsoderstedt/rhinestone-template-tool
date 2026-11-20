@@ -229,6 +229,7 @@ export async function createSvgAlphabetTemplate(
   const template = createRhinestoneTemplate({
     id: 'svg-alphabet-preview',
     name: `SVG Alphabet: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`,
+    source: 'vendor',
     stones: emittedStones,
     widthMm,
     heightMm,

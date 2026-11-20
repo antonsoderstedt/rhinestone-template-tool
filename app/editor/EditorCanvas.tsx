@@ -1,12 +1,17 @@
 'use client';
 
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
 import {
   calculateCanvasWorkspaceBounds,
+  calculateFitViewTransform,
+  clampCanvasPan,
   calculateDisplayedCanvasViewBox,
+  expandViewBoxToAspect,
+  MAX_CANVAS_ZOOM,
+  MIN_CANVAS_ZOOM,
   screenToMm,
   snapToGrid,
   isPointNearStone,
@@ -16,6 +21,8 @@ import {
 } from './canvasCoordinates';
 import { findNearestValidStonePosition, wouldCollide } from './collisionDetection';
 import { isIgnoredKeyboardTarget } from './editorDomGuards';
+import { isActivatableControl } from '../lib/studioShortcuts';
+import { useTouchViewGestures } from '../lib/touchGestures';
 import { findSnapCandidates, type SnapGuideLine } from './alignmentGuides';
 import {
   applyBoxSelection,
@@ -30,7 +37,12 @@ interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   onNotify?: (message: string, tone: 'success' | 'warning' | 'error' | 'info') => void;
+  fitRequestId?: number;
+  onManualViewChange?: (view: { zoom: number; panX: number; panY: number }) => void;
 }
+
+/** Width of the line drawn around a stone, in mm. The line sits inside the hole so the picture is to scale. */
+const STONE_STROKE_MM = 0.22;
 
 const RULER_BAND_PX = 32;
 const RULER_NICE_STEPS_MM = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
@@ -62,12 +74,52 @@ function getStoneCanvasColor(stone: EditableStone): string {
   return '#8b5cf6';
 }
 
-export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvasProps) {
+export default function EditorCanvas({
+  state,
+  dispatch: rawDispatch,
+  onNotify,
+  fitRequestId = 0,
+  onManualViewChange: rawOnManualViewChange,
+}: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const suppressNextClickRef = useRef(false);
   const nextStoneIdRef = useRef(0);
-  
+
+  // Every way of moving the view (wheel, drag, pinch, zoom about the cursor) goes through these two
+  // wrappers, which keep the design in reach: it can never be scrolled out of sight (clampCanvasPan).
+  const clampContextRef = useRef<{
+    workspace: { x: number; y: number; width: number; height: number };
+    content: { x: number; y: number; width: number; height: number };
+    aspect: number | null;
+    zoom: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const clampView = useCallback((view: { zoom: number; panX: number; panY: number }) => {
+    const ctx = clampContextRef.current;
+    if (!ctx) return view;
+    return { ...view, ...clampCanvasPan({ workspace: ctx.workspace, content: ctx.content, aspect: ctx.aspect, ...view }) };
+  }, []);
+  const dispatch = useCallback((action: EditorAction) => {
+    const ctx = clampContextRef.current;
+    if (ctx && action.type === 'UPDATE_CANVAS' && (action.updates.panX !== undefined || action.updates.panY !== undefined)) {
+      const view = clampView({
+        zoom: action.updates.zoom ?? ctx.zoom,
+        panX: action.updates.panX ?? ctx.panX,
+        panY: action.updates.panY ?? ctx.panY,
+      });
+      rawDispatch({ type: 'UPDATE_CANVAS', updates: { ...action.updates, panX: view.panX, panY: view.panY } });
+      return;
+    }
+    rawDispatch(action);
+  }, [clampView, rawDispatch]);
+  const onManualViewChange = useCallback(
+    (view: { zoom: number; panX: number; panY: number }) => rawOnManualViewChange?.(clampView(view)),
+    [clampView, rawOnManualViewChange],
+  );
+
   // Hover state for manual tool
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoverSuggestedFrom, setHoverSuggestedFrom] = useState<{ x: number; y: number } | null>(null);
@@ -284,9 +336,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   // optimizing the whole component as a result) — calculateCanvasWorkspaceBounds
   // is a cheap O(stones) bounding-box scan, so a plain call is fine either way.
   const workspaceBounds = calculateCanvasWorkspaceBounds(stones);
-  const viewBox = useMemo(
+  // The SVG's real on-screen size. The view box is grown to this shape (see expandViewBoxToAspect) so it
+  // fills the canvas on any screen, a tall phone included, and pointer positions convert to mm exactly.
+  const [viewportSize, setViewportSize] = useState<{ width: number; height: number } | null>(null);
+  const baseViewBox = useMemo(
     () => calculateDisplayedCanvasViewBox(workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY),
     [workspaceBounds, state.canvas.zoom, state.canvas.panX, state.canvas.panY],
+  );
+  const viewBox = useMemo(
+    () => (viewportSize ? expandViewBoxToAspect(baseViewBox, viewportSize.width / viewportSize.height) : baseViewBox),
+    [baseViewBox, viewportSize],
   );
 
   // Ruler tick/label spacing adapts to zoom so labels never crowd together when zoomed out.
@@ -324,20 +383,25 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
 
   // Handle zoom controls
   const handleZoomIn = () => {
-    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
+    const zoom = Math.min(state.canvas.zoom * 1.2, MAX_CANVAS_ZOOM);
+    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
+    onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
 
   const handleZoomOut = () => {
-    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.1) } });
+    const zoom = Math.max(state.canvas.zoom / 1.2, MIN_CANVAS_ZOOM);
+    dispatch({ type: 'UPDATE_CANVAS', updates: { zoom } });
+    onManualViewChange?.({ zoom, panX: state.canvas.panX, panY: state.canvas.panY });
   };
 
   const handleZoomReset = () => {
     dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+    onManualViewChange?.({ zoom: 1, panX: 0, panY: 0 });
   };
 
   // Fits the actual design (not the padded default workspace) snugly into the
   // real, current pixel size of the canvas — distinct from "reset to 100%".
-  const handleFitToScreen = () => {
+  const fitToScreen = useCallback(() => {
     if (stones.length === 0) {
       dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
       return;
@@ -349,32 +413,38 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       minHeightMm: 0,
     });
 
-    let targetWidth = contentBounds.width;
-    let targetHeight = contentBounds.height;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (rect && rect.width > 0 && rect.height > 0) {
-      const contentAspect = targetWidth / targetHeight;
-      const rectAspect = rect.width / rect.height;
-      if (contentAspect > rectAspect) {
-        targetHeight = targetWidth / rectAspect;
-      } else {
-        targetWidth = targetHeight * rectAspect;
-      }
-    }
-
-    const exactFitZoom = Math.min(workspaceBounds.width / targetWidth, workspaceBounds.height / targetHeight);
-    // Zoom out slightly from the exact fit so the content isn't flush against the edges.
-    const nextZoom = Math.min(Math.max(exactFitZoom * FIT_TO_SCREEN_MARGIN, 0.1), 5);
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const fit = calculateFitViewTransform(
+      workspaceBounds,
+      contentBounds,
+      { widthPx: rect?.width ?? 1, heightPx: rect?.height ?? 1 },
+      { margin: FIT_TO_SCREEN_MARGIN, minZoom: 0.1, maxZoom: 100 },
+    );
 
     dispatch({
       type: 'UPDATE_CANVAS',
       updates: {
-        zoom: nextZoom,
-        panX: workspaceBounds.x + workspaceBounds.width / 2 - (contentBounds.x + contentBounds.width / 2),
-        panY: workspaceBounds.y + workspaceBounds.height / 2 - (contentBounds.y + contentBounds.height / 2),
+        zoom: fit.zoom,
+        panX: fit.panX,
+        panY: fit.panY,
       },
     });
+  }, [dispatch, stones, workspaceBounds]);
+
+  const handleFitToScreen = () => {
+    fitToScreen();
   };
+
+  const fitToScreenRef = useRef(fitToScreen);
+
+  useEffect(() => {
+    fitToScreenRef.current = fitToScreen;
+  }, [fitToScreen]);
+
+  useEffect(() => {
+    if (fitRequestId <= 0) return;
+    fitToScreenRef.current();
+  }, [fitRequestId]);
 
   const toggleGrid = () => {
     dispatch({ type: 'UPDATE_CANVAS', updates: { showGrid: !state.canvas.showGrid } });
@@ -387,7 +457,81 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   useEffect(() => {
     viewBoxRef.current = viewBox;
     workspaceBoundsRef.current = workspaceBounds;
-  }, [viewBox, workspaceBounds]);
+
+    // What the pan limit works from: the stones' bounds (or the workspace when empty) and the current view.
+    let content = workspaceBounds;
+    if (stones.length > 0) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const stone of stones) {
+        const radius = stone.holeDiameterMm / 2;
+        minX = Math.min(minX, stone.center.x - radius);
+        minY = Math.min(minY, stone.center.y - radius);
+        maxX = Math.max(maxX, stone.center.x + radius);
+        maxY = Math.max(maxY, stone.center.y + radius);
+      }
+      content = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    clampContextRef.current = {
+      workspace: workspaceBounds,
+      content,
+      aspect: viewportSize ? viewportSize.width / viewportSize.height : null,
+      zoom: state.canvas.zoom,
+      panX: state.canvas.panX,
+      panY: state.canvas.panY,
+    };
+  }, [viewBox, workspaceBounds, stones, viewportSize, state.canvas.zoom, state.canvas.panX, state.canvas.panY]);
+
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      setViewportSize((previous) =>
+        previous && Math.abs(previous.width - rect.width) < 0.5 && Math.abs(previous.height - rect.height) < 0.5
+          ? previous
+          : { width: rect.width, height: rect.height },
+      );
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Drops whatever one finger / the mouse had started (drag, draw, pan, box select) without applying it.
+  const cancelInteractions = () => {
+    const svg = svgRef.current;
+    const pointerIds = [drawState?.pointerId, boxSelection?.pointerId].filter((id): id is number => id !== undefined);
+    for (const id of pointerIds) {
+      if (svg?.hasPointerCapture(id)) svg.releasePointerCapture(id);
+    }
+    setDrawState(null);
+    setDragState(null);
+    setPanState(null);
+    setBoxSelection(null);
+    setSnapGuides([]);
+    setHoverPosition(null);
+  };
+
+  // Two fingers pinch-zoom and pan the view; one finger keeps working as the active tool.
+  useTouchViewGestures(svgRef, {
+    minZoom: MIN_CANVAS_ZOOM,
+    maxZoom: MAX_CANVAS_ZOOM,
+    getView: () => ({ zoom: state.canvas.zoom, viewBox: viewBoxRef.current }),
+    onGestureStart: cancelInteractions,
+    applyView: ({ zoom, viewBox: next }) => {
+      const bounds = workspaceBoundsRef.current;
+      const view = {
+        zoom,
+        panX: bounds.x + bounds.width / 2 - (next.x + next.width / 2),
+        panY: bounds.y + bounds.height / 2 - (next.y + next.height / 2),
+      };
+      dispatch({ type: 'UPDATE_CANVAS', updates: view });
+      onManualViewChange?.(view);
+    },
+  });
 
   // Get canvas transform for coordinate conversion
   const getCanvasTransform = (): CanvasTransform | null => {
@@ -422,6 +566,11 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           panX: panState.startPanX + dx * mmPerPxX, 
           panY: panState.startPanY + dy * mmPerPxY,
         } 
+      });
+      onManualViewChange?.({
+        zoom: state.canvas.zoom,
+        panX: panState.startPanX + dx * mmPerPxX,
+        panY: panState.startPanY + dy * mmPerPxY,
       });
       return;
     }
@@ -1022,7 +1171,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       // standard design-tool behavior (Figma, Google Maps, etc).
       if (e.ctrlKey || e.metaKey) {
         const delta = e.deltaY > 0 ? 0.9 : 1.1; // zoom in/out
-        const newZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.1), 5);
+        const newZoom = Math.min(Math.max(state.canvas.zoom * delta, MIN_CANVAS_ZOOM), MAX_CANVAS_ZOOM);
         if (newZoom === state.canvas.zoom) return;
 
         const fractionX = (e.clientX - rect.left) / rect.width;
@@ -1030,8 +1179,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         const cursorMmX = currentViewBox.x + fractionX * currentViewBox.width;
         const cursorMmY = currentViewBox.y + fractionY * currentViewBox.height;
 
-        const nextWidth = bounds.width / newZoom;
-        const nextHeight = bounds.height / newZoom;
+        // The shown box scales with 1/zoom (it is the workspace grown to the canvas shape).
+        const nextWidth = currentViewBox.width * (state.canvas.zoom / newZoom);
+        const nextHeight = currentViewBox.height * (state.canvas.zoom / newZoom);
         const nextCenterX = cursorMmX - fractionX * nextWidth + nextWidth / 2;
         const nextCenterY = cursorMmY - fractionY * nextHeight + nextHeight / 2;
 
@@ -1042,6 +1192,11 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             panX: bounds.x + bounds.width / 2 - nextCenterX,
             panY: bounds.y + bounds.height / 2 - nextCenterY,
           },
+        });
+        onManualViewChange?.({
+          zoom: newZoom,
+          panX: bounds.x + bounds.width / 2 - nextCenterX,
+          panY: bounds.y + bounds.height / 2 - nextCenterY,
         });
         return;
       }
@@ -1060,11 +1215,16 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           panY: currentPanY - e.deltaY * mmPerPxY,
         },
       });
+      onManualViewChange?.({
+        zoom: state.canvas.zoom,
+        panX: currentPanX - e.deltaX * mmPerPxX,
+        panY: currentPanY - e.deltaY * mmPerPxY,
+      });
     };
 
     svg.addEventListener('wheel', handleWheel, { passive: false });
     return () => svg.removeEventListener('wheel', handleWheel);
-  }, [state.canvas.zoom, dispatch]);
+  }, [state.canvas.zoom, dispatch, onManualViewChange]);
 
   // Space key pan state
   const [spacePressed, setSpacePressed] = useState(false);
@@ -1072,7 +1232,8 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ' && !spacePressed) {
-        if (!isIgnoredKeyboardTarget(e.target)) {
+        // Space also activates a focused button/link/summary; never swallow it there.
+        if (!isIgnoredKeyboardTarget(e.target) && !isActivatableControl(e.target)) {
           e.preventDefault();
           setSpacePressed(true);
         }
@@ -1096,9 +1257,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
   const hasCanvasContent = stones.length > 0 || cutShapes.length > 0;
 
   return (
-    <div ref={containerRef} className="relative flex-1 overflow-hidden bg-[var(--studio-surface)]">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
+    <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
         </div>
@@ -1152,7 +1313,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                   >
                     <div className={`w-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1 text-[10px] font-medium leading-none text-[var(--studio-ink-subtle)]">
+                      <span className="absolute left-1 top-1 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -1171,7 +1332,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                   >
                     <div className={`h-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
                     {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-medium leading-none text-[var(--studio-ink-subtle)]">
+                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
                         {Math.round(tick)}
                       </span>
                     )}
@@ -1182,13 +1343,15 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           )}
 
           <div
+            ref={viewportRef}
             className="relative h-full w-full"
             style={{ gridColumn: state.canvas.showRulers ? 2 : 1, gridRow: state.canvas.showRulers ? 2 : 1 }}
           >
             <svg
               ref={svgRef}
               viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-              className="h-full w-full bg-[var(--studio-bg)]"
+              preserveAspectRatio="xMidYMid meet"
+              className="absolute inset-0 h-full w-full touch-none bg-[var(--studio-bg)]"
               style={{
                 width: '100%',
                 height: '100%',
@@ -1202,6 +1365,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
               onPointerMove={handleMouseMove}
               onPointerLeave={handleMouseLeave}
               onPointerUp={handleMouseUp}
+              onPointerCancel={cancelInteractions}
               onContextMenu={(e) => e.preventDefault()}
             >
           {/* Grid */}
@@ -1237,8 +1401,9 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
           )}
           {state.canvas.showGrid && (
             <>
-              <rect width="100%" height="100%" fill="url(#grid-minor)" />
-              <rect width="100%" height="100%" fill="url(#grid-major)" opacity="0.95" />
+              {/* Covers the whole visible area, wherever the view is, so panning never leaves the grid. */}
+              <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-minor)" />
+              <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-major)" opacity="0.95" />
             </>
           )}
 
@@ -1317,19 +1482,20 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
                   />
                 )}
 
-                {/* Stone hole */}
+                {/* Stone hole: drawn to scale. The outer edge of the stroke is the hole, so the gap between two
+                    stones on the canvas is the real gap (a thicker stroke made a cuttable layout look overlapped). */}
                 <circle
                   cx={displayX}
                   cy={displayY}
-                  r={r}
+                  r={r - STONE_STROKE_MM / 2}
                   fill={isPendingErase ? 'rgba(228,69,59,0.18)' : baseColor}
-                  fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.42 : isRecentlyPlaced ? 0.56 : 0.36}
+                  fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
                   stroke={
                     isPendingErase
                       ? '#e4453b'
                       : baseColor
                   }
-                  strokeWidth={isPendingErase ? '0.65' : isSelected ? '0.95' : isRecentlyPlaced ? '1' : '0.72'}
+                  strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
                   className={state.activeTool === 'select' ? 'cursor-pointer transition' : ''}
                   onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}
@@ -1511,33 +1677,17 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
             </g>
           )}
 
-          {/* Empty State */}
-          {stones.length === 0 && (
-            <g>
-              <text
-                x={viewBox.x + viewBox.width / 2}
-                y={viewBox.y + viewBox.height / 2 - 20}
-                textAnchor="middle"
-                fill="#a1a1aa"
-                style={{ fontSize: '14px', fontWeight: 600 }}
-              >
-                Ready canvas
-              </text>
-              <text
-                x={viewBox.x + viewBox.width / 2}
-                y={viewBox.y + viewBox.height / 2}
-                textAnchor="middle"
-                fill="#71717a"
-                style={{ fontSize: '11px' }}
-              >
-                Text, artwork, grid, or pen tools are available in Source controls
-              </text>
-            </g>
-          )}
         </svg>
           </div>
         </div>
       </div>
+
+      {stones.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-8 text-center">
+          <p className="text-base font-semibold text-[var(--studio-ink-secondary)]">Nothing here yet</p>
+          <p className="max-w-sm text-sm text-[var(--studio-ink-muted)]">Type a text, upload artwork or pick a starter in the panel on the right.</p>
+        </div>
+      )}
 
       {/* Zoom Indicator */}
       <div className="absolute bottom-3 right-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2.5 py-1 text-xs font-medium tabular-nums text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4">
@@ -1549,10 +1699,10 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
         <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           <div>Click to place {state.manualTool.addStoneSize} stone</div>
           {state.manualTool.snapToGrid && (
-            <div className="mt-1 text-ink-muted">Snap: {state.manualTool.gridSnapSize}mm grid</div>
+            <div className="mt-1 text-[var(--studio-ink-muted)]">Snap: {state.manualTool.gridSnapSize}mm grid</div>
           )}
           {hoverPosition && (
-            <div className="mt-1 font-mono tabular-nums text-ink-muted">
+            <div className="mt-1 font-mono tabular-nums text-[var(--studio-ink-muted)]">
               X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
             </div>
           )}
@@ -1566,7 +1716,7 @@ export default function EditorCanvas({ state, dispatch, onNotify }: EditorCanvas
       {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
         <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
-          <div className="mt-1 text-ink-muted">Delete or drag to move</div>
+          <div className="mt-1 text-[var(--studio-ink-muted)]">Delete or drag to move</div>
         </div>
       )}
     </div>

@@ -18,7 +18,6 @@ import {
   TextAlign as OutlineTextAlign,
   Stone,
   type GeneratorId,
-  LEGACY_OUTLINE_FONT_ID,
   DEFAULT_SVG_ALPHABET_ID,
   suggestSvgUploadMode,
   getPreferredTextCoverageMode,
@@ -27,8 +26,12 @@ import {
   getSupportedRhinestoneFontStoneSizes,
   getRhinestoneFontDefinition,
   isKnownRhinestoneFontId,
+  svgStringToPolylines,
+  calculatePolylineBounds,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
+import { applyWorkspaceDefaults } from './newProjectDefaults';
+import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
@@ -89,6 +92,8 @@ export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
 export type SvgDimensionUnit = 'mm' | 'in';
 
 export interface SvgToolState {
+  /** Longest side (mm) an uploaded SVG is scaled to; falls back to DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM. */
+  uploadLongestSideMm?: number;
   uploadedSvgText: string | null;
   svgFileName: string | null;
   assetKind: SvgAssetKind;
@@ -122,6 +127,8 @@ export interface SvgToolState {
   placementPattern: FillPlacementPattern;
   contourSettings: ContourCoverageSettings;
   radialSettings: RadialPlacementSettings;
+  /** Colours (`#rrggbb`) the user turned on or off, overriding what the importer decided (e.g. a white background). */
+  layerRoles: Record<string, 'stones' | 'ignore'>;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
@@ -285,17 +292,56 @@ export interface EditorState {
   history: EditHistory;
 }
 
+export const DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM = 100;
+export const MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM = 280;
+
+function getDefaultSvgUploadTargetDimensions(
+  svgText: string,
+  longestSideMm: number = DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM,
+): { widthMm: number; heightMm: number } {
+  const targetLongestSideMm = Math.min(longestSideMm, MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM);
+
+  try {
+    const polylines = svgStringToPolylines(svgText, { cleanup: false });
+    const bounds = calculatePolylineBounds(polylines);
+    const sourceWidthMm = Math.max(bounds.width, 1e-6);
+    const sourceHeightMm = Math.max(bounds.height, 1e-6);
+
+    if (sourceWidthMm >= sourceHeightMm) {
+      return {
+        widthMm: targetLongestSideMm,
+        heightMm: Number(((sourceHeightMm / sourceWidthMm) * targetLongestSideMm).toFixed(2)),
+      };
+    }
+
+    return {
+      widthMm: Number(((sourceWidthMm / sourceHeightMm) * targetLongestSideMm).toFixed(2)),
+      heightMm: targetLongestSideMm,
+    };
+  } catch {
+    return {
+      widthMm: targetLongestSideMm,
+      heightMm: targetLongestSideMm,
+    };
+  }
+}
+
 // ─── Default States ───────────────────────────────────────────────────────────
+
+export const DEFAULT_TEXT_FONT_ID = 'archivo-black';
 
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   outlineTextStyle: 'outline',
-  text: 'SMOOCH',
+  // The first thing a new user sees has to look good right away: a heavy bundled font, large enough that each
+  // letter gets two clean rows of stones (at 25 mm the rows touch and the letters turn to mush), on two lines so
+  // it still fits a 12 x 12 in mat (about 207 x 118 mm).
+  text: 'YOUR\nNAME',
   stoneSize: 'SS10',
-  fontId: LEGACY_OUTLINE_FONT_ID,
+  fontId: DEFAULT_TEXT_FONT_ID,
   unsupportedCharacters: [],
   warnings: [],
-  fontSizeMm: 25,
+  fontSizeMm: 60,
   align: 'left',
   letterSpacingMm: 2,
   lineSpacingMm: 8,
@@ -400,10 +446,14 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     next.densityPreset = 'dense';
   };
 
-  if (updates.renderMode === 'vector-layout') {
-    applyVectorLayoutPreset();
-  } else if (updates.renderMode === 'artwork-dots') {
-    applyArtworkDotsPreset();
+  // A render mode brings its preset along unless the same update says how to cover the shape: restoring a saved design
+  // passes both, and the saved choice (for example Rows) must win.
+  if (updates.coverageMode === undefined) {
+    if (updates.renderMode === 'vector-layout') {
+      applyVectorLayoutPreset();
+    } else if (updates.renderMode === 'artwork-dots') {
+      applyArtworkDotsPreset();
+    }
   }
 
   if (
@@ -415,8 +465,21 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     if (suggestSvgUploadMode(updates.uploadedSvgText) === 'outline-fill') {
       next.renderMode = 'artwork-dots';
       applyArtworkDotsPreset();
-      next.targetWidthMm = 280;
     }
+    const defaults = getDefaultSvgUploadTargetDimensions(updates.uploadedSvgText, next.uploadLongestSideMm);
+    next.targetWidthMm = defaults.widthMm;
+    next.targetHeightMm = defaults.heightMm;
+  }
+
+  // A picture is usually a logo to fill, so a newly chosen image starts as Solid (a restored design brings its own mode).
+  if (
+    typeof updates.uploadedImageDataUrl === 'string'
+    && updates.uploadedImageDataUrl.length > 0
+    && updates.renderMode === undefined
+    && updates.coverageMode === undefined
+  ) {
+    next.renderMode = 'artwork-dots';
+    applyArtworkDotsPreset();
   }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
@@ -468,6 +531,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
     centerOffsetYmm: 0,
     includeCenterStone: true,
   },
+  layerRoles: {},
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
@@ -606,6 +670,8 @@ export type EditorAction =
   | { type: 'DISCARD_EDITABLE_CHANGES' }
   | { type: 'ADD_STONES'; stones: EditableStone[] }
   | { type: 'DELETE_STONES'; stoneIds: string[] }
+  /** Replaces every stone at once (auto-fix). Converts a generated design to editable first. One undo step. */
+  | { type: 'REPLACE_STONES'; stones: EditableStone[] }
   | { type: 'MOVE_STONES'; moves: Array<{ id: string; toX: number; toY: number }> }
   | { type: 'UPDATE_STONE'; id: string; updates: Partial<EditableStone> }
   | { type: 'DUPLICATE_STONES'; stoneIds: string[] }
@@ -616,6 +682,7 @@ export type EditorAction =
   | { type: 'UNDO' }
   | { type: 'REDO' }
   | { type: 'LOAD_PROJECT_STATE'; state: Partial<EditorState> }
+  | { type: 'APPLY_WORKSPACE_DEFAULTS'; settings: WorkspaceSettings } // new-project defaults from Settings; keeps everything else
   | { type: 'RESET_EDITOR' };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -718,6 +785,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
     
     case 'SET_TEMPLATE':
+      // Generation sets `null` again for every settings change on an empty design; no new state, no render.
+      if (state.template === action.template) return state;
       return { ...state, template: action.template };
     
     case 'UPDATE_CANVAS':
@@ -823,6 +892,39 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
     }
     
+    case 'REPLACE_STONES': {
+      if (!state.template && !state.editableTemplate.isEditable) return state;
+
+      const wasEditable = state.editableTemplate.isEditable;
+      // Undo must bring back the stones as they were before the fix, also when the design was generated.
+      const stonesBefore = wasEditable
+        ? state.editableTemplate.stones
+        : (state.template?.stones ?? []).map((stone) => ({ ...stone }));
+      const historyEntry: HistoryEntry = {
+        stones: stonesBefore,
+        selectedIds: new Set(state.selectedStoneIds),
+      };
+
+      return {
+        ...state,
+        editableTemplate: wasEditable
+          ? { ...state.editableTemplate, stones: action.stones }
+          : {
+              isEditable: true,
+              stones: action.stones,
+              originalTemplate: state.template,
+              sourceGenerator: inferEditableSourceGenerator(state),
+            },
+        selectedStoneIds: new Set(
+          [...state.selectedStoneIds].filter((id) => action.stones.some((stone) => stone.id === id)),
+        ),
+        history: {
+          past: [...state.history.past, historyEntry],
+          future: [],
+        },
+      };
+    }
+
     case 'DELETE_STONES': {
       if (!state.editableTemplate.isEditable) return state;
       
@@ -1175,6 +1277,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'LOAD_PROJECT_STATE':
       return { ...state, ...action.state };
     
+    case 'APPLY_WORKSPACE_DEFAULTS':
+      return applyWorkspaceDefaults(state, action.settings);
+
     case 'RESET_EDITOR':
       return { ...DEFAULT_EDITOR_STATE };
     

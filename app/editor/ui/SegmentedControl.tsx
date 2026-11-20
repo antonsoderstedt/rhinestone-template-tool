@@ -50,7 +50,7 @@ export default function SegmentedControl<T extends string>({
               {option.icon}
               {option.label}
             </span>
-            {option.description && <span className="text-[10px] text-ink-muted">{option.description}</span>}
+            {option.description && <span className="text-xs text-ink-muted">{option.description}</span>}
           </button>
         );
       })}

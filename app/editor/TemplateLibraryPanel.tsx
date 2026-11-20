@@ -106,7 +106,7 @@ export default function TemplateLibraryPanel({
           // eslint-disable-next-line @next/next/no-img-element -- client-generated data: URI thumbnail, no network fetch for next/image to optimize
           <img src={entry.previewRef} alt={entry.name} className="h-20 w-full object-contain" />
         ) : (
-          <div className="flex h-20 items-center justify-center text-[10px] text-[var(--studio-ink-muted)] px-2 text-center">
+          <div className="flex h-20 items-center justify-center text-xs text-[var(--studio-ink-muted)] px-2 text-center">
             {entry.name}
           </div>
         )}
@@ -115,13 +115,14 @@ export default function TemplateLibraryPanel({
       <div className="mt-2 flex items-start justify-between gap-1">
         <div className="min-w-0">
           <h3 className="truncate text-xs font-semibold text-[var(--studio-ink)]">{entry.name}</h3>
-          <p className="mt-0.5 text-[10px] text-[var(--studio-ink-muted)]">
+          <p className="mt-0.5 text-xs text-[var(--studio-ink-muted)]">
             {entry.stoneCount} stones
             {entry.widthMm && entry.heightMm ? ` · ${entry.widthMm.toFixed(0)}×${entry.heightMm.toFixed(0)} mm` : ''}
           </p>
         </div>
         <button
           onClick={() => onFavorite(entry.templateId, !entry.favorite)}
+          aria-label={entry.favorite ? `Remove ${entry.name} from favorites` : `Add ${entry.name} to favorites`}
           className="rounded p-1 text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)]"
           title={entry.favorite ? 'Remove favorite' : 'Favorite'}
         >
@@ -132,21 +133,23 @@ export default function TemplateLibraryPanel({
       <div className="mt-2 flex flex-wrap gap-1">
         <button
           onClick={() => entry.tags.includes('autosave') ? onLoadAutosave() : onLoad(entry.templateId)}
-          className="inline-flex items-center gap-1 rounded bg-violet-500/20 px-2 py-1 text-[10px] font-medium text-violet-200 transition hover:bg-violet-500/35"
+          className="inline-flex items-center gap-1 rounded bg-violet-500/20 px-2 py-1 text-xs font-medium text-violet-200 transition hover:bg-violet-500/35"
         >
           <FolderOpen className="h-3 w-3" />
           Open
         </button>
-        <button
-          onClick={() => onDuplicate(entry.templateId)}
-          className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
-        >
-          Copy
-        </button>
+        {!entry.tags.includes('autosave') && (
+          <button
+            onClick={() => onDuplicate(entry.templateId)}
+            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-xs text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+          >
+            Copy
+          </button>
+        )}
         {!entry.builtIn && !entry.tags.includes('autosave') && (
           <button
             onClick={() => onRename(entry.templateId)}
-            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
+            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-xs text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
           >
             Rename
           </button>
@@ -154,7 +157,8 @@ export default function TemplateLibraryPanel({
         {!entry.builtIn && !entry.tags.includes('autosave') && (
           <button
             onClick={() => onDelete(entry.templateId)}
-            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] text-[var(--studio-ink-muted)] transition hover:border-rose-400/40 hover:text-rose-400"
+            aria-label={`Delete ${entry.name}`}
+            className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-xs text-[var(--studio-ink-muted)] transition hover:border-rose-400/40 hover:text-rose-400"
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -169,12 +173,12 @@ export default function TemplateLibraryPanel({
         <div className="border-b border-[var(--studio-border)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="inline-flex rounded-full border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">
-                Browser library
+              <div className="inline-flex rounded-full border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">
+                Saved in this browser
               </div>
               <div className="flex items-center gap-2 text-[var(--studio-ink)]">
                 <LibraryBig className="h-4 w-4 text-amber-400" />
-                <h2 className="text-sm font-semibold">Template Library</h2>
+                <h2 className="text-sm font-semibold">My Designs</h2>
               </div>
             </div>
             <button
@@ -189,17 +193,18 @@ export default function TemplateLibraryPanel({
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--studio-border)] px-4 py-2">
           <button
             onClick={onSaveCurrent}
-            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-400"
+            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-500"
           >
             <Save className="h-3.5 w-3.5" />
-            Save current
+            Save to My Designs
           </button>
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search…"
-            className="min-w-0 flex-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs text-[var(--studio-ink)] placeholder:text-[var(--studio-ink-muted)] focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400/30"
+            aria-label="Search designs"
+            className="min-w-0 flex-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs text-[var(--studio-ink)] placeholder:text-[var(--studio-ink-muted)] focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
           <div className="flex items-center gap-1">
             {([
@@ -211,6 +216,7 @@ export default function TemplateLibraryPanel({
               <button
                 key={value}
                 onClick={() => setFilterMode(value)}
+                aria-pressed={filterMode === value}
                 className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${filterMode === value ? 'bg-violet-500/35 text-white' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
               >
                 {label}
@@ -218,9 +224,10 @@ export default function TemplateLibraryPanel({
             ))}
           </div>
           <select
+            aria-label="Sort designs"
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as 'recent' | 'name' | 'stones')}
-            className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 text-xs text-[var(--studio-ink)] focus:outline-none"
+            className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 text-xs text-[var(--studio-ink)]"
           >
             <option value="recent">Recent</option>
             <option value="name">Name</option>
@@ -232,7 +239,7 @@ export default function TemplateLibraryPanel({
           {builtInEntries.length === 0 && userEntries.length === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">
               <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">No saved designs yet.</p>
-              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Save the current canvas to build a reusable design library.</p>
+              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Press “Save to My Designs” to keep the current canvas in this browser.</p>
             </div>
           ) : totalVisibleEntries === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">

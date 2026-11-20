@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
-import { getOutlineFontDefinition, isKnownOutlineFontId } from '@/src/lib/rhinestone-engine/index';
+import { getOutlineFontDefinition, isKnownOutlineFontId, repairFontBytes } from '@/src/lib/rhinestone-engine/index';
 
 function contentTypeForFontFile(filePath: string): string {
   return path.extname(filePath).toLowerCase() === '.woff2' ? 'font/woff2' : 'font/woff';
@@ -22,8 +22,10 @@ export async function GET(
     return NextResponse.json({ error: 'Font asset unavailable' }, { status: 404 });
   }
 
-  const fileBuffer = await readFile(definition.nodeFilePath);
-  return new NextResponse(fileBuffer, {
+  // Some packaged WOFF files carry trailing bytes that make browsers reject them
+  // (fredoka-one); serve them trimmed to the length the header declares.
+  const fileBuffer = repairFontBytes(await readFile(definition.nodeFilePath));
+  return new NextResponse(new Uint8Array(fileBuffer), {
     headers: {
       'Content-Type': contentTypeForFontFile(definition.nodeFilePath),
       'Cache-Control': 'public, max-age=31536000, immutable',

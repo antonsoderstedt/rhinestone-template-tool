@@ -107,8 +107,8 @@ function PackItemCard({ item }: { item: PackItemView }) {
       <div
         className={`px-4 py-2 text-xs font-semibold flex items-center gap-1.5 ${
           readiness.ready
-            ? 'bg-success-500 text-ink-inverse'
-            : 'bg-danger-500 text-ink-inverse'
+            ? 'bg-success-600 text-ink-inverse'
+            : 'bg-danger-600 text-ink-inverse'
         }`}
       >
         {readiness.ready ? '✓ Ready' : '✗ Has errors'}
@@ -124,15 +124,15 @@ function PackItemCard({ item }: { item: PackItemView }) {
         {/* Stats */}
         <dl className="grid grid-cols-3 gap-x-3 text-xs">
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Stones</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Stones</dt>
             <dd className="font-semibold text-ink">{readiness.summary.stoneCount}</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Width</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Width</dt>
             <dd className="font-semibold text-ink">{readiness.summary.widthMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Height</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Height</dt>
             <dd className="font-semibold text-ink">{readiness.summary.heightMm.toFixed(1)} mm</dd>
           </div>
         </dl>

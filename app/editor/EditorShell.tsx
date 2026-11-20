@@ -1,6 +1,9 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
+import GettingStartedGuide from './GettingStartedGuide';
+import EmptyCanvasPrompt from './EmptyCanvasPrompt';
 import { useSearchParams } from 'next/navigation';
 import {
   editorReducer,
@@ -12,24 +15,28 @@ import {
   createStoneGridTemplate,
   createOutlineTextTemplateAsync,
   createDotMatrixTextTemplate,
-  svgStringToPolylines,
-  createPolylineFilledRhinestoneTemplate,
-  scalePolylinesToFit,
   checkExportReadiness,
   createTemplateLibraryEntry,
   parseRhinestoneProject,
   createBasicSvgExport,
+  getMatFit,
   LEGACY_OUTLINE_FONT_ID,
   LocalStorageTemplateLibraryRepository,
   createRhinestoneFontTemplate,
   createSvgAlphabetTemplate,
   createLetterStencilTemplate,
-  createRasterArtworkTemplate,
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
+  validateAssetUpload,
   TRW_STONE_SIZE_CALIBRATION,
+  DEFAULT_OUTLINE_FONT_ID,
+  isAvailableOutlineFontId,
+  autoFixSpacing,
+  enlargeToCuttableSpacing,
+  getDefaultMaterialProfile,
 } from '@/src/lib/rhinestone-engine/index';
 import type {
+  RhinestoneTemplate,
   TemplateLibraryEntry,
   TemplateLibraryRecord,
   TemplateLibraryRepository,
@@ -41,10 +48,32 @@ import EditorPropertiesPanel from './EditorPropertiesPanel';
 import type { OutlineFontStatus } from './controls/FontPicker';
 import EditorStatusBar from './EditorStatusBar';
 import EditorDialog from './EditorDialog';
+import { buildFitToMatPlan, canResizeDesign } from './fitToMat';
+import { hasSpacingIssues, type QuickFixAction } from './quickFixItems';
+import dynamic from 'next/dynamic';
+import PromptDialog from '../components/PromptDialog';
+import { readSvgSizeMm } from '../components/exportDialogHelpers';
 import EditorToast from './EditorToast';
+import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import { Download, ScanSearch, SlidersHorizontal, Wrench } from 'lucide-react';
+import MobileStudioBar from '../components/MobileStudioBar';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
+import {
+  RHINESTONE_NUDGE_SHIFT_STEP_MM,
+  RHINESTONE_NUDGE_STEP_MM,
+  isKeyHandlingWidget,
+  isModalOpen,
+  nudgeCenters,
+  resolveStudioShortcut,
+} from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
-import GarmentPreviewPanel from '../components/GarmentPreviewPanel';
-import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
+import { useStableValue } from './useStableValue';
+import { generateRasterArtwork, generateSvgArtwork, type ArtworkInfo } from './artworkGeneration';
+// Dialogs are loaded when first opened, keeping the first load of the studio smaller.
+const ExportDialog = dynamic(() => import('../components/ExportDialog'));
+const SplitExportPanel = dynamic(() => import('./SplitExportPanel'));
+const GarmentPreviewPanel = dynamic(() => import('../components/GarmentPreviewPanel'), { ssr: false });
+import { getExportFilename, getExportGate, summarizeExportStatus } from '../components/summarizeExportStatus';
 import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
@@ -53,11 +82,30 @@ import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
+  readRhinestoneAutosave,
   savedStoneToEditableStone,
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
-import { findAssetById, readActiveCalibrationProfile } from '../lib/workspaceVault';
+import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
+import { generateAndResolveTemplate } from './generateAndResolveTemplate';
+import {
+  calculateCanvasWorkspaceBounds,
+  MAX_CANVAS_ZOOM,
+  MIN_CANVAS_ZOOM,
+  validatePersistedCanvasView,
+} from './canvasCoordinates';
+
+/** Deleting at least this many stones in one step shows an Undo toast (every delete does). */
+const DELETE_UNDO_THRESHOLD = 1;
+
+type OutlineFontStatusState = { status: 'idle' | 'loading' | 'error'; message: string | null; fontId: string };
+
+/** State updater that keeps the current object when nothing changed, so React skips the render. */
+function replaceOutlineFontStatus(next: OutlineFontStatusState) {
+  return (current: OutlineFontStatusState): OutlineFontStatusState =>
+    current.status === next.status && current.message === next.message && current.fontId === next.fontId ? current : next;
+}
 
 export default function EditorShell() {
   const { theme, toggleTheme } = useStudioTheme();
@@ -67,16 +115,30 @@ export default function EditorShell() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateLibraryRepositoryRef = useRef<TemplateLibraryRepository | null>(null);
   const generationRequestRef = useRef(0);
+  const lastSpacingAdjustmentCountRef = useRef<number | null>(null);
   const handledQueryRef = useRef<string | null>(null);
+  const launchIntentHandledRef = useRef(false);
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
-  const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: 'success' | 'warning' | 'error' | 'info';
+    action?: { label: string; onClick: () => void };
+  } | null>(null);
+  const [namePrompt, setNamePrompt] = useState<{ mode: 'rename' | 'duplicate'; templateId: string; initialValue: string } | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment'>('canvas');
+  const [fitRequestId, setFitRequestId] = useState(0);
+  // Phones and tablets: which panel the bottom bar has open under the canvas.
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('none');
+  const isMobile = useIsMobileStudio();
+  const [spacingAdjustmentNote, setSpacingAdjustmentNote] = useState<string | null>(null);
   const [activeLibraryTemplateId, setActiveLibraryTemplateId] = useState<string | null>(null);
   const [autosaveEntry, setAutosaveEntry] = useState<TemplateLibraryEntry | null>(null);
-  const [hasPromptedAutosaveRestore, setHasPromptedAutosaveRestore] = useState(false);
+  const [autosaveDecision, setAutosaveDecision] = useState<'deciding' | 'ready' | 'restored'>('deciding');
+  const initialAutosaveRestoreRef = useRef(false);
   const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
+  const [artworkInfo, setArtworkInfo] = useState<ArtworkInfo | null>(null);
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
     message: string | null;
@@ -89,7 +151,7 @@ export default function EditorShell() {
   const [pendingDialog, setPendingDialog] = useState<
     | null
     | {
-        kind: 'new-project' | 'export-warning' | 'export-blocked' | 'autosave-restore';
+        kind: 'new-project' | 'export-blocked' | 'autosave-restore' | 'asset-open-error';
         title: string;
         message: string;
         details?: string[];
@@ -103,10 +165,45 @@ export default function EditorShell() {
         };
       }
   >(null);
+  const requestCanvasFit = useCallback(() => {
+    setFitRequestId((current) => current + 1);
+  }, []);
+
+  const canvasViewStorageKey = useMemo(() => {
+    const normalizedName = state.projectName.trim().toLowerCase().replace(/\s+/g, '-') || 'untitled-project';
+    return `rhinestone-canvas-view:${normalizedName}`;
+  }, [state.projectName]);
+
+  // Deleting stones is easy to do by accident (and Select all + Delete removes everything),
+  // so every delete offers a one-click Undo. History already supports undo; this only surfaces it.
+  const editableStoneCount = state.editableTemplate.stones.length;
+  const historyDepth = state.history.past.length;
+  const previousStoneStatsRef = useRef({ stoneCount: editableStoneCount, historyDepth });
+  const suppressDeleteToastRef = useRef(false);
+  useEffect(() => {
+    const previous = previousStoneStatsRef.current;
+    previousStoneStatsRef.current = { stoneCount: editableStoneCount, historyDepth };
+    const removed = previous.stoneCount - editableStoneCount;
+    if (suppressDeleteToastRef.current) {
+      // An auto-fix removed stones and already told the user; do not call that a "delete".
+      suppressDeleteToastRef.current = false;
+      return;
+    }
+    if (removed >= DELETE_UNDO_THRESHOLD && historyDepth === previous.historyDepth + 1) {
+      setToast({
+        message: removed === 1 ? 'Deleted 1 stone.' : `Deleted ${removed} stones.`,
+        tone: 'info',
+        action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+      });
+    }
+  }, [dispatch, editableStoneCount, historyDepth]);
 
   useEffect(() => {
     if (!toast) return;
-    const timeoutId = window.setTimeout(() => setToast(null), toast.tone === 'error' ? 5000 : 3200);
+    const timeoutId = window.setTimeout(
+      () => setToast(null),
+      toast.action ? 8000 : toast.tone === 'error' ? 5000 : 3200,
+    );
     return () => window.clearTimeout(timeoutId);
   }, [toast]);
 
@@ -124,109 +221,115 @@ export default function EditorShell() {
     templateLibraryRepositoryRef.current = new LocalStorageTemplateLibraryRepository();
     void refreshTemplateLibrary();
     const rawAutosave = globalThis.localStorage?.getItem(AUTOSAVE_STORAGE_KEY);
-    if (!rawAutosave) return;
-    const timeoutId = window.setTimeout(() => {
-      try {
-        setAutosaveEntry(JSON.parse(rawAutosave) as TemplateLibraryEntry);
-      } catch {
-        setAutosaveEntry(null);
-      }
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
+    const previousSession = readRhinestoneAutosave(rawAutosave);
+
+    // Arriving with a launch link (a font, an asset or a saved design) means the
+    // user wants that design, so it wins over restoring the last session. The last
+    // session is not thrown away: it is copied into My Designs first.
+    const params = new URLSearchParams(globalThis.location?.search ?? '');
+    const hasLaunchIntent = ['designId', 'asset', 'font', 'text', 'tool'].some((key) => params.has(key));
+    const entry = hasLaunchIntent ? null : previousSession;
+    let keptPreviousSession = false;
+    if (hasLaunchIntent && previousSession && !launchIntentHandledRef.current) {
+      launchIntentHandledRef.current = true;
+      keptPreviousSession = true;
+      const baseName = previousSession.name.replace(/\s*\(Autosave\)$/, '');
+      void templateLibraryRepositoryRef.current?.save({
+        ...previousSession,
+        templateId: `previous-session-${previousSession.updatedAt}`,
+        name: `${baseName} (previous session)`,
+        readOnly: false,
+        tags: previousSession.tags.filter((tag) => tag !== 'autosave'),
+      }).then(() => refreshTemplateLibrary());
+    }
+
+    // A first visit (nothing to restore) starts from the Settings defaults. Dispatched
+    // synchronously so it is applied before the launch-link effect below sets its text/font.
+    if (!entry) dispatch({ type: 'APPLY_WORKSPACE_DEFAULTS', settings: readWorkspaceSettings() });
+    queueMicrotask(() => {
+      setAutosaveEntry(entry);
+      setAutosaveDecision(entry ? 'restored' : 'ready');
+      if (keptPreviousSession) setToast({ message: 'Your previous session was saved in My Designs.', tone: 'info' });
+    });
   }, [refreshTemplateLibrary]);
 
-  useEffect(() => {
-    if (!autosaveEntry || hasPromptedAutosaveRestore) return;
-    if (state.projectName !== DEFAULT_EDITOR_STATE.projectName) return;
-    if (state.template || state.editableTemplate.isEditable) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setPendingDialog({
-        kind: 'autosave-restore',
-        title: 'Restore autosave?',
-        message: `A recent autosave for "${autosaveEntry.name}" is available in this browser. Restore it now or discard it.`,
-        confirmLabel: 'Restore autosave',
-        icon: 'info',
-        tertiaryAction: {
-          label: 'Discard autosave',
-          tone: 'destructive',
-          onClick: () => {
-            globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
-            setAutosaveEntry(null);
-            setPendingDialog(null);
-            setToast({ message: 'Autosave discarded.', tone: 'info' });
-          },
-        },
-      });
-      setHasPromptedAutosaveRestore(true);
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [autosaveEntry, hasPromptedAutosaveRestore, state.editableTemplate.isEditable, state.projectName, state.template]);
+  /** Blank project that starts from the Settings defaults (stone size, density, artwork size). */
+  const resetToNewProject = useCallback(() => {
+    dispatch({ type: 'RESET_EDITOR' });
+    dispatch({ type: 'APPLY_WORKSPACE_DEFAULTS', settings: readWorkspaceSettings() });
+  }, []);
 
   // ─── Template Generation ───────────────────────────────────────────────────
 
   const sourceTool = useMemo(() => getSourcePanelTool(state), [state]);
+
+  // The generation effect is keyed on tool *content*, not slice identity: while an update is stuck waiting for
+  // its lane React rebuilds `state` on every render, so identical settings arrive as new objects (see useStableValue).
+  const generationGridTool = useStableValue(state.gridTool);
+  const generationTextTool = useStableValue(state.textTool);
+  const generationSvgTool = useStableValue(state.svgTool);
 
   /**
    * Generate template based on active tool and its state.
    * This runs whenever tool state changes.
    */
   useEffect(() => {
+    if (autosaveDecision === 'deciding') return;
     const requestId = ++generationRequestRef.current;
 
     const generateTemplate = async () => {
       try {
-        let template = null;
+        let template: RhinestoneTemplate | null = null;
 
         switch (sourceTool) {
           case 'grid':
             template = createStoneGridTemplate({
               id: 'grid-preview',
               name: 'Grid Preview',
-              stoneSize: state.gridTool.stoneSize,
-              columns: state.gridTool.columns,
-              rows: state.gridTool.rows,
-              densityPreset: state.gridTool.densityPreset,
-              customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : undefined,
+              stoneSize: generationGridTool.stoneSize,
+              columns: generationGridTool.columns,
+              rows: generationGridTool.rows,
+              densityPreset: generationGridTool.densityPreset,
+              customSpacingMm: typeof generationGridTool.customSpacingMm === 'number' ? generationGridTool.customSpacingMm : undefined,
             });
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'text':
-            if (state.textTool.text.trim()) {
-              if (state.textTool.mode === 'outline') {
-                const usesBundledFont = state.textTool.fontId !== LEGACY_OUTLINE_FONT_ID;
-                setOutlineFontStatus({
+            if (generationTextTool.text.trim()) {
+              if (generationTextTool.mode === 'outline') {
+                const usesBundledFont = generationTextTool.fontId !== LEGACY_OUTLINE_FONT_ID;
+                setOutlineFontStatus(replaceOutlineFontStatus({
                   status: usesBundledFont ? 'loading' : 'idle',
                   message: usesBundledFont ? 'Loading font geometry…' : null,
-                  fontId: state.textTool.fontId,
-                });
+                  fontId: generationTextTool.fontId,
+                }));
                 template = await createOutlineTextTemplateAsync({
                   id: 'text-outline-preview',
                   name: 'Text Outline Preview',
-                  text: state.textTool.text,
-                  stoneSize: state.textTool.stoneSize,
-                  outlineTextStyle: state.textTool.outlineTextStyle,
-                  fontId: state.textTool.fontId,
-                  fontSizeMm: typeof state.textTool.fontSizeMm === 'number' ? state.textTool.fontSizeMm : 25,
-                  align: state.textTool.align,
-                  letterSpacingMm: typeof state.textTool.letterSpacingMm === 'number' ? state.textTool.letterSpacingMm : 0,
-                  lineSpacingMm: typeof state.textTool.lineSpacingMm === 'number' ? state.textTool.lineSpacingMm : 10,
-                  curveAmount: state.textTool.curveAmount,
-                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.textTool.preserveAspectRatio,
-                  coverageMode: state.textTool.coverageMode,
-                  densityPreset: state.textTool.densityPreset,
-                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
-                  fillMode: state.textTool.fillMode,
-                  fillPattern: state.textTool.fillPattern,
-                  placementPattern: state.textTool.placementPattern,
-                  contourSettings: state.textTool.contourSettings,
-                  radialSettings: state.textTool.radialSettings,
+                  text: generationTextTool.text,
+                  stoneSize: generationTextTool.stoneSize,
+                  outlineTextStyle: generationTextTool.outlineTextStyle,
+                  fontId: generationTextTool.fontId,
+                  fontSizeMm: typeof generationTextTool.fontSizeMm === 'number' ? generationTextTool.fontSizeMm : 25,
+                  align: generationTextTool.align,
+                  letterSpacingMm: typeof generationTextTool.letterSpacingMm === 'number' ? generationTextTool.letterSpacingMm : 0,
+                  lineSpacingMm: typeof generationTextTool.lineSpacingMm === 'number' ? generationTextTool.lineSpacingMm : 10,
+                  curveAmount: generationTextTool.curveAmount,
+                  targetWidthMm: typeof generationTextTool.targetWidthMm === 'number' ? generationTextTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof generationTextTool.targetHeightMm === 'number' ? generationTextTool.targetHeightMm : undefined,
+                  preserveAspectRatio: generationTextTool.preserveAspectRatio,
+                  coverageMode: generationTextTool.coverageMode,
+                  densityPreset: generationTextTool.densityPreset,
+                  customSpacingMm: typeof generationTextTool.customSpacingMm === 'number' ? generationTextTool.customSpacingMm : undefined,
+                  fillMode: generationTextTool.fillMode,
+                  fillPattern: generationTextTool.fillPattern,
+                  placementPattern: generationTextTool.placementPattern,
+                  contourSettings: generationTextTool.contourSettings,
+                  radialSettings: generationTextTool.radialSettings,
                 });
                 if (requestId !== generationRequestRef.current) return;
-                setOutlineFontStatus({ status: 'idle', message: null, fontId: state.textTool.fontId });
+                setOutlineFontStatus(replaceOutlineFontStatus({ status: 'idle', message: null, fontId: generationTextTool.fontId }));
 
                 // Legacy vector font only: characters with no real glyph
                 // silently fell back to '?' — surface that instead of
@@ -236,88 +339,41 @@ export default function EditorShell() {
                 const unsupportedCharacters = typeof rawUnsupported === 'string' && rawUnsupported.length > 0
                   ? rawUnsupported.split(',')
                   : [];
-                if (JSON.stringify(state.textTool.unsupportedCharacters) !== JSON.stringify(unsupportedCharacters)) {
+                if (JSON.stringify(generationTextTool.unsupportedCharacters) !== JSON.stringify(unsupportedCharacters)) {
                   dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { unsupportedCharacters } });
                 }
               } else {
                 template = createDotMatrixTextTemplate({
                   id: 'text-dotmatrix-preview',
                   name: 'Dot Matrix Text Preview',
-                  text: state.textTool.text,
-                  stoneSize: state.textTool.stoneSize,
-                  letterSpacingColumns: state.textTool.letterSpacingColumns,
-                  lineSpacingRows: state.textTool.lineSpacingRows,
-                  targetWidthMm: typeof state.textTool.targetWidthMm === 'number' ? state.textTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.textTool.targetHeightMm === 'number' ? state.textTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.textTool.preserveAspectRatio,
-                  densityPreset: state.textTool.densityPreset,
-                  customSpacingMm: typeof state.textTool.customSpacingMm === 'number' ? state.textTool.customSpacingMm : undefined,
+                  text: generationTextTool.text,
+                  stoneSize: generationTextTool.stoneSize,
+                  letterSpacingColumns: generationTextTool.letterSpacingColumns,
+                  lineSpacingRows: generationTextTool.lineSpacingRows,
+                  targetWidthMm: typeof generationTextTool.targetWidthMm === 'number' ? generationTextTool.targetWidthMm : undefined,
+                  targetHeightMm: typeof generationTextTool.targetHeightMm === 'number' ? generationTextTool.targetHeightMm : undefined,
+                  preserveAspectRatio: generationTextTool.preserveAspectRatio,
+                  densityPreset: generationTextTool.densityPreset,
+                  customSpacingMm: typeof generationTextTool.customSpacingMm === 'number' ? generationTextTool.customSpacingMm : undefined,
                 });
-                setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+                setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
               }
             }
             break;
 
           case 'svg':
-            if (state.svgTool.assetKind === 'image' && state.svgTool.uploadedImageDataUrl) {
-              const rasterImage = await decodeRasterImageDataUrl(state.svgTool.uploadedImageDataUrl);
-              const rasterResult = createRasterArtworkTemplate({
-                image: rasterImage,
-                name: state.svgTool.imageFileName || 'Image Artwork Preview',
-                stoneSize: state.svgTool.stoneSize,
-                spacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4,
-                threshold: state.svgTool.imageThreshold,
-                detail: state.svgTool.imageDetail,
-                invert: state.svgTool.imageInvert,
-                colorCount: state.svgTool.imageColorCount,
-                targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
-                targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
-                preserveAspectRatio: state.svgTool.preserveAspectRatio,
-              });
-              template = rasterResult.template;
-            } else if (state.svgTool.uploadedSvgText) {
-              const polylines = svgStringToPolylines(state.svgTool.uploadedSvgText, {
-                cleanupOptions: state.svgTool.cleanupEnabled
-                  ? {
-                      simplify: state.svgTool.cleanupSimplify,
-                      simplifyToleranceMm: state.svgTool.cleanupSimplifyTol,
-                      removeTinyPolylines: state.svgTool.cleanupRemoveTiny,
-                      minPolylineLengthMm: state.svgTool.cleanupMinLength,
-                      removeDuplicatePoints: state.svgTool.cleanupRemoveDups,
-                      duplicatePointToleranceMm: state.svgTool.cleanupDupTol,
-                    }
-                  : undefined,
-              });
-
-              let scaledPolylines = polylines;
-              if (
-                (typeof state.svgTool.targetWidthMm === 'number' || typeof state.svgTool.targetHeightMm === 'number') &&
-                polylines.length > 0
-              ) {
-                scaledPolylines = scalePolylinesToFit(polylines, {
-                  targetWidthMm: typeof state.svgTool.targetWidthMm === 'number' ? state.svgTool.targetWidthMm : undefined,
-                  targetHeightMm: typeof state.svgTool.targetHeightMm === 'number' ? state.svgTool.targetHeightMm : undefined,
-                  preserveAspectRatio: state.svgTool.preserveAspectRatio,
-                });
-              }
-
-              template = createPolylineFilledRhinestoneTemplate({
-                id: 'svg-preview',
-                name: state.svgTool.svgFileName || 'SVG Preview',
-                polylines: scaledPolylines,
-                stoneSize: state.svgTool.stoneSize,
-                coverageMode: state.svgTool.coverageMode,
-                fillMode: state.svgTool.fillMode,
-                fillPattern: state.svgTool.fillPattern,
-                placementPattern: state.svgTool.placementPattern,
-                contourSettings: state.svgTool.contourSettings,
-                radialSettings: state.svgTool.radialSettings,
-                densityPreset: state.svgTool.densityPreset,
-                customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : undefined,
-                fillEdgeInsetMm: state.svgTool.renderMode === 'artwork-dots' ? 0 : undefined,
-              });
+            if (generationSvgTool.assetKind === 'image' && generationSvgTool.uploadedImageDataUrl) {
+              const rasterImage = await decodeRasterImageDataUrl(generationSvgTool.uploadedImageDataUrl);
+              if (requestId !== generationRequestRef.current) return;
+              const generated = generateRasterArtwork(generationSvgTool, rasterImage);
+              template = generated.template;
+              if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
+            } else if (generationSvgTool.uploadedSvgText) {
+              const generated = generateSvgArtwork(generationSvgTool);
+              template = generated.template;
+              if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'rhinestone-font':
@@ -357,7 +413,7 @@ export default function EditorShell() {
                 });
               }
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           case 'svg-alphabet':
@@ -469,23 +525,55 @@ export default function EditorShell() {
                 });
               }
             }
-            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: state.textTool.fontId });
+            setOutlineFontStatus((current) => current.status === 'idle' ? current : { status: 'idle', message: null, fontId: generationTextTool.fontId });
             break;
 
           default:
             return;
         }
 
+        const generationResult = await generateAndResolveTemplate({
+          sourceTool,
+          generateTemplate: () => template,
+        });
         if (requestId !== generationRequestRef.current) return;
-        dispatch({ type: 'SET_TEMPLATE', template });
+        template = generationResult.template;
+
+        const spacingAdjustment = generationResult.spacingAdjustment;
+        const adjustedStoneCount = spacingAdjustment?.adjustedStoneCount ?? 0;
+        // Nudging a few stones apart is routine (the result is always cuttable), so it is not announced. Say
+        // something only when stones had to be removed or the design is too dense for the stone size.
+        const worthMentioning = (spacingAdjustment?.removedStoneCount ?? 0) > 0 || Boolean(spacingAdjustment?.tooDenseForStoneSize);
+        if (adjustedStoneCount > 0 && worthMentioning) {
+          const message = spacingAdjustment?.tooDenseForStoneSize
+            ? `Adjusted ${adjustedStoneCount} stones for minimum spacing. This design is too dense for this stone size — increase the size or use a smaller stone.`
+            : `Adjusted ${adjustedStoneCount} stones for minimum spacing.`;
+          setSpacingAdjustmentNote(message);
+
+          if (lastSpacingAdjustmentCountRef.current !== adjustedStoneCount) {
+            setToast({ message, tone: spacingAdjustment?.tooDenseForStoneSize ? 'warning' : 'info' });
+            lastSpacingAdjustmentCountRef.current = adjustedStoneCount;
+          }
+        } else {
+          setSpacingAdjustmentNote(null);
+          lastSpacingAdjustmentCountRef.current = 0;
+        }
+
+        // A generator that produced no stones (for example a digits-only font given letters) has made no design,
+        // which is not an error: the panel says why, and the status stays neutral instead of "BLOCKED".
+        const producedDesign = template && template.stones.length > 0 ? template : null;
+        dispatch({ type: 'SET_TEMPLATE', template: producedDesign });
+        if (producedDesign) {
+          requestCanvasFit();
+        }
       } catch (err) {
         if (requestId !== generationRequestRef.current) return;
         console.error('Template generation error:', err);
-        setOutlineFontStatus({
+        setOutlineFontStatus(replaceOutlineFontStatus({
           status: 'error',
           message: err instanceof Error ? err.message : String(err),
-          fontId: state.textTool.fontId,
-        });
+          fontId: generationTextTool.fontId,
+        }));
         if (sourceTool !== 'rhinestone-font' && sourceTool !== 'template-import') {
           dispatch({ type: 'SET_TEMPLATE', template: null });
         }
@@ -494,14 +582,16 @@ export default function EditorShell() {
 
     void generateTemplate();
   }, [
+    requestCanvasFit,
+    autosaveDecision,
     sourceTool,
-    state.gridTool,
-    state.textTool,
-    state.textTool.contourSettings,
-    state.textTool.radialSettings,
-    state.svgTool,
-    state.svgTool.contourSettings,
-    state.svgTool.radialSettings,
+    generationGridTool,
+    generationTextTool,
+    generationTextTool.contourSettings,
+    generationTextTool.radialSettings,
+    generationSvgTool,
+    generationSvgTool.contourSettings,
+    generationSvgTool.radialSettings,
     state.rhinestoneFontTool.text,
     state.rhinestoneFontTool.rhinestoneFontId,
     state.rhinestoneFontTool.presentationMode,
@@ -539,6 +629,49 @@ export default function EditorShell() {
   // ─── Export Readiness ──────────────────────────────────────────────────────
 
   const effectiveTemplate = useMemo(() => buildEffectiveTemplate(state), [state]);
+  const restoredCanvasViewKeyRef = useRef<string | null>(null);
+  const persistManualCanvasView = useCallback(
+    (view: { zoom: number; panX: number; panY: number }) => {
+      globalThis.localStorage?.setItem(
+        canvasViewStorageKey,
+        JSON.stringify({ ...view, manual: true }),
+      );
+    },
+    [canvasViewStorageKey],
+  );
+
+  useEffect(() => {
+    if (restoredCanvasViewKeyRef.current === canvasViewStorageKey) return;
+    restoredCanvasViewKeyRef.current = canvasViewStorageKey;
+
+    const raw = globalThis.localStorage?.getItem(canvasViewStorageKey);
+    let restored = null;
+    if (raw && effectiveTemplate) {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        const stones = effectiveTemplate.stones.map((stone) => ({
+          center: stone.center,
+          holeDiameterMm: stone.holeDiameterMm,
+        }));
+        const workspace = calculateCanvasWorkspaceBounds(stones);
+        const content = calculateCanvasWorkspaceBounds(stones, {
+          paddingMm: 20,
+          minWidthMm: 0,
+          minHeightMm: 0,
+        });
+        restored = validatePersistedCanvasView(parsed, workspace, content);
+      } catch {
+        restored = null;
+      }
+    }
+
+    if (restored) {
+      dispatch({ type: 'UPDATE_CANVAS', updates: restored });
+    } else {
+      requestCanvasFit();
+    }
+  }, [canvasViewStorageKey, effectiveTemplate, requestCanvasFit]);
+
   const activeLibraryEntry = useMemo(
     () => libraryRecord.userTemplates.find((entry) => entry.templateId === activeLibraryTemplateId) ?? null,
     [activeLibraryTemplateId, libraryRecord.userTemplates],
@@ -628,9 +761,12 @@ export default function EditorShell() {
     return () => window.clearTimeout(timeoutId);
   }, [autosaveEntry?.createdAt, buildCurrentLibraryEntry, effectiveTemplate, state.projectName]);
 
-  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(() => readActiveCalibrationProfile());
+  const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(null);
   useEffect(() => {
-    const syncActiveCalibrationProfile = () => setActiveCalibrationProfile(readActiveCalibrationProfile());
+    const syncActiveCalibrationProfile = () => {
+      const profile = readActiveCalibrationProfile();
+      queueMicrotask(() => setActiveCalibrationProfile(profile));
+    };
     syncActiveCalibrationProfile();
     window.addEventListener('storage', syncActiveCalibrationProfile);
     window.addEventListener('focus', syncActiveCalibrationProfile);
@@ -640,16 +776,6 @@ export default function EditorShell() {
     };
   }, []);
 
-  const calibrationState = useMemo(() => {
-    if (!activeCalibrationProfile) {
-      return { label: 'No active profile', tone: 'warning' as const };
-    }
-    if (activeCalibrationProfile.approvedAt) {
-      return { label: `Approved: ${activeCalibrationProfile.name}`, tone: 'success' as const };
-    }
-    return { label: `Pending: ${activeCalibrationProfile.name}`, tone: 'warning' as const };
-  }, [activeCalibrationProfile]);
-
   const exportReadiness = useMemo(() => {
     if (!effectiveTemplate) return null;
     return checkExportReadiness(effectiveTemplate, {
@@ -658,31 +784,108 @@ export default function EditorShell() {
     });
   }, [activeCalibrationProfile, effectiveTemplate, state.includeLabels]);
 
-  const exportReady = exportReadiness?.ready ?? false;
-  const exportErrorCount = exportReadiness?.issues.filter((issue) => issue.severity === 'error').length ?? 0;
-  const exportWarningCount = exportReadiness?.issues.filter((issue) => issue.severity === 'warning').length ?? 0;
-  const workflowStatus = !effectiveTemplate
-    ? 'Blocked'
-    : exportErrorCount > 0
-      ? 'Blocked'
-      : exportWarningCount > 0
-        ? 'Warning'
-        : 'Ready';
-  const workflowGuidance = !effectiveTemplate
-    ? 'Start by generating or loading a design. The canvas is empty, so there is no production-ready template yet.'
-    : exportErrorCount > 0
-      ? (exportReadiness?.issues.find((issue) => issue.severity === 'error')?.suggestion ?? 'Fix the blocking issues before exporting.')
-      : exportWarningCount > 0
-        ? (exportReadiness?.issues.find((issue) => issue.severity === 'warning')?.suggestion ?? 'Review the warnings before exporting to confirm the production output matches the expected result.')
-        : 'This design is export-ready. Review the final placement and proceed with the production SVG export.';
-
+  const exportStatusSummary = useMemo(() => summarizeExportStatus(exportReadiness), [exportReadiness]);
+  const exportDesignWarningNotes = useMemo(
+    () => exportStatusSummary.designWarnings.slice(0, 5).map((issue) => ({
+      tone: 'warning' as const,
+      text: issue.suggestion ? `${issue.message} ${issue.suggestion}` : issue.message,
+    })),
+    [exportStatusSummary.designWarnings],
+  );
+  const exportReady = exportStatusSummary.ready;
+  const exportErrorCount = exportStatusSummary.designErrors.length;
+  const exportWarningCount = exportStatusSummary.designWarnings.length;
+  const needsCalibration = exportStatusSummary.needsCalibration;
   const editorDispatch = useCallback((action: EditorAction) => {
     if (shouldPromptForGeneratorMutation(state, action)) {
       setPendingGeneratorAction(action);
       return;
     }
+    if (action.type === 'CONVERT_TO_EDITABLE' && !state.editableTemplate.isEditable) {
+      setToast({ message: 'You can now select and move individual stones. Changing the text or artwork settings will ask before replacing your edits.', tone: 'info' });
+    }
     dispatch(action);
   }, [state]);
+
+  // Some vendor stone fonts are drawings of dots that overlap on purpose. They are shown exactly as drawn; when the
+  // design is exported or the user asks, the whole layout can be enlarged until the stones can be cut. Only worked out
+  // when stones actually collide, and only offered when the overlap is that of artwork (a real enlargement), not a few
+  // stones that a small nudge fixes.
+  const overlapEnlargement = useMemo(() => {
+    if (!effectiveTemplate || !exportReadiness?.summary.hasCollisions || effectiveTemplate.stones.length > 4000) return null;
+    const result = enlargeToCuttableSpacing(effectiveTemplate, { minGapMm: getDefaultMaterialProfile().minimumEdgeSpacingMm });
+    if (result.scale < 1.3) return null;
+    return { scale: result.scale, widthMm: (exportReadiness.summary.widthMm ?? 0) * result.scale, template: result.template, removedCount: result.removedCount };
+  }, [effectiveTemplate, exportReadiness]);
+
+  const handleEnlargeCuttable = useCallback(() => {
+    if (!overlapEnlargement) return;
+    suppressDeleteToastRef.current = true;
+    dispatch({ type: 'REPLACE_STONES', stones: overlapEnlargement.template.stones });
+    setToast({
+      message: `Enlarged ×${overlapEnlargement.scale.toFixed(1)} (about ${Math.round(overlapEnlargement.widthMm)} mm wide) so every stone has room to be cut.${overlapEnlargement.removedCount > 0 ? ` ${overlapEnlargement.removedCount} stones that were still too close were removed.` : ''}`,
+      tone: 'success',
+      action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+    });
+  }, [overlapEnlargement]);
+
+  // One-click fixes offered by the Quick fixes panel and the "fix errors before export" dialog.
+  const handleAutoFixSpacing = useCallback(() => {
+    if (!effectiveTemplate) return;
+    // Artwork drawn with overlapping dots cannot be nudged apart without smearing the letters: enlarge instead.
+    if (overlapEnlargement) {
+      handleEnlargeCuttable();
+      return;
+    }
+    const result = autoFixSpacing(effectiveTemplate, { minGapMm: getDefaultMaterialProfile().minimumEdgeSpacingMm });
+    if (!result.changed) {
+      setToast({ message: 'Nothing to fix: no stones are too close together.', tone: 'info' });
+      return;
+    }
+
+    suppressDeleteToastRef.current = true;
+    dispatch({ type: 'REPLACE_STONES', stones: result.template.stones });
+
+    const moved = result.movedStoneCount;
+    const removed = result.removedStoneCount;
+    const parts = [
+      moved > 0 ? `moved ${moved} ${moved === 1 ? 'stone' : 'stones'}` : null,
+      removed > 0 ? `removed ${removed} that could not fit` : null,
+    ].filter(Boolean).join(' and ');
+    const stillWrong = result.remainingIssues.some((issue) => issue.severity === 'error');
+    setToast({
+      message: `Fixed spacing: ${parts}.${stillWrong ? ' Some problems remain; see the checks in the Inspect panel.' : ''}`,
+      tone: removed > 0 || stillWrong ? 'warning' : 'success',
+      action: { label: 'Undo', onClick: () => { dispatch({ type: 'UNDO' }); setToast(null); } },
+    });
+  }, [effectiveTemplate, handleEnlargeCuttable, overlapEnlargement]);
+
+  const canResize = useMemo(() => canResizeDesign(state), [state]);
+
+  const handleFitToMat = useCallback((mat: '12x12' | '12x24') => {
+    if (!exportReadiness) return;
+    const plan = buildFitToMatPlan(
+      state,
+      { widthMm: exportReadiness.summary.widthMm, heightMm: exportReadiness.summary.heightMm },
+      mat,
+    );
+    if (!plan) {
+      setToast({ message: 'This design cannot be resized automatically. Change its size in the Design panel, or delete stones.', tone: 'warning' });
+      return;
+    }
+    editorDispatch(plan.action);
+    setToast({
+      message: `Resizing to about ${Math.round(plan.scale * 100)} % (${plan.targetWidthMm} × ${plan.targetHeightMm} mm) to fit a ${mat === '12x12' ? '12 × 12' : '12 × 24'} in mat.`,
+      tone: 'info',
+    });
+  }, [editorDispatch, exportReadiness, state]);
+
+  const handleQuickFix = useCallback((action: QuickFixAction) => {
+    if (action === 'auto-fix-spacing') handleAutoFixSpacing();
+    else if (action === 'enlarge-cuttable') handleEnlargeCuttable();
+    else if (action === 'split-parts') setExportDialogOpen(true);
+    else handleFitToMat(action === 'fit-12x12' ? '12x12' : '12x24');
+  }, [handleAutoFixSpacing, handleEnlargeCuttable, handleFitToMat]);
 
   const applyPendingGeneratorAction = useCallback((mode: 'replace' | 'keep' | 'cancel') => {
     if (!pendingGeneratorAction) return;
@@ -693,34 +896,48 @@ export default function EditorShell() {
     setPendingGeneratorAction(null);
   }, [pendingGeneratorAction]);
 
-  const runExport = useCallback(() => {
-    if (!effectiveTemplate) {
-      setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
-      return;
-    }
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
+  // The exact SVG shown in the export dialog preview and downloaded from it.
+  const exportPreview = useMemo(() => {
+    if (!exportDialogOpen || !effectiveTemplate) return null;
     try {
-      const svgString = createBasicSvgExport(effectiveTemplate, {
+      const svg = createBasicSvgExport(effectiveTemplate, {
         includeGuideBox: state.includeGuideBox,
         includeLabels: state.includeLabels,
         paddingMm: state.paddingMm,
         decimalPlaces: 3,
+        uncalibratedOverride: needsCalibration,
       });
-
-      const blob = new Blob([svgString], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const filename = `${state.projectName.toLowerCase().replace(/\s+/g, '-')}.svg`;
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      setToast({ message: 'SVG exported.', tone: 'success' });
+      const size = readSvgSizeMm(svg);
+      return { svg, widthMm: size?.widthMm ?? null, heightMm: size?.heightMm ?? null, error: null as string | null };
     } catch (err) {
-      setToast({ message: `Export failed: ${err instanceof Error ? err.message : String(err)}`, tone: 'error' });
+      return {
+        svg: null as string | null,
+        widthMm: null as number | null,
+        heightMm: null as number | null,
+        error: `Could not prepare the export: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
-  }, [effectiveTemplate, state.includeGuideBox, state.includeLabels, state.paddingMm, state.projectName]);
+  }, [effectiveTemplate, exportDialogOpen, needsCalibration, state.includeGuideBox, state.includeLabels, state.paddingMm]);
+
+  const handleExportDownload = useCallback((filename: string, options: { uncalibratedOverride: boolean }) => {
+    if (!exportPreview?.svg) return;
+    const blob = new Blob([exportPreview.svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportDialogOpen(false);
+    setToast({
+      message: options.uncalibratedOverride
+        ? 'SVG exported without calibration. Test-cut a small piece before the real job.'
+        : 'SVG exported.',
+      tone: options.uncalibratedOverride ? 'warning' : 'success',
+    });
+  }, [exportPreview]);
 
   const notify = useCallback((message: string, tone: 'success' | 'warning' | 'error' | 'info') => {
     setToast({ message, tone });
@@ -743,6 +960,13 @@ export default function EditorShell() {
   }, []);
 
   const applyProjectToEditor = useCallback((project: ReturnType<typeof parseRhinestoneProject>) => {
+    // Loading replaces the whole design, so it uses the raw dispatch: the
+    // "Regenerate from source settings?" prompt guards user edits, not loads.
+    // A generated (non-editable) project must not open inside a leftover editable
+    // session, which would keep showing the previous (possibly empty) stones.
+    if (!project.editableState && project.generatorState.generatorId !== 'manual-editor') {
+      dispatch({ type: 'DISCARD_EDITABLE_CHANGES' });
+    }
     dispatch({ type: 'SET_PROJECT_NAME', name: project.projectName });
 
     if (project.exportSettings) {
@@ -767,7 +991,7 @@ export default function EditorShell() {
     switch (project.generatorState.generatorId) {
       case 'manual-grid':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'grid' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_GRID_TOOL',
           updates: {
             stoneSize: project.generatorState.stoneSize,
@@ -780,7 +1004,7 @@ export default function EditorShell() {
         break;
       case 'outline-text':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'outline',
@@ -808,7 +1032,7 @@ export default function EditorShell() {
         break;
       case 'dot-matrix-text':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'dot-matrix',
@@ -826,7 +1050,7 @@ export default function EditorShell() {
         break;
       case 'svg-upload':
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
-        editorDispatch({
+        dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
             assetKind: project.generatorState.assetKind ?? (project.generatorState.uploadedImageDataUrl ? 'image' : 'svg'),
@@ -846,6 +1070,7 @@ export default function EditorShell() {
             placementPattern: project.generatorState.placementPattern ?? 'default',
             contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
             radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
+            layerRoles: project.generatorState.layerRoles ?? {},
             densityPreset: project.generatorState.densityPreset,
             customSpacingMm: project.generatorState.customSpacingMm,
             imageColorCount: project.generatorState.imageColorCount ?? 1,
@@ -978,6 +1203,7 @@ export default function EditorShell() {
           stones: editableStones,
           sourceGenerator: project.generatorState.generatorId,
         });
+        requestCanvasFit();
       }, 100);
     } else if (project.generatorState.generatorId === 'manual-editor') {
       const manualStones: EditableStone[] = project.generatorState.stones.map(savedStoneToEditableStone);
@@ -987,21 +1213,30 @@ export default function EditorShell() {
           stones: manualStones,
           sourceGenerator: 'manual-editor',
         });
+        requestCanvasFit();
       }, 0);
     }
-  }, [editorDispatch, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
+  }, [requestCanvasFit, state.svgTool.contourSettings, state.svgTool.radialSettings, state.textTool.contourSettings, state.textTool.radialSettings]);
 
   useEffect(() => {
     const designId = searchParams.get('designId');
     const assetId = searchParams.get('asset');
     const fontId = searchParams.get('font');
     const launchText = searchParams.get('text');
-    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}`;
+    const toolParam = searchParams.get('tool');
+    const launchTool = EDITOR_TOOLS.find((tool) => tool.id === toolParam)?.id ?? null;
+    const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}|${launchTool ?? ''}`;
 
-    if (queryKey === '|||') return;
+    if (queryKey === '||||') return;
     if (handledQueryRef.current === queryKey) return;
 
     const applyQueryIntent = async () => {
+      if (launchTool && !designId && !assetId && !fontId) {
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: launchTool });
+        handledQueryRef.current = queryKey;
+        return;
+      }
+
       if (designId && templateLibraryRepositoryRef.current) {
         const entry = await templateLibraryRepositoryRef.current.get(designId);
         if (entry) {
@@ -1016,6 +1251,37 @@ export default function EditorShell() {
       if (assetId) {
         const asset = findAssetById(assetId);
         if (asset) {
+          if (asset.kind === 'svg') {
+            const validation = validateAssetUpload({
+              fileName: asset.fileName,
+              mimeType: asset.mimeType,
+              sizeBytes: asset.sizeBytes,
+              svgText: asset.svgText,
+            });
+            if (!validation.valid) {
+              setPendingDialog({
+                kind: 'asset-open-error',
+                title: 'This asset cannot be opened',
+                message: validation.code === 'no_supported_shapes'
+                  ? 'This SVG has no supported shapes for Rhinestone generation.'
+                  : 'This file is not a valid SVG for Rhinestone generation.',
+                details: ['Return to Library to upload a different asset, or retry opening this asset.'],
+                confirmLabel: 'Back to Library',
+                icon: 'warning',
+                tertiaryAction: {
+                  label: 'Retry open',
+                  onClick: () => {
+                    handledQueryRef.current = null;
+                    setPendingDialog(null);
+                    window.location.reload();
+                  },
+                },
+              });
+              handledQueryRef.current = queryKey;
+              return;
+            }
+          }
+
           dispatch({ type: 'SET_PROJECT_NAME', name: asset.name });
           dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
           dispatch({
@@ -1042,14 +1308,18 @@ export default function EditorShell() {
       }
 
       if (fontId) {
+        const resolvedFontId = isAvailableOutlineFontId(fontId) ? fontId : DEFAULT_OUTLINE_FONT_ID;
+        if (resolvedFontId !== fontId) {
+          setToast({ message: 'Font not found — using a default font instead.', tone: 'warning' });
+        }
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} Rhinestone Design` });
+        dispatch({ type: 'SET_PROJECT_NAME', name: `${(launchText ?? 'Preview').replace(/\s+/g, ' ').trim()} Rhinestone Design` });
         dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {
             mode: 'outline',
-            fontId,
-            text: launchText ?? 'Sulay 123',
+            fontId: resolvedFontId,
+            text: launchText ?? DEFAULT_PREVIEW_TEXT,
           },
         });
         handledQueryRef.current = queryKey;
@@ -1065,11 +1335,11 @@ export default function EditorShell() {
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!effectiveTemplate) {
-      setToast({ message: 'Nothing to save to the library yet.', tone: 'warning' });
+      setToast({ message: 'Nothing to save yet. Create or open a design first.', tone: 'warning' });
       return;
     }
     if (!templateLibraryRepositoryRef.current) {
-      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      setToast({ message: 'Could not save: the current design could not be serialized.', tone: 'error' });
       return;
     }
 
@@ -1087,50 +1357,88 @@ export default function EditorShell() {
     }
 
     if (!entry) {
-      setToast({ message: 'Library save failed because the current project could not be serialized.', tone: 'error' });
+      setToast({ message: 'Could not save: the current design could not be serialized.', tone: 'error' });
       return;
     }
 
     await templateLibraryRepositoryRef.current.save(entry);
     setActiveLibraryTemplateId(entry.templateId);
     await refreshTemplateLibrary();
-    setToast({ message: activeLibraryTemplateId ? 'Library design updated.' : 'Design saved to the local library.', tone: 'success' });
+    setToast({ message: activeLibraryTemplateId ? 'Saved to My Designs.' : 'Saved to My Designs. Find it under Open or on the My Designs page.', tone: 'success' });
   }, [activeLibraryTemplateId, buildCurrentLibraryEntry, effectiveTemplate, refreshTemplateLibrary, state.projectName]);
 
   const handleLoadFromLibrary = useCallback(async (templateId: string) => {
     if (!templateLibraryRepositoryRef.current) return;
     const entry = await templateLibraryRepositoryRef.current.get(templateId);
     if (!entry) {
-      setToast({ message: 'That library entry could not be found.', tone: 'error' });
+      setToast({ message: 'That design could not be found.', tone: 'error' });
       return;
     }
 
-    const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
-    applyProjectToEditor(project);
-    setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
-    setTemplateLibraryOpen(false);
-    setToast({ message: 'Library design opened.', tone: 'success' });
+    try {
+      const project = parseRhinestoneProject(JSON.stringify(entry.snapshot.project));
+      applyProjectToEditor(project);
+      setActiveLibraryTemplateId(entry.builtIn ? null : entry.templateId);
+      setTemplateLibraryOpen(false);
+      setToast({ message: 'Design opened.', tone: 'success' });
+    } catch (err) {
+      setToast({ message: `This design could not be opened: ${err instanceof Error ? err.message.replace(/^\[Project\]\s*/, '') : 'unknown error'}`, tone: 'error' });
+    }
   }, [applyProjectToEditor]);
 
-  const handleLoadAutosave = useCallback(() => {
-    if (!autosaveEntry) return;
-    const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
-    applyProjectToEditor(project);
-    setActiveLibraryTemplateId(null);
-    setTemplateLibraryOpen(false);
-    setToast({ message: 'Autosave opened.', tone: 'success' });
-  }, [applyProjectToEditor, autosaveEntry]);
+  const handleLoadAutosave = useCallback((): boolean => {
+    if (!autosaveEntry) return false;
+    try {
+      const project = parseRhinestoneProject(JSON.stringify(autosaveEntry.snapshot.project));
+      applyProjectToEditor(project);
+      setActiveLibraryTemplateId(null);
+      setTemplateLibraryOpen(false);
+      setToast({ message: 'Autosave opened.', tone: 'success' });
+      return true;
+    } catch (err) {
+      // A saved session that cannot be read must never take the page down. Keep a copy of it (the next autosave
+      // would overwrite it) and carry on with a fresh editor.
+      try {
+        globalThis.localStorage?.setItem(`${AUTOSAVE_STORAGE_KEY}-unreadable`, JSON.stringify(autosaveEntry));
+      } catch {
+        // storage full or blocked: nothing more to do
+      }
+      setToast({
+        message: `Your last session could not be restored (${err instanceof Error ? err.message.replace(/^\[Project\]\s*/, '') : 'unknown error'}). A copy was kept.`,
+        tone: 'error',
+      });
+      return false;
+    }
+  }, [AUTOSAVE_STORAGE_KEY, applyProjectToEditor, autosaveEntry]);
+
+  // The first visit after a session was saved: say so in a toast (a banner row above the canvas pushed the whole
+  // studio down after it loaded) and offer a clean start.
+  const startFreshFromAutosave = useCallback(() => {
+    globalThis.localStorage?.removeItem(AUTOSAVE_STORAGE_KEY);
+    setAutosaveEntry(null);
+    setAutosaveDecision('ready');
+    resetToNewProject();
+    setToast({ message: 'Started fresh.', tone: 'info' });
+  }, [AUTOSAVE_STORAGE_KEY, resetToNewProject]);
+
+  useEffect(() => {
+    if (autosaveDecision !== 'restored' || !autosaveEntry || initialAutosaveRestoreRef.current) return;
+    initialAutosaveRestoreRef.current = true;
+    if (handleLoadAutosave()) {
+      queueMicrotask(() => setToast({
+        message: 'Restored your last session.',
+        tone: 'info',
+        action: { label: 'Start fresh', onClick: startFreshFromAutosave },
+      }));
+    }
+  }, [autosaveDecision, autosaveEntry, handleLoadAutosave, startFreshFromAutosave]);
 
   const handleDialogConfirm = useCallback(() => {
     if (!pendingDialog) return;
 
     if (pendingDialog.kind === 'new-project') {
-      dispatch({ type: 'RESET_EDITOR' });
+      resetToNewProject();
       setToast({ message: 'Started a new project.', tone: 'info' });
-    }
-
-    if (pendingDialog.kind === 'export-warning') {
-      runExport();
     }
 
     if (pendingDialog.kind === 'export-blocked') {
@@ -1142,8 +1450,12 @@ export default function EditorShell() {
       handleLoadAutosave();
     }
 
+    if (pendingDialog.kind === 'asset-open-error') {
+      window.location.assign('/library');
+    }
+
     setPendingDialog(null);
-  }, [handleLoadAutosave, pendingDialog, runExport]);
+  }, [handleLoadAutosave, pendingDialog, resetToNewProject]);
 
   const handleFavoriteLibraryEntry = useCallback(async (templateId: string, favorite: boolean) => {
     if (!templateLibraryRepositoryRef.current) return;
@@ -1152,41 +1464,70 @@ export default function EditorShell() {
   }, [refreshTemplateLibrary]);
 
   const handleDeleteLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    await templateLibraryRepositoryRef.current.delete(templateId);
+    const repository = templateLibraryRepositoryRef.current;
+    if (!repository) return;
+    const entry = await repository.get(templateId);
+    await repository.delete(templateId);
     await refreshTemplateLibrary();
-    setToast({ message: 'Library design deleted.', tone: 'info' });
+    setToast({
+      message: entry ? `Deleted “${entry.name}”.` : 'Design deleted.',
+      tone: 'info',
+      action: entry
+        ? {
+            label: 'Undo',
+            onClick: () => {
+              void (async () => {
+                await repository.save(entry);
+                await refreshTemplateLibrary();
+                setToast({ message: `Restored “${entry.name}”.`, tone: 'success' });
+              })();
+            },
+          }
+        : undefined,
+    });
   }, [refreshTemplateLibrary]);
 
   const handleRenameLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    const nextName = window.prompt('Rename design');
-    if (!nextName || !nextName.trim()) return;
-    await templateLibraryRepositoryRef.current.rename(templateId, nextName.trim());
-    await refreshTemplateLibrary();
-    setToast({ message: 'Library design renamed.', tone: 'success' });
-  }, [refreshTemplateLibrary]);
+    const entry = await templateLibraryRepositoryRef.current?.get(templateId);
+    if (!entry) return;
+    setNamePrompt({ mode: 'rename', templateId, initialValue: entry.name });
+  }, []);
 
   const handleDuplicateLibraryEntry = useCallback(async (templateId: string) => {
-    if (!templateLibraryRepositoryRef.current) return;
-    const nextName = window.prompt('Duplicate design as');
-    if (!nextName || !nextName.trim()) return;
+    const entry = await templateLibraryRepositoryRef.current?.get(templateId);
+    if (!entry) return;
+    setNamePrompt({ mode: 'duplicate', templateId, initialValue: `${entry.name} copy` });
+  }, []);
+
+  const submitNamePrompt = useCallback(async (nextName: string) => {
+    const prompt = namePrompt;
+    const repository = templateLibraryRepositoryRef.current;
+    setNamePrompt(null);
+    if (!prompt || !repository) return;
+
+    if (prompt.mode === 'rename') {
+      await repository.rename(prompt.templateId, nextName);
+      await refreshTemplateLibrary();
+      setToast({ message: 'Design renamed.', tone: 'success' });
+      return;
+    }
+
     const nextTemplateId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? `library-${crypto.randomUUID()}`
       : `library-${Date.now()}`;
 
-    if (activeLibraryTemplateId === templateId) {
-      const duplicate = buildCurrentLibraryEntry(nextTemplateId, nextName.trim(), new Date().toISOString(), false);
+    if (activeLibraryTemplateId === prompt.templateId) {
+      const duplicate = buildCurrentLibraryEntry(nextTemplateId, nextName, new Date().toISOString(), false);
       if (duplicate) {
-        await templateLibraryRepositoryRef.current.save(duplicate);
+        await repository.save(duplicate);
       }
     } else {
-      await templateLibraryRepositoryRef.current.duplicate(templateId, nextTemplateId, nextName.trim());
+      await repository.duplicate(prompt.templateId, nextTemplateId, nextName);
     }
 
     await refreshTemplateLibrary();
-    setToast({ message: 'Library design duplicated.', tone: 'success' });
-  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, refreshTemplateLibrary]);
+    setToast({ message: 'Design duplicated.', tone: 'success' });
+  }, [activeLibraryTemplateId, buildCurrentLibraryEntry, namePrompt, refreshTemplateLibrary]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1206,90 +1547,147 @@ export default function EditorShell() {
 
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
-      setToast({ message: 'Nothing to save yet. Create or open a design first.', tone: 'warning' });
+      setToast({ message: 'Nothing to export yet. Create or open a design first.', tone: 'warning' });
       return;
     }
 
     const project = buildProjectFileFromEditorState(state);
     if (!project) {
-      setToast({ message: 'Project save failed because the current editor state could not be serialized.', tone: 'error' });
+      setToast({ message: 'Project export failed because the current editor state could not be serialized.', tone: 'error' });
       return;
     }
 
-    const filename = buildProjectFilename(state.projectName, project.generatorState.generatorId);
+    const filename = buildProjectFilename(state.projectName);
     downloadProject(project, filename);
-    setToast({ message: 'Project saved.', tone: 'success' });
+    setToast({ message: 'Project file downloaded. Keep it as a backup or share it.', tone: 'success' });
   }, [effectiveTemplate, state]);
 
   const handleExport = useCallback(() => {
-    if (!effectiveTemplate) {
+    const gate = getExportGate(Boolean(effectiveTemplate), exportStatusSummary);
+
+    if (gate === 'no-design') {
       setToast({ message: 'Export unavailable because the design is empty.', tone: 'warning' });
       return;
     }
 
-    if (exportErrorCount > 0) {
-      const errorDetails = exportReadiness
-        ? exportReadiness.issues
-            .filter((issue) => issue.severity === 'error')
-            .slice(0, 4)
-            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
-        : [];
-
+    if (gate === 'blocked-design-errors') {
       setPendingDialog({
         kind: 'export-blocked',
         title: 'Fix errors before export',
         message: 'This design has critical export issues. Resolve them before exporting to SVG.',
-        details: errorDetails,
+        details: exportStatusSummary.designErrors
+          .slice(0, 4)
+          .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message),
         confirmLabel: 'Review issues',
         confirmTone: 'default',
         icon: 'warning',
+        tertiaryAction: hasSpacingIssues(exportReadiness)
+          ? { label: overlapEnlargement ? `Enlarge ×${overlapEnlargement.scale.toFixed(1)} to make cuttable` : 'Fix spacing automatically', onClick: () => { setPendingDialog(null); handleAutoFixSpacing(); } }
+          : undefined,
       });
       return;
     }
 
-    if (!exportReady) {
-      const issueDetails = exportReadiness
-        ? exportReadiness.issues
-            .filter((issue) => issue.severity === 'warning')
-            .slice(0, 4)
-            .map((issue) => issue.suggestion ? `${issue.message} Suggestion: ${issue.suggestion}` : issue.message)
-        : [];
-
-      setPendingDialog({
-        kind: 'export-warning',
-        title: 'Export with warnings?',
-        message: 'The current template has export warnings. Continue only if you want to export exactly what is on the canvas.',
-        details: issueDetails,
-        confirmLabel: 'Export anyway',
-        confirmTone: 'destructive',
-        icon: 'warning',
-      });
-      return;
-    }
-
-    runExport();
-  }, [effectiveTemplate, exportErrorCount, exportReady, exportReadiness, runExport]);
+    // Ready, warnings-only and "needs calibration" all go through the export dialog,
+    // which previews the file and shows size, mat fit, warnings and calibration state.
+    setExportDialogOpen(true);
+  }, [effectiveTemplate, exportReadiness, exportStatusSummary, handleAutoFixSpacing, overlapEnlargement]);
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
     window.location.href = '/setup';
   }, []);
 
+  // ─── Keyboard shortcuts (tools, view, save/export, nudge) ──────────────────
+  // Undo/redo, copy/paste, delete, select-all, duplicate, Esc and Space-pan live in EditorCanvas.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isKeyHandlingWidget(event.target) || isModalOpen()) return;
+      const shortcut = resolveStudioShortcut(event, {
+        tools: true,
+        nudgeStepMm: RHINESTONE_NUDGE_STEP_MM,
+        nudgeShiftStepMm: RHINESTONE_NUDGE_SHIFT_STEP_MM,
+      });
+      if (!shortcut) return;
+
+      switch (shortcut.type) {
+        case 'tool':
+          event.preventDefault();
+          dispatch({ type: 'SET_ACTIVE_TOOL', tool: shortcut.tool });
+          return;
+        case 'fit':
+          event.preventDefault();
+          requestCanvasFit();
+          return;
+        case 'zoom-in':
+        case 'zoom-out':
+        case 'zoom-reset': {
+          event.preventDefault();
+          const zoom = shortcut.type === 'zoom-reset'
+            ? 1
+            : shortcut.type === 'zoom-in'
+              ? Math.min(state.canvas.zoom * 1.2, MAX_CANVAS_ZOOM)
+              : Math.max(state.canvas.zoom / 1.2, MIN_CANVAS_ZOOM);
+          const view = shortcut.type === 'zoom-reset'
+            ? { zoom, panX: 0, panY: 0 }
+            : { zoom, panX: state.canvas.panX, panY: state.canvas.panY };
+          dispatch({ type: 'UPDATE_CANVAS', updates: view });
+          persistManualCanvasView(view);
+          return;
+        }
+        case 'export':
+          event.preventDefault();
+          handleExport();
+          return;
+        case 'save':
+          event.preventDefault();
+          void handleSaveToLibrary();
+          return;
+        case 'nudge': {
+          const { isEditable, stones } = state.editableTemplate;
+          if (!isEditable || state.selectedStoneIds.size === 0) return;
+          event.preventDefault();
+          const selected = stones
+            .filter((stone) => state.selectedStoneIds.has(stone.id))
+            .map((stone) => ({ id: stone.id, x: stone.center.x, y: stone.center.y }));
+          dispatch({ type: 'MOVE_STONES', moves: nudgeCenters(selected, shortcut.dx, shortcut.dy) });
+          return;
+        }
+        case 'help':
+          return; // handled by <KeyboardShortcutsHost>
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    state.canvas.zoom, state.canvas.panX, state.canvas.panY, state.editableTemplate, state.selectedStoneIds,
+    requestCanvasFit, persistManualCanvasView, handleExport, handleSaveToLibrary,
+  ]);
+
   // ─── Canvas Click Handler ──────────────────────────────────────────────────
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
+  if (autosaveDecision === 'deciding') {
+    return (
+      <div data-theme={theme} className="flex h-full min-h-0 flex-1 items-center justify-center bg-[var(--studio-bg)] text-sm text-[var(--studio-ink-muted)]">
+        Loading your workspace…
+      </div>
+    );
+  }
+
   return (
-    <div data-theme={theme} className="h-full min-h-0 flex flex-col bg-[var(--studio-bg)] text-[var(--studio-ink)]">
+    <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">
       {/* Hidden file input for Open Project */}
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.rhinestone.json,application/json"
         onChange={handleFileChange}
         className="hidden"
       />
 
+      <KeyboardShortcutsHost studio="rhinestone" />
       <EditorTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -1299,13 +1697,15 @@ export default function EditorShell() {
         exportReady={exportReady}
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
+        needsCalibration={needsCalibration}
         recentDesigns={libraryRecord.userTemplates.slice(0, 5).map((entry) => ({ id: entry.templateId, name: entry.name }))}
         designSurface={designSurface}
         dispatch={dispatch}
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
         onOpenRecent={(id) => void handleLoadFromLibrary(id)}
-        onSaveProject={handleSaveProject}
+        onSave={() => void handleSaveToLibrary()}
+        onExportProjectFile={handleSaveProject}
         onOpenLibrary={handleOpenLibrary}
         onExport={handleExport}
         onOpenSetup={handleOpenSetup}
@@ -1318,13 +1718,6 @@ export default function EditorShell() {
         onToggleTheme={toggleTheme}
       />
 
-      <WorkspaceModeBanner
-        mode="Rhinestone Studio"
-        status={workflowStatus}
-        project={state.projectName || 'Untitled project'}
-        guidance={workflowGuidance}
-        calibrationState={calibrationState}
-      />
 
       <GarmentPreviewPanel
         open={garmentPreviewOpen}
@@ -1347,6 +1740,16 @@ export default function EditorShell() {
         onDuplicate={handleDuplicateLibraryEntry}
       />
 
+      <PromptDialog
+        open={namePrompt !== null}
+        title={namePrompt?.mode === 'duplicate' ? 'Duplicate design' : 'Rename design'}
+        label={namePrompt?.mode === 'duplicate' ? 'Name of the copy' : 'Design name'}
+        initialValue={namePrompt?.initialValue ?? ''}
+        confirmLabel={namePrompt?.mode === 'duplicate' ? 'Duplicate' : 'Rename'}
+        onSubmit={(value) => { void submitNamePrompt(value); }}
+        onCancel={() => setNamePrompt(null)}
+      />
+
       <EditorDialog
         open={Boolean(pendingGeneratorAction)}
         title="Regenerate from source settings?"
@@ -1362,6 +1765,44 @@ export default function EditorShell() {
         icon="warning"
       />
 
+      <ExportDialog
+        open={exportDialogOpen}
+        title="Export SVG"
+        svg={exportPreview?.svg ?? null}
+        error={exportPreview?.error ?? null}
+        widthMm={exportPreview?.widthMm ?? null}
+        heightMm={exportPreview?.heightMm ?? null}
+        summaryRows={[
+          { label: 'Stones', value: String(effectiveTemplate?.stones.length ?? 0) },
+          { label: 'Cutter', value: exportReadiness?.summary.cutter ?? '—' },
+        ]}
+        notes={exportDesignWarningNotes}
+        calibration={{ needsCalibration, onCalibrate: handleOpenSetup }}
+        defaultFilename={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
+        onDownload={handleExportDownload}
+        onClose={() => setExportDialogOpen(false)}
+      >
+        {(gate) =>
+          effectiveTemplate && exportPreview?.widthMm != null && exportPreview.heightMm != null
+            && getMatFit(exportPreview.widthMm, exportPreview.heightMm).status !== 'fits-12x12' ? (
+              <SplitExportPanel
+                template={effectiveTemplate}
+                svgOptions={{
+                  includeGuideBox: state.includeGuideBox,
+                  includeLabels: state.includeLabels,
+                  paddingMm: state.paddingMm,
+                  decimalPlaces: 3,
+                  uncalibratedOverride: needsCalibration,
+                }}
+                designName={state.projectName.trim() || 'Rhinestone design'}
+                filenameBase={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
+                downloadAllowed={gate.downloadAllowed}
+                uncalibrated={gate.uncalibrated}
+                onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
+              />
+            ) : null}
+      </ExportDialog>
+
       <EditorDialog
         open={Boolean(pendingDialog)}
         title={pendingDialog?.title ?? ''}
@@ -1376,34 +1817,64 @@ export default function EditorShell() {
       />
 
       {toast && (
-        <div className="absolute bottom-20 right-4 z-30">
-          <EditorToast message={toast.message} tone={toast.tone} onDismiss={() => setToast(null)} />
+        <div className="absolute bottom-20 right-4 z-30 max-lg:bottom-32 max-lg:left-4">
+          <EditorToast
+            message={toast.message}
+            tone={toast.tone}
+            action={toast.action}
+            onDismiss={() => setToast(null)}
+          />
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
-        <StudioToolRail activeTool={state.activeTool} dispatch={dispatch} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">
+        <StudioToolRail
+          activeTool={state.activeTool}
+          mobileOpen={mobilePanel === 'tools'}
+          onSelectTool={(tool) => {
+            dispatch({ type: 'SET_ACTIVE_TOOL', tool });
+            // On a phone, picking a tool opens that tool's settings (or the inspector for Select).
+            setMobilePanel(tool === 'select' ? 'inspect' : 'design');
+          }}
+        />
 
-        <main className="order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] lg:order-none lg:min-h-0">
-          <CanvasActionStrip
-            activeTool={state.activeTool}
-            hasTemplate={Boolean(effectiveTemplate)}
-            isEditable={state.editableTemplate.isEditable}
-            dispatch={editorDispatch}
-          />
+        <main id="main-content" tabIndex={-1} aria-label="Canvas" className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] max-lg:min-h-0 lg:order-none lg:min-h-0">
+          <h1 className="sr-only">Rhinestone Studio</h1>
+          {/* With a panel open on a phone the canvas needs every pixel, so the guide and the hint strip step aside. */}
+          {!(isMobile && mobilePanel !== 'none') && (
+            <>
+              <GettingStartedGuide />
+              <CanvasActionStrip
+                activeTool={state.activeTool}
+                hasTemplate={Boolean(effectiveTemplate)}
+                isEditable={state.editableTemplate.isEditable}
+                dispatch={editorDispatch}
+              />
+            </>
+          )}
           <EditorCanvas
             state={state}
             dispatch={editorDispatch}
             onNotify={notify}
+            fitRequestId={fitRequestId}
+            onManualViewChange={persistManualCanvasView}
           />
+          {state.activeTool === 'text' && state.textTool.text.trim() === '' && !effectiveTemplate && (
+            <EmptyCanvasPrompt onText={(text) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text } })} />
+          )}
         </main>
 
         <StudioContextPanel
           state={state}
           dispatch={editorDispatch}
           outlineFontStatus={outlineFontStatus}
+          artworkInfo={artworkInfo}
           exportReadiness={exportReadiness}
-          activeCalibrationProfile={activeCalibrationProfile}
+          stones={effectiveTemplate?.stones}
+          onQuickFix={handleQuickFix}
+          canResize={canResize}
+          overlapEnlargement={overlapEnlargement ? { scale: overlapEnlargement.scale, widthMm: overlapEnlargement.widthMm } : null}
+          mobilePanel={mobilePanel}
         />
       </div>
 
@@ -1413,30 +1884,80 @@ export default function EditorShell() {
         exportReady={exportReady}
         exportErrorCount={exportErrorCount}
         exportWarningCount={exportWarningCount}
+        needsCalibration={needsCalibration}
+        spacingAdjustmentNote={spacingAdjustmentNote}
         isEditable={state.editableTemplate.isEditable}
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
-        calibrationState={calibrationState}
+      />
+
+      <MobileStudioBar
+        items={[
+          {
+            id: 'tools',
+            label: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.label ?? 'Tools',
+            icon: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.icon ?? Wrench,
+            active: mobilePanel === 'tools',
+            onSelect: () => setMobilePanel((current) => (current === 'tools' ? 'none' : 'tools')),
+          },
+          {
+            id: 'design',
+            label: 'Design',
+            icon: SlidersHorizontal,
+            active: mobilePanel === 'design',
+            onSelect: () => setMobilePanel((current) => (current === 'design' ? 'none' : 'design')),
+          },
+          {
+            id: 'inspect',
+            label: 'Inspect',
+            icon: ScanSearch,
+            active: mobilePanel === 'inspect',
+            onSelect: () => setMobilePanel((current) => (current === 'inspect' ? 'none' : 'inspect')),
+          },
+          {
+            id: 'export',
+            label: 'Export',
+            icon: Download,
+            primary: true,
+            disabled: !effectiveTemplate,
+            onSelect: handleExport,
+          },
+        ]}
       />
     </div>
   );
 }
 
-function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_EDITOR_STATE.activeTool; dispatch: React.Dispatch<EditorAction> }) {
+type MobilePanel = 'none' | 'tools' | 'design' | 'inspect';
+
+function StudioToolRail({
+  activeTool,
+  mobileOpen,
+  onSelectTool,
+}: {
+  activeTool: typeof DEFAULT_EDITOR_STATE.activeTool;
+  /** Phones/tablets: the Tools tab is open, so the rail shows as a grid under the canvas. */
+  mobileOpen: boolean;
+  onSelectTool: (tool: typeof DEFAULT_EDITOR_STATE.activeTool) => void;
+}) {
   return (
-    <nav className="order-2 flex shrink-0 gap-1 overflow-x-auto border-y border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-2 lg:order-none lg:h-full lg:w-[52px] lg:flex-col lg:overflow-x-visible lg:border-y-0 lg:border-r lg:px-1.5" aria-label="Studio tools">
+    <nav
+      className={`order-2 shrink-0 border-[var(--studio-border)] bg-[var(--studio-well)] max-lg:max-h-[44dvh] max-lg:overflow-y-auto max-lg:border-t max-lg:p-3 ${mobileOpen ? 'max-lg:grid max-lg:grid-cols-3 max-lg:gap-2 sm:max-lg:grid-cols-5' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:w-[68px] lg:flex-col lg:gap-1 lg:border-r lg:px-1.5 lg:py-2`}
+      aria-label="Studio tools"
+    >
       {EDITOR_TOOLS.map((tool) => {
         const Icon = tool.icon;
         const active = activeTool === tool.id;
         return (
           <button
             key={tool.id}
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
+            onClick={() => onSelectTool(tool.id)}
             title={tool.description}
             aria-label={tool.label}
-            className={`flex min-w-[48px] flex-col items-center justify-center rounded-md px-2 py-2 text-[10px] transition lg:min-w-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+            aria-pressed={active}
+            className={`flex min-h-16 flex-col items-center justify-center rounded-md px-2 py-2 text-xs transition lg:min-h-0 ${active ? 'bg-violet-500/35 text-white shadow-sm' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5 lg:h-4 lg:w-4" />
             <span className="mt-1 truncate">{tool.label}</span>
           </button>
         );
@@ -1448,22 +1969,31 @@ function StudioToolRail({ activeTool, dispatch }: { activeTool: typeof DEFAULT_E
 // ─── Tabbed context panel ───────────────────────────────────────────────────
 
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
-import type { CalibrationProfile } from '../lib/workspaceVault';
-
 function StudioContextPanel({
   state,
   dispatch,
   outlineFontStatus,
+  artworkInfo,
   exportReadiness,
-  activeCalibrationProfile,
+  stones,
+  onQuickFix,
+  canResize,
+  overlapEnlargement,
+  mobilePanel,
 }: {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus: OutlineFontStatus;
+  artworkInfo: ArtworkInfo | null;
   exportReadiness: ExportReadinessResult | null;
-  activeCalibrationProfile: CalibrationProfile | null;
+  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
+  onQuickFix: (action: import('./quickFixItems').QuickFixAction) => void;
+  canResize: boolean;
+  overlapEnlargement: { scale: number; widthMm: number } | null;
+  /** Phones/tablets: which bottom-bar panel is open. `'none'` on desktop, where both tabs are visible. */
+  mobilePanel: 'none' | 'tools' | 'design' | 'inspect';
 }) {
-  // Auto-switch: Inspect when select tool is active, Generate for generators.
+  // Auto-switch: Inspect when select tool is active, Design (source settings) for generators.
   const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
   const [manualTab, setManualTab] = useState<'source' | 'inspector' | null>(null);
   const [prevTool, setPrevTool] = useState(state.activeTool);
@@ -1471,34 +2001,45 @@ function StudioContextPanel({
     setPrevTool(state.activeTool);
     setManualTab(null);
   }
-  const tab = manualTab ?? autoTab;
+  // On a phone the bottom bar picks the tab; on desktop the tab strip does.
+  const isMobile = useIsMobileStudio();
+  const tab = isMobile && mobilePanel === 'design' ? 'source' : isMobile && mobilePanel === 'inspect' ? 'inspector' : (manualTab ?? autoTab);
+  const mobileVisible = mobilePanel === 'design' || mobilePanel === 'inspect';
 
   return (
-    <div className="order-2 flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0">
+    <aside aria-label="Design and inspector" className={`order-2 min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobileVisible ? 'max-lg:flex' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0`}>
       {/* Tabs */}
-      <div className="flex shrink-0 border-b border-[var(--studio-border)] bg-[var(--studio-well)]">
+      <div role="tablist" aria-label="Panel" className="flex shrink-0 border-b max-lg:hidden border-[var(--studio-border)] bg-[var(--studio-well)]">
         {(['source', 'inspector'] as const).map((t) => (
           <button
             key={t}
+            id={`studio-tab-${t}`}
+            role="tab"
+            aria-selected={tab === t}
+            aria-controls="studio-panel"
             onClick={() => setManualTab(t === autoTab ? null : t)}
-            className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
+            className={`flex-1 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${tab === t ? 'border-b-2 border-violet-400 bg-[var(--studio-surface)] text-violet-300' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
           >
-            {t === 'source' ? 'Generate' : 'Inspect'}
+            {t === 'source' ? 'Design' : 'Inspect'}
           </button>
         ))}
       </div>
       {/* Panel content */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div id="studio-panel" role="tabpanel" aria-labelledby={`studio-tab-${tab}`} className="min-h-0 flex-1 overflow-hidden">
         <EditorPropertiesPanel
           state={state}
           dispatch={dispatch}
           mode={tab}
           outlineFontStatus={outlineFontStatus}
+          artworkInfo={artworkInfo}
           exportReadiness={tab === 'inspector' ? exportReadiness : null}
-          activeCalibrationProfile={activeCalibrationProfile}
+          stones={tab === 'inspector' ? stones : undefined}
+          onQuickFix={onQuickFix}
+          canResize={canResize}
+          overlapEnlargement={overlapEnlargement}
         />
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -1525,11 +2066,11 @@ function CanvasActionStrip({
 
   return (
     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5">
-      <p className="min-w-0 truncate text-[11px] text-[var(--studio-ink-muted)]">{hint}</p>
+      <p className="min-w-0 truncate text-xs text-[var(--studio-ink-muted)]">{hint}</p>
       {primaryAction && (
         <button
           onClick={primaryAction.onClick}
-          className="shrink-0 rounded-md border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300 transition hover:bg-violet-500/25"
+          className="shrink-0 rounded-md border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-300 transition hover:bg-violet-500/25"
         >
           {primaryAction.label}
         </button>

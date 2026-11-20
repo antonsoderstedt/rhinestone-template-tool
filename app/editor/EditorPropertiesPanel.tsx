@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import { CopyPlus, DiamondMinus, Hand, MoveHorizontal, MoveVertical, PenLine, ScanSearch, Sparkles } from 'lucide-react';
 import {
   createImportedTemplate,
   getRecommendedCenterDistance,
+  getTemplatePhysicalSize,
   getOutlineFontDefinition,
   getPreferredRhinestoneFontStoneSize,
   getSupportedTextCoverageModes,
@@ -16,9 +17,14 @@ import {
   listSvgAlphabets,
   getSvgAlphabetDefinition,
   TEXT_LABELS_NOT_CRICUT_SAFE_MESSAGE,
+  validateAssetUpload,
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
 } from '@/src/lib/rhinestone-engine/index';
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import ExportReadinessPanel from '../components/ExportReadinessPanel';
+import QuickFixes from './QuickFixes';
+import StoneEstimateCard from './StoneEstimateCard';
+import { getQuickFixes, type QuickFixAction } from './quickFixItems';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
 import DensityControl from './controls/DensityControl';
@@ -28,6 +34,8 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
 import PlacementModeControl from './controls/PlacementModeControl';
+import { ArtworkAdvice, ArtworkLayersList, ArtworkLookControl } from './controls/ArtworkControls';
+import { ARTWORK_LOOKS, lookFromCoverage, type ArtworkInfo } from './artworkGeneration';
 import {
   editorFieldLabelClassName,
   editorSegmentActiveClassName,
@@ -36,24 +44,31 @@ import {
   editorSelectClassName,
   editorTextareaClassName,
 } from './controls/controlStyles';
-import { EDITOR_TOOLS, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
+import { TEXT_EXAMPLES, getEditableStatusCopy, getSelectionActionState, getSelectionEmptyState, getSourcePanelTool } from './editorUi';
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
-import type { CalibrationProfile } from '@/app/lib/workspaceVault';
 
 interface EditorPropertiesPanelProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   mode: 'source' | 'inspector';
   outlineFontStatus?: OutlineFontStatus;
+  artworkInfo?: ArtworkInfo | null;
   exportReadiness?: ExportReadinessResult | null;
-  activeCalibrationProfile?: CalibrationProfile | null;
+  /** Stones of the design as it will be exported, for the "stones to buy" estimate. */
+  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
+  /** One-click fixes (spacing, fit to mat). `canResize` is false for hand-made designs. */
+  onQuickFix?: (action: QuickFixAction) => void;
+  canResize?: boolean;
+  /** Set when the design is artwork whose stones overlap by design; see getQuickFixes. */
+  overlapEnlargement?: { scale: number; widthMm: number } | null;
 }
 
 interface ToolPropertiesProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   outlineFontStatus?: OutlineFontStatus;
+  artworkInfo?: ArtworkInfo | null;
 }
 
 function PanelSection({ title, description, children, defaultOpen = true }: { title: string; description?: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -61,7 +76,7 @@ function PanelSection({ title, description, children, defaultOpen = true }: { ti
     <details open={defaultOpen} className="group rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-sm">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-2.5 marker:hidden [&::-webkit-details-marker]:hidden">
         <span>
-          <span className="block text-sm font-semibold text-[var(--studio-ink)]">{title}</span>
+          <h2 className="block text-sm font-semibold text-[var(--studio-ink)]">{title}</h2>
           {description && <span className="mt-1 block text-xs leading-5 text-[var(--studio-ink-muted)]">{description}</span>}
         </span>
         <span className="mt-1 text-xs font-semibold text-[var(--studio-ink-subtle)] transition group-open:rotate-180">⌄</span>
@@ -88,92 +103,12 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
   );
 }
 
-function CalibrationWorkflowCard({ activeCalibrationProfile }: { activeCalibrationProfile?: CalibrationProfile | null }) {
-  if (!activeCalibrationProfile) {
-    return (
-      <div className="rounded-xl border border-amber-400/30 bg-amber-50 px-3 py-3 text-left">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-700">Calibration gate</span>
-          <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-700">
-            Missing
-          </span>
-        </div>
-        <p className="mt-2 text-sm font-medium text-amber-800">No approved profile is active.</p>
-        <p className="mt-1 text-xs leading-5 text-amber-700">
-          Set up the material profile before production export so the final SVG matches your cut settings.
-        </p>
-        <Link href="/setup" className="mt-3 inline-flex items-center text-xs font-semibold text-amber-800 underline decoration-amber-400 underline-offset-4">
-          Open setup & calibration
-        </Link>
-      </div>
-    );
-  }
-
-  const approved = Boolean(activeCalibrationProfile.approvedAt);
-  return (
-    <div className={`rounded-xl border px-3 py-3 text-left ${approved ? 'border-emerald-400/30 bg-emerald-50' : 'border-amber-400/30 bg-amber-50'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-[9px] font-semibold uppercase tracking-[0.18em] ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
-          Calibration gate
-        </span>
-        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${approved ? 'border-emerald-200 bg-emerald-100 text-emerald-700' : 'border-amber-200 bg-amber-100 text-amber-700'}`}>
-          {approved ? 'Approved' : 'Pending'}
-        </span>
-      </div>
-
-      <p className={`mt-2 text-sm font-medium ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
-        {activeCalibrationProfile.name}
-      </p>
-      <p className={`mt-1 text-xs leading-5 ${approved ? 'text-emerald-700' : 'text-amber-700'}`}>
-        {approved
-          ? 'This calibration profile is approved for production. Keep it active before export.'
-          : 'Approve this calibration in setup before using it for production work.'}
-      </p>
-      <Link href="/setup" className={`mt-3 inline-flex items-center text-xs font-semibold underline decoration-2 underline-offset-4 ${approved ? 'text-emerald-800' : 'text-amber-800'}`}>
-        Review setup workflow
-      </Link>
-    </div>
-  );
-}
-
-function ToolSwitcher({ activeTool, dispatch }: { activeTool: EditorState['activeTool']; dispatch: React.Dispatch<EditorAction> }) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {EDITOR_TOOLS.map((tool) => {
-        const Icon = tool.icon;
-        return (
-          <button
-            key={tool.id}
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
-            className={`${editorSegmentBaseClassName} ${activeTool === tool.id ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
-            title={tool.description}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{tool.label}</span>
-              </div>
-              {activeTool === tool.id ? <span className="h-2 w-2 rounded-full bg-accent-500" /> : null}
-            </div>
-            <p className="mt-2 text-[11px] text-ink-muted">{tool.description}</p>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, exportReadiness, activeCalibrationProfile }: EditorPropertiesPanelProps) {
+export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, artworkInfo, exportReadiness, stones, onQuickFix, canResize = false, overlapEnlargement = null }: EditorPropertiesPanelProps) {
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
     return (
-      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
-        <CalibrationWorkflowCard activeCalibrationProfile={activeCalibrationProfile} />
-
-        <PanelSection title="Tools" description="Choose how you want to work with this design." defaultOpen={false}>
-          <ToolSwitcher activeTool={state.activeTool} dispatch={dispatch} />
-        </PanelSection>
+      <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
 
         {state.activeTool === 'select' ? (
           <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
@@ -191,25 +126,32 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               </div>
             </PanelSection>
 
-            <PanelSection title={getToolTitle(sourceTool)} description="These settings control the generated baseline for the current design source.">
+            <PanelSection title={getToolTitle(sourceTool)}>
               {sourceTool === 'text' && <TextToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'rhinestone-font' && <RhinestoneFontToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'svg-alphabet' && <SvgAlphabetToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
               {sourceTool === 'letter-stencil' && <LetterStencilToolProperties state={state} dispatch={dispatch} outlineFontStatus={outlineFontStatus} />}
-              {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} />}
+              {sourceTool === 'svg' && <SvgToolProperties state={state} dispatch={dispatch} artworkInfo={artworkInfo} />}
               {sourceTool === 'template-import' && <TemplateImportToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
             </PanelSection>
           </>
         )}
-      </aside>
+      </div>
     );
   }
 
   if (mode === 'inspector') {
+    const quickFixes = getQuickFixes(exportReadiness ?? null, { enlargement: overlapEnlargement });
     return (
-      <aside className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
+      <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
+        {quickFixes.length > 0 && onQuickFix && (
+          <PanelSection title="Quick fixes" description="Problems found in this design, and one-click ways to fix them.">
+            <QuickFixes items={quickFixes} canResize={canResize} onAction={onQuickFix} />
+          </PanelSection>
+        )}
+
         <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
@@ -252,12 +194,18 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
           />
         </PanelSection>
 
+        {stones && stones.length > 0 && (
+          <PanelSection title="Stones to buy" description="How many stones and packs this design needs." defaultOpen={false}>
+            <StoneEstimateCard stones={stones} />
+          </PanelSection>
+        )}
+
         {exportReadiness && (
           <PanelSection title="Export readiness" description="Cricut-safe checks for the current design." defaultOpen={false}>
             <ExportReadinessPanel result={exportReadiness} />
           </PanelSection>
         )}
-      </aside>
+      </div>
     );
   }
 }
@@ -335,10 +283,23 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           value={textTool.text}
           onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: e.target.value } })}
           rows={3}
-          placeholder="Enter text..."
+          placeholder="Your name"
           className={`${editorTextareaClassName} resize-none font-mono`}
         />
       </label>
+      <div className="flex flex-wrap items-center gap-1.5" aria-label="Try an example">
+        <span className="text-xs uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Try</span>
+        {TEXT_EXAMPLES.map((example) => (
+          <button
+            key={example.label}
+            type="button"
+            onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: example.text } })}
+            className="rounded-full border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-1 text-xs text-[var(--studio-ink-secondary)] transition hover:border-violet-400/50 hover:text-[var(--studio-ink)]"
+          >
+            {example.label}
+          </button>
+        ))}
+      </div>
 
       {textTool.mode === 'outline' && outlineFontStatus && (
         <FontPicker
@@ -352,7 +313,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
       {textTool.mode === 'outline' && textTool.unsupportedCharacters.length > 0 && (
         <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
           Unsupported characters: {textTool.unsupportedCharacters.join(', ')}.
-          The Legacy font doesn&apos;t have a glyph for {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} — a &apos;?&apos; is drawn instead. Try a bundled font, or remove {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} from the text.
+          The built-in simple font doesn&apos;t have a glyph for {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} — a &apos;?&apos; is drawn instead. Try a bundled font, or remove {textTool.unsupportedCharacters.length === 1 ? 'it' : 'them'} from the text.
         </div>
       )}
 
@@ -366,7 +327,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
               className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'outline' ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
             >
               <div className="text-sm font-medium">Outline text</div>
-              <p className="mt-1 text-[11px] text-ink-muted">Follow the letter contours only.</p>
+              <p className="mt-1 text-xs text-ink-muted">Follow the letter contours only.</p>
             </button>
             <button
               type="button"
@@ -375,7 +336,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
               className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'filled-typography' ? editorSegmentActiveClassName : editorSegmentIdleClassName} ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-border hover:bg-surface' : ''}`}
             >
               <div className="text-sm font-medium">Filled typography</div>
-              <p className="mt-1 text-[11px] text-ink-muted">Fill thicker letters with a stone pattern.</p>
+              <p className="mt-1 text-xs text-ink-muted">Fill thicker letters with a stone pattern.</p>
             </button>
           </div>
         </div>
@@ -523,7 +484,8 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
 function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { rhinestoneFontTool } = state;
-  const availableFonts = listRhinestoneFonts();
+  // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
+  const availableFonts = listRhinestoneFonts().filter((font) => font.fontId !== 'test-fixture');
   const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
   const supportedStoneSizes = getSupportedRhinestoneFontStoneSizes(rhinestoneFontTool.rhinestoneFontId);
   const getStoneDiameterLabel = (size: typeof rhinestoneFontTool.stoneSize) => {
@@ -568,14 +530,14 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
             </option>
           ))}
         </select>
-        <span className="text-[11px] text-ink-muted">
+        <span className="text-xs text-ink-muted">
           {selectedFontDefinition.category} · {selectedFontDefinition.style} · mode {rhinestoneFontTool.presentationMode} · supports {supportedStoneSizes.join(', ')}
         </span>
       </label>
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Text</span>
-        <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
+        <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>Suggested sample: {selectedFontDefinition.suggestedText}</span>
           <button
             type="button"
@@ -583,7 +545,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
               type: 'UPDATE_RHINESTONE_FONT_TOOL',
               updates: { text: selectedFontDefinition.suggestedText },
             })}
-            className="rounded-full border border-border px-2 py-1 text-[11px] text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
+            className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
             Use sample
           </button>
@@ -619,22 +581,22 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
           ))}
         </select>
         {calibration && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Authoritative hole diameter: {calibration.diameterMm} mm
           </span>
         )}
         {selectedFontDefinition.limitations && selectedFontDefinition.limitations.length > 0 && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             {selectedFontDefinition.limitations.join(' · ')}
           </span>
         )}
         {selectedFontDefinition.style === 'Digits' && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Best for numeric-only designs.
           </span>
         )}
         {selectedFontDefinition.style === 'Line' && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Line-style rhinestone font. Candidate for a future centerline workflow.
           </span>
         )}
@@ -721,14 +683,14 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
             </option>
           ))}
         </select>
-        <span className="text-[11px] text-ink-muted">
+        <span className="text-xs text-ink-muted">
           {selectedAlphabet.category} · {selectedAlphabet.style} · supports {supportedStoneSizes.join(', ')}
         </span>
       </label>
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Text</span>
-        <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
+        <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>Suggested sample: {selectedAlphabet.suggestedText}</span>
           <button
             type="button"
@@ -736,7 +698,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
               type: 'UPDATE_SVG_ALPHABET_TOOL',
               updates: { text: selectedAlphabet.suggestedText },
             })}
-            className="rounded-full border border-border px-2 py-1 text-[11px] text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
+            className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
             Use sample
           </button>
@@ -772,12 +734,12 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
           ))}
         </select>
         {calibration && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Authoritative hole diameter: {calibration.diameterMm} mm
           </span>
         )}
         {selectedAlphabet.limitations && selectedAlphabet.limitations.length > 0 && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             {selectedAlphabet.limitations.join(' · ')}
           </span>
         )}
@@ -823,7 +785,8 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
 function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { letterStencilTool } = state;
   const availableAlphabets = listSvgAlphabets();
-  const availableFonts = listRhinestoneFonts();
+  // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
+  const availableFonts = listRhinestoneFonts().filter((font) => font.fontId !== 'test-fixture');
   const selectedAlphabet = getSvgAlphabetDefinition(letterStencilTool.svgAlphabetId as never);
   const selectedFont = getRhinestoneFontDefinition(letterStencilTool.rhinestoneFontId as never);
   const activeSource = letterStencilTool.sourceType === 'rhinestone-font'
@@ -873,7 +836,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.sourceType === 'svg-alphabet' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">SVG Alphabet</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Curated per-letter SVG glyphs</div>
+            <div className="mt-1 text-xs text-ink-muted">Curated per-letter SVG glyphs</div>
           </button>
           <button
             type="button"
@@ -887,7 +850,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.sourceType === 'rhinestone-font' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">Rhinestone Font</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Any registered OpenType rhinestone font</div>
+            <div className="mt-1 text-xs text-ink-muted">Any registered OpenType rhinestone font</div>
           </button>
         </div>
       </div>
@@ -916,7 +879,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
               </option>
             ))}
           </select>
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             {selectedAlphabet.category} · {selectedAlphabet.style} · supports {selectedAlphabet.supportedTargetStoneSizeIds.join(', ')}
           </span>
         </label>
@@ -944,7 +907,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
               </option>
             ))}
           </select>
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             {selectedFont.category} · {selectedFont.style} · supports {selectedFont.supportedTargetStoneSizeIds.join(', ')}
           </span>
         </label>
@@ -952,7 +915,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-ink-secondary">Text</span>
-        <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
+        <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>{cardCount} card{cardCount === 1 ? '' : 's'} · Suggested: {activeSource.suggestedText}</span>
           <button
             type="button"
@@ -960,7 +923,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
               type: 'UPDATE_LETTER_STENCIL_TOOL',
               updates: { text: activeSource.suggestedText },
             })}
-            className="rounded-full border border-border px-2 py-1 text-[11px] text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
+            className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
             Use sample
           </button>
@@ -974,7 +937,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
           })}
           rows={3}
           placeholder={selectedAlphabet.suggestedText}
-          className="resize-y rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent-400"
+          className="resize-y rounded border border-border bg-surface-sunken px-2 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400"
         />
       </label>
 
@@ -996,7 +959,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
           ))}
         </select>
         {calibration && (
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Authoritative hole diameter: {calibration.diameterMm} mm
           </span>
         )}
@@ -1011,7 +974,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.layoutMode === 'preview' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">Preview</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Cards edge-to-edge, for visual word preview only</div>
+            <div className="mt-1 text-xs text-ink-muted">Cards edge-to-edge, for visual word preview only</div>
           </button>
           <button
             type="button"
@@ -1019,10 +982,10 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.layoutMode === 'cut-sheet' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">Cut sheet</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Framed cards with cut spacing, ready to cut</div>
+            <div className="mt-1 text-xs text-ink-muted">Framed cards with cut spacing, ready to cut</div>
           </button>
         </div>
-        <span className="text-[11px] text-ink-muted">{modeCopy}</span>
+        <span className="text-xs text-ink-muted">{modeCopy}</span>
       </div>
 
       <NumericInput
@@ -1187,7 +1150,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
           updates: { defaultStoneSize },
         })}
       />
-      <p className="-mt-2 text-[11px] text-ink-muted">
+      <p className="-mt-2 text-xs text-ink-muted">
         Fallback label only. Imported circle diameter remains unchanged.
       </p>
 
@@ -1223,31 +1186,43 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
   );
 }
 
-function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
+function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolPropertiesProps) {
   const { svgTool } = state;
-  const svgCapabilities = getGeneratorCapabilityProfile('svg');
+  // Why the last file was refused, shown under the file picker until a good file is loaded.
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const currentTemplateSize = state.template ? getTemplatePhysicalSize(state.template) : null;
+  const scaledWidthMm = typeof svgTool.targetWidthMm === 'number'
+    ? svgTool.targetWidthMm
+    : currentTemplateSize?.widthMm ?? null;
+  const scaledHeightMm = typeof svgTool.targetHeightMm === 'number'
+    ? svgTool.targetHeightMm
+    : currentTemplateSize?.heightMm ?? null;
+  const scaledStoneCount = state.template?.stones.length ?? 0;
   const currentArtworkName = svgTool.assetKind === 'image' ? svgTool.imageFileName : svgTool.svgFileName;
   const uploadInputId = 'artwork-upload-input';
-  const displayUnit = svgTool.dimensionUnit;
-  const toDisplayUnit = (value: number | '') => {
-    if (value === '') return '';
-    return displayUnit === 'in' ? Number((value / 25.4).toFixed(3)) : value;
-  };
-  const fromDisplayUnit = (value: number | '') => {
-    if (value === '') return '';
-    return displayUnit === 'in' ? Number((value * 25.4).toFixed(3)) : value;
-  };
-
   const loadArtworkFile = (file: File | null | undefined) => {
     if (!file) return;
 
     const lowerName = file.name.toLowerCase();
     const isSvg = file.type === 'image/svg+xml' || lowerName.endsWith('.svg');
 
+    // A file that is too large is refused before it is read; an SVG is also checked once its text is known.
+    if (file.size > DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES) {
+      setUploadError(`${file.name}: ${validateAssetUpload({ fileName: file.name, sizeBytes: file.size, svgText: null }).message}`);
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => setUploadError(`${file.name}: the file could not be read.`);
     reader.onload = () => {
       if (isSvg) {
         const svgText = reader.result as string;
+        const check = validateAssetUpload({ fileName: file.name, mimeType: file.type, sizeBytes: file.size, svgText });
+        if (!check.valid) {
+          setUploadError(`${file.name}: ${check.message} Nothing was changed — pick a different file.`);
+          return;
+        }
+        setUploadError(null);
         dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
@@ -1259,6 +1234,7 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           },
         });
       } else {
+        setUploadError(null);
         dispatch({
           type: 'UPDATE_SVG_TOOL',
           updates: {
@@ -1296,6 +1272,78 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
     loadArtworkFile(fileItem.getAsFile());
   };
 
+  const sharedArtworkControls = (
+    <>
+          <ArtworkLookControl
+            look={lookFromCoverage(svgTool.coverageMode)}
+            rowCount={svgTool.contourSettings.rowCount}
+            onLookChange={(look) => {
+              const option = ARTWORK_LOOKS.find((entry) => entry.look === look)!;
+              dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode: option.coverageMode, fillMode: look === 'outline' ? 'outline' : 'outline-fill' } });
+            }}
+            onRowCountChange={(rowCount) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings: { ...svgTool.contourSettings, rowCount } } })}
+          />
+
+          {artworkInfo && (
+            <ArtworkLayersList
+              layers={artworkInfo.layers}
+              onToggle={(colour, role) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { layerRoles: { ...svgTool.layerRoles, [colour]: role } } })}
+            />
+          )}
+
+          {/* Stone Size */}
+          <StoneProfileControl
+            value={svgTool.stoneSize}
+            onChange={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
+          />
+
+          {/* Target Dimensions */}
+          {typeof scaledWidthMm === 'number' && typeof scaledHeightMm === 'number' && (
+            <p className="rounded-xl border border-info-500/30 bg-info-500/10 px-3 py-2 text-xs text-info-700">
+              Scaled to {scaledWidthMm.toFixed(1)} × {scaledHeightMm.toFixed(1)} mm — change below. Stone count: {scaledStoneCount}.
+            </p>
+          )}
+          <PhysicalDimensionsControl
+            widthMm={svgTool.targetWidthMm}
+            heightMm={svgTool.targetHeightMm}
+            preserveAspectRatio={svgTool.preserveAspectRatio}
+            onWidthChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: val } })}
+            onHeightChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetHeightMm: val } })}
+            onPreserveAspectRatioChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: val } })}
+            unit={svgTool.dimensionUnit}
+            onUnitChange={(unit) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { dimensionUnit: unit } })}
+          />
+
+          {artworkInfo && (
+            <ArtworkAdvice
+              info={artworkInfo}
+              stoneSize={svgTool.stoneSize}
+              onSetWidth={(widthMm) => {
+                const ratio = artworkInfo.feasibility ? artworkInfo.feasibility.heightMm / Math.max(artworkInfo.feasibility.widthMm, 1e-6) : 1;
+                dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: widthMm, targetHeightMm: svgTool.preserveAspectRatio ? Number((widthMm * ratio).toFixed(1)) : svgTool.targetHeightMm } });
+              }}
+              onSetStoneSize={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
+            />
+          )}
+
+          {artworkInfo && artworkInfo.warnings.length > 0 && (
+            <ul className="space-y-1 text-xs text-ink-muted" aria-label="Notes about this file">
+              {artworkInfo.warnings.slice(0, 4).map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          )}
+
+          {/* Density */}
+          <DensityControl
+            densityPreset={svgTool.densityPreset}
+            customSpacingMm={svgTool.customSpacingMm}
+            onDensityChange={(preset) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { densityPreset: preset } })}
+            onCustomSpacingChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: val } })}
+          />
+    </>
+  );
+
   return (
     <div className="space-y-4">
       {/* File Upload */}
@@ -1306,19 +1354,26 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onPaste={handlePaste}
-          className="rounded-xl border border-dashed border-border bg-surface-sunken px-4 py-4 text-center text-sm text-ink-secondary outline-none transition hover:border-border-strong focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
+          className="rounded-xl border border-dashed border-border bg-surface-sunken px-4 py-4 text-center text-sm text-ink-secondary transition hover:border-border-strong focus:border-accent-400"
         >
           <p>Drag and drop or paste artwork here.</p>
-          <p className="mt-1 text-[11px] text-ink-muted">Use the file picker below if you prefer browsing.</p>
+          <p className="mt-1 text-xs text-ink-muted">Use the file picker below if you prefer browsing.</p>
         </div>
         <input
           id={uploadInputId}
           type="file"
           accept=".svg,image/svg+xml,.png,.jpg,.jpeg,.webp,.bmp,.gif,image/png,image/jpeg,image/webp,image/bmp,image/gif"
           onChange={handleFileSelect}
-          className="text-xs text-ink-secondary file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-accent-500 file:text-ink-inverse file:text-xs file:font-medium hover:file:bg-accent-600 file:cursor-pointer cursor-pointer"
+          className="peer sr-only"
         />
-        <span className="text-[11px] text-ink-muted">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
+        {/* The browser's own file button is in the browser's language; this one is ours. */}
+        <span className="inline-flex w-fit cursor-pointer items-center rounded-md bg-accent-500 px-3 py-2 text-xs font-medium text-ink-inverse hover:bg-accent-600 peer-focus-visible:ring-2">
+          Choose a file
+        </span>
+        <span className="text-xs text-ink-muted">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
+        {uploadError && (
+          <span role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-2 text-xs text-danger-600">{uploadError}</span>
+        )}
         {currentArtworkName && (
           <span className="text-xs text-ink-secondary mt-1">📄 {currentArtworkName}</span>
         )}
@@ -1326,10 +1381,6 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
       {svgTool.assetKind === 'image' && svgTool.uploadedImageDataUrl && (
         <>
-          <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
-            Converts a raster image into a rhinestone layout using thresholded image sampling, color layers, and physical stone spacing.
-          </div>
-
           <div className="overflow-hidden rounded-xl border border-border bg-surface-sunken">
             <div className="border-b border-border px-3 py-2 text-xs font-medium text-ink-secondary">Original image</div>
             {/* eslint-disable-next-line @next/next/no-img-element -- client-side data: URI, no network fetch for next/image to optimize */}
@@ -1341,14 +1392,15 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-medium text-ink-secondary">Number of stone colors</span>
-            <div className="grid grid-cols-4 gap-2">
+            <span className="text-xs font-medium text-ink-secondary">Number of stone colours</span>
+            <div role="group" aria-label="Number of stone colours" className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((count) => (
                 <button
                   key={count}
                   type="button"
+                  aria-pressed={(svgTool.imageColorCount ?? 1) === count}
                   onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageColorCount: count as 1 | 2 | 3 | 4 } })}
-                  className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${svgTool.imageColorCount === count ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${(svgTool.imageColorCount ?? 1) === count ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
                 >
                   {count}
                 </button>
@@ -1356,88 +1408,26 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
             </div>
           </div>
 
-          <StoneProfileControl
-            value={svgTool.stoneSize}
-            onChange={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
-          />
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-ink-secondary">Target Dimensions</span>
-              <div className="ml-auto inline-flex rounded-lg border border-border bg-surface-raised p-1 text-xs">
-                {(['in', 'mm'] as const).map((unit) => (
-                  <button
-                    key={unit}
-                    type="button"
-                    onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { dimensionUnit: unit } })}
-                    className={`rounded px-2 py-1 transition ${displayUnit === unit ? 'bg-accent-500 text-ink-inverse' : 'text-ink-secondary hover:text-ink'}`}
-                  >
-                    {unit}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <NumericInput
-                label="Width"
-                value={toDisplayUnit(svgTool.targetWidthMm)}
-                onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: fromDisplayUnit(value) } })}
-                unit={displayUnit}
-                min={displayUnit === 'in' ? 0.25 : 5}
-                max={displayUnit === 'in' ? 30 : 762}
-                step={displayUnit === 'in' ? 0.1 : 0.1}
-              />
-              <NumericInput
-                label="Height"
-                value={toDisplayUnit(svgTool.targetHeightMm)}
-                onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetHeightMm: fromDisplayUnit(value) } })}
-                unit={displayUnit}
-                min={displayUnit === 'in' ? 0.25 : 5}
-                max={displayUnit === 'in' ? 30 : 762}
-                step={displayUnit === 'in' ? 0.1 : 0.1}
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={svgTool.preserveAspectRatio}
-                onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: e.target.checked } })}
-                className="h-3.5 w-3.5 rounded"
-              />
-              Lock ratio
-            </label>
-          </div>
+          {sharedArtworkControls}
 
           <NumericInput
-            label="Stone spacing"
-            value={toDisplayUnit(svgTool.customSpacingMm)}
-            onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: fromDisplayUnit(value), densityPreset: 'custom' } })}
-            unit={displayUnit}
-            min={displayUnit === 'in' ? 0.03 : 0.75}
-            max={displayUnit === 'in' ? 1 : 25}
-            step={displayUnit === 'in' ? 0.01 : 0.1}
-          />
-
-          <NumericInput
-            label="Threshold"
+            label="Brightness cutoff"
             value={svgTool.imageThreshold}
             onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageThreshold: typeof value === 'number' ? value : 128 } })}
             min={0}
             max={255}
             step={1}
-            helpText="Lower values keep only darker regions. Higher values keep more of the image."
+            helpText="Only used for pictures without a plain background. Lower keeps only the darker parts."
           />
 
           <NumericInput
-            label="Refine details"
+            label="Detail"
             value={svgTool.imageDetail}
             onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageDetail: typeof value === 'number' ? value : 128 } })}
             min={0}
             max={255}
             step={1}
-            helpText="Higher values keep small details. Lower values smooth isolated noise."
+            helpText="Higher keeps small details. Lower smooths away specks and holes."
           />
 
           <label className="flex items-center gap-2 text-sm text-ink-secondary">
@@ -1447,178 +1437,12 @@ function SvgToolProperties({ state, dispatch }: ToolPropertiesProps) {
               onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageInvert: e.target.checked } })}
               className="h-3.5 w-3.5 rounded"
             />
-            Invert fill (place stones on lighter regions)
+            Stones on the background instead of the shape
           </label>
         </>
       )}
 
-      {svgTool.assetKind === 'svg' && svgTool.uploadedSvgText && (
-        <>
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-ink-secondary">SVG mode</span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'vector-layout' } })}
-                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${svgTool.renderMode === 'vector-layout' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
-              >
-                <div className="font-medium">Vector layout</div>
-                <div className="mt-1 text-[10px] text-ink-muted">Contour-aware placement from SVG paths</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'artwork-dots' } })}
-                className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${svgTool.renderMode === 'artwork-dots' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
-              >
-                <div className="font-medium">Artwork dots</div>
-                <div className="mt-1 text-[10px] text-ink-muted">Dense fill-first sampling for logos and badges</div>
-              </button>
-            </div>
-            <p className="text-[11px] text-ink-muted">
-              {svgTool.renderMode === 'artwork-dots'
-                ? 'Artwork dots uses fill-only hexagonal sampling and is intended to mimic image-to-dot style rhinestone layouts.'
-                : 'Vector layout keeps the SVG as vector artwork and is better for cleaner outline-driven results. Uploading a solid logo or badge? Try Artwork dots below for a denser, more polished look, or switch Fill mode to "Fill" on this side.'}
-            </p>
-          </div>
-
-          {/* Stone Size */}
-          <StoneProfileControl
-            value={svgTool.stoneSize}
-            onChange={(size) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { stoneSize: size } })}
-          />
-
-          {/* Target Dimensions */}
-          <PhysicalDimensionsControl
-            widthMm={svgTool.targetWidthMm}
-            heightMm={svgTool.targetHeightMm}
-            preserveAspectRatio={svgTool.preserveAspectRatio}
-            onWidthChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: val } })}
-            onHeightChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetHeightMm: val } })}
-            onPreserveAspectRatioChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: val } })}
-          />
-
-          {svgTool.renderMode === 'vector-layout' && (
-            <FillModeControl
-              fillMode={svgTool.fillMode}
-              fillPattern={svgTool.fillPattern}
-              availableModes={svgCapabilities.supportedCoverageModes.filter((mode): mode is 'outline' | 'fill' | 'outline-fill' => mode !== 'contour')}
-              availablePatterns={svgCapabilities.supportedFillPatterns}
-              onFillModeChange={(mode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillMode: mode } })}
-              onFillPatternChange={(pattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { fillPattern: pattern } })}
-            />
-          )}
-
-          {/* Density */}
-          <DensityControl
-            densityPreset={svgTool.densityPreset}
-            customSpacingMm={svgTool.customSpacingMm}
-            onDensityChange={(preset) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { densityPreset: preset } })}
-            onCustomSpacingChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { customSpacingMm: val } })}
-          />
-
-          {svgTool.renderMode === 'vector-layout' ? (
-            <PlacementModeControl
-              coverageMode={svgTool.coverageMode}
-              availableCoverageModes={svgCapabilities.supportedCoverageModes}
-              placementPattern={svgTool.placementPattern}
-              availablePlacementPatterns={svgCapabilities.supportedPlacementPatterns.filter((pattern): pattern is 'default' | 'hexagonal' | 'radial' => pattern === 'default' || pattern === 'hexagonal' || pattern === 'radial')}
-              contourSettings={svgTool.contourSettings}
-              radialSettings={svgTool.radialSettings}
-              onCoverageModeChange={(coverageMode) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { coverageMode } })}
-              onPlacementPatternChange={(placementPattern) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { placementPattern } })}
-              onContourSettingsChange={(contourSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings } })}
-              onRadialSettingsChange={(radialSettings) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { radialSettings } })}
-            />
-          ) : (
-            <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-xs text-ink-secondary">
-              Artwork dots currently uses fill-only coverage with a hexagonal placement pattern.
-            </div>
-          )}
-
-          {/* Advanced - Cleanup Options */}
-          <AdvancedSection title="Cleanup Options">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={svgTool.cleanupEnabled}
-                onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupEnabled: e.target.checked } })}
-                className="h-3.5 w-3.5 rounded"
-              />
-              <span className="text-sm text-ink-secondary">Enable Cleanup</span>
-            </label>
-
-            {svgTool.cleanupEnabled && (
-              <div className="space-y-3 mt-3 pl-2 border-l-2 border-border">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupSimplify}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupSimplify: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Simplify (RDP)</span>
-                </label>
-
-                {svgTool.cleanupSimplify && (
-                  <NumericInput
-                    label="Simplify Tolerance"
-                    value={svgTool.cleanupSimplifyTol}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupSimplifyTol: typeof val === 'number' ? val : 0.1 } })}
-                    unit="mm"
-                    min={0.01}
-                    max={5}
-                    step={0.1}
-                  />
-                )}
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupRemoveTiny}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupRemoveTiny: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Remove Tiny Lines</span>
-                </label>
-
-                {svgTool.cleanupRemoveTiny && (
-                  <NumericInput
-                    label="Min Line Length"
-                    value={svgTool.cleanupMinLength}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupMinLength: typeof val === 'number' ? val : 1 } })}
-                    unit="mm"
-                    min={0.1}
-                    max={10}
-                    step={0.1}
-                  />
-                )}
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={svgTool.cleanupRemoveDups}
-                    onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupRemoveDups: e.target.checked } })}
-                    className="h-3.5 w-3.5 rounded"
-                  />
-                  <span className="text-sm text-ink-secondary">Deduplicate Points</span>
-                </label>
-
-                {svgTool.cleanupRemoveDups && (
-                  <NumericInput
-                    label="Duplicate Tolerance"
-                    value={svgTool.cleanupDupTol}
-                    onChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { cleanupDupTol: typeof val === 'number' ? val : 0.01 } })}
-                    unit="mm"
-                    min={0.001}
-                    max={1}
-                    step={0.01}
-                  />
-                )}
-              </div>
-            )}
-          </AdvancedSection>
-        </>
-      )}
+      {svgTool.assetKind === 'svg' && svgTool.uploadedSvgText && <>{sharedArtworkControls}</>}
     </div>
   );
 }
@@ -1694,7 +1518,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.interactionMode === 'place' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">Place</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Click or drag to add stones</div>
+            <div className="mt-1 text-xs text-ink-muted">Click or drag to add stones</div>
           </button>
           <button
             type="button"
@@ -1702,7 +1526,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.interactionMode === 'erase' ? 'border-danger-400 bg-danger-50 text-danger-600' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
             <div className="font-medium">Erase</div>
-            <div className="mt-1 text-[10px] text-ink-muted">Click or drag to remove stones</div>
+            <div className="mt-1 text-xs text-ink-muted">Click or drag to remove stones</div>
           </button>
         </div>
       </div>
@@ -1717,7 +1541,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'freehand' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
               <div className="font-medium">Freehand</div>
-              <div className="mt-1 text-[10px] text-ink-muted">Follows the cursor, nudges around crowding</div>
+              <div className="mt-1 text-xs text-ink-muted">Follows the cursor, nudges around crowding</div>
             </button>
             <button
               type="button"
@@ -1725,7 +1549,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'grid' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
               <div className="font-medium">Grid snap</div>
-              <div className="mt-1 text-[10px] text-ink-muted">Locks every stone to the grid</div>
+              <div className="mt-1 text-xs text-ink-muted">Locks every stone to the grid</div>
             </button>
             <button
               type="button"
@@ -1733,14 +1557,14 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'row' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
               <div className="font-medium">Row lock</div>
-              <div className="mt-1 text-[10px] text-ink-muted">Keeps a drag perfectly straight</div>
+              <div className="mt-1 text-xs text-ink-muted">Keeps a drag perfectly straight</div>
             </button>
           </div>
           {manualTool.drawMode === 'grid' && (
-            <p className="text-[11px] text-ink-muted">Grid snap forces every stone onto the grid below, ignoring &quot;Snap to Grid&quot; — a spot that would collide is skipped instead of nudged.</p>
+            <p className="text-xs text-ink-muted">Grid snap forces every stone onto the grid below, ignoring &quot;Snap to Grid&quot; — a spot that would collide is skipped instead of nudged.</p>
           )}
           {manualTool.drawMode === 'row' && (
-            <p className="text-[11px] text-ink-muted">Row lock picks a horizontal or vertical line the moment you start dragging, then keeps every stone on it.</p>
+            <p className="text-xs text-ink-muted">Row lock picks a horizontal or vertical line the moment you start dragging, then keeps every stone on it.</p>
           )}
         </div>
       )}
@@ -1803,12 +1627,12 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
             unit="mm"
             disabled={!manualTool.snapToGrid}
           />
-          {!manualTool.snapToGrid && <p className="mt-2 text-[11px] text-ink-muted">Enable Snap to Grid to adjust the placement step size.</p>}
+          {!manualTool.snapToGrid && <p className="mt-2 text-xs text-ink-muted">Enable Snap to Grid to adjust the placement step size.</p>}
         </div>
       </div>
 
       {!manualTool.snapToGrid && manualTool.drawMode !== 'grid' && (
-        <div className="rounded-xl border border-success-500/20 bg-success-50 px-3 py-3 text-[11px] text-success-600">
+        <div className="rounded-xl border border-success-500/20 bg-success-50 px-3 py-3 text-xs text-success-600">
           Free draw is active. The grid is visual only until you enable snapping{manualTool.drawMode === 'freehand' ? '' : ' (Row lock still keeps the drag straight)'}.
         </div>
       )}
@@ -1823,7 +1647,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
         Show rulers in preview
       </label>
 
-      <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-[11px] text-ink-muted">
+      <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-xs text-ink-muted">
         {manualTool.interactionMode === 'erase'
           ? 'Erase mode removes stones directly under the cursor path without switching to Select.'
           : `Draw mode uses about ${recommendedDrawSpacingMm.toFixed(1)} mm center-to-center spacing for ${manualTool.addStoneSize}. Smart assist can search about ${manualTool.assistBrushSizeMm.toFixed(1)} mm for a better spot.`}
@@ -1835,6 +1659,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
           <li>• Place mode: click one stone or drag a line</li>
           <li>• Erase mode: click or drag to remove stones</li>
           <li>• Move whole design selects everything and switches to Select</li>
+          <li>• Ctrl/Cmd + wheel zooms · wheel pans the canvas</li>
         </ul>
       </div>
     </div>
@@ -2095,7 +1920,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-medium text-ink-secondary">Align</label>
-            {!actionState.canAlign && <span className="text-[11px] text-ink-muted">Select at least two stones</span>}
+            {!actionState.canAlign && <span className="text-xs text-ink-muted">Select at least two stones</span>}
           </div>
           <div className="grid grid-cols-3 gap-1.5">
             <button onClick={() => dispatch({ type: 'ALIGN_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'left' })} disabled={!actionState.canAlign} className="rounded-lg border border-border bg-surface-sunken px-2 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.alignReason ?? 'Align selected stones to the left'}><MoveHorizontal className="mx-auto h-3.5 w-3.5 rotate-180" /></button>
@@ -2110,7 +1935,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-medium text-ink-secondary">Distribute</label>
-            {!actionState.canDistribute && <span className="text-[11px] text-ink-muted">Select at least three stones</span>}
+            {!actionState.canDistribute && <span className="text-xs text-ink-muted">Select at least three stones</span>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => dispatch({ type: 'DISTRIBUTE_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'horizontal' })} disabled={!actionState.canDistribute} className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.distributeReason ?? 'Distribute selected stones horizontally'}>Horizontal</button>
@@ -2141,7 +1966,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <div className="rounded-md border border-violet-400/30 bg-violet-500/15 p-4">
           <button
             onClick={() => dispatch({ type: 'CONVERT_TO_EDITABLE' })}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-400"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500"
             title="Convert the generated output into individually editable stones"
           >
             <Hand className="h-4 w-4" />
@@ -2158,6 +1983,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <ul className="text-xs text-ink-muted space-y-1">
           <li>• Cmd/Ctrl+Z to undo</li>
           <li>• Cmd/Ctrl+Shift+Z to redo</li>
+          <li>• Ctrl/Cmd + wheel zooms · wheel pans the canvas</li>
         </ul>
       </div>
     </div>

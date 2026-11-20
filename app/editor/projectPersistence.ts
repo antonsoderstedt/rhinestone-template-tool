@@ -13,6 +13,18 @@ import type {
 import { TRW_STONE_SIZE_CALIBRATION } from '@/src/lib/rhinestone-engine/index';
 import type { RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 import type { EditableStone, EditorState } from './EditorState';
+import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
+
+export function readRhinestoneAutosave(raw: string | null): TemplateLibraryEntry | null {
+  if (!raw || raw.trim().length === 0) return null;
+  try {
+    const entry = JSON.parse(raw) as TemplateLibraryEntry;
+    if (!entry?.snapshot?.project || typeof entry.templateId !== 'string') return null;
+    return entry;
+  } catch {
+    return null;
+  }
+}
 
 function toSavedStones(stones: readonly EditableStone[]) {
   return stones.map((stone) => {
@@ -160,6 +172,7 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         placementPattern: state.svgTool.placementPattern,
         contourSettings: state.svgTool.contourSettings,
         radialSettings: state.svgTool.radialSettings,
+        layerRoles: state.svgTool.layerRoles,
         densityPreset: state.svgTool.densityPreset,
         customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4.0,
         imageColorCount: state.svgTool.imageColorCount,

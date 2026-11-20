@@ -26,11 +26,19 @@ function normalizeRecord(record: TemplateLibraryRecord | null | undefined): Temp
     };
   }
 
+  // Starters always come from code so browsers that stored an older starter
+  // list still get new ones. Only the user's favourite flag is carried over.
+  const storedFavorites = new Set(
+    (Array.isArray(record.builtInTemplates) ? record.builtInTemplates : [])
+      .filter((entry) => entry.favorite)
+      .map((entry) => entry.templateId),
+  );
+
   return {
     version: 1,
-    builtInTemplates: Array.isArray(record.builtInTemplates) && record.builtInTemplates.length > 0
-      ? record.builtInTemplates
-      : [...STARTER_TEMPLATE_LIBRARY_ENTRIES],
+    builtInTemplates: STARTER_TEMPLATE_LIBRARY_ENTRIES.map((entry) => (
+      storedFavorites.has(entry.templateId) ? { ...entry, favorite: true } : entry
+    )),
     userTemplates: Array.isArray(record.userTemplates) ? record.userTemplates : [],
   };
 }

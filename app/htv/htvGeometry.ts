@@ -114,8 +114,8 @@ export function approximateLayerBounds(layer: HtvLayer): { width: number; height
  * position transform is applied — used to fit the whole design (all
  * layers) into a garment print area or placement zone.
  */
-export function transformedLayerBounds(layer: HtvLayer): Bounds {
-  const { width, height } = approximateLayerBounds(layer);
+export function transformedLayerBounds(layer: HtvLayer, measuredSize?: { width: number; height: number }): Bounds {
+  const { width, height } = measuredSize ?? approximateLayerBounds(layer);
   const hw = (width / 2) * layer.scale;
   const hh = (height / 2) * layer.scale;
   const theta = (layer.rotationDeg * Math.PI) / 180;
@@ -133,14 +133,21 @@ export function transformedLayerBounds(layer: HtvLayer): Bounds {
   };
 }
 
-export function computeBoundsForLayers(layers: readonly HtvLayer[]): Bounds | null {
+/**
+ * @param measuredSizes Real local sizes by layer id (e.g. measured text outlines). Layers without an
+ *   entry fall back to `approximateLayerBounds`.
+ */
+export function computeBoundsForLayers(
+  layers: readonly HtvLayer[],
+  measuredSizes?: ReadonlyMap<string, { width: number; height: number }>,
+): Bounds | null {
   if (layers.length === 0) return null;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const layer of layers) {
-    const b = transformedLayerBounds(layer);
+    const b = transformedLayerBounds(layer, measuredSizes?.get(layer.id));
     minX = Math.min(minX, b.minX);
     minY = Math.min(minY, b.minY);
     maxX = Math.max(maxX, b.maxX);
@@ -149,6 +156,9 @@ export function computeBoundsForLayers(layers: readonly HtvLayer[]): Bounds | nu
   return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }
 
-export function computeDesignBounds(layers: readonly HtvLayer[]): Bounds | null {
-  return computeBoundsForLayers(layers.filter((l) => l.visible));
+export function computeDesignBounds(
+  layers: readonly HtvLayer[],
+  measuredSizes?: ReadonlyMap<string, { width: number; height: number }>,
+): Bounds | null {
+  return computeBoundsForLayers(layers.filter((l) => l.visible), measuredSizes);
 }
