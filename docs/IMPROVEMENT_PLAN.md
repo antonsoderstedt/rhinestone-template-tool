@@ -120,6 +120,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | D1 "Copy SVG", D2 print at true size (also gives a PDF through the print window) with a 50 mm check square (D5) | **Done in part**; PNG, DXF, EPS, test patch (D4) and Design Space import help remain |
 | A3 jargon rewritten (Edit stones one by one, Filled letters, Hole size), A4 already works: clicking a stone makes it editable with a toast | **Done** |
 | I1 canvas text alternative (size, stone count, selection), I4 reduced motion and forced colours | **Done in part**; a full screen-reader walk-through, one-finger pan (I2) and real-device checks (I3) remain |
+| B7 ready-made shapes (heart, star, circle, ring, crown, lightning, moon, flower, burst) in the Artwork tool; every look is cuttable (tested) | **Done in part**; borders and more clipart remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

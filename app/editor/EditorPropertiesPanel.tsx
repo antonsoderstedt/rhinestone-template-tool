@@ -35,6 +35,7 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import { type OutlineFontStatus } from './controls/FontPicker';
 import TextStyleGallery from './controls/TextStyleGallery';
+import ShapeGalleryPicker from './controls/ShapeGalleryPicker';
 import { useLookThumbnails } from './useLookThumbnails';
 import StoneFontSizeControl from './controls/StoneFontSizeControl';
 import PlacementModeControl from './controls/PlacementModeControl';
@@ -1364,6 +1365,17 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           <span className="text-xs text-ink-secondary mt-1">📄 {currentArtworkName}</span>
         )}
       </label>
+
+      <ShapeGalleryPicker
+        selectedName={svgTool.assetKind === 'svg' ? svgTool.svgFileName : null}
+        onPick={(shape) => {
+          setUploadError(null);
+          dispatch({
+            type: 'UPDATE_SVG_TOOL',
+            updates: { assetKind: 'svg', uploadedSvgText: shape.svg, svgFileName: shape.label, uploadedImageDataUrl: null, imageFileName: null },
+          });
+        }}
+      />
 
       {svgTool.assetKind === 'image' && svgTool.uploadedImageDataUrl && (
         <>
