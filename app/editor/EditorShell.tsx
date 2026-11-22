@@ -42,6 +42,7 @@ import type {
   TemplateLibraryRepository,
 } from '@/src/lib/rhinestone-engine/index';
 import { useStudioTheme } from '../lib/studioTheme';
+import { planPreviousSessionKeep } from './previousSession';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -229,18 +230,24 @@ export default function EditorShell() {
     const params = new URLSearchParams(globalThis.location?.search ?? '');
     const hasLaunchIntent = ['designId', 'asset', 'font', 'text', 'tool'].some((key) => params.has(key));
     const entry = hasLaunchIntent ? null : previousSession;
-    let keptPreviousSession = false;
     if (hasLaunchIntent && previousSession && !launchIntentHandledRef.current) {
       launchIntentHandledRef.current = true;
-      keptPreviousSession = true;
+      const repository = templateLibraryRepositoryRef.current;
       const baseName = previousSession.name.replace(/\s*\(Autosave\)$/, '');
-      void templateLibraryRepositoryRef.current?.save({
-        ...previousSession,
-        templateId: `previous-session-${previousSession.updatedAt}`,
-        name: `${baseName} (previous session)`,
-        readOnly: false,
-        tags: previousSession.tags.filter((tag) => tag !== 'autosave'),
-      }).then(() => refreshTemplateLibrary());
+      void repository?.list().then(async (record) => {
+        const plan = planPreviousSessionKeep(previousSession, record.userTemplates);
+        if (!plan.keep) return;
+        for (const templateId of plan.prune) await repository.delete(templateId);
+        await repository.save({
+          ...previousSession,
+          templateId: `previous-session-${previousSession.updatedAt}`,
+          name: `${baseName} (previous session)`,
+          readOnly: false,
+          tags: previousSession.tags.filter((tag) => tag !== 'autosave'),
+        });
+        await refreshTemplateLibrary();
+        setToast({ message: 'Your previous session was saved in My Designs.', tone: 'info' });
+      });
     }
 
     // A first visit (nothing to restore) starts from the Settings defaults. Dispatched
@@ -249,7 +256,6 @@ export default function EditorShell() {
     queueMicrotask(() => {
       setAutosaveEntry(entry);
       setAutosaveDecision(entry ? 'restored' : 'ready');
-      if (keptPreviousSession) setToast({ message: 'Your previous session was saved in My Designs.', tone: 'info' });
     });
   }, [refreshTemplateLibrary]);
 
