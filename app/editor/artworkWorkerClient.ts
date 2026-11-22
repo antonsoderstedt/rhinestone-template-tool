@@ -4,7 +4,7 @@
  */
 
 import type { SvgToolState } from './EditorState';
-import { generateSvgArtwork, type ArtworkGeneration } from './artworkGeneration';
+import { generateSvgArtwork, type ArtworkGeneration } from './artworkCore';
 import type { ArtworkWorkerRequest, ArtworkWorkerResponse } from './artworkWorker';
 
 interface Pending {

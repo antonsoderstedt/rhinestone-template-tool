@@ -4,7 +4,7 @@
  * It receives the artwork settings and answers with the same thing `generateSvgArtwork` returns.
  */
 
-import { generateSvgArtwork } from './artworkGeneration';
+import { generateSvgArtwork } from './artworkCore';
 import type { SvgToolState } from './EditorState';
 
 export interface ArtworkWorkerRequest {
