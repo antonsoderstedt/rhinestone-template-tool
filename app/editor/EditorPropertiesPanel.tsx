@@ -315,8 +315,8 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
               disabled={!fillModes.includes('fill')}
               className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'filled-typography' ? editorSegmentActiveClassName : editorSegmentIdleClassName} ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-border hover:bg-surface' : ''}`}
             >
-              <div className="text-sm font-medium">Filled typography</div>
-              <p className="mt-1 text-xs text-ink-muted">Fill thicker letters with a stone pattern.</p>
+              <div className="text-sm font-medium">Filled letters</div>
+              <p className="mt-1 text-xs text-ink-muted">Stones inside the letters as well as on the edge.</p>
             </button>
           </div>
         </div>
@@ -537,7 +537,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
         </select>
         {calibration && (
           <span className="text-xs text-ink-muted">
-            Authoritative hole diameter: {calibration.diameterMm} mm
+            Hole size for this stone: {calibration.diameterMm} mm
           </span>
         )}
         {selectedFontDefinition.limitations && selectedFontDefinition.limitations.length > 0 && (
@@ -699,7 +699,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
         </select>
         {calibration && (
           <span className="text-xs text-ink-muted">
-            Authoritative hole diameter: {calibration.diameterMm} mm
+            Hole size for this stone: {calibration.diameterMm} mm
           </span>
         )}
         {selectedAlphabet.limitations && selectedAlphabet.limitations.length > 0 && (
@@ -924,7 +924,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
         </select>
         {calibration && (
           <span className="text-xs text-ink-muted">
-            Authoritative hole diameter: {calibration.diameterMm} mm
+            Hole size for this stone: {calibration.diameterMm} mm
           </span>
         )}
       </label>
@@ -1938,13 +1938,13 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           <button
             onClick={() => dispatch({ type: 'CONVERT_TO_EDITABLE' })}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500"
-            title="Convert the generated output into individually editable stones"
+            title="Select and move individual stones"
           >
             <Hand className="h-4 w-4" />
-            Make Editable
+            Edit stones one by one
           </button>
           <p className="mt-2 text-xs text-[var(--studio-ink-muted)]">
-            Generated output is still driven by the source settings. Make Editable unlocks per-stone editing while keeping the original generator available.
+            Until you do, changing the settings rebuilds the design. Once you do, you can select and move each stone, and you are asked before the settings replace your edits.
           </p>
         </div>
       )}

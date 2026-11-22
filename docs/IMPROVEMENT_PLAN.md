@@ -118,6 +118,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | F2 previous-session copies limited and de-duplicated; G2 HTV "Fit to the print area" (placement and mat); G5 already works (HTV only refuses unloadable fonts) | **Done** |
 | B4 first step: stone colour per artwork colour (preset or the artwork's own), shown on the canvas when a design has several, counted per colour, saved in the project | **Done in part**; colours for text, stone fonts and single stones, and colour in the export, remain |
 | D1 "Copy SVG", D2 print at true size (also gives a PDF through the print window) with a 50 mm check square (D5) | **Done in part**; PNG, DXF, EPS, test patch (D4) and Design Space import help remain |
+| A3 jargon rewritten (Edit stones one by one, Filled letters, Hole size), A4 already works: clicking a stone makes it editable with a toast | **Done** |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

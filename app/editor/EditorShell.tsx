@@ -808,7 +808,7 @@ export default function EditorShell() {
       return;
     }
     if (action.type === 'CONVERT_TO_EDITABLE' && !state.editableTemplate.isEditable) {
-      setToast({ message: 'You can now select and move individual stones. Changing the text or artwork settings will ask before replacing your edits.', tone: 'info' });
+      setToast({ message: 'You can now select and move individual stones. Changing the settings will ask before it replaces your edits.', tone: 'info' });
     }
     dispatch(action);
   }, [state]);
@@ -2079,7 +2079,7 @@ function CanvasActionStrip({
   const primaryAction = !hasTemplate
     ? null
     : !isEditable && activeTool !== 'select' && activeTool !== 'manual'
-      ? { label: 'Make Editable', onClick: () => dispatch({ type: 'CONVERT_TO_EDITABLE' }) }
+      ? { label: 'Edit stones', onClick: () => dispatch({ type: 'CONVERT_TO_EDITABLE' }) }
       : null;
 
   return (

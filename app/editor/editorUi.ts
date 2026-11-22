@@ -130,10 +130,10 @@ export function getSelectionEmptyState(isEditable: boolean) {
   if (!isEditable) {
     return {
       title: 'Generated output',
-      description: 'Review the generated result, then make it editable when you need per-stone control.',
+      description: 'Changes to the settings update the design. Choose Edit stones one by one when you want to move single stones.',
       tips: [
         'Use the tool rail to switch between Text, Artwork, Grid and Pen.',
-        'Use Make Editable to enable per-stone selection and movement.',
+        'Click a stone, or choose Edit stones one by one, to select and move single stones.',
       ],
     };
   }
