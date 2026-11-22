@@ -15,6 +15,8 @@ export interface WorkspaceModeBannerProps {
   guidance: string;
   /** Short facts shown as chips. When the status is Ready the sentence below is only for screen readers. */
   chips?: readonly StatusChip[];
+  /** One button for the most useful fix, shown next to the chips. */
+  action?: { label: string; onClick: () => void };
   calibrationState?: {
     label: string;
     tone: 'success' | 'warning' | 'danger';
@@ -42,7 +44,7 @@ const statusConfig: Record<WorkspaceStatus, { labelClassName: string; iconClassN
   },
 };
 
-export default function WorkspaceModeBanner({ mode, status, project, guidance, chips, calibrationState }: WorkspaceModeBannerProps) {
+export default function WorkspaceModeBanner({ mode, status, project, guidance, chips, action, calibrationState }: WorkspaceModeBannerProps) {
   const { Icon, badgeClassName, iconClassName, labelClassName } = statusConfig[status];
   // On a phone long guidance (size warnings, say) is clamped to two lines until the user opens it.
   const [expanded, setExpanded] = useState(false);
@@ -82,6 +84,15 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
                 {chip.label}
               </span>
             ))}
+            {action && (
+              <button
+                type="button"
+                onClick={action.onClick}
+                className="inline-flex items-center rounded-full border border-violet-400/40 bg-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-100 transition hover:bg-violet-500/30 focus:outline-none focus:ring-2 focus:ring-violet-400"
+              >
+                {action.label}
+              </button>
+            )}
             {calibrationState && (
               <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${calibrationToneClassName}`}>
                 {calibrationState.label}

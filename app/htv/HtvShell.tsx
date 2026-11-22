@@ -34,6 +34,7 @@ import { getDesignTemplate, type HtvDesignTemplateId } from './htvDesignTemplate
 import { getPlacementsForGarmentType } from './htvPlacementZones';
 import { summarizeHtvStatus } from './htvStatus';
 import { findHtvSizeIssues, summarizeHtvSize } from './htvSizeCheck';
+import { planFitToPlacement } from './htvFitToPlacement';
 import { getPlacementZoneSizeMm } from './htvPlacementZones';
 import { useMeasuredTextSizes } from './useMeasuredTextSizes';
 import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
@@ -328,6 +329,19 @@ export default function HtvShell() {
     [state.layers, state.garment.placementZone, state.garment.type, weedMarginMm, measuredTextSizes],
   );
 
+  // The one-click fix for a design that is bigger than its placement area or than a mat.
+  const fitPlan = useMemo(
+    () => (sizeSummary.issues.some((issue) => issue.id === 'exceeds-placement' || issue.id === 'exceeds-mat')
+      ? planFitToPlacement(exportLayers, sizeSummary.zoneSizeMm, measuredTextSizes, weedMarginMm)
+      : null),
+    [exportLayers, measuredTextSizes, sizeSummary.issues, sizeSummary.zoneSizeMm, weedMarginMm],
+  );
+  const fitToPlacement = useCallback(() => {
+    if (!fitPlan) return;
+    dispatch({ type: 'BATCH_UPDATE_LAYERS', updates: fitPlan.updates });
+    setToast({ message: `Made the design ${Math.round(fitPlan.scale * 100)}% of its size so it fits.`, tone: 'success' });
+  }, [fitPlan]);
+
   useEffect(() => {
     if (!exportDialogOpen) return;
     let cancelled = false;
@@ -584,6 +598,7 @@ export default function HtvShell() {
         project={state.projectName || 'Untitled HTV Design'}
         guidance={htvStatus.guidance}
         chips={htvStatus.chips}
+        action={fitPlan ? { label: 'Fit to the print area', onClick: fitToPlacement } : undefined}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">

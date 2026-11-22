@@ -115,6 +115,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | B10 filled typography, C1 / C2 clean small outline text, H3 for outline fonts | **Done** (ADR 0024): text uses the artwork layout; every bundled font × 25 / 45 / 60 mm × outline / rows / solid is cuttable |
 | A5, A6, A7, A8, A12: recovery card only when there is something to recover, taglines and strip removed, plain headings, starter gallery on the home page | **Done** |
 | A10 compact HTV status chips, A11 project named from its text and no permanent "Not saved yet" | **Done** |
+| F2 previous-session copies limited and de-duplicated; G2 HTV "Fit to the print area" (placement and mat); G5 already works (HTV only refuses unloadable fonts) | **Done** |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases
