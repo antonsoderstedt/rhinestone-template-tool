@@ -31,9 +31,14 @@ size control now lists every size the font has with the real measured size of th
 canvas) and whether that fits a 12 × 12 in mat, a 12 × 24 in mat, or needs exporting in parts. When another size would fit
 a smaller mat, one button switches to it. It does not nag when both fit. `app/editor/stoneFontSizes.ts` (pure logic, tested).
 
+## Alphabets
+
+The gallery has a third group, *Letters drawn one by one* (the SVG alphabets), with pictures made the same way. The
+Alphabet button is gone from the rail; Text stands for it. Stencils (cards to spell words) keep their own button.
+
 ## Not done yet (stays in plan phase 4)
 
-Alphabets and stencils in the gallery, several fonts in one text, per-letter style, bold / italic, kerning, text on a path,
+Stencils in the gallery, several fonts in one text, per-letter style, bold / italic, kerning, text on a path,
 auto stone size for outline text ("best stone size for 60 mm letters"), filled typography with the shared fill (B10).
 
 ## Consequences

@@ -3,20 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getOutlineFontFaceCss, getOutlineFontDefinition } from '@/src/lib/rhinestone-engine/index';
 import { DEFAULT_PREVIEW_TEXT } from '../../lib/fontLaunch';
-import type { EditorAction, EditorState } from '../EditorState';
+import type { EditorAction } from '../EditorState';
 import {
   actionsForTextStyle,
   currentTextStyle,
   currentWords,
   isSameTextStyle,
+  type TextStyleState,
   listTextStyleGroups,
   type TextStyleOption,
 } from '../textStyles';
-import { dotMatrixThumbnail, stoneFontThumbnail, thumbnailText, type TextThumbnail } from '../textStyleThumbnails';
+import { alphabetThumbnail, dotMatrixThumbnail, stoneFontThumbnail, thumbnailText, type TextThumbnail } from '../textStyleThumbnails';
 import { editorFieldLabelClassName } from './controlStyles';
 
 interface TextStyleGalleryProps {
-  state: Pick<EditorState, 'activeTool' | 'textTool' | 'rhinestoneFontTool'>;
+  state: TextStyleState;
   dispatch: React.Dispatch<EditorAction>;
 }
 
@@ -61,6 +62,25 @@ function StoneFontPicture({ fontId, text }: { fontId: string; text: string }) {
   );
 }
 
+/** The stones of an alphabet, made when the card is first shown (the letter files are fetched once). */
+function AlphabetPicture({ alphabetId, text }: { alphabetId: string; text: string }) {
+  const [result, setResult] = useState<{ key: string; thumbnail: TextThumbnail | null } | null>(null);
+  const key = `${alphabetId}|${thumbnailText(text, '')}`;
+  useEffect(() => {
+    let cancelled = false;
+    void alphabetThumbnail(alphabetId, text).then((thumbnail) => {
+      if (!cancelled) setResult({ key, thumbnail });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [alphabetId, text, key]);
+  const ready = result && result.key === key ? result : null;
+  if (!ready) return <div className="h-12 w-full animate-pulse rounded bg-[var(--studio-hover-overlay)]" aria-label="Loading" />;
+  if (!ready.thumbnail) return <p className="flex h-12 items-center text-xs text-[var(--studio-ink-muted)]">No preview</p>;
+  return <DotsPicture thumbnail={ready.thumbnail} />;
+}
+
 function OptionPicture({ option, text }: { option: TextStyleOption; text: string }) {
   const { choice } = option;
   const dots = useMemo(() => (choice.kind === 'dots' ? dotMatrixThumbnail(text) : null), [choice.kind, text]);
@@ -76,6 +96,7 @@ function OptionPicture({ option, text }: { option: TextStyleOption; text: string
     );
   }
   if (choice.kind === 'dots') return dots ? <DotsPicture thumbnail={dots} /> : <p className="h-12" />;
+  if (choice.kind === 'alphabet') return <AlphabetPicture alphabetId={choice.alphabetId} text={text} />;
   return <StoneFontPicture fontId={choice.fontId} text={text} />;
 }
 

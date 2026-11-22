@@ -9,6 +9,9 @@ import {
   TRW_STONE_SIZE_CALIBRATION,
   createDotMatrixTextTemplate,
   createRhinestoneFontTemplate,
+  createSvgAlphabetTemplate,
+  defaultSvgAlphabetGlyphLoader,
+  getSvgAlphabetDefinition,
   getPreferredRhinestoneFontStoneSize,
   getRhinestoneFontDefinition,
   type RhinestoneTemplate,
@@ -108,6 +111,51 @@ export function stoneFontThumbnail(fontId: string, text: string): Promise<TextTh
   if (!cached) {
     cached = makeStoneFontThumbnail(fontId, shown, sample);
     stoneFontCache.set(key, cached);
+  }
+  return cached;
+}
+
+const alphabetCache = new Map<string, Promise<TextThumbnail | null>>();
+
+async function makeAlphabetThumbnail(alphabetId: string, shown: string, sample: string): Promise<TextThumbnail | null> {
+  const definition = getSvgAlphabetDefinition(alphabetId as never);
+  const stoneSize = definition.supportedTargetStoneSizeIds[0] ?? 'SS10';
+  const diameter =
+    stoneSize in TRW_STONE_SIZE_CALIBRATION
+      ? TRW_STONE_SIZE_CALIBRATION[stoneSize as keyof typeof TRW_STONE_SIZE_CALIBRATION].diameterMm
+      : 3.429;
+  const tryText = async (text: string) => {
+    try {
+      const result = await createSvgAlphabetTemplate({
+        text,
+        alphabetId,
+        targetStoneSizeId: stoneSize,
+        targetStoneSizeMm: diameter,
+        letterSpacingMm: 2,
+        lineSpacingMm: 0,
+        glyphLoader: defaultSvgAlphabetGlyphLoader,
+      });
+      return dotsOf(result.template);
+    } catch {
+      return null;
+    }
+  };
+  const first = await tryText(shown);
+  if (first) return { ...first, isSample: false };
+  if (shown === sample) return null;
+  const second = await tryText(sample);
+  return second ? { ...second, isSample: true } : null;
+}
+
+/** Resolves to null when the alphabet's letter files cannot be loaded or none of the letters exist. Cached. */
+export function alphabetThumbnail(alphabetId: string, text: string): Promise<TextThumbnail | null> {
+  const sample = getSvgAlphabetDefinition(alphabetId as never).suggestedText;
+  const shown = thumbnailText(text, sample);
+  const key = `${alphabetId}|${shown}`;
+  let cached = alphabetCache.get(key);
+  if (!cached) {
+    cached = makeAlphabetThumbnail(alphabetId, shown, sample);
+    alphabetCache.set(key, cached);
   }
   return cached;
 }

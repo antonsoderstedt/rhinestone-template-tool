@@ -611,7 +611,6 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
 
 function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { svgAlphabetTool } = state;
-  const availableAlphabets = listSvgAlphabets();
   const selectedAlphabet = getSvgAlphabetDefinition(svgAlphabetTool.svgAlphabetId as never);
   const supportedStoneSizes = selectedAlphabet.supportedTargetStoneSizeIds;
   const calibration = TRW_STONE_SIZE_CALIBRATION[
@@ -621,38 +620,10 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs leading-6 text-accent-700">
-        Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. The engine reuses the letters as-is — no fill or outline pass runs.
+        Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. Each letter is a ready-made drawing, used as it is.
       </div>
 
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
-
-      <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Alphabet</span>
-        <select
-          aria-label="SVG alphabet"
-          value={svgAlphabetTool.svgAlphabetId}
-          onChange={(e) => {
-            const next = getSvgAlphabetDefinition(e.target.value as never);
-            dispatch({
-              type: 'UPDATE_SVG_ALPHABET_TOOL',
-              updates: {
-                svgAlphabetId: next.alphabetId,
-                stoneSize: next.supportedTargetStoneSizeIds[0] ?? 'SS10',
-              },
-            });
-          }}
-          className={editorSelectClassName}
-        >
-          {availableAlphabets.map((alphabet) => (
-            <option key={alphabet.alphabetId} value={alphabet.alphabetId}>
-              {alphabet.displayName} — {alphabet.style}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-ink-muted">
-          {selectedAlphabet.category} · {selectedAlphabet.style} · supports {supportedStoneSizes.join(', ')}
-        </span>
-      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Text</span>
@@ -681,6 +652,8 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
           className={`${editorTextareaClassName} resize-y`}
         />
       </label>
+
+      <TextStyleGallery state={state} dispatch={dispatch} />
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Stone size</span>

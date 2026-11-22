@@ -25,12 +25,12 @@ export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
   { id: 'manual', label: 'Pen', description: 'Draw with stones directly', icon: MousePointerClick },
 ];
 
-/** Stone fonts are a look of the Text tool now, so the tool rail has no button of its own for them. */
-export const RAIL_TOOLS: readonly EditorToolConfig[] = EDITOR_TOOLS.filter((tool) => tool.id !== 'rhinestone-font');
+/** Stone fonts and alphabets are looks of the Text tool now, so the tool rail has no button of their own. */
+export const RAIL_TOOLS: readonly EditorToolConfig[] = EDITOR_TOOLS.filter((tool) => tool.id !== 'rhinestone-font' && tool.id !== 'svg-alphabet');
 
 /** The rail button that stands for the active tool. */
 export function railToolFor(tool: EditorTool): EditorTool {
-  return tool === 'rhinestone-font' ? 'text' : tool;
+  return tool === 'rhinestone-font' || tool === 'svg-alphabet' ? 'text' : tool;
 }
 
 export interface StatusCopy {

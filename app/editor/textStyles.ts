@@ -8,13 +8,14 @@
  * Pure: no React, no DOM.
  */
 
-import { getPreferredRhinestoneFontStoneSize, listOutlineFonts, listRhinestoneFonts } from '@/src/lib/rhinestone-engine/index';
+import { getPreferredRhinestoneFontStoneSize, listOutlineFonts, listRhinestoneFonts, listSvgAlphabets, getSvgAlphabetDefinition } from '@/src/lib/rhinestone-engine/index';
 import type { EditorAction, EditorState } from './EditorState';
 
 export type TextStyleChoice =
   | { kind: 'outline'; fontId: string }
   | { kind: 'dots' }
-  | { kind: 'stone-font'; fontId: string };
+  | { kind: 'stone-font'; fontId: string }
+  | { kind: 'alphabet'; alphabetId: string };
 
 export interface TextStyleOption {
   choice: TextStyleChoice;
@@ -26,7 +27,7 @@ export interface TextStyleOption {
 }
 
 export interface TextStyleGroup {
-  id: 'traced' | 'ready-made';
+  id: 'traced' | 'ready-made' | 'alphabets';
   title: string;
   description: string;
   options: TextStyleOption[];
@@ -56,6 +57,12 @@ export function listTextStyleGroups(): TextStyleGroup[] {
     label: font.displayName,
     note: font.style,
   }));
+  const alphabets: TextStyleOption[] = listSvgAlphabets().map((alphabet) => ({
+    choice: { kind: 'alphabet', alphabetId: alphabet.alphabetId },
+    key: `alphabet:${alphabet.alphabetId}`,
+    label: alphabet.displayName,
+    note: alphabet.style,
+  }));
   return [
     {
       id: 'traced',
@@ -69,11 +76,18 @@ export function listTextStyleGroups(): TextStyleGroup[] {
       description: 'Each letter comes with its stones. The size is fixed by the font.',
       options: readyMade,
     },
+    {
+      id: 'alphabets',
+      title: 'Letters drawn one by one',
+      description: 'Every letter is a separate drawing of stones, joined to spell your words.',
+      options: alphabets,
+    },
   ];
 }
 
 /** The look the editor is using right now, or null when the active tool does not make text. */
-export function currentTextStyle(state: Pick<EditorState, 'activeTool' | 'textTool' | 'rhinestoneFontTool'>): TextStyleChoice | null {
+export function currentTextStyle(state: TextStyleState): TextStyleChoice | null {
+  if (state.activeTool === 'svg-alphabet') return { kind: 'alphabet', alphabetId: state.svgAlphabetTool.svgAlphabetId };
   if (state.activeTool === 'rhinestone-font') return { kind: 'stone-font', fontId: state.rhinestoneFontTool.rhinestoneFontId };
   if (state.activeTool === 'text') {
     return state.textTool.mode === 'dot-matrix' ? { kind: 'dots' } : { kind: 'outline', fontId: state.textTool.fontId };
@@ -81,19 +95,24 @@ export function currentTextStyle(state: Pick<EditorState, 'activeTool' | 'textTo
   return null;
 }
 
+export type TextStyleState = Pick<EditorState, 'activeTool' | 'textTool' | 'rhinestoneFontTool' | 'svgAlphabetTool'>;
+
 export const isSameTextStyle = (a: TextStyleChoice | null, b: TextStyleChoice): boolean => {
   if (!a || a.kind !== b.kind) return false;
-  return a.kind === 'dots' || (b.kind !== 'dots' && a.fontId === b.fontId);
+  if (a.kind === 'dots') return true;
+  if (a.kind === 'alphabet') return b.kind === 'alphabet' && a.alphabetId === b.alphabetId;
+  return b.kind !== 'dots' && b.kind !== 'alphabet' && a.fontId === b.fontId;
 };
 
 /** The words in whichever text tool is in use, so a change of look keeps them. */
-export function currentWords(state: Pick<EditorState, 'activeTool' | 'textTool' | 'rhinestoneFontTool'>): string {
+export function currentWords(state: TextStyleState): string {
+  if (state.activeTool === 'svg-alphabet') return state.svgAlphabetTool.text;
   return state.activeTool === 'rhinestone-font' ? state.rhinestoneFontTool.text : state.textTool.text;
 }
 
 /** What to dispatch to switch to a look, carrying the words over. */
 export function actionsForTextStyle(
-  state: Pick<EditorState, 'activeTool' | 'textTool' | 'rhinestoneFontTool'>,
+  state: TextStyleState,
   choice: TextStyleChoice,
 ): EditorAction[] {
   const text = currentWords(state);
@@ -107,6 +126,21 @@ export function actionsForTextStyle(
           text,
           rhinestoneFontId: choice.fontId,
           ...(sameFont ? {} : { stoneSize: getPreferredRhinestoneFontStoneSize(choice.fontId) }),
+        },
+      },
+    ];
+  }
+  if (choice.kind === 'alphabet') {
+    const sameAlphabet = state.svgAlphabetTool.svgAlphabetId === choice.alphabetId;
+    const definition = getSvgAlphabetDefinition(choice.alphabetId as never);
+    return [
+      { type: 'SET_ACTIVE_TOOL', tool: 'svg-alphabet' },
+      {
+        type: 'UPDATE_SVG_ALPHABET_TOOL',
+        updates: {
+          text,
+          svgAlphabetId: choice.alphabetId,
+          ...(sameAlphabet ? {} : { stoneSize: definition.supportedTargetStoneSizeIds[0] ?? 'SS10' }),
         },
       },
     ];

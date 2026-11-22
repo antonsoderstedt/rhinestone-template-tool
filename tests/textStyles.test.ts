@@ -17,7 +17,7 @@ const withText = (text: string): EditorState => ({ ...DEFAULT_EDITOR_STATE, text
 describe('text style gallery', () => {
   it('offers traced letters (with dots) and ready-made stone fonts, never the test fixture', () => {
     const groups = listTextStyleGroups();
-    expect(groups.map((group) => group.id)).toEqual(['traced', 'ready-made']);
+    expect(groups.map((group) => group.id)).toEqual(['traced', 'ready-made', 'alphabets']);
     const keys = groups.flatMap((group) => group.options.map((option) => option.key));
     expect(keys).toContain('dots');
     expect(keys.some((key) => key.startsWith('outline:'))).toBe(true);
@@ -25,6 +25,7 @@ describe('text style gallery', () => {
     expect(keys).not.toContain('stone-font:test-fixture');
     expect(new Set(keys).size).toBe(keys.length);
     expect(groups[1]!.options).toHaveLength(listStoneFontsForUsers().length);
+    expect(keys.some((key) => key.startsWith('alphabet:'))).toBe(true);
   });
 
   it('knows which look is in use', () => {
@@ -75,11 +76,26 @@ describe('text style gallery', () => {
     expect(again.rhinestoneFontTool.stoneSize).toBe('SS6');
   });
 
+  it('goes to an alphabet and keeps the words, then back to traced letters', () => {
+    const start = withText('Mia');
+    const toAlphabet = apply(start, actionsForTextStyle(start, { kind: 'alphabet', alphabetId: 'big-bold' }));
+    expect(toAlphabet.activeTool).toBe('svg-alphabet');
+    expect(toAlphabet.svgAlphabetTool.svgAlphabetId).toBe('big-bold');
+    expect(toAlphabet.svgAlphabetTool.text).toBe('Mia');
+    expect(currentTextStyle(toAlphabet)).toEqual({ kind: 'alphabet', alphabetId: 'big-bold' });
+    expect(currentWords(toAlphabet)).toBe('Mia');
+    const edited = editorReducer(toAlphabet, { type: 'UPDATE_SVG_ALPHABET_TOOL', updates: { text: 'Mia R' } });
+    const back = apply(edited, actionsForTextStyle(edited, { kind: 'dots' }));
+    expect(back.textTool.text).toBe('Mia R');
+  });
+
   it('compares looks', () => {
     expect(isSameTextStyle({ kind: 'dots' }, { kind: 'dots' })).toBe(true);
     expect(isSameTextStyle({ kind: 'outline', fontId: 'a' }, { kind: 'outline', fontId: 'a' })).toBe(true);
     expect(isSameTextStyle({ kind: 'outline', fontId: 'a' }, { kind: 'stone-font', fontId: 'a' })).toBe(false);
     expect(isSameTextStyle(null, { kind: 'dots' })).toBe(false);
+    expect(isSameTextStyle({ kind: 'alphabet', alphabetId: 'x' }, { kind: 'alphabet', alphabetId: 'x' })).toBe(true);
+    expect(isSameTextStyle({ kind: 'alphabet', alphabetId: 'x' }, { kind: 'stone-font', fontId: 'x' })).toBe(false);
   });
 });
 
@@ -100,7 +116,8 @@ describe('text style thumbnails', () => {
 
 describe('tool rail', () => {
   it('has no button of its own for stone fonts, and Text stands for them', () => {
-    expect(RAIL_TOOLS.some((tool) => tool.id === 'rhinestone-font')).toBe(false);
+    expect(RAIL_TOOLS.some((tool) => tool.id === 'rhinestone-font' || tool.id === 'svg-alphabet')).toBe(false);
+    expect(railToolFor('svg-alphabet')).toBe('text');
     expect(railToolFor('rhinestone-font')).toBe('text');
     expect(railToolFor('grid')).toBe('grid');
   });
