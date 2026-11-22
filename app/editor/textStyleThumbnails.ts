@@ -95,7 +95,11 @@ async function makeStoneFontThumbnail(fontId: string, shown: string, sample: str
     }
   };
   // Only some of the letters missing is fine (the picture shows the rest); none at all means show the font's sample.
-  const first = await tryText(shown);
+  // A digits-only alphabet has no letters to ask for: go straight to its sample instead of fetching letters that do not exist.
+  const coverage = definition.characterCoverage;
+  const hasLetters = coverage === undefined || coverage.uppercase || coverage.lowercase;
+  const wantsLetters = /\p{L}/u.test(shown);
+  const first = !hasLetters && wantsLetters ? null : await tryText(shown);
   if (first) return { ...first, isSample: false };
   if (shown === sample) return null;
   const second = await tryText(sample);

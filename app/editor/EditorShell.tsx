@@ -77,7 +77,8 @@ import {
 } from '../lib/studioShortcuts';
 import TemplateLibraryPanel from './TemplateLibraryPanel';
 import { useStableValue } from './useStableValue';
-import { generateRasterArtwork, generateSvgArtwork, type ArtworkInfo } from './artworkGeneration';
+import { generateRasterArtwork, type ArtworkInfo } from './artworkGeneration';
+import { generateSvgArtworkAsync } from './artworkWorkerClient';
 // Dialogs are loaded when first opened, keeping the first load of the studio smaller.
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
 const SplitExportPanel = dynamic(() => import('./SplitExportPanel'));
@@ -385,7 +386,8 @@ export default function EditorShell() {
               template = generated.template;
               if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
             } else if (generationSvgTool.uploadedSvgText) {
-              const generated = generateSvgArtwork(generationSvgTool);
+              const generated = await generateSvgArtworkAsync(generationSvgTool);
+              if (requestId !== generationRequestRef.current) return;
               template = generated.template;
               if (requestId === generationRequestRef.current) setArtworkInfo(generated.info);
             }
