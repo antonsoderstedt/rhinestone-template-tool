@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
 import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
 import RecentDesigns from './components/RecentDesigns';
+import StarterGallery from './components/StarterGallery';
 import { buildFontLaunchUrl } from './lib/fontLaunch';
 
 const EXAMPLE_FONT_ID = 'archivo-black';
@@ -85,7 +86,11 @@ export default function Home() {
         })}
       </section>
 
+      <WorkspaceRecoveryPanel />
+
       <RecentDesigns />
+
+      <StarterGallery />
 
       <section aria-label="How it works" className="rounded-[2rem] border border-border/80 bg-surface-raised p-6">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">How it works</h2>
@@ -104,8 +109,6 @@ export default function Home() {
           First time cutting rhinestone templates? <Link href="/setup" className="font-semibold text-accent-600 underline-offset-2 hover:underline">Calibrate your material</Link> once so holes match your stones.
         </p>
       </section>
-
-      <WorkspaceRecoveryPanel />
 
       <nav aria-label="More" className="flex flex-wrap gap-3">
         {moreLinks.map((link) => {

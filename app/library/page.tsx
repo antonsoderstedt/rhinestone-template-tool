@@ -208,8 +208,8 @@ export default function LibraryPage() {
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <WorkspaceHero
           eyebrow="Library"
-          title="Asset command center"
-          description="Upload artwork in bulk, keep naming and tags clean, and launch the right vector or raster source into the right studio without hunting through folders."
+          title="Library"
+          description="Keep your SVG and image files here and open them in the studio. Vector files go to Rhinestone, pictures can be traced for HTV."
           tone="brand"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
@@ -226,14 +226,6 @@ export default function LibraryPage() {
                 }}
               />
             </label>
-          )}
-          aside={(
-            <WorkspaceSurface className="p-5">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace behavior</div>
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">
-                Vector files stay easy to route into Rhinestone. Raster files stay visible for HTV tracing and silhouette cleanup.
-              </p>
-            </WorkspaceSurface>
           )}
         />
 

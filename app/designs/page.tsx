@@ -31,7 +31,6 @@ import UndoToast from '../components/UndoToast';
 import { formatRelativeTime } from '../lib/relativeTime';
 import {
   getCalibrationGateSummary,
-  getRecoveryActionPlan,
 } from '../lib/workspaceRecovery';
 import { readActiveCalibrationProfileId } from '../lib/workspaceVault';
 
@@ -63,14 +62,12 @@ export default function DesignsPage() {
   const [query, setQuery] = useState('');
   const [studioFilter, setStudioFilter] = useState<StudioFilter>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
-  const [hasAutosave, setHasAutosave] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [now, setNow] = useState<Date | null>(null);
 
   const savedCount = rhinestoneDesigns.length + vault.htvDesigns.length;
-  const recoveryAction = useMemo(() => getRecoveryActionPlan(vault, hasAutosave), [hasAutosave, vault]);
   const calibrationGate = useMemo(
     () => getCalibrationGateSummary(vault, activeProfileId),
     [activeProfileId, vault],
@@ -80,7 +77,6 @@ export default function DesignsPage() {
     queueMicrotask(() => {
       setVault(readWorkspaceVault());
       setActiveProfileId(readActiveCalibrationProfileId());
-      setHasAutosave(Boolean(window.localStorage.getItem('rhinestone-template-library-autosave')?.trim()));
       setNow(new Date());
     });
     const repository = new LocalStorageTemplateLibraryRepository();
@@ -246,34 +242,9 @@ export default function DesignsPage() {
 
         <WorkspaceHero
           eyebrow="My Designs"
-          title="Everything you have already made, still usable"
-          description="Reopen saved rhinestone templates, continue HTV layouts, favorite the winners, archive old variants, and keep names tidy enough to find under pressure."
+          title="My Designs"
+          description="Open a saved design to keep working on it. Mark favourites and archive the ones you no longer need."
           tone="neutral"
-          aside={(
-            <WorkspaceSurface className="p-5">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Recovery cue</div>
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">
-                This page is optimized for returning to production work fast, not for browsing a gallery without context.
-              </p>
-              <div className="mt-4 rounded-[1.25rem] border border-border bg-surface px-4 py-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration gate</div>
-                <div className="mt-2 text-base font-semibold text-ink">{calibrationGate.activeProfileName ?? 'No active profile'}</div>
-                <p className="mt-2 text-sm leading-6 text-ink-secondary">
-                  {calibrationGate.activeProfileApproved
-                    ? `Approved and ready for the next production pass.`
-                    : 'Approval is still pending before export or production work.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => router.push(recoveryAction.href)}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-600),var(--color-accent-600))] px-4 py-2.5 text-sm font-semibold text-ink-inverse"
-                >
-                  <FolderHeart className="h-4 w-4" />
-                  {recoveryAction.label}
-                </button>
-              </div>
-            </WorkspaceSurface>
-          )}
         />
 
         <section className="grid gap-4 md:grid-cols-4">

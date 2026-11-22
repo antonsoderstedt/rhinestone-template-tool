@@ -1,27 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FolderOpen, ShieldAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FolderOpen, Ruler } from 'lucide-react';
 import { EMPTY_WORKSPACE_VAULT, readWorkspaceVault } from '../lib/workspaceVault';
-import { getRecoveryActionPlan, getWorkspaceRecoverySummary } from '../lib/workspaceRecovery';
+import { getWorkspaceRecoverySummary, hasAnythingToRecover, type WorkspaceRecoverySummary } from '../lib/workspaceRecovery';
 
+/** "Pick up where you left off": shown only when there is a draft or saved work, so a new visitor sees nothing here. */
 export default function WorkspaceRecoveryPanel() {
-  const [vault, setVault] = useState(EMPTY_WORKSPACE_VAULT);
-  const [summary, setSummary] = useState(() => getWorkspaceRecoverySummary(EMPTY_WORKSPACE_VAULT, false));
-  const actionPlan = useMemo(() => getRecoveryActionPlan(vault, summary.hasAutosave), [summary.hasAutosave, vault]);
+  const [summary, setSummary] = useState<WorkspaceRecoverySummary>(() => getWorkspaceRecoverySummary(EMPTY_WORKSPACE_VAULT, false));
 
   useEffect(() => {
     const sync = () => {
       const vault = readWorkspaceVault();
       const rawAutosave = window.localStorage.getItem('rhinestone-template-library-autosave');
-      const nextSummary = getWorkspaceRecoverySummary(vault, Boolean(rawAutosave && rawAutosave.trim().length > 0));
-      queueMicrotask(() => {
-        setVault(vault);
-        setSummary(nextSummary);
-      });
+      const next = getWorkspaceRecoverySummary(vault, Boolean(rawAutosave && rawAutosave.trim().length > 0));
+      queueMicrotask(() => setSummary(next));
     };
-
     sync();
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
@@ -31,79 +26,35 @@ export default function WorkspaceRecoveryPanel() {
     };
   }, []);
 
-  const statusConfig = useMemo(() => {
-    if (summary.workflowStatus === 'Ready') {
-      return {
-        badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        icon: CheckCircle2,
-        text: 'Ready for the next production pass',
-      };
-    }
+  if (!hasAnythingToRecover(summary)) return null;
 
-    if (summary.workflowStatus === 'Blocked') {
-      return {
-        badge: 'border-rose-200 bg-rose-50 text-rose-700',
-        icon: ShieldAlert,
-        text: 'Needs a saved recovery step before production',
-      };
-    }
-
-    return {
-      badge: 'border-amber-200 bg-amber-50 text-amber-700',
-      icon: AlertTriangle,
-      text: 'Calibration is the main production gate',
-    };
-  }, [summary.workflowStatus]);
-
-  const StatusIcon = statusConfig.icon;
-
+  const calibrated = summary.approvedCalibrationCount > 0;
   return (
-    <div className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted">Recovery & status</div>
-          <h3 className="mt-2 text-xl font-semibold text-ink">Current workflow snapshot</h3>
-        </div>
-        <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusConfig.badge}`}>
-          <StatusIcon className="h-3.5 w-3.5" />
-          {summary.workflowStatus}
-        </span>
-      </div>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Saved work</div>
-          <div className="mt-2 text-2xl font-semibold text-ink">{summary.totalSavedDesigns}</div>
-          <div className="mt-1 text-xs text-ink-secondary">{summary.rhinestoneSavedCount} rhinestone · {summary.htvSavedCount} HTV</div>
-        </div>
-
-        <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Calibration</div>
-          <div className="mt-2 text-2xl font-semibold text-ink">{summary.approvedCalibrationCount}</div>
-          <div className="mt-1 text-xs text-ink-secondary">
-            {summary.activeCalibrationProfileName ? `Active: ${summary.activeCalibrationProfileName}` : 'No approved profile yet'}
-          </div>
-        </div>
-
-        <div className="rounded-[1.2rem] border border-border bg-surface px-4 py-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Autosave</div>
-          <div className="mt-2 text-2xl font-semibold text-ink">{summary.hasAutosave ? 'Ready' : 'None'}</div>
-          <div className="mt-1 text-xs text-ink-secondary">{summary.hasAutosave ? 'Recent recovery is available' : 'No local emergency draft'}</div>
-        </div>
-      </div>
-
-      <p className="mt-4 text-sm leading-7 text-ink-secondary">{statusConfig.text}</p>
-
+    <section aria-label="Pick up where you left off" className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-5 shadow-sm">
+      <h2 className="text-xl font-semibold text-ink">Pick up where you left off</h2>
       <div className="mt-4 flex flex-wrap gap-3">
-        <Link href={actionPlan.href} className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-ink-inverse">
-          <FolderOpen className="h-4 w-4" />
-          {actionPlan.label}
-        </Link>
-        <Link href={summary.hasAutosave ? '/rhinestone' : '/setup'} className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:text-ink">
-          {summary.hasAutosave ? 'Resume draft' : 'Review calibration'}
-        </Link>
+        {summary.hasAutosave && (
+          <Link href="/rhinestone" className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-ink-inverse">
+            <FolderOpen className="h-4 w-4" aria-hidden="true" />
+            Open your last draft
+          </Link>
+        )}
+        {summary.totalSavedDesigns > 0 && (
+          <Link href="/designs" className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:text-ink">
+            My Designs ({summary.totalSavedDesigns})
+          </Link>
+        )}
       </div>
-      <p className="mt-3 text-xs leading-6 text-ink-secondary">{actionPlan.description}</p>
-    </div>
+      <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-ink-secondary">
+        <Ruler className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        {calibrated ? (
+          <span>Calibrated{summary.activeCalibrationProfileName ? `: ${summary.activeCalibrationProfileName}` : ''}.</span>
+        ) : (
+          <span>
+            Your material is not calibrated yet. <Link href="/setup" className="font-semibold text-accent-600 underline-offset-2 hover:underline">Calibrate it</Link> once so the holes match your stones.
+          </span>
+        )}
+      </p>
+    </section>
   );
 }

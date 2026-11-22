@@ -192,26 +192,6 @@ export default function GlobalTopNav() {
   );
   const StatusIcon = modeMeta.icon;
 
-  const workflowSummary = pathname.startsWith('/rhinestone')
-    ? activeCalibrationProfile
-      ? activeCalibrationProfile.approvedAt
-        ? `Production ready • ${activeCalibrationProfile.name}`
-        : `Approval needed • ${activeCalibrationProfile.name}`
-      : 'Calibration gate • approve before production'
-    : pathname.startsWith('/htv')
-      ? activeCalibrationProfile
-        ? activeCalibrationProfile.approvedAt
-          ? `Production ready • ${activeCalibrationProfile.name}`
-          : `Approval needed • ${activeCalibrationProfile.name}`
-        : 'Calibration gate • approve before production'
-      : pathname.startsWith('/setup')
-        ? 'Setup gate • cut, measure, approve, then produce'
-        : pathname.startsWith('/designs')
-          ? 'Saved work • resume the next production pass'
-          : pathname.startsWith('/settings')
-            ? 'Workspace defaults • review before production'
-            : 'Workspace ready';
-
   return (
     <header data-focus-surface="dark" className={`sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl ${studioRoute ? 'max-lg:hidden' : ''}`}>
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
@@ -283,20 +263,6 @@ export default function GlobalTopNav() {
               Open Studio
             </Link>
           )}
-        </div>
-      </div>
-
-      <div className={`${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? 'hidden' : 'block'} border-t border-white/10 bg-[#121215] px-3 py-2 text-xs text-zinc-300 md:px-5`}>
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <span className="inline-flex h-2 w-2 rounded-full bg-violet-400" />
-            <span className="font-medium text-zinc-200">Workflow</span>
-            <span className="text-zinc-400">{workflowSummary}</span>
-          </div>
-          <div className="hidden items-center gap-2 text-zinc-400 md:flex">
-            <span>Mode split:</span>
-            <span className="font-medium text-zinc-200">Rhinestone / HTV / Setup</span>
-          </div>
         </div>
       </div>
 
