@@ -6,6 +6,7 @@ import NumericInput from './NumericInput';
 import { editorFieldLabelClassName } from './controlStyles';
 
 import { useT } from '../../lib/i18n';
+import { setUnit, useUnit } from '../../lib/units';
 interface PhysicalDimensionsControlProps {
   widthMm: number | '';
   heightMm: number | '';
@@ -28,10 +29,14 @@ export default function PhysicalDimensionsControl({
   onWidthChange,
   onHeightChange,
   onPreserveAspectRatioChange,
-  unit = 'mm',
-  onUnitChange,
+  unit: unitProp,
+  onUnitChange: onUnitChangeProp,
 }: PhysicalDimensionsControlProps) {
   const t = useT();
+  // Unless the caller decides, the unit is the one chosen for the whole app.
+  const appUnit = useUnit();
+  const unit = unitProp ?? appUnit;
+  const onUnitChange = onUnitChangeProp ?? setUnit;
   const inches = unit === 'in';
   const show = (value: number | ''): number | '' => (value === '' || !inches ? value : Number((value / MM_PER_INCH).toFixed(3)));
   const store = (value: number | ''): number | '' => (value === '' || !inches ? value : Number((value * MM_PER_INCH).toFixed(3)));

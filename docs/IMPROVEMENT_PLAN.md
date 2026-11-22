@@ -130,7 +130,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | Parts: turn by any angle, spread out, vertical align, snap while dragging, take a part back to edit, parts list in the Select tool | **Done** (ADR 0022 update); scaling a part smaller is deliberately not offered (stones keep their size) |
 | I2 hand tool: one finger or the mouse moves the view (a button on the canvas) | **Done** |
 | E3 calibration status per stone size (export dialog); E1 decided: no machine selector (ADR 0027); C4 SVG artwork laid out in a Web Worker with main-thread fallback; C5 moving stones uses a spatial grid (5,000 stones in well under a second); C6 big designs are drawn only where they are in view | **Done** |
-| A9 Swedish interface: language switch, `t()` with a test that every text has a Swedish entry (about 1,060 texts), a safety net for the rest, `<html lang>` | **Done in part** (ADR 0028): the studios, home, designs, settings, setup, fonts and library are in Swedish; engine messages with numbers and a whole-app mm / inch switch are not |
+| A9 Swedish interface: language switch, `t()` with a test that every text has a Swedish entry (about 1,060 texts), a safety net for the rest, `<html lang>` | **Done in part** (ADR 0028): the studios, home, designs, settings, setup, fonts and library are in Swedish; engine messages with numbers are not; the mm / inch switch is in the top bar and the studio's status bar and changes the sizes shown and typed |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

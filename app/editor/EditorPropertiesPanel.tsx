@@ -1293,8 +1293,6 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
             onWidthChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetWidthMm: val } })}
             onHeightChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { targetHeightMm: val } })}
             onPreserveAspectRatioChange={(val) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { preserveAspectRatio: val } })}
-            unit={svgTool.dimensionUnit}
-            onUnitChange={(unit) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { dimensionUnit: unit } })}
           />
 
           {artworkInfo && (

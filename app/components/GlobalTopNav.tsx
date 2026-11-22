@@ -2,6 +2,7 @@
 
 import { useT } from '../lib/i18n';
 import LanguageSwitch from './LanguageSwitch';
+import UnitSwitch from './UnitSwitch';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -257,6 +258,7 @@ export default function GlobalTopNav() {
           >
             {t('Manage Assets')}
           </Link>
+          <UnitSwitch />
           <LanguageSwitch />
           {/* Pointless on the studio page itself. */}
           {!pathname.startsWith('/rhinestone') && (

@@ -19,5 +19,5 @@
 ## Not translated
 
 The engine's messages that are built from numbers in code (some export-readiness issue texts), file names, the fonts' own names,
-and a few mixed sentences. They show in English. mm / inch: the artwork size control has the switch; HTV shows both. A switch for
-the whole app is not built.
+and a few mixed sentences. They show in English. mm / inch: one switch for the whole app (`lib/units.ts`; top bar and the studio's status bar) changes the unit of the size controls
+and the status bar; the export dialog and HTV show both. Inside, lengths are always millimetres.

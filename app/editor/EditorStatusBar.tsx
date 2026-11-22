@@ -8,6 +8,8 @@ import { useIsMobileStudio } from '../lib/useMediaQuery';
 
 import { useT } from '../lib/i18n';
 import LanguageSwitch from '../components/LanguageSwitch';
+import UnitSwitch from '../components/UnitSwitch';
+import { formatLength, formatSize, useUnit } from '../lib/units';
 interface EditorStatusBarProps {
   template: RhinestoneTemplate | null;
   canvas: CanvasState;
@@ -38,6 +40,7 @@ export default function EditorStatusBar({
   onShowVersions,
 }: EditorStatusBarProps) {
   const t = useT();
+  const unit = useUnit();
   // On a phone this bar scrolls sideways; a scrollable region has to be reachable with the keyboard.
   const isMobile = useIsMobileStudio();
   const stoneCount = template?.stones.length ?? 0;
@@ -49,9 +52,9 @@ export default function EditorStatusBar({
   const physicalSize = template && template.stones.length > 0
     ? (() => {
         const bounds = getTemplatePhysicalSize(template);
-        return `${bounds.widthMm.toFixed(1)}×${bounds.heightMm.toFixed(1)} mm`;
+        return formatSize(bounds.widthMm, bounds.heightMm, unit);
       })()
-    : '0×0 mm';
+    : formatSize(0, 0, unit);
 
   const workflowStateLabel = !template
     ? 'No template'
@@ -113,6 +116,7 @@ export default function EditorStatusBar({
             {t('Earlier versions')}
           </button>
         )}
+        <UnitSwitch className="!border-[var(--studio-border)]" />
         <LanguageSwitch className="!border-[var(--studio-border)]" />
         {onReportProblem && (
           <button type="button" onClick={onReportProblem} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
@@ -121,7 +125,7 @@ export default function EditorStatusBar({
         )}
         <span>Zoom: <span className="font-mono text-[var(--studio-ink-secondary)]">{Math.round(canvas.zoom * 100)}%</span></span>
         {canvas.showGrid && (
-          <span className="text-[var(--studio-ink-muted)]">Grid: {canvas.gridSizeMm}mm</span>
+          <span className="text-[var(--studio-ink-muted)]">{t('Grid')}: {formatLength(canvas.gridSizeMm, unit)}</span>
         )}
         {canvas.showRulers && (
           <span className="text-[var(--studio-ink-muted)]">Rulers on</span>
