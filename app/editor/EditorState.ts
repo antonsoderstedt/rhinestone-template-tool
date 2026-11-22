@@ -35,7 +35,7 @@ import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
-import { translateStones, translateTemplate, type DesignPart } from './designParts';
+import { boundsOfStones, offsetBelow, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
 
 export type EditorTool =
   | 'select'          // Select and move stones
@@ -279,6 +279,8 @@ export interface EditorState {
   // Pieces kept with "Add to design", and where the piece being worked on sits.
   parts: DesignPart[];
   workingOffset: { x: number; y: number };
+  /** Undo and redo for changes to the parts (adding, moving, turning, removing). */
+  partsHistory: { past: DesignPart[][]; future: DesignPart[][]; lastKey: string | null };
   
   // Canvas
   canvas: CanvasState;
@@ -646,6 +648,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
   parts: [],
   workingOffset: { x: 0, y: 0 },
+  partsHistory: { past: [], future: [], lastKey: null },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
   canvas: { ...DEFAULT_CANVAS_STATE },
@@ -675,6 +678,10 @@ export type EditorAction =
   | { type: 'UPDATE_PART'; id: string; updates: Partial<Pick<DesignPart, 'name' | 'offsetX' | 'offsetY'>> }
   | { type: 'SET_WORKING_OFFSET'; x: number; y: number }
   | { type: 'SET_PARTS'; parts: DesignPart[]; workingOffset: { x: number; y: number } }
+  | { type: 'TRANSFORM_PART'; id: string; op: PartTransform }
+  | { type: 'DUPLICATE_PART'; id: string }
+  | { type: 'UNDO_PARTS' }
+  | { type: 'REDO_PARTS' }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
   | { type: 'UPDATE_EXPORT_SETTINGS'; updates: { includeGuideBox?: boolean; includeLabels?: boolean; paddingMm?: number } }
   | { type: 'SET_SELECTED_STONES'; ids: Set<string> }
@@ -762,6 +769,23 @@ function normalizeRhinestoneFontToolUpdate(
   return next;
 }
 
+const PARTS_HISTORY_LIMIT = 50;
+
+/** New parts with the old ones kept for undo. The same `key` twice in a row (typing a position) is one step. */
+function withPartsHistory(state: EditorState, parts: DesignPart[], key: string | null): EditorState {
+  const { past, lastKey } = state.partsHistory;
+  const merge = key !== null && key === lastKey;
+  return {
+    ...state,
+    parts,
+    partsHistory: {
+      past: merge ? past : [...past, state.parts].slice(-PARTS_HISTORY_LIMIT),
+      future: [],
+      lastKey: key,
+    },
+  };
+}
+
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
@@ -806,16 +830,65 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     }
 
     case 'ADD_PART':
-      return { ...state, parts: [...state.parts, action.part] };
+      return withPartsHistory(state, [...state.parts, action.part], null);
 
     case 'REMOVE_PART':
-      return { ...state, parts: state.parts.filter((part) => part.id !== action.id) };
+      return withPartsHistory(state, state.parts.filter((part) => part.id !== action.id), null);
 
-    case 'UPDATE_PART':
-      return { ...state, parts: state.parts.map((part) => (part.id === action.id ? { ...part, ...action.updates } : part)) };
+    case 'UPDATE_PART': {
+      const moving = action.updates.offsetX !== undefined || action.updates.offsetY !== undefined;
+      const parts = state.parts.map((part) => (part.id === action.id ? { ...part, ...action.updates } : part));
+      // Renaming is not worth an undo step; typing a position is one step, not one per key.
+      if (!moving) return { ...state, parts };
+      return withPartsHistory(state, parts, `move:${action.id}`);
+    }
+
+    case 'TRANSFORM_PART':
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: transformStones(part.stones, action.op) } : part)),
+        null,
+      );
+
+    case 'DUPLICATE_PART': {
+      const source = state.parts.find((part) => part.id === action.id);
+      if (!source) return state;
+      // The copy goes below everything kept, left edges aligned, so it never lands on top of the original.
+      const own = boundsOfStones(source.stones);
+      const below = offsetBelow(partsStones(state.parts), own?.minY ?? 0, own?.minX ?? 0);
+      const copy: DesignPart = {
+        ...source,
+        id: nextPartId(state.parts),
+        name: `${source.name} copy`,
+        offsetX: below.x,
+        offsetY: below.y,
+        stones: source.stones.map((stone) => ({ ...stone, center: { ...stone.center } })),
+      };
+      return withPartsHistory(state, [...state.parts, copy], null);
+    }
+
+    case 'UNDO_PARTS': {
+      const past = state.partsHistory.past;
+      if (past.length === 0) return state;
+      return {
+        ...state,
+        parts: past[past.length - 1]!,
+        partsHistory: { past: past.slice(0, -1), future: [state.parts, ...state.partsHistory.future], lastKey: null },
+      };
+    }
+
+    case 'REDO_PARTS': {
+      const future = state.partsHistory.future;
+      if (future.length === 0) return state;
+      return {
+        ...state,
+        parts: future[0]!,
+        partsHistory: { past: [...state.partsHistory.past, state.parts], future: future.slice(1), lastKey: null },
+      };
+    }
 
     case 'SET_PARTS':
-      return { ...state, parts: action.parts, workingOffset: action.workingOffset };
+      return { ...state, parts: action.parts, workingOffset: action.workingOffset, partsHistory: { past: [], future: [], lastKey: null } };
 
     case 'SET_WORKING_OFFSET': {
       // Move the piece being worked on by the difference, wherever its stones are (generated or already editable).

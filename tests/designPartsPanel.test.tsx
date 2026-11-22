@@ -34,6 +34,11 @@ describe('DesignPartsPanel', () => {
     expect(html).toContain('1 stones');
     expect(html).toContain('aria-label="Remove Anna"');
     expect(html).toContain('Position of this piece');
+    expect(html).toContain('aria-label="Rotate Anna a quarter turn"');
+    expect(html).toContain('aria-label="Flip Anna left to right"');
+    expect(html).toContain('aria-label="Duplicate Anna"');
+    // nothing to undo yet
+    expect(html).toMatch(/aria-label="Undo change to parts"[^>]*disabled/);
     expect(html).not.toContain('a name and a number');
   });
 });

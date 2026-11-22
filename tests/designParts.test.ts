@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseRhinestoneProject, serializeRhinestoneProject, createStoneGridTemplate, type Stone } from '../src/lib/rhinestone-engine/index';
 import { DEFAULT_EDITOR_STATE, editorReducer, type EditorState } from '../app/editor/EditorState';
-import { boundsOfStones, composeDesign, nextPartId, offsetBelow, partsStones, translateTemplate, type DesignPart } from '../app/editor/designParts';
+import { boundsOfStones, composeDesign, nextPartId, offsetBelow, partsStones, transformStones, translateTemplate, type DesignPart } from '../app/editor/designParts';
 import { buildEffectiveTemplate, buildProjectFileFromEditorState } from '../app/editor/projectPersistence';
 
 const stone = (id: string, x: number, y: number): Stone => ({ id, center: { x, y }, stoneSize: 'SS10', holeDiameterMm: 3.43 });
@@ -140,5 +140,76 @@ describe('saving and opening', () => {
     json.parts[0].offsetX = 1;
     json.parts.push({ ...json.parts[0] });
     expect(() => parseRhinestoneProject(JSON.stringify(json))).toThrow(/used twice/);
+  });
+});
+
+describe('turning, mirroring, duplicating and undoing parts', () => {
+  const asymmetric = (): DesignPart => ({
+    id: 'part-1', name: 'L', offsetX: 0, offsetY: 0,
+    stones: [stone('a', 10, 10), stone('b', 20, 10), stone('c', 10, 20)],
+  });
+  const centres = (stones: Stone[]) => stones.map((s) => [Math.round(s.center.x * 10) / 10, Math.round(s.center.y * 10) / 10]);
+
+  it('a quarter turn keeps the part in place, spacing unchanged, and four turns are the identity', () => {
+    const before = asymmetric().stones;
+    const turned = transformStones(before, 'rotate-cw');
+    expect(boundsOfStones(turned)!.minX).toBeCloseTo(boundsOfStones(before)!.minX, 3);
+    expect(Math.hypot(turned[0]!.center.x - turned[1]!.center.x, turned[0]!.center.y - turned[1]!.center.y)).toBeCloseTo(10, 6);
+    let again = before;
+    for (let i = 0; i < 4; i++) again = transformStones(again, 'rotate-cw');
+    expect(centres(again)).toEqual(centres(before));
+    expect(centres(transformStones(transformStones(before, 'rotate-cw'), 'rotate-ccw'))).toEqual(centres(before));
+  });
+
+  it('flips mirror about the middle and twice is the identity', () => {
+    const before = asymmetric().stones;
+    const flipped = transformStones(before, 'flip-horizontal');
+    expect(flipped[0]!.center.x).toBeCloseTo(20, 6); // a at x 10 mirrored in the span 10..20
+    expect(flipped[0]!.center.y).toBeCloseTo(10, 6);
+    expect(centres(transformStones(flipped, 'flip-horizontal'))).toEqual(centres(before));
+    expect(centres(transformStones(before, 'flip-vertical'))[0]).toEqual([10, 20]);
+  });
+
+  it('TRANSFORM_PART and DUPLICATE_PART change the right part only', () => {
+    let state = editorReducer(fresh(), { type: 'ADD_PART', part: asymmetric() });
+    state = editorReducer(state, { type: 'ADD_PART', part: { ...asymmetric(), id: 'part-2' } });
+    state = editorReducer(state, { type: 'TRANSFORM_PART', id: 'part-1', op: 'flip-horizontal' });
+    expect(state.parts[0]!.stones[0]!.center.x).toBeCloseTo(20, 6);
+    expect(state.parts[1]!.stones[0]!.center.x).toBeCloseTo(10, 6);
+    state = editorReducer(state, { type: 'DUPLICATE_PART', id: 'part-2' });
+    expect(state.parts).toHaveLength(3);
+    expect(state.parts[2]!.name).toBe('L copy');
+    // below the others, not on top of them
+    const copyTop = Math.min(...partsStones([state.parts[2]!]).map((s) => s.center.y));
+    const othersBottom = Math.max(...partsStones(state.parts.slice(0, 2)).map((s) => s.center.y));
+    expect(copyTop).toBeGreaterThan(othersBottom);
+    expect(new Set(state.parts.map((p) => p.id)).size).toBe(3);
+  });
+
+  it('undo and redo walk back through adding, turning and removing; a new change drops the redo steps', () => {
+    let state = fresh();
+    state = editorReducer(state, { type: 'ADD_PART', part: asymmetric() });
+    state = editorReducer(state, { type: 'TRANSFORM_PART', id: 'part-1', op: 'rotate-cw' });
+    state = editorReducer(state, { type: 'REMOVE_PART', id: 'part-1' });
+    expect(state.parts).toHaveLength(0);
+    state = editorReducer(state, { type: 'UNDO_PARTS' });
+    expect(state.parts).toHaveLength(1);
+    state = editorReducer(state, { type: 'UNDO_PARTS' });
+    expect(centres(state.parts[0]!.stones)).toEqual(centres(asymmetric().stones));
+    state = editorReducer(state, { type: 'REDO_PARTS' });
+    expect(centres(state.parts[0]!.stones)).not.toEqual(centres(asymmetric().stones));
+    state = editorReducer(state, { type: 'UPDATE_PART', id: 'part-1', updates: { offsetX: 3 } });
+    expect(state.partsHistory.future).toEqual([]);
+    expect(editorReducer(fresh(), { type: 'UNDO_PARTS' }).parts).toEqual([]);
+  });
+
+  it('typing a position is one undo step, a rename is none, and opening a design clears the history', () => {
+    let state = editorReducer(fresh(), { type: 'ADD_PART', part: asymmetric() });
+    for (const x of [1, 12, 123]) state = editorReducer(state, { type: 'UPDATE_PART', id: 'part-1', updates: { offsetX: x } });
+    state = editorReducer(state, { type: 'UPDATE_PART', id: 'part-1', updates: { name: 'Anna' } });
+    expect(state.partsHistory.past).toHaveLength(2); // the add, and the whole move
+    state = editorReducer(state, { type: 'UNDO_PARTS' });
+    expect(state.parts[0]!.offsetX).toBe(0);
+    expect(editorReducer(state, { type: 'SET_PARTS', parts: [], workingOffset: { x: 0, y: 0 } }).partsHistory.past).toEqual([]);
   });
 });

@@ -109,3 +109,29 @@ export function nextPartId(parts: readonly DesignPart[]): string {
   } while (used.has(id));
   return id;
 }
+
+export type PartTransform = 'rotate-cw' | 'rotate-ccw' | 'flip-horizontal' | 'flip-vertical';
+
+/**
+ * Rotates a quarter turn or mirrors the stones about the middle of their bounding box, so the part stays where it is.
+ * Stones are round, so nothing else changes: sizes and spacing are exactly as before.
+ */
+export function transformStones(stones: readonly Stone[], op: PartTransform): Stone[] {
+  const bounds = boundsOfStones(stones);
+  if (!bounds) return [];
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  return stones.map((stone) => {
+    const dx = stone.center.x - cx;
+    const dy = stone.center.y - cy;
+    let x = dx;
+    let y = dy;
+    switch (op) {
+      case 'rotate-cw': x = -dy; y = dx; break;
+      case 'rotate-ccw': x = dy; y = -dx; break;
+      case 'flip-horizontal': x = -dx; break;
+      case 'flip-vertical': y = -dy; break;
+    }
+    return { ...stone, center: { x: round(cx + x), y: round(cy + y) } };
+  });
+}

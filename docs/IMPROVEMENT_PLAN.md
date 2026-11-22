@@ -110,7 +110,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | J12 Artwork panel | **Done in part**: three looks, colour list, advice; preview of the source behind the stones and a look gallery with thumbnails remain |
 | J13 raster into the same pipeline, J14 raster controls | **Done** (ADR 0021) |
 | A2 panel boilerplate removed ("Driven by generator settings", "These settings control the generated baseline…") | **Done** |
-| J15 / B1 first step: several parts in one design ("Add to design", move, rename, remove, saved) | **Done** (ADR 0022); live elements, rotate / flip / scale, drag on canvas and undo remain |
+| J15 / B1 first step: several parts in one design ("Add to design", move, rename, remove, turn, mirror, duplicate, undo, saved) | **Done** (ADR 0022); live elements, rotate / flip / scale, drag on canvas and undo remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

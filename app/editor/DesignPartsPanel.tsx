@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Trash2 } from 'lucide-react';
+import { Copy, FlipHorizontal2, FlipVertical2, Plus, Redo2, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import type { Stone } from '@/src/lib/rhinestone-engine/index';
 import type { EditorAction, EditorState } from './EditorState';
 import { boundsOfStones, nextPartId, offsetBelow, partsStones, translateStones } from './designParts';
@@ -22,6 +22,21 @@ function suggestName(state: EditorState): string {
 /** The piece being worked on as stones: the editable ones when it has been made editable, else what the tool generated. */
 function workingStones(state: EditorState): Stone[] {
   return state.editableTemplate.isEditable ? (state.editableTemplate.stones as Stone[]) : state.template?.stones ?? [];
+}
+
+function IconButton({ label, onClick, disabled = false, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="rounded-md p-1.5 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
 }
 
 /**
@@ -55,7 +70,17 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
     <div className="flex flex-col gap-3" data-testid="design-parts">
       {state.parts.length > 0 && (
         <section aria-label="Parts of this design" className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Parts of this design</h3>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Parts of this design</h3>
+            <div className="flex gap-1">
+              <IconButton label="Undo change to parts" disabled={state.partsHistory.past.length === 0} onClick={() => dispatch({ type: 'UNDO_PARTS' })}>
+                <Undo2 className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Redo change to parts" disabled={state.partsHistory.future.length === 0} onClick={() => dispatch({ type: 'REDO_PARTS' })}>
+                <Redo2 className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+            </div>
+          </div>
           <ul className="flex flex-col gap-3">
             {state.parts.map((part) => (
               <li key={part.id} className="flex flex-col gap-1.5 border-b border-[var(--studio-border)] pb-3 last:border-0 last:pb-0">
@@ -76,7 +101,21 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-                <p className="text-xs text-[var(--studio-ink-muted)]">{part.stones.length} stones</p>
+                <div className="flex items-center gap-1">
+                  <p className="mr-auto text-xs text-[var(--studio-ink-muted)]">{part.stones.length} stones</p>
+                  <IconButton label={`Rotate ${part.name} a quarter turn`} onClick={() => dispatch({ type: 'TRANSFORM_PART', id: part.id, op: 'rotate-cw' })}>
+                    <RotateCw className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Flip ${part.name} left to right`} onClick={() => dispatch({ type: 'TRANSFORM_PART', id: part.id, op: 'flip-horizontal' })}>
+                    <FlipHorizontal2 className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Flip ${part.name} top to bottom`} onClick={() => dispatch({ type: 'TRANSFORM_PART', id: part.id, op: 'flip-vertical' })}>
+                    <FlipVertical2 className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Duplicate ${part.name}`} onClick={() => dispatch({ type: 'DUPLICATE_PART', id: part.id })}>
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <NumericInput label="Move right" value={part.offsetX} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetX: value } })} />
                   <NumericInput label="Move down" value={part.offsetY} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetY: value } })} />

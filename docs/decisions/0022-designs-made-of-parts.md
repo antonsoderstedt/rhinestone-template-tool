@@ -27,11 +27,19 @@ A first step that gives the result without rebuilding the editor:
    are refused). A design with parts but nothing being generated is saved as an empty manual design plus its parts. Older files
    open unchanged.
 
+## Turning, mirroring, duplicating, undo (B2, B3 for parts)
+
+Each part can be turned a quarter turn either way, mirrored left to right or top to bottom (about the middle of its bounding
+box, so it stays put; stones are round, so spacing is untouched) and duplicated (the copy goes below everything kept). Every
+change to the parts is one undo step (`UNDO_PARTS` / `REDO_PARTS`, 50 deep): adding, removing, turning, duplicating and moving;
+typing a position is one step, a rename none, and opening a design clears the history. This is separate from the stone-edit
+history of the editable stones.
+
 ## Limits (next steps)
 
-- A part is frozen: its text or artwork cannot be changed afterwards, only moved or removed. Making it editable again, rotating,
-  flipping, scaling and aligning parts, dragging them on the canvas, and undo for these changes are the remaining parts of J15,
-  B2, B3 and B13.
+- A part is frozen: its text or artwork cannot be changed afterwards. Free-angle rotation, scaling, aligning and centring parts,
+  dragging them on the canvas, the same for the piece being worked on, and one undo for everything (settings included) are the
+  remaining parts of J15, B2, B3 and B13.
 - Fit to mat resizes the piece being worked on, not the parts.
 - The parts list is in the Design panel and is hidden while the Select tool is active.
 
