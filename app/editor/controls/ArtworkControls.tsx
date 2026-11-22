@@ -1,5 +1,6 @@
 'use client';
 
+import { STONE_COLOUR_PRESETS } from '../stoneColours';
 import { AlertTriangle, Info } from 'lucide-react';
 import type { StoneSizeId } from '@/src/lib/rhinestone-engine/index';
 import type { ArtworkLook } from '@/src/lib/rhinestone-engine/index';
@@ -59,10 +60,16 @@ export function ArtworkLookControl({
 /** The colours found in the artwork. A colour can be left out (a white background is by default). */
 export function ArtworkLayersList({
   layers,
+  stoneColours = {},
   onToggle,
+  onStoneColour,
 }: {
   layers: ArtworkInfo['layers'];
+  /** The stone colour chosen for each artwork colour. */
+  stoneColours?: Record<string, string>;
   onToggle: (colour: string, role: 'stones' | 'ignore') => void;
+  /** `null` = the artwork's own colour. */
+  onStoneColour?: (colour: string, hex: string | null) => void;
 }) {
   if (layers.length < 2) return null;
   return (
@@ -88,6 +95,22 @@ export function ArtworkLayersList({
                 <span className="ml-1.5 text-xs text-ink-muted">{layer.role === 'stones' ? `${layer.stones} stones` : 'left out'}</span>
               </span>
             </label>
+            {onStoneColour && layer.role === 'stones' && (
+              <label className="ml-9 mt-1 flex items-center gap-2 text-xs text-ink-muted">
+                Stones are
+                <select
+                  aria-label={`Stone colour for ${layer.colour}`}
+                  value={stoneColours[layer.colour] ?? ''}
+                  onChange={(event) => onStoneColour(layer.colour, event.target.value === '' ? null : event.target.value)}
+                  className="rounded-md border border-[var(--studio-border-strong)] bg-[var(--studio-well)] px-2 py-1 text-xs text-[var(--studio-ink)]"
+                >
+                  <option value="">the same colour</option>
+                  {STONE_COLOUR_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.hex}>{preset.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             {layer.reason && layer.role === 'ignore' && <p className="ml-9 mt-0.5 text-xs text-ink-muted">{layer.reason}</p>}
           </li>
         ))}

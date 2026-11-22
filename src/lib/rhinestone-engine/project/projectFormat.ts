@@ -149,6 +149,8 @@ export interface SvgUploadProjectState {
   radialSettings?: RadialPlacementSettings;
   /** Colours the user switched on or off in an uploaded artwork. */
   layerRoles?: Record<string, 'stones' | 'ignore'>;
+  /** The stone colour chosen for each colour of an uploaded artwork. */
+  layerStoneColours?: Record<string, string>;
 }
 
 export interface SavedStone {
@@ -545,7 +547,20 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     contourSettings: parseContourSettings(s.contourSettings, ctx),
     radialSettings: parseRadialSettings(s.radialSettings, ctx),
     layerRoles: parseLayerRoles(s.layerRoles, ctx),
+    layerStoneColours: parseLayerStoneColours(s.layerStoneColours, ctx),
   };
+}
+
+function parseLayerStoneColours(value: unknown, ctx: string): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value, `${ctx}.layerStoneColours`);
+  const colours: Record<string, string> = {};
+  for (const [colour, stone] of Object.entries(record)) {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) throw new Error(`[Project] ${ctx}.layerStoneColours has a key that is not a colour: ${colour}`);
+    if (typeof stone !== 'string' || !/^#[0-9a-f]{6}$/i.test(stone)) throw new Error(`[Project] ${ctx}.layerStoneColours["${colour}"] must be a colour like #aabbcc`);
+    colours[colour.toLowerCase()] = stone.toLowerCase();
+  }
+  return colours;
 }
 
 function parseLayerRoles(value: unknown, ctx: string): Record<string, 'stones' | 'ignore'> | undefined {

@@ -1,5 +1,6 @@
 'use client';
 
+import { isMultiColour, stoneColourOf } from './stoneColours';
 import { partsStones } from './designParts';
 
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
@@ -70,7 +71,11 @@ function buildRulerTickValues(start: number, end: number, stepMm: number): numbe
   return ticks;
 }
 
-function getStoneCanvasColor(stone: EditableStone): string {
+function getStoneCanvasColor(stone: EditableStone, showStoneColours: boolean): string {
+  if (showStoneColours) {
+    const colour = stoneColourOf(stone);
+    if (colour) return colour;
+  }
   if (typeof stone.metadata?.fill === 'string') return stone.metadata.fill;
   if (typeof stone.metadata?.stroke === 'string') return stone.metadata.stroke;
   return '#8b5cf6';
@@ -186,6 +191,8 @@ export default function EditorCanvas({
     // Parts kept with "Add to design" are drawn with the rest; they are changed from the parts list, not on the canvas.
     return state.parts.length > 0 ? [...working, ...partsStones(state.parts)] : working;
   }, [state.template, state.editableTemplate, state.parts]);
+  // With more than one stone colour the canvas shows them, so the design reads like the real thing.
+  const showStoneColours = useMemo(() => isMultiColour(stones), [stones]);
 
   // Cut shapes (e.g. letter-stencil card frames) — not stored on the
   // editable snapshot, so fall back to the pre-edit template when editable.
@@ -1480,7 +1487,7 @@ export default function EditorCanvas({
             }
             
             const r = stone.holeDiameterMm / 2;
-            const baseColor = getStoneCanvasColor(stone);
+            const baseColor = getStoneCanvasColor(stone, showStoneColours);
             
             const isHovered = hoveredStoneId === stone.id;
             // A stone of a kept part is dragged as a whole (see startPartDrag); it is not edited stone by stone.
@@ -1524,11 +1531,11 @@ export default function EditorCanvas({
                   cy={displayY}
                   r={r - STONE_STROKE_MM / 2}
                   fill={isPendingErase ? 'rgba(228,69,59,0.18)' : baseColor}
-                  fillOpacity={isPendingErase ? 0.18 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
+                  fillOpacity={isPendingErase ? 0.18 : showStoneColours ? 0.95 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
                   stroke={
                     isPendingErase
                       ? '#e4453b'
-                      : baseColor
+                      : showStoneColours ? 'rgba(255,255,255,0.55)' : baseColor
                   }
                   strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}

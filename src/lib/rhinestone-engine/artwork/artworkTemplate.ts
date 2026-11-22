@@ -39,6 +39,8 @@ export interface CreateArtworkTemplateOptions {
   materialProfileId?: string;
   /** Colours (`#rrggbb`) to leave out, or to include although they would be treated as background. */
   layerRoles?: Record<string, 'stones' | 'ignore'>;
+  /** The colour of the stones of a layer (`#rrggbb`), by the layer's own colour. Default: the layer's colour when the artwork has several. */
+  layerStoneColours?: Record<string, string>;
   ignoreBackground?: boolean;
   /** Give parts thinner than a stone one row down the middle (stones reach past the edge). For letters. */
   overhang?: boolean;
@@ -116,12 +118,14 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
   const stones: Stone[] = [];
   const layerSummary: ArtworkTemplateResult['layers'] = built.layers.map((layer) => ({ colour: layer.colour, areaMm2: layer.areaMm2, role: layer.role, reason: layer.reason, stones: 0 }));
 
+  const stoneLayerCount = built.layers.filter((layer) => (options.layerRoles?.[layer.colour] ?? layer.role) !== 'ignore').length;
   const order = built.layers.map((_, i) => i).reverse();
   for (const layerIndex of order) {
     const layer = built.layers[layerIndex]!;
     const role = options.layerRoles?.[layer.colour] ?? layer.role;
     layerSummary[layerIndex]!.role = role;
     if (role === 'ignore') continue;
+    const stoneColour = options.layerStoneColours?.[layer.colour] ?? (stoneLayerCount > 1 ? layer.colour : undefined);
     const field = buildRegionField(layer.mask);
     const placed = layoutRows(field, { holeDiameterMm: hole, pitchMm: pitch, minCentreDistanceMm: minCentre, rows, overhang: options.overhang });
     for (const p of placed) {
@@ -135,6 +139,7 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
         holeDiameterMm: hole,
         metadata: {
           layerColour: layer.colour,
+          ...(stoneColour ? { stoneColour } : {}),
           layerIndex,
           row: p.row,
           placement: kind,

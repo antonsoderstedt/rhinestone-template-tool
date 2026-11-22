@@ -1088,6 +1088,7 @@ export default function EditorShell() {
             contourSettings: project.generatorState.contourSettings ?? state.svgTool.contourSettings,
             radialSettings: project.generatorState.radialSettings ?? state.svgTool.radialSettings,
             layerRoles: project.generatorState.layerRoles ?? {},
+            layerStoneColours: project.generatorState.layerStoneColours ?? {},
             densityPreset: project.generatorState.densityPreset,
             customSpacingMm: project.generatorState.customSpacingMm,
             imageColorCount: project.generatorState.imageColorCount ?? 1,

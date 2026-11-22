@@ -910,3 +910,10 @@ lays out the glyph polylines (after scaling and arc warp) with `createArtworkTem
 `outline` / `rows` / `solid` from the coverage mode, `overhang: true`. See ADR 0024. `layoutRows` option `overhang` puts one
 row down the middle of parts thinner than a stone (found from a contour 1.5 cells deep, merged pairwise, then centred on the
 ridge); stones may reach a little past the edge. Deterministic, same spacing rule as artwork.
+
+
+## Stone colours (artwork)
+
+`createArtworkTemplate` option `layerStoneColours` (artwork colour -> `#rrggbb`) sets `metadata.stoneColour` on the stones of
+that layer. Without it, an artwork with more than one stone layer gets each layer's own colour; a one-colour artwork gets none.
+The colour never affects placement or export geometry. Saved in the project as `generatorState.layerStoneColours`.

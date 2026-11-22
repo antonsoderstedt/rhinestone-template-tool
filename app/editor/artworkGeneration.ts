@@ -80,6 +80,7 @@ export function generateSvgArtwork(svgTool: SvgToolState, shapesOverride?: reado
     densityPreset: usePreset ? svgTool.densityPreset : undefined,
     customSpacingMm: custom,
     layerRoles: svgTool.layerRoles,
+    layerStoneColours: svgTool.layerStoneColours,
     analyse: true,
   });
 
@@ -121,6 +122,7 @@ export function generateRasterArtwork(svgTool: SvgToolState, image: RasterImage)
     densityPreset: usePreset ? svgTool.densityPreset : undefined,
     customSpacingMm: custom,
     layerRoles: svgTool.layerRoles,
+    layerStoneColours: svgTool.layerStoneColours,
     analyse: true,
   });
   return {

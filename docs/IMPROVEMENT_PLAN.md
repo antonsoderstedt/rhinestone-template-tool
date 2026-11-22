@@ -116,6 +116,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | A5, A6, A7, A8, A12: recovery card only when there is something to recover, taglines and strip removed, plain headings, starter gallery on the home page | **Done** |
 | A10 compact HTV status chips, A11 project named from its text and no permanent "Not saved yet" | **Done** |
 | F2 previous-session copies limited and de-duplicated; G2 HTV "Fit to the print area" (placement and mat); G5 already works (HTV only refuses unloadable fonts) | **Done** |
+| B4 first step: stone colour per artwork colour (preset or the artwork's own), shown on the canvas when a design has several, counted per colour, saved in the project | **Done in part**; colours for text, stone fonts and single stones, and colour in the export, remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

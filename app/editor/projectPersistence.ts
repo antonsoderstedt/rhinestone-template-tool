@@ -190,6 +190,7 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         contourSettings: state.svgTool.contourSettings,
         radialSettings: state.svgTool.radialSettings,
         layerRoles: state.svgTool.layerRoles,
+        layerStoneColours: state.svgTool.layerStoneColours,
         densityPreset: state.svgTool.densityPreset,
         customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4.0,
         imageColorCount: state.svgTool.imageColorCount,

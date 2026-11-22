@@ -131,6 +131,8 @@ export interface SvgToolState {
   radialSettings: RadialPlacementSettings;
   /** Colours (`#rrggbb`) the user turned on or off, overriding what the importer decided (e.g. a white background). */
   layerRoles: Record<string, 'stones' | 'ignore'>;
+  /** The colour the stones of each artwork colour are (`#rrggbb`); absent = the artwork's own colour. */
+  layerStoneColours: Record<string, string>;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
@@ -542,6 +544,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
     includeCenterStone: true,
   },
   layerRoles: {},
+  layerStoneColours: {},
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {

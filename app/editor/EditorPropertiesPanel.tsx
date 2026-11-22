@@ -24,6 +24,7 @@ import ExportReadinessPanel from '../components/ExportReadinessPanel';
 import QuickFixes from './QuickFixes';
 import DesignPartsPanel from './DesignPartsPanel';
 import StoneEstimateCard from './StoneEstimateCard';
+import StoneColourCounts from './controls/StoneColourCounts';
 import { getQuickFixes, type QuickFixAction } from './quickFixItems';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
@@ -58,7 +59,7 @@ interface EditorPropertiesPanelProps {
   artworkInfo?: ArtworkInfo | null;
   exportReadiness?: ExportReadinessResult | null;
   /** Stones of the design as it will be exported, for the "stones to buy" estimate. */
-  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId }>;
+  stones?: ReadonlyArray<{ stoneSize: import('@/src/lib/rhinestone-engine/index').StoneSizeId; metadata?: Record<string, unknown> }>;
   /** One-click fixes (spacing, fit to mat). `canResize` is false for hand-made designs. */
   onQuickFix?: (action: QuickFixAction) => void;
   canResize?: boolean;
@@ -199,6 +200,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
         {stones && stones.length > 0 && (
           <PanelSection title="Stones to buy" description="How many stones and packs this design needs." defaultOpen={false}>
+            <StoneColourCounts stones={stones} />
             <StoneEstimateCard stones={stones} />
           </PanelSection>
         )}
@@ -1249,6 +1251,13 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           {artworkInfo && (
             <ArtworkLayersList
               layers={artworkInfo.layers}
+              stoneColours={svgTool.layerStoneColours}
+              onStoneColour={(colour, hex) => {
+                const next = { ...svgTool.layerStoneColours };
+                if (hex) next[colour] = hex;
+                else delete next[colour];
+                dispatch({ type: 'UPDATE_SVG_TOOL', updates: { layerStoneColours: next } });
+              }}
               onToggle={(colour, role) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { layerRoles: { ...svgTool.layerRoles, [colour]: role } } })}
             />
           )}

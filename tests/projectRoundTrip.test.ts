@@ -437,6 +437,19 @@ describe('project round-trip for editable designs', () => {
     expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/colour/);
   });
 
+  it('keeps the stone colour chosen for each artwork colour, and refuses a bad one', () => {
+    const state = cloneState();
+    state.activeTool = 'svg';
+    state.svgTool.uploadedSvgText = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10"><path d="M0 0h30v10z" fill="#ffaef0"/></svg>';
+    state.svgTool.layerStoneColours = { '#FFAEF0': '#D4AF37' };
+    const file = buildProjectFileFromEditorState(state)!;
+    const restored = parseRhinestoneProject(serializeRhinestoneProject(file));
+    expect(restored.generatorState).toMatchObject({ layerStoneColours: { '#ffaef0': '#d4af37' } });
+    const broken = JSON.parse(serializeRhinestoneProject(file)) as { generatorState: { layerStoneColours: Record<string, string> } };
+    broken.generatorState.layerStoneColours = { '#ffaef0': 'gold' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/layerStoneColours/);
+  });
+
   it('round-trips a fully manual editable design', () => {
     let state = cloneState();
     state.activeTool = 'manual';
