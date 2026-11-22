@@ -78,7 +78,7 @@ import {
   resolveGeneratorMutationDecision,
   shouldPromptForGeneratorMutation,
 } from './generatorChangePolicy';
-import { EDITOR_TOOLS, getCanvasHint, getSourcePanelTool } from './editorUi';
+import { EDITOR_TOOLS, RAIL_TOOLS, getCanvasHint, getSourcePanelTool, railToolFor } from './editorUi';
 import {
   buildEffectiveTemplate,
   buildProjectFileFromEditorState,
@@ -1906,8 +1906,8 @@ export default function EditorShell() {
         items={[
           {
             id: 'tools',
-            label: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.label ?? 'Tools',
-            icon: EDITOR_TOOLS.find((tool) => tool.id === state.activeTool)?.icon ?? Wrench,
+            label: EDITOR_TOOLS.find((tool) => tool.id === railToolFor(state.activeTool))?.label ?? 'Tools',
+            icon: EDITOR_TOOLS.find((tool) => tool.id === railToolFor(state.activeTool))?.icon ?? Wrench,
             active: mobilePanel === 'tools',
             onSelect: () => setMobilePanel((current) => (current === 'tools' ? 'none' : 'tools')),
           },
@@ -1956,9 +1956,9 @@ function StudioToolRail({
       className={`order-2 shrink-0 border-[var(--studio-border)] bg-[var(--studio-well)] max-lg:max-h-[44dvh] max-lg:overflow-y-auto max-lg:border-t max-lg:p-3 ${mobileOpen ? 'max-lg:grid max-lg:grid-cols-3 max-lg:gap-2 sm:max-lg:grid-cols-5' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:w-[68px] lg:flex-col lg:gap-1 lg:border-r lg:px-1.5 lg:py-2`}
       aria-label="Studio tools"
     >
-      {EDITOR_TOOLS.map((tool) => {
+      {RAIL_TOOLS.map((tool) => {
         const Icon = tool.icon;
-        const active = activeTool === tool.id;
+        const active = railToolFor(activeTool) === tool.id;
         return (
           <button
             key={tool.id}

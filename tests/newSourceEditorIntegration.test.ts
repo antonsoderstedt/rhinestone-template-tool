@@ -49,7 +49,7 @@ function stateWith(overrides: Partial<EditorState>): EditorState {
 }
 
 describe('main editor integration — rhinestone font', () => {
-  it('renders a reachable toolbar entry for the rhinestone font source', () => {
+  it('keeps Text lit while a stone font is the look, and has no separate Stone Font button', () => {
     const html = renderToStaticMarkup(
       createElement(EditorToolbar, {
         activeTool: 'rhinestone-font',
@@ -57,7 +57,7 @@ describe('main editor integration — rhinestone font', () => {
         orientation: 'horizontal',
       }),
     );
-    expect(html).toContain('aria-label="Stone Font"');
+    expect(html).not.toContain('aria-label="Stone Font"');
     expect(html).toContain('bg-purple-600');
   });
 
@@ -72,7 +72,9 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('Old English');
     expect(html).toContain('Script');
     expect(html).toContain('Gothic');
-    expect(html).toContain('mode stones');
+    // The look is chosen from a gallery of the user's own words, and the chosen one is marked.
+    expect(html).toContain('aria-label="TRW Clean Stone, Script" class="');
+    expect(html).toContain('Fonts with stones already placed');
     expect(html).toContain('Suggested sample: SULAY');
     expect(html).toContain('Use sample');
     expect(html).toContain('SS10');
@@ -93,7 +95,7 @@ describe('main editor integration — rhinestone font', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('mode line');
+    expect(html).toContain('Small Line');
     expect(html).toContain('Suggested sample: SMALL');
     expect(html).toContain('future centerline workflow');
   });
@@ -112,7 +114,7 @@ describe('main editor integration — rhinestone font', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('mode digits');
+    expect(html).toContain('Huge Digits');
     expect(html).toContain('Suggested sample: 2026');
     expect(html).toContain('optimized for digits');
   });

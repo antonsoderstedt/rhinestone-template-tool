@@ -7,7 +7,6 @@ import {
   getRecommendedCenterDistance,
   getTemplatePhysicalSize,
   getOutlineFontDefinition,
-  getPreferredRhinestoneFontStoneSize,
   getSupportedTextCoverageModes,
   getStoneSizeProfile,
   TRW_STONE_SIZE_CALIBRATION,
@@ -33,7 +32,8 @@ import PhysicalDimensionsControl from './controls/PhysicalDimensionsControl';
 import NumericInput from './controls/NumericInput';
 import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
-import FontPicker, { type OutlineFontStatus } from './controls/FontPicker';
+import { type OutlineFontStatus } from './controls/FontPicker';
+import TextStyleGallery from './controls/TextStyleGallery';
 import PlacementModeControl from './controls/PlacementModeControl';
 import { ArtworkAdvice, ArtworkLayersList, ArtworkLookControl } from './controls/ArtworkControls';
 import { ARTWORK_LOOKS, lookFromCoverage, type ArtworkInfo } from './artworkGeneration';
@@ -254,30 +254,6 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
   return (
     <div className="space-y-4">
-      {/* Mode Toggle */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { mode: 'outline' } })}
-          className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-            textTool.mode === 'outline'
-              ? 'bg-ink text-ink-inverse shadow-sm'
-              : 'bg-surface text-ink-secondary hover:bg-surface-raised'
-          }`}
-        >
-          Outline
-        </button>
-        <button
-          onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { mode: 'dot-matrix' } })}
-          className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-            textTool.mode === 'dot-matrix'
-              ? 'bg-ink text-ink-inverse shadow-sm'
-              : 'bg-surface text-ink-secondary hover:bg-surface-raised'
-          }`}
-        >
-          Dot Matrix
-        </button>
-      </div>
-
       {/* Text Input */}
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Text</span>
@@ -303,13 +279,12 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
         ))}
       </div>
 
-      {textTool.mode === 'outline' && outlineFontStatus && (
-        <FontPicker
-          value={textTool.fontId}
-          previewText={textTool.text}
-          status={outlineFontStatus}
-          onChange={(fontId) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fontId } })}
-        />
+      <TextStyleGallery state={state} dispatch={dispatch} />
+      {textTool.mode === 'outline' && outlineFontStatus && outlineFontStatus.fontId === textTool.fontId && outlineFontStatus.status === 'loading' && (
+        <p className="text-xs text-ink-muted" role="status">{outlineFontStatus.message ?? 'Loading font…'}</p>
+      )}
+      {textTool.mode === 'outline' && outlineFontStatus && outlineFontStatus.fontId === textTool.fontId && outlineFontStatus.status === 'error' && outlineFontStatus.message && (
+        <p className="text-xs text-danger-600" role="alert">{outlineFontStatus.message}</p>
       )}
 
       {textTool.mode === 'outline' && textTool.unsupportedCharacters.length > 0 && (
@@ -486,8 +461,6 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
 function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const { rhinestoneFontTool } = state;
-  // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
-  const availableFonts = listRhinestoneFonts().filter((font) => font.fontId !== 'test-fixture');
   const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
   const supportedStoneSizes = getSupportedRhinestoneFontStoneSizes(rhinestoneFontTool.rhinestoneFontId);
   const getStoneDiameterLabel = (size: typeof rhinestoneFontTool.stoneSize) => {
@@ -511,31 +484,6 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       </div>
 
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Rhinestone font</span>
-        <select
-          aria-label="Rhinestone font"
-          value={rhinestoneFontTool.rhinestoneFontId}
-          onChange={(e) => dispatch({
-            type: 'UPDATE_RHINESTONE_FONT_TOOL',
-            updates: {
-              rhinestoneFontId: e.target.value,
-              stoneSize: getPreferredRhinestoneFontStoneSize(e.target.value),
-            },
-          })}
-          className={editorSelectClassName}
-        >
-          {availableFonts.map((font) => (
-            <option key={font.fontId} value={font.fontId}>
-              {font.displayName} — {font.style}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-ink-muted">
-          {selectedFontDefinition.category} · {selectedFontDefinition.style} · mode {rhinestoneFontTool.presentationMode} · supports {supportedStoneSizes.join(', ')}
-        </span>
-      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Text</span>
@@ -564,6 +512,8 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
           className={`${editorTextareaClassName} resize-y`}
         />
       </label>
+
+      <TextStyleGallery state={state} dispatch={dispatch} />
 
       <label className="flex flex-col gap-1.5">
         <span className={editorFieldLabelClassName}>Stone size</span>
@@ -2000,7 +1950,7 @@ function getToolTitle(tool: EditorTool): string {
     case 'text': return 'Text Source';
     case 'svg': return 'Artwork Source';
     case 'grid': return 'Grid Source';
-    case 'rhinestone-font': return 'Rhinestone Font';
+    case 'rhinestone-font': return 'Text Source';
     case 'svg-alphabet': return 'SVG Alphabet';
     case 'letter-stencil': return 'Letter Stencils';
     case 'template-import': return 'Template Import';

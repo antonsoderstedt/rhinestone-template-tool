@@ -15,7 +15,7 @@ export interface EditorToolConfig {
 /** The single canonical tool list — drives both the properties-panel switcher and any compact toolbar. */
 export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
   { id: 'select', label: 'Select', description: 'Select, move, and box-select stones', icon: MousePointer2 },
-  { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
+  { id: 'text', label: 'Text', description: 'Your words in stones: traced letters, dots or a stone font', icon: Type },
   { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
   { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
   { id: 'letter-stencil', label: 'Stencils', description: 'Reusable per-letter stencil cards to spell words', icon: Type },
@@ -24,6 +24,14 @@ export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Grid3X3 },
   { id: 'manual', label: 'Pen', description: 'Draw with stones directly', icon: MousePointerClick },
 ];
+
+/** Stone fonts are a look of the Text tool now, so the tool rail has no button of its own for them. */
+export const RAIL_TOOLS: readonly EditorToolConfig[] = EDITOR_TOOLS.filter((tool) => tool.id !== 'rhinestone-font');
+
+/** The rail button that stands for the active tool. */
+export function railToolFor(tool: EditorTool): EditorTool {
+  return tool === 'rhinestone-font' ? 'text' : tool;
+}
 
 export interface StatusCopy {
   label: 'Generated' | 'Editable';
@@ -124,7 +132,7 @@ export function getSelectionEmptyState(isEditable: boolean) {
       title: 'Generated output',
       description: 'Review the generated result, then make it editable when you need per-stone control.',
       tips: [
-        'Use the tool rail to switch between Text, Stone Font, Artwork, Grid and Pen.',
+        'Use the tool rail to switch between Text, Artwork, Grid and Pen.',
         'Use Make Editable to enable per-stone selection and movement.',
       ],
     };

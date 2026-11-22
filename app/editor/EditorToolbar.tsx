@@ -2,7 +2,7 @@
 
 import { Grid3X3, Hand, MousePointerClick, MousePointer2, Type, Upload } from 'lucide-react';
 import { EditorTool, EditorAction } from './EditorState';
-import { getToolShortcutLabel } from './editorUi';
+import { getToolShortcutLabel, railToolFor } from './editorUi';
 
 interface EditorToolbarProps {
   activeTool: EditorTool;
@@ -18,8 +18,7 @@ const TOOLS: Array<{
 }> = [
   { id: 'select', label: 'Select', icon: MousePointer2, tooltip: 'Select, move, and box-select stones' },
   { id: 'manual', label: 'Add', icon: MousePointerClick, tooltip: 'Add individual stones to the canvas' },
-  { id: 'text', label: 'Text', icon: Type, tooltip: 'Generate stones from outline or dot-matrix text' },
-  { id: 'rhinestone-font', label: 'Stone Font', icon: Type, tooltip: 'Use a font that contains pre-placed rhinestones' },
+  { id: 'text', label: 'Text', icon: Type, tooltip: 'Your words in stones: traced letters, dots or a stone font' },
   { id: 'svg', label: 'SVG', icon: Upload, tooltip: 'Generate a template from an uploaded SVG' },
   { id: 'template-import', label: 'Import', icon: Upload, tooltip: 'Import an existing SVG rhinestone template' },
   { id: 'grid', label: 'Grid', icon: Grid3X3, tooltip: 'Generate an evenly spaced stone grid' },
@@ -42,9 +41,9 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
           key={tool.id}
           onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', tool: tool.id })}
           aria-label={tool.label}
-          aria-pressed={activeTool === tool.id}
+          aria-pressed={railToolFor(activeTool) === tool.id}
           className={`group flex ${isHorizontal ? 'h-11 min-w-[72px] flex-col px-3' : 'h-14 w-full'} items-center justify-center rounded-lg text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${
-            activeTool === tool.id
+            railToolFor(activeTool) === tool.id
               ? 'bg-purple-600 text-white shadow-md'
               : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'
           }`}

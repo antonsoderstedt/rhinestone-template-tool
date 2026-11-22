@@ -111,6 +111,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | J13 raster into the same pipeline, J14 raster controls | **Done** (ADR 0021) |
 | A2 panel boilerplate removed ("Driven by generator settings", "These settings control the generated baseline…") | **Done** |
 | J15 / B1 first step: several parts in one design ("Add to design", move, rename, remove, turn, mirror, duplicate, drag on the canvas, align, undo, saved) | **Done** (ADR 0022); live elements, rotate / flip / scale, drag on canvas and undo remain |
+| A1 / B6 first step: one Text tool; style gallery of the user's own words in every outline font, dot matrix and stone font; stone fonts no longer a separate tool | **Done in part** (ADR 0023); alphabets and stencils in the gallery, several fonts per text, per-letter style, kerning, text on a path remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases
