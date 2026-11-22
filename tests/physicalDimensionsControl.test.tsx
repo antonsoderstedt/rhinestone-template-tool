@@ -17,10 +17,11 @@ const render = (props: Partial<Parameters<typeof PhysicalDimensionsControl>[0]>)
   );
 
 describe('PhysicalDimensionsControl', () => {
-  it('shows millimetres by default and has no unit switch', () => {
+  it('shows millimetres by default (the app unit) and the unit switch', () => {
     const html = render({});
     expect(html).toContain('value="254"');
-    expect(html).not.toContain('aria-label="Unit"');
+    expect(html).toContain('aria-label="Unit"');
+    expect(html).toMatch(/aria-pressed="true"[^>]*>mm<\/button>/);
   });
 
   it('shows inches when asked, converted from the stored millimetres, with a switch', () => {
