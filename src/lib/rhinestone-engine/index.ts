@@ -55,6 +55,8 @@ export { roundMm } from './geometry/rounding';
 
 // SVG export
 export { createBasicSvgExport } from './export/svgExport';
+export { createDxfExport, createEpsExport } from './export/vectorExport';
+export type { VectorExportOptions } from './export/vectorExport';
 
 // Raster artwork / SVG alphabet generation
 export type {

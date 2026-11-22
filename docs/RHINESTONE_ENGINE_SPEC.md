@@ -922,3 +922,9 @@ Any design can carry colour: `metadata.stoneColour` on a stone, and a project-le
 their own (applied when the effective template is built). The SVG export writes `data-stone-colour="#rrggbb"` on the circle and
 nothing else changes: the stroke stays the same for all stones, because a different stroke colour makes Cricut Design Space split
 the file into colour layers and the template is cut as one.
+
+## DXF and EPS export
+
+`createDxfExport` and `createEpsExport` (`export/vectorExport.ts`) write the template's stones as circles: DXF `CIRCLE` entities
+(units mm, layer `STONES`) and PostScript arcs. y is flipped, stones are ordered by y, x, id, and the origin is the bottom-left
+of the (optionally padded) design. See ADR 0025.

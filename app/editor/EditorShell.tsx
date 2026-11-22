@@ -44,6 +44,7 @@ import type {
 import { useStudioTheme } from '../lib/studioTheme';
 import { planPreviousSessionKeep } from './previousSession';
 import TestPatchPanel from './TestPatchPanel';
+import MoreFormatsPanel from './MoreFormatsPanel';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -1827,6 +1828,14 @@ export default function EditorShell() {
                   onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
                 />
               )}
+              <MoreFormatsPanel
+                template={effectiveTemplate}
+                paddingMm={state.paddingMm}
+                filenameBase={filenameBase}
+                downloadAllowed={gate.downloadAllowed}
+                uncalibrated={gate.uncalibrated}
+                onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
+              />
               <TestPatchPanel
                 template={effectiveTemplate}
                 svgOptions={svgOptions}
