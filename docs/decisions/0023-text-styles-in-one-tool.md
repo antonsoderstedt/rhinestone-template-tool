@@ -24,10 +24,17 @@ Stone Font list showing no preview at all. Typing the same words again after swi
   gallery's. Loading and error messages for outline fonts still show in the panel.
 - Logic that is not drawing lives in `app/editor/textStyles.ts` and `textStyleThumbnails.ts` (pure, tested).
 
+## Size of the words in a stone font (B9, B11 for stone fonts)
+
+A stone font has its stones already placed, so the words cannot be scaled; the stone size is the only lever. The Stone
+size control now lists every size the font has with the real measured size of the user's words (the same generator as the
+canvas) and whether that fits a 12 × 12 in mat, a 12 × 24 in mat, or needs exporting in parts. When another size would fit
+a smaller mat, one button switches to it. It does not nag when both fit. `app/editor/stoneFontSizes.ts` (pure logic, tested).
+
 ## Not done yet (stays in plan phase 4)
 
 Alphabets and stencils in the gallery, several fonts in one text, per-letter style, bold / italic, kerning, text on a path,
-stone-font size control (B9) and auto stone size (B11), filled typography with the shared fill (B10).
+auto stone size for outline text ("best stone size for 60 mm letters"), filled typography with the shared fill (B10).
 
 ## Consequences
 

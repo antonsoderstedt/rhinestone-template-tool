@@ -34,6 +34,7 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import { type OutlineFontStatus } from './controls/FontPicker';
 import TextStyleGallery from './controls/TextStyleGallery';
+import StoneFontSizeControl from './controls/StoneFontSizeControl';
 import PlacementModeControl from './controls/PlacementModeControl';
 import { ArtworkAdvice, ArtworkLayersList, ArtworkLookControl } from './controls/ArtworkControls';
 import { ARTWORK_LOOKS, lookFromCoverage, type ArtworkInfo } from './artworkGeneration';
@@ -553,6 +554,15 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
           </span>
         )}
       </label>
+
+      <StoneFontSizeControl
+        fontId={rhinestoneFontTool.rhinestoneFontId}
+        text={rhinestoneFontTool.text}
+        stoneSize={rhinestoneFontTool.stoneSize}
+        letterSpacingMm={rhinestoneFontTool.letterSpacingMm}
+        lineSpacingMm={rhinestoneFontTool.lineSpacingMm}
+        onPick={(size) => dispatch({ type: 'UPDATE_RHINESTONE_FONT_TOOL', updates: { stoneSize: size } })}
+      />
 
       <NumericInput
         label="Letter spacing"
