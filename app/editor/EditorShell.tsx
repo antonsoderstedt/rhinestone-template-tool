@@ -47,6 +47,8 @@ import TestPatchPanel from './TestPatchPanel';
 import MoreFormatsPanel from './MoreFormatsPanel';
 import DesignSpaceGuide from './DesignSpaceGuide';
 import ReportProblemDialog from '../components/ReportProblemDialog';
+import SharePanel from './SharePanel';
+import { decodeSharePayload, readSharePayload } from '../lib/shareLink';
 import VersionHistoryDialog from './VersionHistoryDialog';
 import { readVersions, recordVersion, removeVersions } from '../lib/versionHistory';
 import EditorTopbar from './EditorTopbar';
@@ -236,7 +238,7 @@ export default function EditorShell() {
     // user wants that design, so it wins over restoring the last session. The last
     // session is not thrown away: it is copied into My Designs first.
     const params = new URLSearchParams(globalThis.location?.search ?? '');
-    const hasLaunchIntent = ['designId', 'asset', 'font', 'text', 'tool'].some((key) => params.has(key));
+    const hasLaunchIntent = ['designId', 'asset', 'font', 'text', 'tool'].some((key) => params.has(key)) || readSharePayload(globalThis.location?.hash ?? '') !== null;
     const entry = hasLaunchIntent ? null : previousSession;
     if (hasLaunchIntent && previousSession && !launchIntentHandledRef.current) {
       launchIntentHandledRef.current = true;
@@ -1628,6 +1630,25 @@ export default function EditorShell() {
     setExportDialogOpen(true);
   }, [effectiveTemplate, exportReadiness, exportStatusSummary, handleAutoFixSpacing, overlapEnlargement]);
 
+  // A design opened from a share link: unpacked here, on this computer, and opened as a copy of its own (not saved until the
+  // user saves it). The address is cleaned afterwards so reloading does not open it again over later work.
+  const shareHandledRef = useRef(false);
+  useEffect(() => {
+    const payload = readSharePayload(window.location.hash);
+    if (!payload || shareHandledRef.current) return;
+    shareHandledRef.current = true;
+    void decodeSharePayload(payload)
+      .then((json) => {
+        applyProjectToEditor(parseRhinestoneProject(json));
+        setActiveLibraryTemplateId(null);
+        setToast({ message: 'Opened a shared design. It is a copy: save it to keep it.', tone: 'success' });
+      })
+      .catch((error: unknown) => {
+        setToast({ message: error instanceof Error ? error.message : 'The shared design could not be opened.', tone: 'error' });
+      })
+      .finally(() => window.history.replaceState(null, '', window.location.pathname + window.location.search));
+  }, [applyProjectToEditor]);
+
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
     window.location.href = '/setup';
@@ -1842,6 +1863,7 @@ export default function EditorShell() {
                   onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
                 />
               )}
+              <SharePanel getProjectJson={() => { const project = buildProjectFileFromEditorState(state); return project ? JSON.stringify(project) : null; }} onDone={(message, tone) => setToast({ message, tone })} />
               <DesignSpaceGuide widthMm={exportPreview?.widthMm ?? null} heightMm={exportPreview?.heightMm ?? null} />
               <MoreFormatsPanel
                 template={effectiveTemplate}
