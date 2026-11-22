@@ -1,6 +1,7 @@
 'use client';
 
 import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
+import { isNudgeKey, nudgeMoves } from './nudge';
 import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { partsStones } from './designParts';
@@ -1166,6 +1167,16 @@ export default function EditorCanvas({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isIgnoredKeyboardTarget(e.target)) return;
       
+      // Arrow keys: nudge the selected stones (Shift = 5 mm, Alt = 0.1 mm). A move into another stone is refused, as a drag is.
+      if (isNudgeKey(e.key) && state.selectedStoneIds.size > 0 && state.editableTemplate.isEditable && !e.metaKey && !e.ctrlKey) {
+        const moves = nudgeMoves(state.editableTemplate.stones, state.selectedStoneIds, e.key, { shift: e.shiftKey, alt: e.altKey });
+        if (moves) {
+          e.preventDefault();
+          dispatch({ type: 'MOVE_STONES', moves });
+          return;
+        }
+      }
+
       // Delete/Backspace: delete selected stones
       if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedStoneIds.size > 0) {
         e.preventDefault();

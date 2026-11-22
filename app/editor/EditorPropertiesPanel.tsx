@@ -1949,6 +1949,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
               <li>• Ctrl/Cmd+D to duplicate</li>
               <li>• Ctrl/Cmd+C to copy</li>
               <li>• Ctrl/Cmd+V to paste</li>
+              <li>• Arrow keys to nudge (Shift 5 mm, Alt 0.1 mm)</li>
               <li>• Delete/Backspace to remove</li>
               <li>• Escape to deselect</li>
             </ul>
