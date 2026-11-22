@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getOutlineFontFaceCss, getOutlineFontDefinition } from '@/src/lib/rhinestone-engine/index';
 import { DEFAULT_PREVIEW_TEXT } from '../../lib/fontLaunch';
 import type { EditorAction } from '../EditorState';
@@ -103,6 +103,39 @@ function OptionPicture({ option, text }: { option: TextStyleOption; text: string
   return <StoneFontPicture fontId={choice.fontId} text={text} />;
 }
 
+/** The text after the user has stopped typing for a moment, so a picture is not remade for every key. */
+function useSettled(value: string, delayMs = 600): string {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSettled(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+  return settled;
+}
+
+/** Mounts its children only once it has been scrolled near the screen, so pictures that are never seen are never made. */
+function WhenVisible({ children, placeholderClassName }: { children: React.ReactNode; placeholderClassName: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || seen) return undefined;
+    if (typeof IntersectionObserver === 'undefined') {
+      queueMicrotask(() => setSeen(true));
+      return undefined;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setSeen(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '120px' });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [seen]);
+  return <div ref={ref}>{seen ? children : <div className={placeholderClassName} />}</div>;
+}
+
 /**
  * Every look for the user's own words side by side. Picking one switches the tool behind the scenes and keeps the words.
  */
@@ -110,7 +143,11 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
   const t = useT();
   const groups = useMemo(() => listTextStyleGroups(), []);
   const current = currentTextStyle(state);
-  const text = currentWords(state);
+  const text = useSettled(currentWords(state));
+  // The groups whose pictures have to be fetched (stone fonts, alphabets) stay closed until asked for, unless one of them is in use.
+  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
+  const isOpen = (groupId: string) =>
+    groupId === 'traced' || opened.has(groupId) || groups.some((group) => group.id === groupId && group.options.some((option) => isSameTextStyle(current, option.choice)));
 
   return (
     <div className="space-y-3" role="group" aria-label={t('Text style')}>
@@ -118,10 +155,23 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
       <span className={editorFieldLabelClassName}>{t('Style')}</span>
       {groups.map((group) => (
         <div key={group.id} className="space-y-1.5">
-          <div>
-            <p className="text-xs font-semibold text-[var(--studio-ink)]">{group.title}</p>
-            <p className="text-xs text-[var(--studio-ink-muted)]">{group.description}</p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-[var(--studio-ink)]">{group.title}</p>
+              <p className="text-xs text-[var(--studio-ink-muted)]">{group.description}</p>
+            </div>
+            {group.id !== 'traced' && (
+              <button
+                type="button"
+                aria-expanded={isOpen(group.id)}
+                onClick={() => setOpened((set) => { const next = new Set(set); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })}
+                className="shrink-0 rounded-md border border-[var(--studio-border)] px-2 py-1 text-xs font-medium text-[var(--studio-ink-secondary)] hover:border-violet-400/50 focus:outline-none focus:ring-2 focus:ring-accent-400"
+              >
+                {isOpen(group.id) ? t('Hide') : t('Show {n}', { n: group.options.length })}
+              </button>
+            )}
           </div>
+          {isOpen(group.id) && (
           <ul className="grid grid-cols-2 gap-2">
             {group.options.map((option) => {
               const selected = isSameTextStyle(current, option.choice);
@@ -141,7 +191,13 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
                         : 'border-[var(--studio-border)] bg-[var(--studio-well)] text-[var(--studio-ink-secondary)] hover:border-violet-400/50 hover:text-[var(--studio-ink)]'
                     }`}
                   >
-                    <OptionPicture option={option} text={text} />
+                    {option.choice.kind === 'outline' || option.choice.kind === 'dots' ? (
+                      <OptionPicture option={option} text={text} />
+                    ) : (
+                      <WhenVisible placeholderClassName="h-12 w-full rounded bg-[var(--studio-hover-overlay)]">
+                        <OptionPicture option={option} text={text} />
+                      </WhenVisible>
+                    )}
                     <span className="truncate text-xs font-medium">{option.label}</span>
                     <span className="truncate text-xs text-[var(--studio-ink-muted)]">{option.note}</span>
                   </button>
@@ -149,6 +205,7 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
               );
             })}
           </ul>
+          )}
         </div>
       ))}
     </div>
