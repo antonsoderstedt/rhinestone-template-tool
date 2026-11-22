@@ -45,6 +45,8 @@ import { useStudioTheme } from '../lib/studioTheme';
 import { planPreviousSessionKeep } from './previousSession';
 import TestPatchPanel from './TestPatchPanel';
 import MoreFormatsPanel from './MoreFormatsPanel';
+import DesignSpaceGuide from './DesignSpaceGuide';
+import ReportProblemDialog from '../components/ReportProblemDialog';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -142,6 +144,7 @@ export default function EditorShell() {
   const initialAutosaveRestoreRef = useRef(false);
   const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
   const [artworkInfo, setArtworkInfo] = useState<ArtworkInfo | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
     message: string | null;
@@ -1828,6 +1831,7 @@ export default function EditorShell() {
                   onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
                 />
               )}
+              <DesignSpaceGuide widthMm={exportPreview?.widthMm ?? null} heightMm={exportPreview?.heightMm ?? null} />
               <MoreFormatsPanel
                 template={effectiveTemplate}
                 paddingMm={state.paddingMm}
@@ -1936,6 +1940,15 @@ export default function EditorShell() {
         isEditable={state.editableTemplate.isEditable}
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
+        onReportProblem={() => setReportOpen(true)}
+      />
+      <ReportProblemDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        getDesignJson={() => {
+          const project = buildProjectFileFromEditorState(state);
+          return project ? JSON.stringify(project) : null;
+        }}
       />
 
       <MobileStudioBar

@@ -14,6 +14,7 @@ import {
   parseWorkspaceBackup,
   serializeWorkspaceBackup,
 } from '../lib/workspaceBackup';
+import { LOCAL_STORAGE_LIMIT_CHARS, getStorageStatus, measureLocalStorage, requestPersistentStorage } from '../lib/storageQuota';
 import { getBackupStatus, readLastBackupAt, writeLastBackupAt } from '../lib/backupReminder';
 import { WorkspaceSurface } from './workspace/WorkspaceChrome';
 
@@ -31,6 +32,13 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
   const [busy, setBusy] = useState(false);
   // When the last backup was made and how many designs there are, read after load (they live in this browser).
   const [backupState, setBackupState] = useState<{ lastBackupAt: string | null; designCount: number; now: Date } | null>(null);
+
+  const [storageUsed, setStorageUsed] = useState<number | null>(null);
+  useEffect(() => {
+    const used = measureLocalStorage(window.localStorage);
+    queueMicrotask(() => setStorageUsed(used));
+    void requestPersistentStorage();
+  }, []);
 
   const refreshBackupState = async () => {
     const record = await new LocalStorageTemplateLibraryRepository().list();
@@ -125,6 +133,14 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
             Restoring it adds missing designs and keeps the newest copy of the rest; nothing is deleted.
             Your calibration profiles are included. Uploaded fonts and images and your settings are not.
           </p>
+          {storageUsed !== null && (() => {
+            const storage = getStorageStatus(storageUsed, LOCAL_STORAGE_LIMIT_CHARS);
+            return (
+              <p role="status" className={`mt-2 text-sm ${storage.level === 'ok' ? 'text-ink-secondary' : storage.level === 'warning' ? 'font-medium text-amber-600' : 'font-semibold text-danger-600'}`}>
+                {storage.label}.{storage.advice ? ` ${storage.advice}` : ''}
+              </p>
+            );
+          })()}
           {backupState && (() => {
             const status = getBackupStatus(backupState);
             return (

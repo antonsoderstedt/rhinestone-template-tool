@@ -125,6 +125,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | B5 shiny stones preview (a toggle on the canvas; every colour is drawn with a highlight and a darker rim, Crystal AB with a rainbow sheen) | **Done in part**; the fabric photo behind the design (reuse of the HTV mockups) remains |
 | G1 HTV: one file per vinyl colour in a .zip, all with the same frame so they line up, plus a note with the pressing order | **Done**; weld / offset / arc tools (G3) and own garment photo (G4) remain |
 | B13 arrow-key nudge of selected stones (0.5 mm, Shift 5 mm, Alt 0.1 mm; the collision rule applies) | **Done in part**; snap to the mat edge and centre guides remain |
+| H6 "Report a problem" (a file made on the user's computer, design attached only if ticked, nothing sent); F1 storage fullness warning and persistent-storage request; F6 decided: no accounts (ADR 0026); D6 Design Space import guide | **Done** |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases
