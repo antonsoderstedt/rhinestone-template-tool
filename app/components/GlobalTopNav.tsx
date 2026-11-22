@@ -200,10 +200,10 @@ export default function GlobalTopNav() {
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
-            RT
+            {t('RT')}
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-medium tracking-[0.18em] text-zinc-400 uppercase">Rhinestone OS</div>
+            <div className="text-xs font-medium tracking-[0.18em] text-zinc-400 uppercase">{t('Rhinestone OS')}</div>
             <div className="truncate text-sm font-medium text-zinc-200">{t('Rhinestone and HTV templates')}</div>
           </div>
         </Link>

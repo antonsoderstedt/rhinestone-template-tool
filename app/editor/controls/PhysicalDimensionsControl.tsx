@@ -67,7 +67,7 @@ export default function PhysicalDimensionsControl({
 
       <div className="grid grid-cols-2 gap-2">
         <NumericInput
-          label="Width"
+          label={t('Width')}
           value={show(widthMm)}
           onChange={(value) => onWidthChange(store(value))}
           unit={unit}
@@ -76,7 +76,7 @@ export default function PhysicalDimensionsControl({
           step={inches ? 0.05 : 0.1}
         />
         <NumericInput
-          label="Height"
+          label={t('Height')}
           value={show(heightMm)}
           onChange={(value) => onHeightChange(store(value))}
           unit={unit}

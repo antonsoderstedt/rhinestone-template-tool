@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { useT } from '../../lib/i18n';
 import { editorFieldLabelClassName } from './controlStyles';
 
 /**
@@ -9,6 +10,7 @@ import { editorFieldLabelClassName } from './controlStyles';
  * works with keyboard, touch and screen readers.
  */
 export default function FieldHeader({ label, help, htmlFor }: { label: string; help?: string; htmlFor?: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const helpId = useId();
 
@@ -26,7 +28,7 @@ export default function FieldHeader({ label, help, htmlFor }: { label: string; h
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls={helpId}
-            aria-label={`What is ${label}?`}
+            aria-label={t('What is {name}?', { name: label })}
             className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--studio-border-strong)] text-xs font-semibold leading-none text-[var(--studio-ink-muted)] transition hover:text-[var(--studio-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
             ?

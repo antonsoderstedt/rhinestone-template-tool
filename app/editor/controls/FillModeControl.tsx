@@ -7,6 +7,7 @@ import type { TemplateFillMode, FillPattern } from '@/src/lib/rhinestone-engine/
 import { editorSelectClassName } from './controlStyles';
 import FieldHeader from './FieldHeader';
 
+import { useT } from '../../lib/i18n';
 interface FillModeControlProps {
   fillMode: TemplateFillMode;
   fillPattern: FillPattern;
@@ -35,6 +36,7 @@ export default function FillModeControl({
   onFillModeChange,
   onFillPatternChange,
 }: FillModeControlProps) {
+  const t = useT();
   const modeId = useId();
   const patternId = useId();
   const showPatternControl = fillMode === 'fill' || fillMode === 'outline-fill';
@@ -45,7 +47,7 @@ export default function FillModeControl({
     <div className="space-y-3">
       <div className="flex flex-col gap-1.5">
         <FieldHeader
-          label="Fill mode"
+          label={t('Fill mode')}
           htmlFor={modeId}
           help="Outline puts stones along the edges only. Fill covers the inside. Outline + Fill does both."
         />
@@ -66,7 +68,7 @@ export default function FillModeControl({
       {showPatternControl && (
         <div className="flex flex-col gap-1.5">
           <FieldHeader
-            label="Fill pattern"
+            label={t('Fill pattern')}
             htmlFor={patternId}
             help="Grid lines stones up in rows and columns. Offset grid staggers every other row so stones pack closer together."
           />

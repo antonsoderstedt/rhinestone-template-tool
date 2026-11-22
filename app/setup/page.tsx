@@ -52,7 +52,7 @@ export default function SetupPage() {
         <WorkspaceHero
           eyebrow="Setup & calibration"
           title={t('Make the holes fit your stones')}
-          description="Cut a few test shapes, measure which hole sizes seat your stones, then approve them. Export unlocks once your material is approved."
+          description={t('Cut a few test shapes, measure which hole sizes seat your stones, then approve them. Export unlocks once your material is approved.')}
           tone="accent"
           aside={(
             <WorkspaceSurface className="p-5">

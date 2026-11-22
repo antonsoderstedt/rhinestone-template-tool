@@ -1817,7 +1817,7 @@ export default function EditorShell() {
       <EditorDialog
         open={Boolean(pendingGeneratorAction)}
         title={t('Regenerate from source settings?')}
-        description="The current design is editable. Regenerating will replace your manual stone edits with a new generated baseline from the source panel."
+        description={t('The current design is editable. Regenerating will replace your manual stone edits with a new generated baseline from the source panel.')}
         confirmLabel="Regenerate and replace edits"
         onConfirm={() => applyPendingGeneratorAction('replace')}
         onCancel={() => applyPendingGeneratorAction('cancel')}

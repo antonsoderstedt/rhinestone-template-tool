@@ -1382,7 +1382,7 @@ export default function EditorCanvas({
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
         <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">{t('Canvas')}</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
-          {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
+          {hasCanvasContent ? `${t('{n} stones', { n: stones.length })} · ${state.canvas.showGrid ? t('grid on') : t('grid off')}` : t('Pick a source or draw directly to start')}
         </div>
       </div>
 

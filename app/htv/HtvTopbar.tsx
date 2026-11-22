@@ -136,7 +136,7 @@ export default function HtvTopbar({
         </div>
 
         <div className="contents max-lg:hidden">
-        <ToolbarSection label="History">
+        <ToolbarSection label={t('History')}>
           <button
             onClick={() => dispatch({ type: 'UNDO' })}
             disabled={!canUndo}
@@ -157,7 +157,7 @@ export default function HtvTopbar({
           </button>
         </ToolbarSection>
 
-        <ToolbarSection label="Output">
+        <ToolbarSection label={t('Output')}>
           {recentDesigns.length > 0 && (
             <div className="relative">
               <details className="group">

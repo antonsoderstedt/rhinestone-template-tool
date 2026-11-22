@@ -111,7 +111,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
                 onChange={(v) => selectedLayers.forEach((l) => dispatch({ type: 'UPDATE_LAYER', id: l.id, updates: { y: typeof v === 'number' ? v : l.y } }))}
               />
               <NumericInput
-                label="Rotation"
+                label={t('Rotation')}
                 unit="°"
                 value={singleLayer ? singleLayer.rotationDeg : ''}
                 min={-180}
@@ -122,7 +122,7 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
                 }}
               />
               <NumericInput
-                label="Scale"
+                label={t('Scale')}
                 unit="×"
                 value={singleLayer ? Math.round(singleLayer.scale * 100) / 100 : ''}
                 min={0.1}
@@ -273,7 +273,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
       </div>
 
       <NumericInput
-        label="Font size"
+        label={t('Font size')}
         unit="mm"
         value={layer.fontSizeMm}
         min={5}
@@ -281,7 +281,7 @@ function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { typ
         onChange={(v) => dispatch({ type: 'UPDATE_LAYER', id: layer.id, updates: { fontSizeMm: typeof v === 'number' ? v : layer.fontSizeMm } })}
       />
       <NumericInput
-        label="Letter spacing"
+        label={t('Letter spacing')}
         unit="mm"
         value={layer.letterSpacingMm}
         min={-5}
@@ -408,7 +408,7 @@ function FormOpsControls({
 
       <div className={`flex items-end gap-2 ${canOffset ? '' : 'opacity-40'}`}>
         <NumericInput
-          label="Offset"
+          label={t('Offset')}
           unit="mm"
           value={offsetMm}
           min={-15}

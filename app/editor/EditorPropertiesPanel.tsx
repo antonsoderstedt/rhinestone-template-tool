@@ -121,7 +121,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
         {state.activeTool === 'select' ? (
           <>
-            <PanelSection title={t('Select tool')} description="Click, shift-click, or drag a box on the canvas to select stones.">
+            <PanelSection title={t('Select tool')} description={t('Click, shift-click, or drag a box on the canvas to select stones.')}>
               <p className="text-xs text-[var(--studio-ink-muted)]">{t('Switch to the Inspect tab to fine-tune selection position, alignment, and export options.')}</p>
             </PanelSection>
             {state.parts.length > 0 && <DesignPartsPanel state={state} dispatch={dispatch} />}
@@ -160,16 +160,16 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     return (
       <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         {quickFixes.length > 0 && onQuickFix && (
-          <PanelSection title={t('Quick fixes')} description="Problems found in this design, and one-click ways to fix them.">
+          <PanelSection title={t('Quick fixes')} description={t('Problems found in this design, and one-click ways to fix them.')}>
             <QuickFixes items={quickFixes} canResize={canResize} onAction={onQuickFix} />
           </PanelSection>
         )}
 
-        <PanelSection title={t('Inspector')} description="Selection, position, alignment, and export controls live here.">
+        <PanelSection title={t('Inspector')} description={t('Selection, position, alignment, and export controls live here.')}>
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
 
-        <PanelSection title={t('Export Settings')} description="These options affect only the exported SVG output." defaultOpen={false}>
+        <PanelSection title={t('Export Settings')} description={t('These options affect only the exported SVG output.')} defaultOpen={false}>
           <label className="flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
@@ -197,7 +197,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
           )}
 
           <NumericInput
-            label="Padding"
+            label={t('Padding')}
             value={state.paddingMm}
             onChange={(val) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { paddingMm: typeof val === 'number' ? val : state.paddingMm } })}
             unit="mm"
@@ -208,25 +208,25 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
         </PanelSection>
 
         {stones && stones.length > 0 && (
-          <PanelSection title={t('Stone colour')} description="What colour the stones will be. Each colour of an uploaded artwork can have its own." defaultOpen={false}>
+          <PanelSection title={t('Stone colour')} description={t('What colour the stones will be. Each colour of an uploaded artwork can have its own.')} defaultOpen={false}>
             <StoneColourPicker
-              label="Colour of the stones"
+              label={t('Colour of the stones')}
               value={state.designStoneColour}
-              noneLabel="No colour"
+              noneLabel={t('No colour')}
               onChange={(colour) => dispatch({ type: 'SET_DESIGN_STONE_COLOUR', colour })}
             />
           </PanelSection>
         )}
 
         {stones && stones.length > 0 && (
-          <PanelSection title={t('Stones to buy')} description="How many stones and packs this design needs." defaultOpen={false}>
+          <PanelSection title={t('Stones to buy')} description={t('How many stones and packs this design needs.')} defaultOpen={false}>
             <StoneColourCounts stones={stones} />
             <StoneEstimateCard stones={stones} />
           </PanelSection>
         )}
 
         {exportReadiness && (
-          <PanelSection title={t('Export readiness')} description="Cricut-safe checks for the current design." defaultOpen={false}>
+          <PanelSection title={t('Export readiness')} description={t('Cricut-safe checks for the current design.')} defaultOpen={false}>
             <ExportReadinessPanel result={exportReadiness} />
           </PanelSection>
         )}
@@ -359,7 +359,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
       {textTool.mode === 'outline' && (
         <>
           <NumericInput
-            label="Font Size"
+            label={t('Font Size')}
             value={textTool.fontSizeMm}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { fontSizeMm: val } })}
             unit="mm"
@@ -382,7 +382,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           </label>
 
           <NumericInput
-            label="Letter Spacing"
+            label={t('Letter Spacing')}
             value={textTool.letterSpacingMm}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { letterSpacingMm: val } })}
             unit="mm"
@@ -392,7 +392,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           />
 
           <NumericInput
-            label="Line Spacing"
+            label={t('Line Spacing')}
             value={textTool.lineSpacingMm}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { lineSpacingMm: val } })}
             unit="mm"
@@ -402,7 +402,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           />
 
           <NumericInput
-            label="Curve"
+            label={t('Curve')}
             value={textTool.curveAmount}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { curveAmount: typeof val === 'number' ? val : 0 } })}
             min={-1}
@@ -417,7 +417,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
       {textTool.mode === 'dot-matrix' && (
         <>
           <NumericInput
-            label="Letter Spacing"
+            label={t('Letter Spacing')}
             value={textTool.letterSpacingColumns}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { letterSpacingColumns: typeof val === 'number' ? val : 0 } })}
             unit="cols"
@@ -427,7 +427,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           />
 
           <NumericInput
-            label="Line Spacing"
+            label={t('Line Spacing')}
             value={textTool.lineSpacingRows}
             onChange={(val) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { lineSpacingRows: typeof val === 'number' ? val : 0 } })}
             unit="rows"
@@ -589,7 +589,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       />
 
       <NumericInput
-        label="Letter spacing"
+        label={t('Letter spacing')}
         value={rhinestoneFontTool.letterSpacingMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_RHINESTONE_FONT_TOOL',
@@ -602,7 +602,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       />
 
       <NumericInput
-        label="Line spacing"
+        label={t('Line spacing')}
         value={rhinestoneFontTool.lineSpacingMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_RHINESTONE_FONT_TOOL',
@@ -706,7 +706,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
       </label>
 
       <NumericInput
-        label="Letter spacing"
+        label={t('Letter spacing')}
         value={svgAlphabetTool.letterSpacingMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_SVG_ALPHABET_TOOL',
@@ -719,7 +719,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
       />
 
       <NumericInput
-        label="Line spacing"
+        label={t('Line spacing')}
         value={svgAlphabetTool.lineSpacingMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_SVG_ALPHABET_TOOL',
@@ -950,7 +950,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       </div>
 
       <NumericInput
-        label="Card padding"
+        label={t('Card padding')}
         value={letterStencilTool.cardPaddingMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -963,7 +963,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       />
 
       <NumericInput
-        label="Card corner radius"
+        label={t('Card corner radius')}
         value={letterStencilTool.cardCornerRadiusMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -976,7 +976,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       />
 
       <NumericInput
-        label="Minimum card width"
+        label={t('Minimum card width')}
         value={letterStencilTool.minCardWidthMm}
         onChange={(value) => dispatch({
           type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -990,7 +990,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
 
       {letterStencilTool.layoutMode === 'cut-sheet' && (
         <NumericInput
-          label="Gap between cards"
+          label={t('Gap between cards')}
           value={letterStencilTool.cutSheetGapMm}
           onChange={(value) => dispatch({
             type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -1283,7 +1283,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           {/* Target Dimensions */}
           {typeof scaledWidthMm === 'number' && typeof scaledHeightMm === 'number' && (
             <p className="rounded-xl border border-info-500/30 bg-info-500/10 px-3 py-2 text-xs text-info-700">
-              Scaled to {scaledWidthMm.toFixed(1)} × {scaledHeightMm.toFixed(1)} mm — change below. Stone count: {scaledStoneCount}.
+              {t('Scaled to {width} × {height} mm — change below. Stone count: {count}.', { width: scaledWidthMm.toFixed(1), height: scaledHeightMm.toFixed(1), count: scaledStoneCount ?? 0 })}
             </p>
           )}
           <PhysicalDimensionsControl
@@ -1405,23 +1405,23 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           {sharedArtworkControls}
 
           <NumericInput
-            label="Brightness cutoff"
+            label={t('Brightness cutoff')}
             value={svgTool.imageThreshold}
             onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageThreshold: typeof value === 'number' ? value : 128 } })}
             min={0}
             max={255}
             step={1}
-            helpText="Only used for pictures without a plain background. Lower keeps only the darker parts."
+            helpText={t('Only used for pictures without a plain background. Lower keeps only the darker parts.')}
           />
 
           <NumericInput
-            label="Detail"
+            label={t('Detail')}
             value={svgTool.imageDetail}
             onChange={(value) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageDetail: typeof value === 'number' ? value : 128 } })}
             min={0}
             max={255}
             step={1}
-            helpText="Higher keeps small details. Lower smooths away specks and holes."
+            helpText={t('Higher keeps small details. Lower smooths away specks and holes.')}
           />
 
           <label className="flex items-center gap-2 text-sm text-ink-secondary">
@@ -1442,13 +1442,14 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
 }
 
 function GridToolProperties({ state, dispatch }: ToolPropertiesProps) {
+  const t = useT();
   const { gridTool } = state;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <NumericInput
-          label="Columns"
+          label={t('Columns')}
           value={gridTool.columns}
           onChange={(val) => dispatch({ type: 'UPDATE_GRID_TOOL', updates: { columns: typeof val === 'number' ? val : 1 } })}
           min={1}
@@ -1456,7 +1457,7 @@ function GridToolProperties({ state, dispatch }: ToolPropertiesProps) {
         />
 
         <NumericInput
-          label="Rows"
+          label={t('Rows')}
           value={gridTool.rows}
           onChange={(val) => dispatch({ type: 'UPDATE_GRID_TOOL', updates: { rows: typeof val === 'number' ? val : 1 } })}
           min={1}
@@ -1613,7 +1614,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
         <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3">
           <NumericInput
-            label="Grid Size (mm)"
+            label={t('Grid Size (mm)')}
             value={manualTool.gridSnapSize}
             onChange={(val) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { gridSnapSize: val as number } })}
             min={1}
@@ -1781,9 +1782,9 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           {editableTemplate.isEditable && (
             <div className="mt-3">
               <StoneColourPicker
-                label="Colour of the selected stones"
+                label={t('Colour of the selected stones')}
                 value={selectedColourOf(editableTemplate.stones, state.selectedStoneIds)}
-                noneLabel="Design colour"
+                noneLabel={t('Design colour')}
                 onChange={(colour) => dispatch({ type: 'SET_STONES_COLOUR', ids: Array.from(state.selectedStoneIds), colour })}
               />
             </div>
@@ -1797,7 +1798,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           <label className="block text-xs font-medium text-ink-secondary">{t('Position')}</label>
           <div className="grid grid-cols-2 gap-2">
             <NumericInput
-              label="X (mm)"
+              label={t('X (mm)')}
               value={selectedStone.center.x}
               onChange={(val) => {
                 if (typeof val === 'number') {
@@ -1813,7 +1814,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
               step={0.1}
             />
             <NumericInput
-              label="Y (mm)"
+              label={t('Y (mm)')}
               value={selectedStone.center.y}
               onChange={(val) => {
                 if (typeof val === 'number') {
@@ -1846,7 +1847,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           />
 
           <NumericInput
-            label="Hole Diameter"
+            label={t('Hole Diameter')}
             value={selectedStone.holeDiameterMm}
             onChange={(val) => {
               if (typeof val === 'number') {
@@ -1867,7 +1868,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
       
       <div className="space-y-3">
         <NumericInput
-          label="Smart fix brush size"
+          label={t('Smart fix brush size')}
           value={state.manualTool.assistBrushSizeMm}
           onChange={(val) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { assistBrushSizeMm: typeof val === 'number' ? val : state.manualTool.assistBrushSizeMm } })}
           unit="mm"

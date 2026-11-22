@@ -439,7 +439,7 @@ export default function FontsPage() {
         <WorkspaceHero
           eyebrow="Fonts"
           title={t('Fonts')}
-          description="Type your own text to compare fonts side by side, then send one to the Rhinestone or HTV studio with your text already in place."
+          description={t('Type your own text to compare fonts side by side, then send one to the Rhinestone or HTV studio with your text already in place.')}
           tone="accent"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
@@ -490,9 +490,9 @@ export default function FontsPage() {
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <WorkspaceMetricCard label="Imported font files" value={String(installedCount)} />
-              <WorkspaceMetricCard label="Families" value={String(installedFamilyItems.length)} />
-              <WorkspaceMetricCard label="Excluded (damaged files)" value={String(excludedCount)} />
+              <WorkspaceMetricCard label={t('Imported font files')} value={String(installedCount)} />
+              <WorkspaceMetricCard label={t('Families')} value={String(installedFamilyItems.length)} />
+              <WorkspaceMetricCard label={t('Excluded (damaged files)')} value={String(excludedCount)} />
             </div>
             {installedManifestMeta?.generatedAt && (
               <p className="mt-3 text-xs text-ink-muted">Last import: {new Date(installedManifestMeta.generatedAt).toLocaleDateString()}</p>
@@ -759,7 +759,7 @@ export default function FontsPage() {
         {totalCards === 0 && (
           <WorkspaceEmptyState
             title={t('No fonts match the current filters')}
-            description="Clear the search, change the source or category, or upload a font file to add to the list."
+            description={t('Clear the search, change the source or category, or upload a font file to add to the list.')}
           />
         )}
       </div>

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import GlobalTopNav from './GlobalTopNav';
 import SkipLink from './SkipLink';
 import LanguageSync from './LanguageSync';
+import DomTranslator from './DomTranslator';
 import { useT } from '../lib/i18n';
 
 function isStudioRoute(pathname: string): boolean {
@@ -18,6 +19,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className={studioRoute ? 'flex h-dvh min-h-dvh flex-col overflow-hidden' : 'flex min-h-full flex-col'}>
       <LanguageSync />
+      <DomTranslator />
       <SkipLink label={studioRoute ? t('Skip to editor') : t('Skip to main content')} />
       <GlobalTopNav />
       {studioRoute ? (

@@ -57,7 +57,7 @@ export function ArtworkLookControl({
       <p className="text-xs text-ink-muted">{current.help}</p>
       {look === 'rows' && (
         <NumericInput
-          label="Rows"
+          label={t('Rows')}
           value={rowCount}
           onChange={(value) => onRowCountChange(typeof value === 'number' ? Math.max(1, Math.min(20, Math.round(value))) : 3)}
           min={1}
@@ -146,18 +146,19 @@ export function ArtworkAdvice({
   onSetWidth: (widthMm: number) => void;
   onSetStoneSize: (size: StoneSizeId) => void;
 }) {
+  const t = useT();
   const report = info.feasibility;
   const current = report?.perSize.find((entry) => entry.stoneSize === stoneSize);
   if (!report || !current) return null;
   const lines: string[] = [];
   if (current.lostShapes > 0) {
-    lines.push(`${current.lostShapes} of ${current.totalShapes} shapes are thinner than one ${stoneSize} stone and get none.`);
+    lines.push(t('{lost} of {total} shapes are thinner than one {size} stone and get none.', { lost: current.lostShapes, total: current.totalShapes, size: stoneSize }));
   }
   if (current.verdict === 'good' && current.lostShapes === 0) {
     return (
       <p className="flex items-start gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200" data-testid="artwork-advice">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        The detail in this artwork fits {stoneSize} stones at {Math.round(report.widthMm)} mm wide.
+        {t('The detail in this artwork fits {size} stones at {width} mm wide.', { size: stoneSize, width: Math.round(report.widthMm) })}
       </p>
     );
   }
@@ -165,8 +166,8 @@ export function ArtworkAdvice({
   if (current.verdict !== 'good') {
     lines.unshift(
       current.verdict === 'too-small'
-        ? `Too fine for ${stoneSize} at ${Math.round(report.widthMm)} mm: ${share}% of the artwork is thinner than a stone.`
-        : `${share}% of the artwork is thinner than a ${stoneSize} stone and will be simplified.`,
+        ? t('Too fine for {size} at {width} mm: {share}% of the artwork is thinner than a stone.', { size: stoneSize, width: Math.round(report.widthMm), share })
+        : t('{share}% of the artwork is thinner than a {size} stone and will be simplified.', { share, size: stoneSize }),
     );
   }
   const suggestion = current.suggestedWidthMm !== null ? Math.ceil(current.suggestedWidthMm / 10) * 10 : null;
@@ -184,7 +185,7 @@ export function ArtworkAdvice({
             onClick={() => onSetWidth(suggestion)}
             className="rounded-md border border-amber-400/40 px-2 py-1 font-medium hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-400"
           >
-            Make it {suggestion} mm wide
+            {t('Make it {width} mm wide', { width: suggestion })}
           </button>
         )}
         {smaller && (
@@ -193,7 +194,7 @@ export function ArtworkAdvice({
             onClick={() => onSetStoneSize(smaller)}
             className="rounded-md border border-amber-400/40 px-2 py-1 font-medium hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-400"
           >
-            Use {smaller} stones
+            {t('Use {size} stones', { size: smaller })}
           </button>
         )}
       </div>

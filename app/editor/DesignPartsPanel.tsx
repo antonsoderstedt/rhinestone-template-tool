@@ -19,13 +19,13 @@ function PartExtras({ partId, partName, canEdit, dispatch }: { partId: string; p
     <div className="space-y-2 rounded-md border border-dashed border-[var(--studio-border)] p-2">
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <NumericInput label="Turn by" value={degrees} unit="°" step={1} min={-360} max={360} onChange={setDegrees} />
+          <NumericInput label={t('Turn by')} value={degrees} unit="°" step={1} min={-360} max={360} onChange={setDegrees} />
         </div>
         <button type="button" disabled={!turn} aria-label={`Turn ${partName} by this angle`} onClick={() => typeof degrees === 'number' && dispatch({ type: 'TURN_PART_BY', id: partId, degrees })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">{t('Turn')}</button>
       </div>
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <NumericInput label="Spread out to" value={percent} unit="%" step={5} min={100} max={500} onChange={setPercent} />
+          <NumericInput label={t('Spread out to')} value={percent} unit="%" step={5} min={100} max={500} onChange={setPercent} />
         </div>
         <button type="button" disabled={!spread} aria-label={`Spread out ${partName}`} onClick={() => typeof percent === 'number' && dispatch({ type: 'SPREAD_PART', id: partId, factor: percent / 100 })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">{t('Spread')}</button>
       </div>
@@ -112,10 +112,10 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('Parts of this design')}</h3>
             <div className="flex gap-1">
-              <IconButton label="Undo change to parts" disabled={state.partsHistory.past.length === 0} onClick={() => dispatch({ type: 'UNDO_PARTS' })}>
+              <IconButton label={t('Undo change to parts')} disabled={state.partsHistory.past.length === 0} onClick={() => dispatch({ type: 'UNDO_PARTS' })}>
                 <Undo2 className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Redo change to parts" disabled={state.partsHistory.future.length === 0} onClick={() => dispatch({ type: 'REDO_PARTS' })}>
+              <IconButton label={t('Redo change to parts')} disabled={state.partsHistory.future.length === 0} onClick={() => dispatch({ type: 'REDO_PARTS' })}>
                 <Redo2 className="h-4 w-4" aria-hidden="true" />
               </IconButton>
             </div>
@@ -174,8 +174,8 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
                   </IconButton>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <NumericInput label="Move right" value={part.offsetX} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetX: value } })} />
-                  <NumericInput label="Move down" value={part.offsetY} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetY: value } })} />
+                  <NumericInput label={t('Move right')} value={part.offsetX} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetX: value } })} />
+                  <NumericInput label={t('Move down')} value={part.offsetY} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetY: value } })} />
                 </div>
                 <PartExtras partId={part.id} partName={part.name} canEdit={working.length === 0} dispatch={dispatch} />
               </li>
@@ -189,29 +189,29 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('Position of this piece')}</h3>
             <div className="flex gap-1">
-              <IconButton label="Align this piece to the left edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'left' })}>
+              <IconButton label={t('Align this piece to the left edge')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'left' })}>
                 <AlignHorizontalJustifyStart className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Centre this piece" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'center' })}>
+              <IconButton label={t('Centre this piece')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'center' })}>
                 <AlignHorizontalJustifyCenter className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Align this piece to the top edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'top' })}>
+              <IconButton label={t('Align this piece to the top edge')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'top' })}>
                 <AlignVerticalJustifyStart className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Centre this piece vertically" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'middle' })}>
+              <IconButton label={t('Centre this piece vertically')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'middle' })}>
                 <AlignVerticalJustifyCenter className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Align this piece to the bottom edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'bottom' })}>
+              <IconButton label={t('Align this piece to the bottom edge')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'bottom' })}>
                 <AlignVerticalJustifyEnd className="h-4 w-4" aria-hidden="true" />
               </IconButton>
-              <IconButton label="Align this piece to the right edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'right' })}>
+              <IconButton label={t('Align this piece to the right edge')} onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'right' })}>
                 <AlignHorizontalJustifyEnd className="h-4 w-4" aria-hidden="true" />
               </IconButton>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <NumericInput label="Move right" value={state.workingOffset.x} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: value, y: state.workingOffset.y })} />
-            <NumericInput label="Move down" value={state.workingOffset.y} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: state.workingOffset.x, y: value })} />
+            <NumericInput label={t('Move right')} value={state.workingOffset.x} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: value, y: state.workingOffset.y })} />
+            <NumericInput label={t('Move down')} value={state.workingOffset.y} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: state.workingOffset.x, y: value })} />
           </div>
         </section>
       )}

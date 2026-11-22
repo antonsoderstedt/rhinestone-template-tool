@@ -245,15 +245,15 @@ export default function DesignsPage() {
         <WorkspaceHero
           eyebrow="My Designs"
           title={t('My Designs')}
-          description="Open a saved design to keep working on it. Mark favourites and archive the ones you no longer need."
+          description={t('Open a saved design to keep working on it. Mark favourites and archive the ones you no longer need.')}
           tone="neutral"
         />
 
         <section className="grid gap-4 md:grid-cols-4">
-          <WorkspaceMetricCard label="Total saved" value={rhinestoneDesigns.length + vault.htvDesigns.length} />
-          <WorkspaceMetricCard label="Rhinestone" value={rhinestoneDesigns.length} />
-          <WorkspaceMetricCard label="HTV" value={vault.htvDesigns.length} />
-          <WorkspaceMetricCard label="Calibration" value={calibrationGate.approvedCalibrationCount > 0 ? `${calibrationGate.approvedCalibrationCount} approved` : 'Pending'} />
+          <WorkspaceMetricCard label={t('Total saved')} value={rhinestoneDesigns.length + vault.htvDesigns.length} />
+          <WorkspaceMetricCard label={t('Rhinestone')} value={rhinestoneDesigns.length} />
+          <WorkspaceMetricCard label={t('HTV')} value={vault.htvDesigns.length} />
+          <WorkspaceMetricCard label={t('Calibration')} value={calibrationGate.approvedCalibrationCount > 0 ? `${calibrationGate.approvedCalibrationCount} approved` : 'Pending'} />
         </section>
 
         <BackupPanel
@@ -407,12 +407,12 @@ export default function DesignsPage() {
           rhinestoneDesigns.length + vault.htvDesigns.length === 0 ? (
             <WorkspaceEmptyState
               title={t('No saved designs yet')}
-              description="Press Save in the Rhinestone or HTV studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed."
+              description={t('Press Save in the Rhinestone or HTV studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed.')}
             />
           ) : (
             <WorkspaceEmptyState
               title={t('No designs match the current filters')}
-              description="Switch studio or status filters, or clear the search to see everything again. Archived designs are hidden under the Active filter."
+              description={t('Switch studio or status filters, or clear the search to see everything again. Archived designs are hidden under the Active filter.')}
             />
           )
         )}
@@ -421,7 +421,7 @@ export default function DesignsPage() {
       <PromptDialog
         open={renameTarget !== null}
         title={t('Rename design')}
-        label="Design name"
+        label={t('Design name')}
         initialValue={renameTarget?.name ?? ''}
         confirmLabel="Rename"
         onSubmit={(value) => { void submitRename(value); }}

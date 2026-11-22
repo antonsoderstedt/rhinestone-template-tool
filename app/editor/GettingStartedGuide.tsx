@@ -32,7 +32,7 @@ export default function GettingStartedGuide() {
         <div className="min-w-0">
           <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
             <button type="button" onClick={() => setExpanded((open) => !open)} aria-expanded={expanded} className="uppercase tracking-[0.16em]">
-              Your first design in 4 steps {expanded ? '▴' : '▾'}
+              {t('Your first design in 4 steps')} {expanded ? '▴' : '▾'}
             </button>
           </h2>
           <ol hidden={!expanded} className="mt-1.5 grid gap-x-4 gap-y-1 text-xs text-[var(--studio-ink-secondary)] sm:grid-cols-2 xl:grid-cols-4">

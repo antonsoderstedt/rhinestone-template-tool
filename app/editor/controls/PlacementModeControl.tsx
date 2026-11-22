@@ -71,7 +71,7 @@ export default function PlacementModeControl({
     <div className="space-y-4">
       <div className="space-y-2">
         <FieldHeader
-          label="Coverage"
+          label={t('Coverage')}
           help="Where the stones go inside your shape: along the outline, inside it, both, or in repeated rings (Contour)."
         />
         <div className="grid gap-2 sm:grid-cols-2">
@@ -94,7 +94,7 @@ export default function PlacementModeControl({
       {usesFillPattern && visiblePatterns.length > 0 && (
         <div className="space-y-2">
           <FieldHeader
-            label="Placement pattern"
+            label={t('Placement pattern')}
             help="How the inside is filled: regular rows (Default), staggered honeycomb-style rows (Hexagonal), or concentric rings (Radial)."
           />
           <div className="grid gap-2">
@@ -120,7 +120,7 @@ export default function PlacementModeControl({
           <div className={editorFieldLabelClassName}>{t('Contour rows')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Rows"
+              label={t('Rows')}
               value={contourSettings.rowCount}
               onChange={(value) => onContourSettingsChange({ ...contourSettings, rowCount: typeof value === 'number' ? value : contourSettings.rowCount })}
               min={1}
@@ -128,7 +128,7 @@ export default function PlacementModeControl({
               step={1}
             />
             <NumericInput
-              label="Row spacing"
+              label={t('Row spacing')}
               value={contourSettings.rowSpacingMm}
               onChange={(value) => onContourSettingsChange({ ...contourSettings, rowSpacingMm: typeof value === 'number' ? value : contourSettings.rowSpacingMm })}
               min={0.5}
@@ -157,7 +157,7 @@ export default function PlacementModeControl({
           <div className={editorFieldLabelClassName}>{t('Radial placement')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Ring spacing"
+              label={t('Ring spacing')}
               value={radialSettings.ringSpacingMm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, ringSpacingMm: typeof value === 'number' ? value : radialSettings.ringSpacingMm })}
               min={0.5}
@@ -177,14 +177,14 @@ export default function PlacementModeControl({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Center offset X"
+              label={t('Center offset X')}
               value={radialSettings.centerOffsetXmm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, centerOffsetXmm: typeof value === 'number' ? value : radialSettings.centerOffsetXmm })}
               step={0.5}
               unit="mm"
             />
             <NumericInput
-              label="Center offset Y"
+              label={t('Center offset Y')}
               value={radialSettings.centerOffsetYmm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, centerOffsetYmm: typeof value === 'number' ? value : radialSettings.centerOffsetYmm })}
               step={0.5}

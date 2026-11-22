@@ -73,14 +73,14 @@ export default function StoneFontSizeControl({ fontId, text, stoneSize, letterSp
             >
               <span className="font-medium">{option.size}</span>
               <span className="text-[var(--studio-ink-muted)]">
-                {option.widthMm === null ? 'no letters of yours in this font' : `${mm(option.widthMm)} × ${mm(option.heightMm!)} mm · ${describeFit(option.fit)}`}
+                {option.widthMm === null ? t('no letters of yours in this font') : `${mm(option.widthMm)} × ${mm(option.heightMm!)} mm · ${t(describeFit(option.fit))}`}
               </span>
             </button>
           </li>
         ))}
       </ul>
       {options.length === 1 && (
-        <p className="text-xs text-[var(--studio-ink-muted)]">This font only comes in {options[0]!.size}, so the size of the words depends on the text. Use fewer or shorter words, or another font, to change it.</p>
+        <p className="text-xs text-[var(--studio-ink-muted)]">{t('This font only comes in {size}, so the size of the words depends on the text. Use fewer or shorter words, or another font, to change it.', { size: options[0]!.size })}</p>
       )}
       {suggestion && (
         <button
@@ -88,7 +88,7 @@ export default function StoneFontSizeControl({ fontId, text, stoneSize, letterSp
           onClick={() => onPick(suggestion.size)}
           className="w-full rounded-lg border border-violet-400/50 bg-violet-500/10 px-3 py-2 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/20 focus:outline-none focus:ring-2 focus:ring-accent-400"
         >
-          Use {suggestion.size}: {mm(suggestion.widthMm!)} × {mm(suggestion.heightMm!)} mm, {describeFit(suggestion.fit)}
+          {t('Use {size}', { size: suggestion.size })}: {mm(suggestion.widthMm!)} × {mm(suggestion.heightMm!)} mm, {t(describeFit(suggestion.fit))}
         </button>
       )}
     </div>

@@ -114,10 +114,10 @@ export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onC
           </div>
 
           <div className="flex w-full flex-col gap-4 md:w-64 md:shrink-0 md:overflow-y-auto">
-            <SliderField label="Threshold" value={threshold} min={0} max={255} step={1} onChange={setThreshold} />
-            <SliderField label="Smoothing" value={smoothingToleranceMm} min={0} max={3} step={0.05} onChange={setSmoothingToleranceMm} unit="mm" />
-            <SliderField label="Min blob size" value={minAreaMm2} min={0} max={20} step={0.5} onChange={setMinAreaMm2} unit="mm²" />
-            <SliderField label="Target width" value={targetWidthMm} min={10} max={400} step={5} onChange={setTargetWidthMm} unit="mm" />
+            <SliderField label={t('Threshold')} value={threshold} min={0} max={255} step={1} onChange={setThreshold} />
+            <SliderField label={t('Smoothing')} value={smoothingToleranceMm} min={0} max={3} step={0.05} onChange={setSmoothingToleranceMm} unit="mm" />
+            <SliderField label={t('Min blob size')} value={minAreaMm2} min={0} max={20} step={0.5} onChange={setMinAreaMm2} unit="mm²" />
+            <SliderField label={t('Target width')} value={targetWidthMm} min={10} max={400} step={5} onChange={setTargetWidthMm} unit="mm" />
 
             <label className="flex items-center gap-2 text-xs font-medium text-ink-secondary">
               <input type="checkbox" checked={invert} onChange={(e) => setInvert(e.target.checked)} className="rounded border-border bg-surface-sunken text-accent-600" />

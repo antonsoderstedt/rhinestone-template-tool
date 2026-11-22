@@ -7,6 +7,7 @@ import { getEditableStatusCopy } from './editorUi';
 import { useIsMobileStudio } from '../lib/useMediaQuery';
 
 import { useT } from '../lib/i18n';
+import LanguageSwitch from '../components/LanguageSwitch';
 interface EditorStatusBarProps {
   template: RhinestoneTemplate | null;
   canvas: CanvasState;
@@ -112,6 +113,7 @@ export default function EditorStatusBar({
             {t('Earlier versions')}
           </button>
         )}
+        <LanguageSwitch className="!border-[var(--studio-border)]" />
         {onReportProblem && (
           <button type="button" onClick={onReportProblem} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
             {t('Report a problem')}

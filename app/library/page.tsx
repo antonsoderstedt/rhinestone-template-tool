@@ -211,7 +211,7 @@ export default function LibraryPage() {
         <WorkspaceHero
           eyebrow="Library"
           title={t('Library')}
-          description="Keep your SVG and image files here and open them in the studio. Vector files go to Rhinestone, pictures can be traced for HTV."
+          description={t('Keep your SVG and image files here and open them in the studio. Vector files go to Rhinestone, pictures can be traced for HTV.')}
           tone="brand"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
@@ -232,9 +232,9 @@ export default function LibraryPage() {
         />
 
         <section className="grid gap-4 md:grid-cols-3">
-          <WorkspaceMetricCard label="Assets" value={vault.assets.length} />
-          <WorkspaceMetricCard label="Vectors" value={vault.assets.filter((asset) => asset.kind === 'svg').length} />
-          <WorkspaceMetricCard label="Favorited" value={vault.assets.filter((asset) => asset.favorite).length} />
+          <WorkspaceMetricCard label={t('Assets')} value={vault.assets.length} />
+          <WorkspaceMetricCard label={t('Vectors')} value={vault.assets.filter((asset) => asset.kind === 'svg').length} />
+          <WorkspaceMetricCard label={t('Favorited')} value={vault.assets.filter((asset) => asset.favorite).length} />
         </section>
 
         <WorkspaceSurface className="p-5">
@@ -385,7 +385,7 @@ export default function LibraryPage() {
         {visibleAssets.length === 0 && (
           <WorkspaceEmptyState
             title={t('No assets match the current filters')}
-            description="Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view."
+            description={t('Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view.')}
           />
         )}
       </div>

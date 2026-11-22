@@ -169,7 +169,7 @@ export default function EditorTopbar({
       </div>
 
       <div className="flex shrink-0 items-center max-lg:hidden">
-        <ToolbarSection label="Project">
+        <ToolbarSection label={t('Project')}>
           <button
             onClick={onNewProject}
             className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
@@ -244,7 +244,7 @@ export default function EditorTopbar({
           </button>
         </ToolbarSection>
 
-        <ToolbarSection label="History">
+        <ToolbarSection label={t('History')}>
           <button
             onClick={() => dispatch({ type: 'UNDO' })}
             disabled={!canUndo}
@@ -265,7 +265,7 @@ export default function EditorTopbar({
           </button>
         </ToolbarSection>
 
-        <ToolbarSection label="Output">
+        <ToolbarSection label={t('Output')}>
           <div className="inline-flex rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] p-0.5">
             {(['canvas', 'garment'] as const).map((surface) => (
               <button

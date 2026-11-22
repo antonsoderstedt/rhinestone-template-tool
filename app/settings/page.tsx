@@ -105,7 +105,7 @@ export default function SettingsPage() {
         <WorkspaceHero
           eyebrow={<><Settings2 className="h-3.5 w-3.5" /> {t('Settings')}</>}
           title={t('Defaults for new projects')}
-          description="Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved."
+          description={t('Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved.')}
           tone="accent"
           aside={(
             <WorkspaceSurface className="p-5">
@@ -118,33 +118,33 @@ export default function SettingsPage() {
         />
 
         <section className="grid gap-5 xl:grid-cols-2">
-          <FormCard title={t('New rhinestone projects')} note="Applies to new projects. Open designs keep their own values.">
+          <FormCard title={t('New rhinestone projects')} note={t('Applies to new projects. Open designs keep their own values.')}>
             <SelectField
-              label="Stone size"
+              label={t('Stone size')}
               value={settings.defaultStoneSize}
               options={SETTINGS_STONE_SIZES.map((size) => ({ value: size, label: size }))}
               onChange={(value) => update('defaultStoneSize', value as WorkspaceSettings['defaultStoneSize'])}
             />
             <SelectField
-              label="Spacing"
-              hint="Centre distance is worked out from the stone size and your material, so it always stays cuttable."
+              label={t('Spacing')}
+              hint={t('Centre distance is worked out from the stone size and your material, so it always stays cuttable.')}
               value={settings.defaultDensityPreset}
               options={SETTINGS_DENSITY_PRESETS.map((preset) => ({ value: preset, label: DENSITY_LABELS[preset] }))}
               onChange={(value) => update('defaultDensityPreset', value as SettingsDensityPreset)}
             />
             <NumberField
-              label="Uploaded artwork size (mm, longest side)"
-              hint="SVGs you upload are scaled to this size first. You can still resize them."
+              label={t('Uploaded artwork size (mm, longest side)')}
+              hint={t('SVGs you upload are scaled to this size first. You can still resize them.')}
               value={settings.defaultArtworkLongestSideMm}
               {...WORKSPACE_SETTING_LIMITS.defaultArtworkLongestSideMm}
               onCommit={(value) => update('defaultArtworkLongestSideMm', value)}
             />
           </FormCard>
 
-          <FormCard title={t('HTV export')} note="Used the next time you export from the HTV studio.">
+          <FormCard title={t('HTV export')} note={t('Used the next time you export from the HTV studio.')}>
             <NumberField
-              label="Weed margin (mm)"
-              hint="Empty space kept around the artwork in the exported cut file."
+              label={t('Weed margin (mm)')}
+              hint={t('Empty space kept around the artwork in the exported cut file.')}
               value={settings.htvWeedMarginMm}
               {...WORKSPACE_SETTING_LIMITS.htvWeedMarginMm}
               onCommit={(value) => update('htvWeedMarginMm', value)}
