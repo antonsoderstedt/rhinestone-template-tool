@@ -48,6 +48,7 @@ import MoreFormatsPanel from './MoreFormatsPanel';
 import DesignSpaceGuide from './DesignSpaceGuide';
 import ReportProblemDialog from '../components/ReportProblemDialog';
 import SharePanel from './SharePanel';
+import { calibrationStatusBySize } from '../lib/calibrationStatus';
 import { decodeSharePayload, readSharePayload } from '../lib/shareLink';
 import VersionHistoryDialog from './VersionHistoryDialog';
 import { readVersions, recordVersion, removeVersions } from '../lib/versionHistory';
@@ -814,6 +815,10 @@ export default function EditorShell() {
   const exportErrorCount = exportStatusSummary.designErrors.length;
   const exportWarningCount = exportStatusSummary.designWarnings.length;
   const needsCalibration = exportStatusSummary.needsCalibration;
+  const calibrationBySize = useMemo(
+    () => calibrationStatusBySize(effectiveTemplate?.stones.map((stone) => stone.stoneSize) ?? [], activeCalibrationProfile),
+    [activeCalibrationProfile, effectiveTemplate],
+  );
   const editorDispatch = useCallback((action: EditorAction) => {
     if (shouldPromptForGeneratorMutation(state, action)) {
       setPendingGeneratorAction(action);
@@ -1835,7 +1840,7 @@ export default function EditorShell() {
           { label: 'Cutter', value: exportReadiness?.summary.cutter ?? '—' },
         ]}
         notes={exportDesignWarningNotes}
-        calibration={{ needsCalibration, onCalibrate: handleOpenSetup }}
+        calibration={{ needsCalibration, onCalibrate: handleOpenSetup, perSize: calibrationBySize }}
         defaultFilename={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
         onDownload={handleExportDownload}
         onClose={() => setExportDialogOpen(false)}

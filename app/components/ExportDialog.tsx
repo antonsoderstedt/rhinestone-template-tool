@@ -24,7 +24,7 @@ export interface ExportDialogProps {
   /** Design warnings shown under the preview. */
   notes?: ExportDialogNote[];
   /** Set when the material has no approved calibration profile. */
-  calibration?: { needsCalibration: boolean; onCalibrate: () => void } | null;
+  calibration?: { needsCalibration: boolean; onCalibrate: () => void; /** One line per stone size in the design. */ perSize?: Array<{ stoneSize: string; state: 'measured' | 'verified-default' | 'unverified'; text: string }> } | null;
   /** File name without extension, used as the starting value of the file name field. */
   defaultFilename: string;
   onDownload: (filename: string, options: { uncalibratedOverride: boolean }) => void;
@@ -208,6 +208,13 @@ function ExportDialogContent({
                 </>
               ) : (
                 <p>Material calibrated (self-attested approval).</p>
+              )}
+              {calibration.perSize && calibration.perSize.length > 0 && (
+                <ul aria-label="Calibration by stone size" className="mt-2 space-y-1">
+                  {calibration.perSize.map((entry) => (
+                    <li key={entry.stoneSize} className={entry.state === 'unverified' ? 'text-amber-100' : 'text-zinc-300'}>{entry.text}</li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
