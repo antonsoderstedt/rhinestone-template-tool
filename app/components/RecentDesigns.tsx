@@ -8,8 +8,10 @@ import { getDesignArchived, readWorkspaceVault } from '../lib/workspaceVault';
 import { buildRecentDesigns, type RecentDesign } from '../lib/recentDesigns';
 import { formatRelativeTime } from '../lib/relativeTime';
 
+import { useT } from '../lib/i18n';
 /** The designs you worked on last, with a picture, so you can carry on in one click. Hidden until there is one. */
 export default function RecentDesigns() {
+  const t = useT();
   const [designs, setDesigns] = useState<RecentDesign[]>([]);
   const [now, setNow] = useState<Date | null>(null);
 
@@ -45,8 +47,8 @@ export default function RecentDesigns() {
   return (
     <section aria-labelledby="recent-designs-heading">
       <div className="flex items-end justify-between gap-3">
-        <h2 id="recent-designs-heading" className="text-xl font-semibold text-ink">Pick up where you left off</h2>
-        <Link href="/designs" className="inline-flex items-center text-sm font-semibold text-accent-600 underline-offset-2 hover:underline">All my designs</Link>
+        <h2 id="recent-designs-heading" className="text-xl font-semibold text-ink">{t('Pick up where you left off')}</h2>
+        <Link href="/designs" className="inline-flex items-center text-sm font-semibold text-accent-600 underline-offset-2 hover:underline">{t('All my designs')}</Link>
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {designs.map((design) => {

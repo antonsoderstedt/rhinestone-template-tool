@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
+import { useT } from '../lib/i18n';
 export type WorkspaceStatus = 'Ready' | 'Warning' | 'Blocked';
 
 export interface StatusChip {
@@ -45,6 +46,7 @@ const statusConfig: Record<WorkspaceStatus, { labelClassName: string; iconClassN
 };
 
 export default function WorkspaceModeBanner({ mode, status, project, guidance, chips, action, calibrationState }: WorkspaceModeBannerProps) {
+  const t = useT();
   const { Icon, badgeClassName, iconClassName, labelClassName } = statusConfig[status];
   // On a phone long guidance (size warnings, say) is clamped to two lines until the user opens it.
   const [expanded, setExpanded] = useState(false);
@@ -59,7 +61,7 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
       : 'border-amber-400/30 bg-amber-500/15 text-amber-300';
 
   return (
-    <section aria-label="Studio status" className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)]">
+    <section aria-label={t('Studio status')} className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)]">
       <div className="mx-auto max-w-[1600px] px-4 py-3 md:px-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">

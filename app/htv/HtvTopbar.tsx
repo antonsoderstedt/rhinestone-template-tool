@@ -9,6 +9,7 @@ import StudioThemeToggle from '../components/StudioThemeToggle';
 import { KeyboardShortcutsButton } from '../components/KeyboardShortcuts';
 import StudioMenuSheet, { type StudioMenuSection } from '../components/StudioMenuSheet';
 
+import { useT } from '../lib/i18n';
 function ToolbarSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-[var(--studio-border)] px-2 py-1 first:border-l-0">
@@ -54,6 +55,7 @@ export default function HtvTopbar({
   theme,
   onToggleTheme,
 }: HtvTopbarProps) {
+  const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuSections: StudioMenuSection[] = [
     {
@@ -80,14 +82,14 @@ export default function HtvTopbar({
     },
   ];
   return (
-    <section aria-label="Project actions" className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
+    <section aria-label={t('Project actions')} className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
       <div className="flex flex-wrap items-center gap-2 px-3 py-1.5">
         {/* Phones and tablets: menu, project name, undo/redo. The rest is in the menu or the bottom bar. */}
         <div className="flex w-full items-center gap-1.5 lg:hidden">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
+            aria-label={t('Open menu')}
             aria-haspopup="dialog"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] text-[var(--studio-ink)] transition hover:bg-[var(--studio-hover-overlay)]"
           >
@@ -97,15 +99,15 @@ export default function HtvTopbar({
             type="text"
             value={projectName}
             onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
-            aria-label="Project name"
+            aria-label={t('Project name')}
             className="h-11 min-w-0 flex-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 text-base font-semibold text-[var(--studio-ink)] focus-visible:ring-2 focus-visible:ring-violet-400"
-            placeholder="Untitled HTV Design"
+            placeholder={t('Untitled HTV Design')}
           />
           <button
             type="button"
             onClick={() => dispatch({ type: 'UNDO' })}
             disabled={!canUndo}
-            aria-label="Undo"
+            aria-label={t('Undo')}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] disabled:opacity-30"
           >
             <RotateCcw className="h-5 w-5" aria-hidden="true" />
@@ -114,7 +116,7 @@ export default function HtvTopbar({
             type="button"
             onClick={() => dispatch({ type: 'REDO' })}
             disabled={!canRedo}
-            aria-label="Redo"
+            aria-label={t('Redo')}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] disabled:opacity-30"
           >
             <RotateCw className="h-5 w-5" aria-hidden="true" />
@@ -127,9 +129,9 @@ export default function HtvTopbar({
             type="text"
             value={projectName}
             onChange={(e) => dispatch({ type: 'SET_PROJECT_NAME', name: e.target.value })}
-            aria-label="Project name"
+            aria-label={t('Project name')}
             className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:bg-[var(--studio-surface)] focus-visible:ring-2 focus-visible:ring-violet-400"
-            placeholder="Untitled HTV Design"
+            placeholder={t('Untitled HTV Design')}
           />
         </div>
 
@@ -138,18 +140,18 @@ export default function HtvTopbar({
           <button
             onClick={() => dispatch({ type: 'UNDO' })}
             disabled={!canUndo}
-            aria-label="Undo"
+            aria-label={t('Undo')}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
-            title="Undo (Cmd/Ctrl+Z)"
+            title={t('Undo (Cmd/Ctrl+Z)')}
           >
             <RotateCcw className="h-4 w-4" />
           </button>
           <button
             onClick={() => dispatch({ type: 'REDO' })}
             disabled={!canRedo}
-            aria-label="Redo"
+            aria-label={t('Redo')}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-30"
-            title="Redo (Cmd/Ctrl+Shift+Z)"
+            title={t('Redo (Cmd/Ctrl+Shift+Z)')}
           >
             <RotateCw className="h-4 w-4" />
           </button>
@@ -161,11 +163,11 @@ export default function HtvTopbar({
               <details className="group">
                 <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] [&::-webkit-details-marker]:hidden">
                   <FolderOpen className="h-4 w-4" />
-                  Recent
+                  {t('Recent')}
                   <ChevronDown className="h-3 w-3 opacity-60 transition group-open:rotate-180" />
                 </summary>
                 <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-xl">
-                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">Recent HTV designs</div>
+                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">{t('Recent HTV designs')}</div>
                   {recentDesigns.map((design) => (
                     <button
                       key={design.id}
@@ -187,15 +189,15 @@ export default function HtvTopbar({
             title={canPreviewGarment ? 'Preview this design on a t-shirt or hoodie' : 'Add a layer before previewing'}
           >
             <Shirt className="h-4 w-4" />
-            Preview
+            {t('Preview')}
           </button>
           <button
             onClick={onSaveDesign}
             className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Save this HTV design to My Designs"
+            title={t('Save this HTV design to My Designs')}
           >
             <Save className="h-4 w-4" />
-            Save
+            {t('Save')}
           </button>
           <button
             onClick={onExport}
@@ -204,7 +206,7 @@ export default function HtvTopbar({
             title={canExport ? 'Export the current design as a vector SVG cut file' : 'Add a layer before exporting'}
           >
             <Download className="h-4 w-4" />
-            Export
+            {t('Export')}
           </button>
         </ToolbarSection>
 
@@ -226,15 +228,15 @@ export default function HtvTopbar({
             href="/rhinestone"
             className="hidden rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] md:inline-flex"
           >
-            Rhinestone
+            {t('Rhinestone')}
           </Link>
           <button
             onClick={onOpenGarmentPreview}
             className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-violet-400"
-            title="Open large garment preview"
+            title={t('Open large garment preview')}
           >
             <Settings2 className="h-4 w-4" />
-            View
+            {t('View')}
           </button>
           <KeyboardShortcutsButton />
           <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />

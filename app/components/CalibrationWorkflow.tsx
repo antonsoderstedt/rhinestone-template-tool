@@ -27,6 +27,7 @@ import ExportReadinessPanel from './ExportReadinessPanel';
 import SvgExportActions from './SvgExportActions';
 import Badge from '@/app/editor/ui/Badge';
 
+import { useT } from '../lib/i18n';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PROFILE_ID = 'magic-flock-cricut-maker';
@@ -89,6 +90,7 @@ function defaultHoleMap(): HoleMap {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'measure' | 'approve' }) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [holeMap, setHoleMap] = useState<HoleMap>(defaultHoleMap());
   const [profileName, setProfileName] = useState('My calibrated setup');
@@ -345,12 +347,12 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
  <>
       {/* ── Explanation ──────────────────────────────────────────────────── */}
       <div className="rounded-lg bg-warning-50 border border-warning-500/30 px-5 py-4 text-sm text-warning-600 leading-relaxed">
-        <p className="font-semibold mb-1">How to find your hole diameters</p>
+        <p className="font-semibold mb-1">{t('How to find your hole diameters')}</p>
         <ol className="ml-4 list-decimal space-y-1 text-xs">
           <li>Download and cut the <strong>Calibration Sheet</strong> on a scrap of Magic Flock.</li>
-          <li>Place stones in each hole and find which diameter seats correctly.</li>
-          <li>Enter those measured hole diameters below (one per stone size).</li>
-          <li>Use the calibrated preview grid to verify before production.</li>
+          <li>{t('Place stones in each hole and find which diameter seats correctly.')}</li>
+          <li>{t('Enter those measured hole diameters below (one per stone size).')}</li>
+          <li>{t('Use the calibrated preview grid to verify before production.')}</li>
         </ol>
         <p className="mt-2 text-xs text-warning-600">
           ⚠ Calibration values are saved in this browser and restored automatically when you return.
@@ -362,9 +364,9 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
       <div>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-sm font-semibold text-ink-secondary">Enter the hole diameters that worked (mm)</h3>
+            <h3 className="text-sm font-semibold text-ink-secondary">{t('Enter the hole diameters that worked (mm)')}</h3>
             <p className="mt-1 text-xs text-ink-muted">
-              <strong>Stone diameter</strong> is the size of the rhinestone itself. <strong>Hole diameter</strong> is the size of the hole the machine cuts; it is a little larger so the stone seats firmly.
+              <strong>{t('Stone diameter')}</strong> is the size of the rhinestone itself. <strong>Hole diameter</strong> is the size of the hole the machine cuts; it is a little larger so the stone seats firmly.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -372,13 +374,13 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
               onClick={handleReset}
               className="text-xs text-ink-muted hover:text-ink underline underline-offset-2"
             >
-              Reset to recommended
+              {t('Reset to recommended')}
             </button>
             <button
               onClick={handleClearSavedCalibration}
               className="text-xs text-danger-600 hover:text-danger-700 underline underline-offset-2"
             >
-              Clear saved
+              {t('Clear saved')}
             </button>
           </div>
         </div>
@@ -394,7 +396,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
               <div key={size} className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-ink-muted flex items-center gap-1.5" htmlFor={`hole-${size}`}>
                   {size} <span className="text-ink-secondary">(stone {physicalDiameter(size)} mm)</span>
-                  {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
+                  {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">{t('Provisional')}</Badge>}
                 </label>
                 <input
                   id={`hole-${size}`}
@@ -428,10 +430,10 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-sand-100 text-ink-muted uppercase tracking-wide text-xs">
-              <th className="text-left px-3 py-2">Size</th>
-              <th className="text-right px-3 py-2">Stone diameter</th>
-              <th className="text-right px-3 py-2">Recommended hole diameter</th>
-              <th className="text-right px-3 py-2">Your hole diameter</th>
+              <th className="text-left px-3 py-2">{t('Size')}</th>
+              <th className="text-right px-3 py-2">{t('Stone diameter')}</th>
+              <th className="text-right px-3 py-2">{t('Recommended hole diameter')}</th>
+              <th className="text-right px-3 py-2">{t('Your hole diameter')}</th>
               <th className="text-right px-3 py-2">Δ</th>
             </tr>
           </thead>
@@ -446,7 +448,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
                   <td className="px-3 py-2 font-semibold text-ink">
                     <span className="flex items-center gap-1.5">
                       {size}
-                      {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">Provisional</Badge>}
+                      {isHolePresetProvisional(size, PROFILE_ID) && <Badge tone="warning">{t('Provisional')}</Badge>}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right text-ink-muted">{physicalDiameter(size)} mm</td>
@@ -471,7 +473,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
       {/* ── Calibrated preview ───────────────────────────────────────────── */}
       <div>
         <h3 className="text-sm font-semibold text-ink-secondary mb-3">
-          Calibrated SS10 Test Grid (5×3)
+          {t('Calibrated SS10 Test Grid (5×3)')}
         </h3>
 
         {!calibResult.ok ? (
@@ -498,15 +500,15 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
       <div className={`rounded-lg border p-4 ${productionReady ? 'border-success-400 bg-success-50' : activeProfile ? 'border-warning-400 bg-warning-50' : 'border-border bg-sand-50'}`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Production readiness</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('Production readiness')}</p>
             <p className="mt-1 text-lg font-semibold text-ink">
               {productionReady ? 'Ready for production' : activeProfile ? 'Custom setup loaded' : 'Calibration required'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {productionReady && <Badge tone="success">Approved</Badge>}
-            {activeProfile && !productionReady && <Badge tone="warning">Needs approval</Badge>}
-            {!activeProfile && <Badge tone="info">No active profile</Badge>}
+            {productionReady && <Badge tone="success">{t('Approved')}</Badge>}
+            {activeProfile && !productionReady && <Badge tone="warning">{t('Needs approval')}</Badge>}
+            {!activeProfile && <Badge tone="info">{t('No active profile')}</Badge>}
           </div>
         </div>
         <ul className="mt-3 space-y-1 text-xs text-ink-muted">
@@ -521,14 +523,14 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label htmlFor="calibration-profile-name" className="mb-1 block text-xs font-medium text-ink-muted uppercase tracking-wide">
-              Save current calibration
+              {t('Save current calibration')}
             </label>
             <input
               id="calibration-profile-name"
               type="text"
               value={profileName}
               onChange={(event) => setProfileName(event.target.value)}
-              placeholder="My calibrated setup"
+              placeholder={t('My calibrated setup')}
               className="w-full rounded border border-border-strong bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-400"
             />
           </div>
@@ -537,19 +539,19 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
               onClick={handleSaveProfile}
               className="rounded bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-700"
             >
-              Save profile
+              {t('Save profile')}
             </button>
             <button
               onClick={handleExportProfiles}
               className="rounded border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-sand-50"
             >
-              Export JSON
+              {t('Export JSON')}
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="rounded border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-sand-50"
             >
-              Import JSON
+              {t('Import JSON')}
             </button>
           </div>
         </div>
@@ -568,7 +570,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
 
         {savedProfiles.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Saved profiles</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('Saved profiles')}</p>
             <label className="flex items-start gap-2 rounded border border-warning-500/30 bg-warning-50 p-3 text-xs text-warning-700">
               <input
                 type="checkbox"
@@ -589,8 +591,8 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-ink">{profile.name}</p>
-                      {isActive && <Badge tone="success">Active</Badge>}
-                      {profile.approvedAt && <Badge tone="success">Approved</Badge>}
+                      {isActive && <Badge tone="success">{t('Active')}</Badge>}
+                      {profile.approvedAt && <Badge tone="success">{t('Approved')}</Badge>}
                       <Badge tone={status === 'custom' ? 'warning' : 'info'}>{status === 'custom' ? 'Custom' : 'Recommended'}</Badge>
                     </div>
                     <p className="text-xs text-ink-muted">
@@ -617,7 +619,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
                       onClick={() => handleDeleteProfile(profile.id)}
                       className="rounded border border-danger-300 px-2.5 py-1.5 text-xs text-danger-600 hover:bg-danger-50"
                     >
-                      Delete
+                      {t('Delete')}
                     </button>
                   </div>
                 </div>

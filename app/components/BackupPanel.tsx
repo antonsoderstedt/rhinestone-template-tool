@@ -18,6 +18,7 @@ import { LOCAL_STORAGE_LIMIT_CHARS, getStorageStatus, measureLocalStorage, reque
 import { getBackupStatus, readLastBackupAt, writeLastBackupAt } from '../lib/backupReminder';
 import { WorkspaceSurface } from './workspace/WorkspaceChrome';
 
+import { useT } from '../lib/i18n';
 interface BackupPanelProps {
   /** Called after a restore wrote something, so the page can reload its lists. */
   onRestored: () => void;
@@ -27,6 +28,7 @@ type Notice = { tone: 'success' | 'error' | 'info'; text: string } | null;
 
 /** Link-less backup: one file with every saved design, and a way to put it back. No server involved. */
 export default function BackupPanel({ onRestored }: BackupPanelProps) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
@@ -125,13 +127,11 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">
             <DatabaseBackup className="h-4 w-4" aria-hidden="true" />
-            Backup
+            {t('Backup')}
           </div>
-          <h2 className="mt-2 text-lg font-semibold text-ink">Back up all designs to a file</h2>
+          <h2 className="mt-2 text-lg font-semibold text-ink">{t('Back up all designs to a file')}</h2>
           <p className="mt-1 text-sm leading-6 text-ink-secondary">
-            Your designs live in this browser only. A backup is one file with every rhinestone and HTV design. It needs no account or link.
-            Restoring it adds missing designs and keeps the newest copy of the rest; nothing is deleted.
-            Your calibration profiles are included. Uploaded fonts and images and your settings are not.
+            {t('Your designs live in this browser only. A backup is one file with every rhinestone and HTV design. It needs no account or link. Restoring it adds missing designs and keeps the newest copy of the rest; nothing is deleted. Your calibration profiles are included. Uploaded fonts and images and your settings are not.')}
           </p>
           {storageUsed !== null && (() => {
             const storage = getStorageStatus(storageUsed, LOCAL_STORAGE_LIMIT_CHARS);
@@ -162,7 +162,7 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
             className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-ink-inverse disabled:opacity-60"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
-            Back up all designs
+            {t('Back up all designs')}
           </button>
           <button
             type="button"
@@ -171,7 +171,7 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:text-ink disabled:opacity-60"
           >
             <Upload className="h-4 w-4" aria-hidden="true" />
-            Restore from backup…
+            {t('Restore from backup…')}
           </button>
           <input
             ref={fileInputRef}
@@ -179,7 +179,7 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
             accept=".json,application/json"
             className="sr-only"
             tabIndex={-1}
-            aria-label="Choose a backup file to restore"
+            aria-label={t('Choose a backup file to restore')}
             onChange={(event) => void handleFile(event.target.files?.[0])}
           />
         </div>

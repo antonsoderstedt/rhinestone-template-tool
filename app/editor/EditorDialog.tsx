@@ -3,6 +3,7 @@
 import { AlertTriangle, Info, Sparkles, X } from 'lucide-react';
 import Modal from './ui/Modal';
 
+import { useT } from '../lib/i18n';
 interface EditorDialogProps {
   open: boolean;
   title: string;
@@ -34,6 +35,7 @@ export default function EditorDialog({
   icon = 'info',
   tertiaryAction,
 }: EditorDialogProps) {
+  const t = useT();
   const Icon = icon === 'warning' ? AlertTriangle : icon === 'sparkles' ? Sparkles : Info;
 
   return (
@@ -70,8 +72,8 @@ export default function EditorDialog({
           <button
             onClick={onCancel}
             className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            aria-label="Close dialog"
-            title="Close dialog"
+            aria-label={t('Close dialog')}
+            title={t('Close dialog')}
           >
             <X className="h-4 w-4" />
           </button>

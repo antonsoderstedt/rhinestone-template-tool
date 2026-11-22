@@ -27,6 +27,7 @@ import {
   validateAssetUpload,
 } from '@/src/lib/rhinestone-engine/index';
 
+import { useT } from '../lib/i18n';
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -81,6 +82,7 @@ function getUploadRejectionMessage(code: ReturnType<typeof validateAssetUpload>[
 }
 
 export default function LibraryPage() {
+  const t = useT();
   const router = useRouter();
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [query, setQuery] = useState('');
@@ -208,13 +210,13 @@ export default function LibraryPage() {
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <WorkspaceHero
           eyebrow="Library"
-          title="Library"
+          title={t('Library')}
           description="Keep your SVG and image files here and open them in the studio. Vector files go to Rhinestone, pictures can be traced for HTV."
           tone="brand"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
               <Upload className="h-4 w-4" />
-              Bulk upload assets
+              {t('Bulk upload assets')}
               <input
                 type="file"
                 accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"
@@ -261,28 +263,28 @@ export default function LibraryPage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, filename, or tag"
+                placeholder={t('Search by name, filename, or tag')}
                 className={workspaceInputClassName}
               />
             </label>
-            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName} aria-label="Filter by kind">
-              <option value="all">All kinds</option>
-              <option value="svg">SVG only</option>
-              <option value="image">Image only</option>
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName} aria-label={t('Filter by kind')}>
+              <option value="all">{t('All kinds')}</option>
+              <option value="svg">{t('SVG only')}</option>
+              <option value="image">{t('Image only')}</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label="Filter by status">
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-              <option value="all">All statuses</option>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label={t('Filter by status')}>
+              <option value="active">{t('Active')}</option>
+              <option value="archived">{t('Archived')}</option>
+              <option value="all">{t('All statuses')}</option>
             </select>
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName} aria-label="Filter by tag">
-              <option value="all">All tags</option>
+            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName} aria-label={t('Filter by tag')}>
+              <option value="all">{t('All tags')}</option>
               {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
             </select>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName} aria-label="Sort assets">
-              <option value="recent">Recently updated</option>
-              <option value="name">Name</option>
-              <option value="favorites">Favorites first</option>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName} aria-label={t('Sort assets')}>
+              <option value="recent">{t('Recently updated')}</option>
+              <option value="name">{t('Name')}</option>
+              <option value="favorites">{t('Favorites first')}</option>
             </select>
           </div>
         </WorkspaceSurface>
@@ -316,7 +318,7 @@ export default function LibraryPage() {
                 />
 
                 <label className="block space-y-2 text-sm text-ink-secondary">
-                  <span className="font-medium text-ink">Tags</span>
+                  <span className="font-medium text-ink">{t('Tags')}</span>
                   <input
                     value={asset.tags.join(', ')}
                     onChange={(event) => updateAsset(asset.assetId, (current) => ({
@@ -341,14 +343,14 @@ export default function LibraryPage() {
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent-300 hover:text-accent-600"
                   >
                     <Gem className="h-4 w-4" />
-                    Open in Rhinestone
+                    {t('Open in Rhinestone')}
                   </button>
                   <button
                     onClick={() => router.push(`/htv?asset=${asset.assetId}`)}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-brand-300 hover:text-brand-600"
                   >
                     <SwatchBook className="h-4 w-4" />
-                    Open in HTV
+                    {t('Open in HTV')}
                   </button>
                 </div>
 
@@ -372,7 +374,7 @@ export default function LibraryPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-danger-50 px-3 py-2 text-sm font-medium text-danger-600 transition hover:bg-danger-500/10"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {t('Delete')}
                   </button>
                 </div>
               </div>
@@ -382,7 +384,7 @@ export default function LibraryPage() {
 
         {visibleAssets.length === 0 && (
           <WorkspaceEmptyState
-            title="No assets match the current filters"
+            title={t('No assets match the current filters')}
             description="Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view."
           />
         )}

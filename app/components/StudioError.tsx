@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+import { useT } from '../lib/i18n';
 const AUTOSAVE_KEY = 'rhinestone-template-library-autosave';
 /** One slot. The autosave that was set aside when a studio failed to open, kept so nothing is lost. */
 export const AUTOSAVE_RECOVERY_KEY = 'rhinestone-template-library-autosave-set-aside';
@@ -20,6 +21,7 @@ export interface StudioErrorProps {
  * autosave, a way out of a crash loop that keeps the autosave (it is set aside, not deleted).
  */
 export default function StudioError({ studioName, error, onRetry, hasAutosave = false }: StudioErrorProps) {
+  const t = useT();
   const [autosaveSetAside, setAutosaveSetAside] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function StudioError({ studioName, error, onRetry, hasAutosave = 
             onClick={onRetry}
             className="rounded-md bg-accent-500 px-3 py-2 text-sm font-medium text-ink-inverse hover:bg-accent-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
           >
-            Try again
+            {t('Try again')}
           </button>
           {hasAutosave && (
             <button
@@ -64,7 +66,7 @@ export default function StudioError({ studioName, error, onRetry, hasAutosave = 
               disabled={autosaveSetAside}
               className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50"
             >
-              Open without the last session
+              {t('Open without the last session')}
             </button>
           )}
           <Link

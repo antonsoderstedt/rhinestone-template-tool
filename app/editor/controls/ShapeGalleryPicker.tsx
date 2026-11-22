@@ -3,11 +3,13 @@
 import { GALLERY_SHAPES, type GalleryShape } from '../../lib/shapeGallery';
 import { editorFieldLabelClassName } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 /** Ready-made shapes to start from, for people who have no file yet. */
 export default function ShapeGalleryPicker({ onPick, selectedName }: { onPick: (shape: GalleryShape) => void; selectedName?: string | null }) {
+  const t = useT();
   return (
-    <div className="space-y-2" role="group" aria-label="Ready-made shapes">
-      <span className={editorFieldLabelClassName}>Or start from a shape</span>
+    <div className="space-y-2" role="group" aria-label={t('Ready-made shapes')}>
+      <span className={editorFieldLabelClassName}>{t('Or start from a shape')}</span>
       <ul className="grid grid-cols-3 gap-1.5">
         {GALLERY_SHAPES.map((shape) => (
           <li key={shape.id}>

@@ -5,6 +5,7 @@
 import NumericInput from './NumericInput';
 import { editorFieldLabelClassName } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 interface PhysicalDimensionsControlProps {
   widthMm: number | '';
   heightMm: number | '';
@@ -30,15 +31,16 @@ export default function PhysicalDimensionsControl({
   unit = 'mm',
   onUnitChange,
 }: PhysicalDimensionsControlProps) {
+  const t = useT();
   const inches = unit === 'in';
   const show = (value: number | ''): number | '' => (value === '' || !inches ? value : Number((value / MM_PER_INCH).toFixed(3)));
   const store = (value: number | ''): number | '' => (value === '' || !inches ? value : Number((value * MM_PER_INCH).toFixed(3)));
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className={editorFieldLabelClassName}>Target Dimensions</span>
+        <span className={editorFieldLabelClassName}>{t('Target Dimensions')}</span>
         {onUnitChange && (
-          <div role="group" aria-label="Unit" className="inline-flex rounded-lg border border-border bg-surface-raised p-0.5 text-xs">
+          <div role="group" aria-label={t('Unit')} className="inline-flex rounded-lg border border-border bg-surface-raised p-0.5 text-xs">
             {(['mm', 'in'] as const).map((choice) => (
               <button
                 key={choice}
@@ -59,7 +61,7 @@ export default function PhysicalDimensionsControl({
             onChange={(e) => onPreserveAspectRatioChange(e.target.checked)}
             className="h-4 w-4 rounded border-border bg-surface text-accent-600 focus:ring-2 focus:ring-accent-100"
           />
-          <span className="text-xs font-medium text-ink-secondary">Lock ratio</span>
+          <span className="text-xs font-medium text-ink-secondary">{t('Lock ratio')}</span>
         </label>
       </div>
 

@@ -1,9 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
 import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
 import RecentDesigns from './components/RecentDesigns';
 import StarterGallery from './components/StarterGallery';
 import { buildFontLaunchUrl } from './lib/fontLaunch';
+import { useT } from './lib/i18n';
 
 const EXAMPLE_FONT_ID = 'archivo-black';
 const EXAMPLE_TEXT = 'YOUR NAME';
@@ -50,20 +53,21 @@ const moreLinks = [
 ] as const;
 
 export default function Home() {
+  const t = useT();
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 md:px-6 md:py-12">
       <header>
         <div className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
           <Gem className="h-4 w-4" aria-hidden="true" />
-          Rhinestone Studio
+          {t('Rhinestone Studio')}
         </div>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink md:text-5xl">What do you want to make?</h1>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink md:text-5xl">{t('What do you want to make?')}</h1>
         <p className="mt-3 max-w-2xl text-base leading-7 text-ink-secondary">
-          Pick a starting point. Each one opens the studio with an example already made, so you can see how it works and change it.
+          {t('Pick a starting point. Each one opens the studio with an example already made, so you can see how it works and change it.')}
         </p>
       </header>
 
-      <section aria-label="Start a new design" className="grid gap-5 md:grid-cols-3">
+      <section aria-label={t('Start a new design')} className="grid gap-5 md:grid-cols-3">
         {goals.map((goal) => {
           const Icon = goal.icon;
           return (
@@ -79,8 +83,8 @@ export default function Home() {
                 </div>
                 <ArrowRight className="h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-accent-700" aria-hidden="true" />
               </div>
-              <h2 className="mt-5 text-xl font-semibold text-ink">{goal.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">{goal.copy}</p>
+              <h2 className="mt-5 text-xl font-semibold text-ink">{t(goal.title)}</h2>
+              <p className="mt-3 text-sm leading-7 text-ink-secondary">{t(goal.copy)}</p>
             </Link>
           );
         })}
@@ -92,25 +96,25 @@ export default function Home() {
 
       <StarterGallery />
 
-      <section aria-label="How it works" className="rounded-[2rem] border border-border/80 bg-surface-raised p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">How it works</h2>
+      <section aria-label={t('How it works')} className="rounded-[2rem] border border-border/80 bg-surface-raised p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">{t('How it works')}</h2>
         <ol className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {workflow.map((step, index) => (
             <li key={step.title} className="flex gap-3">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-ink">{index + 1}</span>
               <div>
-                <div className="text-sm font-semibold text-ink">{step.title}</div>
-                <p className="mt-0.5 text-sm leading-6 text-ink-secondary">{step.copy}</p>
+                <div className="text-sm font-semibold text-ink">{t(step.title)}</div>
+                <p className="mt-0.5 text-sm leading-6 text-ink-secondary">{t(step.copy)}</p>
               </div>
             </li>
           ))}
         </ol>
         <p className="mt-4 text-sm text-ink-secondary">
-          First time cutting rhinestone templates? <Link href="/setup" className="font-semibold text-accent-600 underline-offset-2 hover:underline">Calibrate your material</Link> once so holes match your stones.
+          {t('First time cutting rhinestone templates?')} <Link href="/setup" className="font-semibold text-accent-600 underline-offset-2 hover:underline">{t('Calibrate your material')}</Link> {t('once so holes match your stones.')}
         </p>
       </section>
 
-      <nav aria-label="More" className="flex flex-wrap gap-3">
+      <nav aria-label={t('More')} className="flex flex-wrap gap-3">
         {moreLinks.map((link) => {
           const Icon = link.icon;
           return (
@@ -120,7 +124,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
-              {link.label}
+              {t(link.label)}
             </Link>
           );
         })}

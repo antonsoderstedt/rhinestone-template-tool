@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation';
 import GlobalTopNav from './GlobalTopNav';
 import SkipLink from './SkipLink';
+import LanguageSync from './LanguageSync';
+import { useT } from '../lib/i18n';
 
 function isStudioRoute(pathname: string): boolean {
   return pathname.startsWith('/rhinestone') || pathname.startsWith('/htv');
@@ -10,11 +12,13 @@ function isStudioRoute(pathname: string): boolean {
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useT();
   const studioRoute = isStudioRoute(pathname);
 
   return (
     <div className={studioRoute ? 'flex h-dvh min-h-dvh flex-col overflow-hidden' : 'flex min-h-full flex-col'}>
-      <SkipLink label={studioRoute ? 'Skip to editor' : 'Skip to main content'} />
+      <LanguageSync />
+      <SkipLink label={studioRoute ? t('Skip to editor') : t('Skip to main content')} />
       <GlobalTopNav />
       {studioRoute ? (
         // The studios render their own <main id="main-content"> around the canvas.

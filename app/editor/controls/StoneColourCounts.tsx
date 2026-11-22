@@ -3,12 +3,14 @@
 import { useMemo } from 'react';
 import { countStonesByColour, inkOn } from '../stoneColours';
 
+import { useT } from '../../lib/i18n';
 /** How many stones of each colour, when the design has colours. Renders nothing for a one-colour design. */
 export default function StoneColourCounts({ stones }: { stones: ReadonlyArray<{ metadata?: Record<string, unknown> }> }) {
+  const t = useT();
   const counts = useMemo(() => countStonesByColour(stones), [stones]);
   if (counts.length === 0) return null;
   return (
-    <div className="space-y-1.5" aria-label="Stones by colour">
+    <div className="space-y-1.5" aria-label={t('Stones by colour')}>
       <ul className="space-y-1">
         {counts.map((entry) => (
           <li key={entry.hex} className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">

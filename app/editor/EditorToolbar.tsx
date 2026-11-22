@@ -4,6 +4,7 @@ import { Grid3X3, Hand, MousePointerClick, MousePointer2, Type, Upload } from 'l
 import { EditorTool, EditorAction } from './EditorState';
 import { getToolShortcutLabel, railToolFor } from './editorUi';
 
+import { useT } from '../lib/i18n';
 interface EditorToolbarProps {
   activeTool: EditorTool;
   dispatch: React.Dispatch<EditorAction>;
@@ -25,6 +26,7 @@ const TOOLS: Array<{
 ];
 
 export default function EditorToolbar({ activeTool, dispatch, orientation = 'vertical' }: EditorToolbarProps) {
+  const t = useT();
   const isHorizontal = orientation === 'horizontal';
 
   return (
@@ -57,7 +59,7 @@ export default function EditorToolbar({ activeTool, dispatch, orientation = 'ver
       {isHorizontal && (
         <div className="ml-2 flex items-center gap-2 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-xs text-[var(--studio-ink-muted)]">
           <Hand className="h-3.5 w-3.5 text-[var(--studio-ink-subtle)]" />
-          <span>Pan with Space/middle mouse or wheel • Ctrl/Cmd + wheel zooms</span>
+          <span>{t('Pan with Space/middle mouse or wheel • Ctrl/Cmd + wheel zooms')}</span>
         </div>
       )}
     </aside>

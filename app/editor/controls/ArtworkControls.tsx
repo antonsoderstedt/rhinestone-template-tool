@@ -15,6 +15,7 @@ import {
   editorSegmentIdleClassName,
 } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 /** How the stones are laid out: one of three looks, each shown with what it does. */
 export function ArtworkLookControl({
   look,
@@ -30,11 +31,12 @@ export function ArtworkLookControl({
   onLookChange: (look: ArtworkLook) => void;
   onRowCountChange: (rows: number) => void;
 }) {
+  const t = useT();
   const current = ARTWORK_LOOKS.find((option) => option.look === look)!;
   return (
     <div className="space-y-2">
-      <div className={editorFieldLabelClassName}>Look</div>
-      <div role="group" aria-label="Look" className="grid grid-cols-3 gap-1.5">
+      <div className={editorFieldLabelClassName}>{t('Look')}</div>
+      <div role="group" aria-label={t('Look')} className="grid grid-cols-3 gap-1.5">
         {ARTWORK_LOOKS.map((option) => (
           <button
             key={option.look}
@@ -81,10 +83,11 @@ export function ArtworkLayersList({
   /** `null` = the artwork's own colour. */
   onStoneColour?: (colour: string, hex: string | null) => void;
 }) {
+  const t = useT();
   if (layers.length < 2) return null;
   return (
     <div className="space-y-2">
-      <div className={editorFieldLabelClassName}>Colours in the artwork</div>
+      <div className={editorFieldLabelClassName}>{t('Colours in the artwork')}</div>
       <ul className="space-y-1.5">
         {layers.map((layer) => (
           <li key={layer.colour}>
@@ -107,7 +110,7 @@ export function ArtworkLayersList({
             </label>
             {onStoneColour && layer.role === 'stones' && (
               <label className="ml-9 mt-1 flex items-center gap-2 text-xs text-ink-muted">
-                Stones are
+                {t('Stones are')}
                 <select
                   aria-label={`Stone colour for ${layer.colour}`}
                   value={stoneColours[layer.colour] ?? ''}

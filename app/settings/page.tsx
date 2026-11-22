@@ -31,6 +31,7 @@ import {
   type WorkspaceSettings,
 } from '../lib/workspaceSettings';
 
+import { useT } from '../lib/i18n';
 const DENSITY_LABELS: Record<SettingsDensityPreset, string> = {
   safe: 'Safe — extra gap, easiest to cut',
   standard: 'Standard — recommended spacing',
@@ -45,6 +46,7 @@ function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault,
 }
 
 export default function SettingsPage() {
+  const t = useT();
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
@@ -101,8 +103,8 @@ export default function SettingsPage() {
         />
 
         <WorkspaceHero
-          eyebrow={<><Settings2 className="h-3.5 w-3.5" /> Settings</>}
-          title="Defaults for new projects"
+          eyebrow={<><Settings2 className="h-3.5 w-3.5" /> {t('Settings')}</>}
+          title={t('Defaults for new projects')}
           description="Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved."
           tone="accent"
           aside={(
@@ -116,7 +118,7 @@ export default function SettingsPage() {
         />
 
         <section className="grid gap-5 xl:grid-cols-2">
-          <FormCard title="New rhinestone projects" note="Applies to new projects. Open designs keep their own values.">
+          <FormCard title={t('New rhinestone projects')} note="Applies to new projects. Open designs keep their own values.">
             <SelectField
               label="Stone size"
               value={settings.defaultStoneSize}
@@ -139,7 +141,7 @@ export default function SettingsPage() {
             />
           </FormCard>
 
-          <FormCard title="HTV export" note="Used the next time you export from the HTV studio.">
+          <FormCard title={t('HTV export')} note="Used the next time you export from the HTV studio.">
             <NumberField
               label="Weed margin (mm)"
               hint="Empty space kept around the artwork in the exported cut file."
@@ -159,7 +161,7 @@ export default function SettingsPage() {
             }}
             className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
           >
-            Reset to recommended defaults
+            {t('Reset to recommended defaults')}
           </button>
           <button
             type="button"
@@ -169,7 +171,7 @@ export default function SettingsPage() {
             }}
             className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
           >
-            Show the quick-start guide again
+            {t('Show the quick-start guide again')}
           </button>
           {guideReset && <span role="status" className="text-sm text-success-600">The guide will show the next time you open the studio.</span>}
         </div>
@@ -179,25 +181,25 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Ruler className="h-5 w-5 text-accent-600" />
-              <h2 className="text-2xl font-semibold text-ink">Calibration Profiles</h2>
+              <h2 className="text-2xl font-semibold text-ink">{t('Calibration Profiles')}</h2>
             </div>
             <Link
               href="/setup"
               className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
             >
-              Full workflow →
+              {t('Full workflow →')}
             </Link>
           </div>
           <p className="mt-2 text-sm leading-7 text-ink-secondary">
-            Switch the active profile here, approve it for production, or go to Setup to run the full calibration workflow.
+            {t('Switch the active profile here, approve it for production, or go to Setup to run the full calibration workflow.')}
           </p>
 
           {vault.calibrationProfiles.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-border bg-surface-raised px-6 py-8 text-center">
-              <p className="text-sm font-medium text-ink">No calibration profiles saved yet.</p>
-              <p className="mt-2 text-xs text-ink-muted">Run the calibration workflow in Setup to create one.</p>
+              <p className="text-sm font-medium text-ink">{t('No calibration profiles saved yet.')}</p>
+              <p className="mt-2 text-xs text-ink-muted">{t('Run the calibration workflow in Setup to create one.')}</p>
               <Link href="/setup" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-ink-inverse transition hover:bg-sand-800">
-                Go to Setup & Calibration
+                {t('Go to Setup & Calibration')}
               </Link>
             </div>
           ) : (
@@ -233,7 +235,7 @@ export default function SettingsPage() {
                           onClick={() => handleSetActiveProfile(profile.id)}
                           className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink-secondary transition hover:bg-surface hover:text-ink"
                         >
-                          Set active
+                          {t('Set active')}
                         </button>
                       )}
                       <button
@@ -246,7 +248,7 @@ export default function SettingsPage() {
                         onClick={() => handleDeleteProfile(profile.id)}
                         className="rounded-lg border border-danger-200 px-3 py-1.5 text-xs font-medium text-danger-600 transition hover:bg-danger-50"
                       >
-                        Delete
+                        {t('Delete')}
                       </button>
                     </div>
                   </div>

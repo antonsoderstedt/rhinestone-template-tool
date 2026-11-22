@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Undo2, X } from 'lucide-react';
 
+import { useT } from '../lib/i18n';
 export const UNDO_TOAST_DURATION_MS = 8000;
 
 export interface UndoToastProps {
@@ -27,6 +28,7 @@ export default function UndoToast({
   onDismiss,
   durationMs = UNDO_TOAST_DURATION_MS,
 }: UndoToastProps) {
+  const t = useT();
   const onDismissRef = useRef(onDismiss);
 
   useEffect(() => {
@@ -55,12 +57,12 @@ export default function UndoToast({
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-purple-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400"
         >
           <Undo2 className="h-3.5 w-3.5" />
-          Undo
+          {t('Undo')}
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss message"
+          aria-label={t('Dismiss message')}
           className="shrink-0 rounded p-1 text-zinc-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
         >
           <X className="h-3.5 w-3.5" />

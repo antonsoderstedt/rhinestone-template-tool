@@ -9,6 +9,7 @@ import { getHtvColor } from './htvMaterialCatalog';
 import { fitRect, useTouchViewGestures } from '../lib/touchGestures';
 import { approximateLayerBounds, computeDesignBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
 
+import { useT } from '../lib/i18n';
 interface HtvCanvasProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
@@ -35,6 +36,7 @@ type Interaction =
   | { kind: 'marquee'; pointerId: number; startMmX: number; startMmY: number; curMmX: number; curMmY: number; moved: boolean };
 
 export default function HtvCanvas({ state, dispatch, measuredSizes }: HtvCanvasProps) {
+  const t = useT();
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
@@ -279,7 +281,7 @@ export default function HtvCanvas({ state, dispatch, measuredSizes }: HtvCanvasP
   return (
     <div ref={containerRef} className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">{t('HTV canvas')}</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {placementLayers.length > 0 ? `${placementLayers.length} layer${placementLayers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>
@@ -339,26 +341,26 @@ export default function HtvCanvas({ state, dispatch, measuredSizes }: HtvCanvasP
         {placementLayers.length === 0 && (
           <g pointerEvents="none">
             <text x={0} y={-8} textAnchor="middle" fill="#d4d4d8" style={{ fontSize: '12px', fontWeight: 700 }}>
-              Empty HTV workspace
+              {t('Empty HTV workspace')}
             </text>
             <text x={0} y={10} textAnchor="middle" fill="#a1a1aa" style={{ fontSize: '9px' }}>
-              Add text, import artwork, or start from a shape
+              {t('Add text, import artwork, or start from a shape')}
             </text>
           </g>
         )}
       </svg>
 
       <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom in">
+        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom in')}>
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom out')}>
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Reset view')}>
           <Scan className="h-4 w-4" />
         </button>
-        <button onClick={fitToView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Fit design to view">
+        <button onClick={fitToView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Fit design to view')}>
           <Expand className="h-4 w-4" />
         </button>
       </div>

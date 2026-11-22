@@ -1,6 +1,7 @@
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import { getExportConfidence, summarizeExportStatus } from './summarizeExportStatus';
 
+import { useT } from '../lib/i18n';
 interface ExportReadinessPanelProps {
   result: ExportReadinessResult | null;
   showCalibrationStep?: boolean;
@@ -13,6 +14,7 @@ interface ExportReadinessPanelProps {
  * This component only renders the result — it never recomputes readiness.
  */
 export default function ExportReadinessPanel({ result, showCalibrationStep = true }: ExportReadinessPanelProps) {
+  const t = useT();
   if (!result) return null;
 
   const summary = summarizeExportStatus(result);
@@ -45,30 +47,30 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
       {/* ── Summary stats ─────────────────────────────────────────────── */}
       <div className="bg-surface border-b border-border px-4 py-3">
         <div className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">
-          <span>Export confidence</span>
+          <span>{t('Export confidence')}</span>
           <span className={confidenceTextClass}>{confidence.label}</span>
         </div>
 
         <div className="rounded-md border border-border bg-surface-raised p-2 text-xs leading-5 text-ink-secondary">
-          <div className="font-semibold uppercase tracking-[0.12em] text-ink-muted">Next action</div>
+          <div className="font-semibold uppercase tracking-[0.12em] text-ink-muted">{t('Next action')}</div>
           <p className="mt-1 text-sm leading-6 text-ink">{nextAction}</p>
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Stones</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Stones')}</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.stoneCount}</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Width</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Width')}</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.widthMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Height</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Height')}</dt>
             <dd className="font-semibold text-ink text-sm">{result.summary.heightMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-xs">Cutter</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Cutter')}</dt>
             <dd className="font-semibold text-ink text-sm truncate">{result.summary.cutter}</dd>
           </div>
         </dl>
@@ -80,7 +82,7 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
           {showCalibrationStep && summary.needsCalibration && (
             <div className="bg-amber-50 px-4 py-3">
               <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">
-                Export step — calibration required
+                {t('Export step — calibration required')}
               </p>
             </div>
           )}
@@ -88,7 +90,7 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
           {errors.length > 0 && (
             <div className="bg-danger-50 px-4 py-3">
               <p className="text-xs font-semibold text-danger-600 uppercase tracking-wide mb-1.5">
-                Errors — must fix before export
+                {t('Errors — must fix before export')}
               </p>
               <ul className="space-y-1">
                 {errors.map((issue, i) => (
@@ -104,7 +106,7 @@ export default function ExportReadinessPanel({ result, showCalibrationStep = tru
           {warnings.length > 0 && (
             <div className="bg-warning-50 px-4 py-3">
               <p className="text-xs font-semibold text-warning-600 uppercase tracking-wide mb-1.5">
-                Warnings — export allowed, review before cutting
+                {t('Warnings — export allowed, review before cutting')}
               </p>
               <ul className="space-y-1">
                 {warnings.map((issue, i) => (

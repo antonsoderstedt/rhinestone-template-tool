@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '../lib/i18n';
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SvgPreviewProps {
@@ -18,10 +20,11 @@ interface SvgPreviewProps {
  * here without proper sanitization first — doing so would be an XSS risk.
  */
 export default function SvgPreview({ svg, title = 'Preview' }: SvgPreviewProps) {
+  const t = useT();
   if (!svg) {
     return (
       <div className="flex h-40 items-center justify-center rounded border border-border bg-surface text-sm text-ink-secondary">
-        No SVG to preview.
+        {t('No SVG to preview.')}
       </div>
     );
   }

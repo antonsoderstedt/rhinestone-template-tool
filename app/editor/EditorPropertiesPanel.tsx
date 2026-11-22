@@ -55,6 +55,7 @@ import { TEXT_EXAMPLES, getEditableStatusCopy, getSelectionActionState, getSelec
 import { getGeneratorCapabilityProfile } from '@/src/lib/rhinestone-engine/index';
 import { findNearestValidStonePosition } from './collisionDetection';
 
+import { useT } from '../lib/i18n';
 interface EditorPropertiesPanelProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
@@ -111,6 +112,7 @@ function GeneratorErrorBanner({ outlineFontStatus }: { outlineFontStatus?: Outli
 }
 
 export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFontStatus, artworkInfo, exportReadiness, stones, onQuickFix, canResize = false, overlapEnlargement = null }: EditorPropertiesPanelProps) {
+  const t = useT();
   if (mode === 'source') {
     const sourceTool = getSourcePanelTool(state);
     const statusCopy = getEditableStatusCopy(state.editableTemplate.isEditable);
@@ -119,8 +121,8 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 
         {state.activeTool === 'select' ? (
           <>
-            <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
-              <p className="text-xs text-[var(--studio-ink-muted)]">Switch to the Inspect tab to fine-tune selection position, alignment, and export options.</p>
+            <PanelSection title={t('Select tool')} description="Click, shift-click, or drag a box on the canvas to select stones.">
+              <p className="text-xs text-[var(--studio-ink-muted)]">{t('Switch to the Inspect tab to fine-tune selection position, alignment, and export options.')}</p>
             </PanelSection>
             {state.parts.length > 0 && <DesignPartsPanel state={state} dispatch={dispatch} />}
           </>
@@ -158,16 +160,16 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
     return (
       <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
         {quickFixes.length > 0 && onQuickFix && (
-          <PanelSection title="Quick fixes" description="Problems found in this design, and one-click ways to fix them.">
+          <PanelSection title={t('Quick fixes')} description="Problems found in this design, and one-click ways to fix them.">
             <QuickFixes items={quickFixes} canResize={canResize} onAction={onQuickFix} />
           </PanelSection>
         )}
 
-        <PanelSection title="Inspector" description="Selection, position, alignment, and export controls live here.">
+        <PanelSection title={t('Inspector')} description="Selection, position, alignment, and export controls live here.">
           <SelectToolProperties state={state} dispatch={dispatch} />
         </PanelSection>
 
-        <PanelSection title="Export Settings" description="These options affect only the exported SVG output." defaultOpen={false}>
+        <PanelSection title={t('Export Settings')} description="These options affect only the exported SVG output." defaultOpen={false}>
           <label className="flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink-secondary)]">
             <input
               type="checkbox"
@@ -175,7 +177,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeGuideBox: e.target.checked } })}
               className="h-4 w-4 rounded border-[var(--studio-border-strong)] bg-[var(--studio-well)]"
             />
-            Include guide box
+            {t('Include guide box')}
           </label>
 
           <label className="flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm text-[var(--studio-ink-secondary)]">
@@ -185,7 +187,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               onChange={(e) => dispatch({ type: 'UPDATE_EXPORT_SETTINGS', updates: { includeLabels: e.target.checked } })}
               className="h-4 w-4 rounded border-[var(--studio-border-strong)] bg-[var(--studio-well)]"
             />
-            Include labels
+            {t('Include labels')}
           </label>
 
           {state.includeLabels && (
@@ -206,7 +208,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
         </PanelSection>
 
         {stones && stones.length > 0 && (
-          <PanelSection title="Stone colour" description="What colour the stones will be. Each colour of an uploaded artwork can have its own." defaultOpen={false}>
+          <PanelSection title={t('Stone colour')} description="What colour the stones will be. Each colour of an uploaded artwork can have its own." defaultOpen={false}>
             <StoneColourPicker
               label="Colour of the stones"
               value={state.designStoneColour}
@@ -217,14 +219,14 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
         )}
 
         {stones && stones.length > 0 && (
-          <PanelSection title="Stones to buy" description="How many stones and packs this design needs." defaultOpen={false}>
+          <PanelSection title={t('Stones to buy')} description="How many stones and packs this design needs." defaultOpen={false}>
             <StoneColourCounts stones={stones} />
             <StoneEstimateCard stones={stones} />
           </PanelSection>
         )}
 
         {exportReadiness && (
-          <PanelSection title="Export readiness" description="Cricut-safe checks for the current design." defaultOpen={false}>
+          <PanelSection title={t('Export readiness')} description="Cricut-safe checks for the current design." defaultOpen={false}>
             <ExportReadinessPanel result={exportReadiness} />
           </PanelSection>
         )}
@@ -236,6 +238,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 // ─── Tool-Specific Property Panels ───────────────────────────────────────────
 
 function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
+  const t = useT();
   const { textTool } = state;
   const textCapabilities = getGeneratorCapabilityProfile('outline-text');
   const selectedFontDefinition = getOutlineFontDefinition(textTool.fontId);
@@ -277,17 +280,17 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
     <div className="space-y-4">
       {/* Text Input */}
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Text</span>
+        <span className={editorFieldLabelClassName}>{t('Text')}</span>
         <textarea
           value={textTool.text}
           onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { text: e.target.value } })}
           rows={3}
-          placeholder="Your name"
+          placeholder={t('Your name')}
           className={`${editorTextareaClassName} resize-none font-mono`}
         />
       </label>
-      <div className="flex flex-wrap items-center gap-1.5" aria-label="Try an example">
-        <span className="text-xs uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Try</span>
+      <div className="flex flex-wrap items-center gap-1.5" aria-label={t('Try an example')}>
+        <span className="text-xs uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('Try')}</span>
         {TEXT_EXAMPLES.map((example) => (
           <button
             key={example.label}
@@ -317,15 +320,15 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 
       {textTool.mode === 'outline' && (
         <div className="space-y-2">
-          <span className={editorFieldLabelClassName}>Text style</span>
+          <span className={editorFieldLabelClassName}>{t('Text style')}</span>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { outlineTextStyle: 'outline' } })}
               className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'outline' ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
             >
-              <div className="text-sm font-medium">Outline text</div>
-              <p className="mt-1 text-xs text-ink-muted">Follow the letter contours only.</p>
+              <div className="text-sm font-medium">{t('Outline text')}</div>
+              <p className="mt-1 text-xs text-ink-muted">{t('Follow the letter contours only.')}</p>
             </button>
             <button
               type="button"
@@ -333,8 +336,8 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
               disabled={!fillModes.includes('fill')}
               className={`${editorSegmentBaseClassName} ${textTool.outlineTextStyle === 'filled-typography' ? editorSegmentActiveClassName : editorSegmentIdleClassName} ${!fillModes.includes('fill') ? 'cursor-not-allowed opacity-50 hover:border-border hover:bg-surface' : ''}`}
             >
-              <div className="text-sm font-medium">Filled letters</div>
-              <p className="mt-1 text-xs text-ink-muted">Stones inside the letters as well as on the edge.</p>
+              <div className="text-sm font-medium">{t('Filled letters')}</div>
+              <p className="mt-1 text-xs text-ink-muted">{t('Stones inside the letters as well as on the edge.')}</p>
             </button>
           </div>
         </div>
@@ -366,15 +369,15 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
           />
 
           <label className="flex flex-col gap-1.5">
-            <span className={editorFieldLabelClassName}>Alignment</span>
+            <span className={editorFieldLabelClassName}>{t('Alignment')}</span>
             <select
               value={textTool.align}
               onChange={(e) => dispatch({ type: 'UPDATE_TEXT_TOOL', updates: { align: e.target.value as 'left' | 'center' | 'right' } })}
               className={editorSelectClassName}
             >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
+              <option value="left">{t('Left')}</option>
+              <option value="center">{t('Center')}</option>
+              <option value="right">{t('Right')}</option>
             </select>
           </label>
 
@@ -481,6 +484,7 @@ function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolProperti
 }
 
 function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
+  const t = useT();
   const { rhinestoneFontTool } = state;
   const selectedFontDefinition = getRhinestoneFontDefinition(rhinestoneFontTool.rhinestoneFontId as never);
   const supportedStoneSizes = getSupportedRhinestoneFontStoneSizes(rhinestoneFontTool.rhinestoneFontId);
@@ -507,7 +511,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Text</span>
+        <span className={editorFieldLabelClassName}>{t('Text')}</span>
         <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>Suggested sample: {selectedFontDefinition.suggestedText}</span>
           <button
@@ -518,11 +522,11 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
             })}
             className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
-            Use sample
+            {t('Use sample')}
           </button>
         </div>
         <textarea
-          aria-label="Rhinestone font text"
+          aria-label={t('Rhinestone font text')}
           value={rhinestoneFontTool.text}
           onChange={(e) => dispatch({
             type: 'UPDATE_RHINESTONE_FONT_TOOL',
@@ -537,9 +541,9 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       <TextStyleGallery state={state} dispatch={dispatch} />
 
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Stone size</span>
+        <span className={editorFieldLabelClassName}>{t('Stone size')}</span>
         <select
-          aria-label="Rhinestone font stone size"
+          aria-label={t('Rhinestone font stone size')}
           value={rhinestoneFontTool.stoneSize}
           onChange={(e) => dispatch({
             type: 'UPDATE_RHINESTONE_FONT_TOOL',
@@ -618,7 +622,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
       )}
       {rhinestoneFontTool.presentationMode === 'digits' && /[A-Za-z]/.test(rhinestoneFontTool.text) && (
         <div role="alert" className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
-          This font is optimized for digits. Letter input may be unsupported or incomplete.
+          {t('This font is optimized for digits. Letter input may be unsupported or incomplete.')}
         </div>
       )}
     </div>
@@ -626,6 +630,7 @@ function RhinestoneFontToolProperties({ state, dispatch, outlineFontStatus }: To
 }
 
 function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
+  const t = useT();
   const { svgAlphabetTool } = state;
   const selectedAlphabet = getSvgAlphabetDefinition(svgAlphabetTool.svgAlphabetId as never);
   const supportedStoneSizes = selectedAlphabet.supportedTargetStoneSizeIds;
@@ -636,13 +641,13 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs leading-6 text-accent-700">
-        Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. Each letter is a ready-made drawing, used as it is.
+        {t('Composes text from a curated SVG alphabet where each letter is a separate glyph SVG. Each letter is a ready-made drawing, used as it is.')}
       </div>
 
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Text</span>
+        <span className={editorFieldLabelClassName}>{t('Text')}</span>
         <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>Suggested sample: {selectedAlphabet.suggestedText}</span>
           <button
@@ -653,11 +658,11 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
             })}
             className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
-            Use sample
+            {t('Use sample')}
           </button>
         </div>
         <textarea
-          aria-label="SVG alphabet text"
+          aria-label={t('SVG alphabet text')}
           value={svgAlphabetTool.text}
           onChange={(e) => dispatch({
             type: 'UPDATE_SVG_ALPHABET_TOOL',
@@ -672,9 +677,9 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
       <TextStyleGallery state={state} dispatch={dispatch} />
 
       <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Stone size</span>
+        <span className={editorFieldLabelClassName}>{t('Stone size')}</span>
         <select
-          aria-label="SVG alphabet stone size"
+          aria-label={t('SVG alphabet stone size')}
           value={svgAlphabetTool.stoneSize}
           onChange={(e) => dispatch({
             type: 'UPDATE_SVG_ALPHABET_TOOL',
@@ -738,6 +743,7 @@ function SvgAlphabetToolProperties({ state, dispatch, outlineFontStatus }: ToolP
 }
 
 function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
+  const t = useT();
   const { letterStencilTool } = state;
   const availableAlphabets = listSvgAlphabets();
   // The test fixture is for the test suite; it has no font file in the browser and must not be offered to users.
@@ -771,13 +777,13 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-accent-300 bg-accent-50 px-3 py-3 text-xs text-accent-700">
-        Generates a reusable stencil card per letter with an outer cut frame. I stays narrow, W stays wide, and every card keeps the same height so the machine cuts the card and the rhinestone holes together.
+        {t('Generates a reusable stencil card per letter with an outer cut frame. I stays narrow, W stays wide, and every card keeps the same height so the machine cuts the card and the rhinestone holes together.')}
       </div>
 
       <GeneratorErrorBanner outlineFontStatus={outlineFontStatus} />
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Glyph source</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Glyph source')}</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -790,8 +796,8 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.sourceType === 'svg-alphabet' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">SVG Alphabet</div>
-            <div className="mt-1 text-xs text-ink-muted">Curated per-letter SVG glyphs</div>
+            <div className="font-medium">{t('SVG Alphabet')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Curated per-letter SVG glyphs')}</div>
           </button>
           <button
             type="button"
@@ -804,17 +810,17 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.sourceType === 'rhinestone-font' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">Rhinestone Font</div>
-            <div className="mt-1 text-xs text-ink-muted">Any registered OpenType rhinestone font</div>
+            <div className="font-medium">{t('Rhinestone Font')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Any registered OpenType rhinestone font')}</div>
           </button>
         </div>
       </div>
 
       {letterStencilTool.sourceType === 'svg-alphabet' ? (
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-secondary">Alphabet</span>
+          <span className="text-xs font-medium text-ink-secondary">{t('Alphabet')}</span>
           <select
-            aria-label="Stencil alphabet"
+            aria-label={t('Stencil alphabet')}
             value={letterStencilTool.svgAlphabetId}
             onChange={(e) => {
               const next = getSvgAlphabetDefinition(e.target.value as never);
@@ -840,9 +846,9 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
         </label>
       ) : (
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-secondary">Rhinestone font</span>
+          <span className="text-xs font-medium text-ink-secondary">{t('Rhinestone font')}</span>
           <select
-            aria-label="Stencil rhinestone font"
+            aria-label={t('Stencil rhinestone font')}
             value={letterStencilTool.rhinestoneFontId}
             onChange={(e) => {
               const next = getRhinestoneFontDefinition(e.target.value as never);
@@ -869,7 +875,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       )}
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Text</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Text')}</span>
         <div className="flex items-center justify-between gap-3 text-xs text-ink-muted">
           <span>{cardCount} card{cardCount === 1 ? '' : 's'} · Suggested: {activeSource.suggestedText}</span>
           <button
@@ -880,11 +886,11 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
             })}
             className="rounded-full border border-border px-2 py-1 text-xs text-ink-secondary transition hover:border-border-strong hover:bg-surface-sunken"
           >
-            Use sample
+            {t('Use sample')}
           </button>
         </div>
         <textarea
-          aria-label="Stencil text"
+          aria-label={t('Stencil text')}
           value={letterStencilTool.text}
           onChange={(e) => dispatch({
             type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -897,9 +903,9 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Stone size</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Stone size')}</span>
         <select
-          aria-label="Stencil stone size"
+          aria-label={t('Stencil stone size')}
           value={letterStencilTool.stoneSize}
           onChange={(e) => dispatch({
             type: 'UPDATE_LETTER_STENCIL_TOOL',
@@ -921,23 +927,23 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
       </label>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Layout mode</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Layout mode')}</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => dispatch({ type: 'UPDATE_LETTER_STENCIL_TOOL', updates: { layoutMode: 'preview' } })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.layoutMode === 'preview' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">Preview</div>
-            <div className="mt-1 text-xs text-ink-muted">Cards edge-to-edge, for visual word preview only</div>
+            <div className="font-medium">{t('Preview')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Cards edge-to-edge, for visual word preview only')}</div>
           </button>
           <button
             type="button"
             onClick={() => dispatch({ type: 'UPDATE_LETTER_STENCIL_TOOL', updates: { layoutMode: 'cut-sheet' } })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${letterStencilTool.layoutMode === 'cut-sheet' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">Cut sheet</div>
-            <div className="mt-1 text-xs text-ink-muted">Framed cards with cut spacing, ready to cut</div>
+            <div className="font-medium">{t('Cut sheet')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Framed cards with cut spacing, ready to cut')}</div>
           </button>
         </div>
         <span className="text-xs text-ink-muted">{modeCopy}</span>
@@ -1009,6 +1015,7 @@ function LetterStencilToolProperties({ state, dispatch, outlineFontStatus }: Too
 }
 
 function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) {
+  const t = useT();
   const { templateImportTool } = state;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1083,14 +1090,13 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-info-500/30 bg-info-50 px-3 py-3 text-xs text-info-600">
-        Imports circles already positioned as stones. For a logo or ordinary
-        vector shape, choose SVG Convert Shape instead.
+        {t('Imports circles already positioned as stones. For a logo or ordinary vector shape, choose SVG Convert Shape instead.')}
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Existing rhinestone template</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Existing rhinestone template')}</span>
         <input
-          aria-label="Existing rhinestone template"
+          aria-label={t('Existing rhinestone template')}
           type="file"
           accept=".svg,image/svg+xml"
           onChange={handleFileSelect}
@@ -1106,7 +1112,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
         })}
       />
       <p className="-mt-2 text-xs text-ink-muted">
-        Fallback label only. Imported circle diameter remains unchanged.
+        {t('Fallback label only. Imported circle diameter remains unchanged.')}
       </p>
 
       {templateImportTool.importError && (
@@ -1127,7 +1133,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
             onClick={confirmImport}
             className="w-full rounded-lg bg-accent-500 px-3 py-2 text-sm font-medium text-ink-inverse hover:bg-accent-600"
           >
-            Import stones to canvas
+            {t('Import stones to canvas')}
           </button>
         </div>
       )}
@@ -1142,6 +1148,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
 }
 
 function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolPropertiesProps) {
+  const t = useT();
   const { svgTool } = state;
   const lookThumbnails = useLookThumbnails(svgTool);
   // Why the last file was refused, shown under the file picker until a good file is loaded.
@@ -1249,7 +1256,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
                 onChange={(event) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { showSourceBehind: event.target.checked } })}
                 className="h-3.5 w-3.5 rounded"
               />
-              Show the original behind the stones
+              {t('Show the original behind the stones')}
             </label>
           )}
 
@@ -1303,7 +1310,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           )}
 
           {artworkInfo && artworkInfo.warnings.length > 0 && (
-            <ul className="space-y-1 text-xs text-ink-muted" aria-label="Notes about this file">
+            <ul className="space-y-1 text-xs text-ink-muted" aria-label={t('Notes about this file')}>
               {artworkInfo.warnings.slice(0, 4).map((warning) => (
                 <li key={warning}>{warning}</li>
               ))}
@@ -1324,7 +1331,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
     <div className="space-y-4">
       {/* File Upload */}
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-secondary">Upload artwork</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Upload artwork')}</span>
         <div
           tabIndex={0}
           onDragOver={(e) => e.preventDefault()}
@@ -1332,8 +1339,8 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           onPaste={handlePaste}
           className="rounded-xl border border-dashed border-border bg-surface-sunken px-4 py-4 text-center text-sm text-ink-secondary transition hover:border-border-strong focus:border-accent-400"
         >
-          <p>Drag and drop or paste artwork here.</p>
-          <p className="mt-1 text-xs text-ink-muted">Use the file picker below if you prefer browsing.</p>
+          <p>{t('Drag and drop or paste artwork here.')}</p>
+          <p className="mt-1 text-xs text-ink-muted">{t('Use the file picker below if you prefer browsing.')}</p>
         </div>
         <input
           id={uploadInputId}
@@ -1346,7 +1353,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
         <span className="inline-flex w-fit cursor-pointer items-center rounded-md bg-accent-500 px-3 py-2 text-xs font-medium text-ink-inverse hover:bg-accent-600 peer-focus-visible:ring-2">
           Choose a file
         </span>
-        <span className="text-xs text-ink-muted">Supports SVG, PNG, JPG, WEBP, BMP, and GIF.</span>
+        <span className="text-xs text-ink-muted">{t('Supports SVG, PNG, JPG, WEBP, BMP, and GIF.')}</span>
         {uploadError && (
           <span role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-2 text-xs text-danger-600">{uploadError}</span>
         )}
@@ -1369,7 +1376,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
       {svgTool.assetKind === 'image' && svgTool.uploadedImageDataUrl && (
         <>
           <div className="overflow-hidden rounded-xl border border-border bg-surface-sunken">
-            <div className="border-b border-border px-3 py-2 text-xs font-medium text-ink-secondary">Original image</div>
+            <div className="border-b border-border px-3 py-2 text-xs font-medium text-ink-secondary">{t('Original image')}</div>
             {/* eslint-disable-next-line @next/next/no-img-element -- client-side data: URI, no network fetch for next/image to optimize */}
             <img
               src={svgTool.uploadedImageDataUrl}
@@ -1379,8 +1386,8 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-medium text-ink-secondary">Number of stone colours</span>
-            <div role="group" aria-label="Number of stone colours" className="grid grid-cols-4 gap-2">
+            <span className="text-xs font-medium text-ink-secondary">{t('Number of stone colours')}</span>
+            <div role="group" aria-label={t('Number of stone colours')} className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((count) => (
                 <button
                   key={count}
@@ -1424,7 +1431,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
               onChange={(e) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { imageInvert: e.target.checked } })}
               className="h-3.5 w-3.5 rounded"
             />
-            Stones on the background instead of the shape
+            {t('Stones on the background instead of the shape')}
           </label>
         </>
       )}
@@ -1473,6 +1480,7 @@ function GridToolProperties({ state, dispatch }: ToolPropertiesProps) {
 }
 
 function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
+  const t = useT();
   const { manualTool } = state;
   const recommendedDrawSpacingMm = getRecommendedCenterDistance(manualTool.addStoneSize);
   const selectAllStoneIds = state.editableTemplate.isEditable
@@ -1492,66 +1500,66 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-sm text-ink-secondary">
-        <p className="font-medium text-ink">Pen tool</p>
-        <p className="mt-1 text-xs text-ink-muted">Draw or erase directly on the canvas. Pen mode is now freehand by default, while the grid stays visible as a guide in the background.</p>
+        <p className="font-medium text-ink">{t('Pen tool')}</p>
+        <p className="mt-1 text-xs text-ink-muted">{t('Draw or erase directly on the canvas. Pen mode is now freehand by default, while the grid stays visible as a guide in the background.')}</p>
       </div>
 
       <div className="space-y-2">
-        <span className="text-xs font-medium text-ink-secondary">Tool mode</span>
+        <span className="text-xs font-medium text-ink-secondary">{t('Tool mode')}</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { interactionMode: 'place' } })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.interactionMode === 'place' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">Place</div>
-            <div className="mt-1 text-xs text-ink-muted">Click or drag to add stones</div>
+            <div className="font-medium">{t('Place')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Click or drag to add stones')}</div>
           </button>
           <button
             type="button"
             onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { interactionMode: 'erase' } })}
             className={`rounded-xl border px-3 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.interactionMode === 'erase' ? 'border-danger-400 bg-danger-50 text-danger-600' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
           >
-            <div className="font-medium">Erase</div>
-            <div className="mt-1 text-xs text-ink-muted">Click or drag to remove stones</div>
+            <div className="font-medium">{t('Erase')}</div>
+            <div className="mt-1 text-xs text-ink-muted">{t('Click or drag to remove stones')}</div>
           </button>
         </div>
       </div>
       
       {manualTool.interactionMode === 'place' && (
         <div className="space-y-2">
-          <span className="text-xs font-medium text-ink-secondary">Draw mode</span>
+          <span className="text-xs font-medium text-ink-secondary">{t('Draw mode')}</span>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'freehand' } })}
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'freehand' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
-              <div className="font-medium">Freehand</div>
-              <div className="mt-1 text-xs text-ink-muted">Follows the cursor, nudges around crowding</div>
+              <div className="font-medium">{t('Freehand')}</div>
+              <div className="mt-1 text-xs text-ink-muted">{t('Follows the cursor, nudges around crowding')}</div>
             </button>
             <button
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'grid' } })}
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'grid' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
-              <div className="font-medium">Grid snap</div>
-              <div className="mt-1 text-xs text-ink-muted">Locks every stone to the grid</div>
+              <div className="font-medium">{t('Grid snap')}</div>
+              <div className="mt-1 text-xs text-ink-muted">{t('Locks every stone to the grid')}</div>
             </button>
             <button
               type="button"
               onClick={() => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { drawMode: 'row' } })}
               className={`rounded-xl border px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-accent-400 ${manualTool.drawMode === 'row' ? 'border-accent-400 bg-accent-50 text-ink' : 'border-border bg-surface-sunken text-ink-secondary hover:border-border hover:bg-surface-raised'}`}
             >
-              <div className="font-medium">Row lock</div>
-              <div className="mt-1 text-xs text-ink-muted">Keeps a drag perfectly straight</div>
+              <div className="font-medium">{t('Row lock')}</div>
+              <div className="mt-1 text-xs text-ink-muted">{t('Keeps a drag perfectly straight')}</div>
             </button>
           </div>
           {manualTool.drawMode === 'grid' && (
-            <p className="text-xs text-ink-muted">Grid snap forces every stone onto the grid below, ignoring &quot;Snap to Grid&quot; — a spot that would collide is skipped instead of nudged.</p>
+            <p className="text-xs text-ink-muted">{t('Grid snap forces every stone onto the grid below, ignoring "Snap to Grid" — a spot that would collide is skipped instead of nudged.')}</p>
           )}
           {manualTool.drawMode === 'row' && (
-            <p className="text-xs text-ink-muted">Row lock picks a horizontal or vertical line the moment you start dragging, then keeps every stone on it.</p>
+            <p className="text-xs text-ink-muted">{t('Row lock picks a horizontal or vertical line the moment you start dragging, then keeps every stone on it.')}</p>
           )}
         </div>
       )}
@@ -1569,7 +1577,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
           disabled={selectAllStoneIds.length === 0}
           className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs font-medium text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Select all
+          {t('Select all')}
         </button>
         <button
           type="button"
@@ -1577,7 +1585,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
           disabled={selectAllStoneIds.length === 0}
           className="rounded-lg border border-info-500/20 bg-info-50 px-3 py-2 text-xs font-medium text-info-600 transition hover:bg-info-500/15 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Move whole design
+          {t('Move whole design')}
         </button>
       </div>
 
@@ -1600,7 +1608,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
             onChange={(e) => dispatch({ type: 'UPDATE_MANUAL_TOOL', updates: { snapToGrid: e.target.checked } })}
             className="rounded border-border bg-surface-sunken text-accent-600 focus:ring-accent-500 focus:ring-offset-0"
           />
-          Snap to Grid
+          {t('Snap to Grid')}
         </label>
 
         <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3">
@@ -1614,7 +1622,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
             unit="mm"
             disabled={!manualTool.snapToGrid}
           />
-          {!manualTool.snapToGrid && <p className="mt-2 text-xs text-ink-muted">Enable Snap to Grid to adjust the placement step size.</p>}
+          {!manualTool.snapToGrid && <p className="mt-2 text-xs text-ink-muted">{t('Enable Snap to Grid to adjust the placement step size.')}</p>}
         </div>
       </div>
 
@@ -1631,7 +1639,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
           onChange={(e) => dispatch({ type: 'UPDATE_CANVAS', updates: { showRulers: e.target.checked } })}
           className="rounded border-border bg-surface-sunken text-accent-600 focus:ring-accent-500 focus:ring-offset-0"
         />
-        Show rulers in preview
+        {t('Show rulers in preview')}
       </label>
 
       <div className="rounded-xl border border-border bg-surface-sunken px-3 py-3 text-xs text-ink-muted">
@@ -1641,7 +1649,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
       </div>
       
       <div className="pt-4 border-t border-border space-y-2">
-        <p className="text-xs text-ink-secondary">Keyboard shortcuts:</p>
+        <p className="text-xs text-ink-secondary">{t('Keyboard shortcuts:')}</p>
         <ul className="text-xs text-ink-muted space-y-1">
           <li>• Place mode: click one stone or drag a line</li>
           <li>• Erase mode: click or drag to remove stones</li>
@@ -1654,6 +1662,7 @@ function ManualToolProperties({ state, dispatch }: ToolPropertiesProps) {
 }
 
 function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
+  const t = useT();
   const selectedCount = state.selectedStoneIds.size;
   const { editableTemplate } = state;
   const actionState = getSelectionActionState(selectedCount);
@@ -1768,7 +1777,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
       ) : (
         <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-3 shadow-sm">
           <p className="text-sm font-medium text-[var(--studio-ink)]">{selectedCount} stone{selectedCount > 1 ? 's' : ''} selected</p>
-          <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Selection actions only affect the highlighted stones.</p>
+          <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">{t('Selection actions only affect the highlighted stones.')}</p>
           {editableTemplate.isEditable && (
             <div className="mt-3">
               <StoneColourPicker
@@ -1785,7 +1794,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
       {/* Single stone position editing */}
       {selectedStone && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-ink-secondary">Position</label>
+          <label className="block text-xs font-medium text-ink-secondary">{t('Position')}</label>
           <div className="grid grid-cols-2 gap-2">
             <NumericInput
               label="X (mm)"
@@ -1874,7 +1883,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs font-medium text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40"
             title={editableTemplate.isEditable ? 'Select all stones in the editable design.' : 'Make the design editable before selecting all stones.'}
           >
-            Select all
+            {t('Select all')}
           </button>
           <button
             onClick={() => dispatch({ type: 'DUPLICATE_STONES', stoneIds: Array.from(state.selectedStoneIds) })}
@@ -1883,7 +1892,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
             title={actionState.duplicateReason ?? 'Duplicate selected stones (Cmd/Ctrl+D)'}
           >
             <CopyPlus className="h-3.5 w-3.5" />
-            Duplicate
+            {t('Duplicate')}
           </button>
           <button
             onClick={() => dispatch({ type: 'DELETE_STONES', stoneIds: Array.from(state.selectedStoneIds) })}
@@ -1892,7 +1901,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
             title={actionState.deleteReason ?? 'Delete selected stones (Delete/Backspace)'}
           >
             <DiamondMinus className="h-3.5 w-3.5" />
-            Delete
+            {t('Delete')}
           </button>
         </div>
 
@@ -1902,7 +1911,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-success-500/20 bg-success-50 px-3 py-2 text-xs font-medium text-success-600 transition hover:bg-success-500/15 disabled:cursor-not-allowed disabled:opacity-40"
           title={selectedCount > 0 ? 'Try to nudge the selected stones to the nearest safe positions.' : 'Select at least one stone to auto-correct it.'}
         >
-          Smart fix selection
+          {t('Smart fix selection')}
         </button>
 
         <button
@@ -1911,12 +1920,12 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-info-500/20 bg-info-50 px-3 py-2 text-xs font-medium text-info-600 transition hover:bg-info-500/15 disabled:cursor-not-allowed disabled:opacity-40"
           title={selectedCount >= 3 ? 'Straighten the selection and even out spacing.' : 'Select at least three stones to clean up spacing.'}
         >
-          Clean up selection
+          {t('Clean up selection')}
         </button>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-medium text-ink-secondary">Align</label>
+            <label className="block text-xs font-medium text-ink-secondary">{t('Align')}</label>
             {!actionState.canAlign && <span className="text-xs text-ink-muted">Select at least two stones</span>}
           </div>
           <div className="grid grid-cols-3 gap-1.5">
@@ -1931,12 +1940,12 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-medium text-ink-secondary">Distribute</label>
+            <label className="block text-xs font-medium text-ink-secondary">{t('Distribute')}</label>
             {!actionState.canDistribute && <span className="text-xs text-ink-muted">Select at least three stones</span>}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => dispatch({ type: 'DISTRIBUTE_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'horizontal' })} disabled={!actionState.canDistribute} className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.distributeReason ?? 'Distribute selected stones horizontally'}>Horizontal</button>
-            <button onClick={() => dispatch({ type: 'DISTRIBUTE_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'vertical' })} disabled={!actionState.canDistribute} className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.distributeReason ?? 'Distribute selected stones vertically'}>Vertical</button>
+            <button onClick={() => dispatch({ type: 'DISTRIBUTE_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'horizontal' })} disabled={!actionState.canDistribute} className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.distributeReason ?? 'Distribute selected stones horizontally'}>{t('Horizontal')}</button>
+            <button onClick={() => dispatch({ type: 'DISTRIBUTE_STONES', stoneIds: Array.from(state.selectedStoneIds), direction: 'vertical' })} disabled={!actionState.canDistribute} className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-xs text-ink transition hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40" title={actionState.distributeReason ?? 'Distribute selected stones vertically'}>{t('Vertical')}</button>
           </div>
         </div>
       </div>
@@ -1944,7 +1953,7 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
       {selectedCount > 0 && (
         <div className="space-y-3">
           <div className="pt-3 border-t border-border text-xs text-ink-secondary space-y-1">
-            <p className="font-medium">Selection Controls:</p>
+            <p className="font-medium">{t('Selection Controls:')}</p>
             <ul className="text-ink-muted space-y-1">
               <li>• Drag to move</li>
               <li>• Cmd/Ctrl+A selects all stones</li>
@@ -1965,19 +1974,19 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
           <button
             onClick={() => dispatch({ type: 'CONVERT_TO_EDITABLE' })}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500"
-            title="Select and move individual stones"
+            title={t('Select and move individual stones')}
           >
             <Hand className="h-4 w-4" />
-            Edit stones one by one
+            {t('Edit stones one by one')}
           </button>
           <p className="mt-2 text-xs text-[var(--studio-ink-muted)]">
-            Until you do, changing the settings rebuilds the design. Once you do, you can select and move each stone, and you are asked before the settings replace your edits.
+            {t('Until you do, changing the settings rebuilds the design. Once you do, you can select and move each stone, and you are asked before the settings replace your edits.')}
           </p>
         </div>
       )}
       
       <div className="pt-4 border-t border-border space-y-2">
-        <p className="text-xs text-ink-secondary">Keyboard shortcuts:</p>
+        <p className="text-xs text-ink-secondary">{t('Keyboard shortcuts:')}</p>
         <ul className="text-xs text-ink-muted space-y-1">
           <li>• Cmd/Ctrl+Z to undo</li>
           <li>• Cmd/Ctrl+Shift+Z to redo</li>

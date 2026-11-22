@@ -22,6 +22,7 @@ import {
 } from './garmentPreview/garmentCatalog';
 import GarmentSilhouette, { getPrintAreaBox } from './garmentPreview/GarmentSilhouette';
 
+import { useT } from '../lib/i18n';
 interface GarmentPreviewPanelProps {
   open: boolean;
   template: RhinestoneTemplate | null;
@@ -31,6 +32,7 @@ interface GarmentPreviewPanelProps {
 const DESIGN_FIT_MARGIN = 0.9;
 
 export default function GarmentPreviewPanel({ open, template, onClose }: GarmentPreviewPanelProps) {
+  const t = useT();
   const [garmentId, setGarmentId] = useState<GarmentType>('tshirt');
   const [colorId, setColorId] = useState<string>('black');
   const [size, setSize] = useState<GarmentSize>('M');
@@ -67,15 +69,15 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
           <div className="flex items-center gap-2 text-ink">
             <Shirt className="h-4 w-4 text-accent-600" />
             <div>
-              <h2 id="garment-preview-title" className="text-sm font-semibold">Garment preview</h2>
+              <h2 id="garment-preview-title" className="text-sm font-semibold">{t('Garment preview')}</h2>
               <p className="mt-0.5 text-xs text-ink-muted">
-                Shows where your design sits on a garment and roughly how big it is. Sizes are approximate — measure the real garment before cutting.
+                {t('Shows where your design sits on a garment and roughly how big it is. Sizes are approximate — measure the real garment before cutting.')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close garment preview"
+            aria-label={t('Close garment preview')}
             className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
           >
             <X className="h-4 w-4" />
@@ -85,7 +87,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 md:flex-row md:overflow-hidden">
           <div className="flex w-full flex-col gap-4 md:w-64 md:shrink-0 md:overflow-y-auto">
             <div className="space-y-2">
-              <span className="text-xs font-medium text-ink-secondary">Garment</span>
+              <span className="text-xs font-medium text-ink-secondary">{t('Garment')}</span>
               <div className="grid grid-cols-2 gap-2">
                 {GARMENTS.map((garment) => (
                   <button
@@ -105,7 +107,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
             </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-medium text-ink-secondary">Color</span>
+              <span className="text-xs font-medium text-ink-secondary">{t('Color')}</span>
               <div className="grid grid-cols-4 gap-2">
                 {GARMENT_COLORS.map((swatch) => (
                   <button
@@ -125,7 +127,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
             </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-medium text-ink-secondary">Size</span>
+              <span className="text-xs font-medium text-ink-secondary">{t('Size')}</span>
               <div className="grid grid-cols-5 gap-1.5">
                 {GARMENT_SIZES.map((s) => (
                   <button
@@ -149,7 +151,7 @@ export default function GarmentPreviewPanel({ open, template, onClose }: Garment
 
             {!overlay && (
               <div className="rounded-xl border border-warning-500/30 bg-warning-50 px-3 py-3 text-xs text-warning-600">
-                Nothing to preview yet — add stones to your design first.
+                {t('Nothing to preview yet — add stones to your design first.')}
               </div>
             )}
           </div>

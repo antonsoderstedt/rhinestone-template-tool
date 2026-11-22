@@ -16,6 +16,7 @@ import {
 import { alphabetThumbnail, dotMatrixThumbnail, stoneFontThumbnail, thumbnailText, type TextThumbnail } from '../textStyleThumbnails';
 import { editorFieldLabelClassName } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 interface TextStyleGalleryProps {
   state: TextStyleState;
   dispatch: React.Dispatch<EditorAction>;
@@ -39,6 +40,7 @@ export function DotsPicture({ thumbnail }: { thumbnail: TextThumbnail }) {
 
 /** The stones of a stone font, made when the card is first shown. */
 function StoneFontPicture({ fontId, text }: { fontId: string; text: string }) {
+  const t = useT();
   const [result, setResult] = useState<{ key: string; thumbnail: TextThumbnail | null } | null>(null);
   const key = `${fontId}|${thumbnailText(text, '')}`;
   useEffect(() => {
@@ -52,8 +54,8 @@ function StoneFontPicture({ fontId, text }: { fontId: string; text: string }) {
   }, [fontId, text, key]);
 
   const ready = result && result.key === key ? result : null;
-  if (!ready) return <div className="h-12 w-full animate-pulse rounded bg-[var(--studio-hover-overlay)]" aria-label="Loading" />;
-  if (!ready.thumbnail) return <p className="flex h-12 items-center text-xs text-[var(--studio-ink-muted)]">No preview</p>;
+  if (!ready) return <div className="h-12 w-full animate-pulse rounded bg-[var(--studio-hover-overlay)]" aria-label={t('Loading')} />;
+  if (!ready.thumbnail) return <p className="flex h-12 items-center text-xs text-[var(--studio-ink-muted)]">{t('No preview')}</p>;
   return (
     <div>
       <DotsPicture thumbnail={ready.thumbnail} />
@@ -64,6 +66,7 @@ function StoneFontPicture({ fontId, text }: { fontId: string; text: string }) {
 
 /** The stones of an alphabet, made when the card is first shown (the letter files are fetched once). */
 function AlphabetPicture({ alphabetId, text }: { alphabetId: string; text: string }) {
+  const t = useT();
   const [result, setResult] = useState<{ key: string; thumbnail: TextThumbnail | null } | null>(null);
   const key = `${alphabetId}|${thumbnailText(text, '')}`;
   useEffect(() => {
@@ -76,8 +79,8 @@ function AlphabetPicture({ alphabetId, text }: { alphabetId: string; text: strin
     };
   }, [alphabetId, text, key]);
   const ready = result && result.key === key ? result : null;
-  if (!ready) return <div className="h-12 w-full animate-pulse rounded bg-[var(--studio-hover-overlay)]" aria-label="Loading" />;
-  if (!ready.thumbnail) return <p className="flex h-12 items-center text-xs text-[var(--studio-ink-muted)]">No preview</p>;
+  if (!ready) return <div className="h-12 w-full animate-pulse rounded bg-[var(--studio-hover-overlay)]" aria-label={t('Loading')} />;
+  if (!ready.thumbnail) return <p className="flex h-12 items-center text-xs text-[var(--studio-ink-muted)]">{t('No preview')}</p>;
   return <DotsPicture thumbnail={ready.thumbnail} />;
 }
 
@@ -104,14 +107,15 @@ function OptionPicture({ option, text }: { option: TextStyleOption; text: string
  * Every look for the user's own words side by side. Picking one switches the tool behind the scenes and keeps the words.
  */
 export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryProps) {
+  const t = useT();
   const groups = useMemo(() => listTextStyleGroups(), []);
   const current = currentTextStyle(state);
   const text = currentWords(state);
 
   return (
-    <div className="space-y-3" role="group" aria-label="Text style">
+    <div className="space-y-3" role="group" aria-label={t('Text style')}>
       <style dangerouslySetInnerHTML={{ __html: getOutlineFontFaceCss() }} />
-      <span className={editorFieldLabelClassName}>Style</span>
+      <span className={editorFieldLabelClassName}>{t('Style')}</span>
       {groups.map((group) => (
         <div key={group.id} className="space-y-1.5">
           <div>

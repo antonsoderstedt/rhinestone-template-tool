@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { useT } from '../lib/i18n';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SvgExportActionsProps {
@@ -23,6 +24,7 @@ export default function SvgExportActions({
   filename,
   disabled = false,
 }: SvgExportActionsProps) {
+  const t = useT();
   const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle');
 
   const isDisabled = disabled || !svg;
@@ -60,7 +62,7 @@ export default function SvgExportActions({
         disabled={isDisabled}
         className="rounded bg-surface-raised px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-sand-200 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Download SVG
+        {t('Download SVG')}
       </button>
       <button
         onClick={() => void handleCopy()}

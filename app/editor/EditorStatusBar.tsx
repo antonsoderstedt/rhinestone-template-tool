@@ -6,6 +6,7 @@ import { CanvasState } from './EditorState';
 import { getEditableStatusCopy } from './editorUi';
 import { useIsMobileStudio } from '../lib/useMediaQuery';
 
+import { useT } from '../lib/i18n';
 interface EditorStatusBarProps {
   template: RhinestoneTemplate | null;
   canvas: CanvasState;
@@ -35,6 +36,7 @@ export default function EditorStatusBar({
   onReportProblem,
   onShowVersions,
 }: EditorStatusBarProps) {
+  const t = useT();
   // On a phone this bar scrolls sideways; a scrollable region has to be reachable with the keyboard.
   const isMobile = useIsMobileStudio();
   const stoneCount = template?.stones.length ?? 0;
@@ -75,7 +77,7 @@ export default function EditorStatusBar({
         : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-muted)]';
 
   return (
-    <footer tabIndex={isMobile ? 0 : undefined} aria-label="Design status" className="flex flex-wrap items-center justify-between gap-3 max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:whitespace-nowrap max-lg:px-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-xs text-[var(--studio-ink-muted)]">
+    <footer tabIndex={isMobile ? 0 : undefined} aria-label={t('Design status')} className="flex flex-wrap items-center justify-between gap-3 max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:whitespace-nowrap max-lg:px-3 border-t border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-1.5 text-xs text-[var(--studio-ink-muted)]">
       <div className="flex flex-wrap items-center gap-3 max-lg:shrink-0 max-lg:flex-nowrap">
         <span className="font-medium">{stoneCount} stone{stoneCount !== 1 && 's'}</span>
         <span className="font-mono">{physicalSize}</span>
@@ -107,12 +109,12 @@ export default function EditorStatusBar({
         )}
         {onShowVersions && (
           <button type="button" onClick={onShowVersions} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
-            Earlier versions
+            {t('Earlier versions')}
           </button>
         )}
         {onReportProblem && (
           <button type="button" onClick={onReportProblem} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
-            Report a problem
+            {t('Report a problem')}
           </button>
         )}
         <span>Zoom: <span className="font-mono text-[var(--studio-ink-secondary)]">{Math.round(canvas.zoom * 100)}%</span></span>

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 
+import { useT } from '../lib/i18n';
 interface EditorToastProps {
   message: string;
   tone: 'success' | 'warning' | 'error' | 'info';
@@ -11,6 +12,7 @@ interface EditorToastProps {
 }
 
 export default function EditorToast({ message, tone, onDismiss, action }: EditorToastProps) {
+  const t = useT();
   // Toasts keep their own dark surface in both studio themes: the pale tinted text is only readable on it
   // (a translucent tint over the light theme gave pale text on a pale background).
   const toneStyles = {
@@ -51,8 +53,8 @@ export default function EditorToast({ message, tone, onDismiss, action }: Editor
         <button
           onClick={onDismiss}
           className="text-current/70 transition hover:text-current"
-          aria-label="Dismiss message"
-          title="Dismiss message"
+          aria-label={t('Dismiss message')}
+          title={t('Dismiss message')}
         >
           <XCircle className="h-4 w-4" />
         </button>

@@ -3,6 +3,7 @@
 import { AlertTriangle, Info, Wand2 } from 'lucide-react';
 import type { QuickFixAction, QuickFixItem } from './quickFixItems';
 
+import { useT } from '../lib/i18n';
 interface QuickFixesProps {
   items: QuickFixItem[];
   /** False when the design cannot be resized automatically (made by hand, or by a tool without a size setting). */
@@ -12,10 +13,11 @@ interface QuickFixesProps {
 
 /** One-click fixes for the problems the export check found. Rendered only when there is something to fix. */
 export default function QuickFixes({ items, canResize, onAction }: QuickFixesProps) {
+  const t = useT();
   if (items.length === 0) return null;
 
   return (
-    <ul aria-label="Problems you can fix" className="space-y-2">
+    <ul aria-label={t('Problems you can fix')} className="space-y-2">
       {items.map((item) => {
         const Icon = item.tone === 'warning' ? AlertTriangle : Info;
         const isResize = item.action === 'fit-12x12' || item.action === 'fit-12x24';
@@ -52,7 +54,7 @@ export default function QuickFixes({ items, canResize, onAction }: QuickFixesPro
                 )}
                 {disabled && (
                   <p className="mt-1.5 text-xs leading-5 text-[var(--studio-ink-muted)]">
-                    This design cannot be resized automatically. Change its size in the Design panel, or delete stones.
+                    {t('This design cannot be resized automatically. Change its size in the Design panel, or delete stones.')}
                   </p>
                 )}
               </>

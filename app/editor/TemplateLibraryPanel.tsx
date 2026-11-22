@@ -4,6 +4,7 @@ import { FolderOpen, Heart, HeartOff, LibraryBig, Save, Trash2 } from 'lucide-re
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
 
+import { useT } from '../lib/i18n';
 interface TemplateLibraryPanelProps {
   open: boolean;
   autosaveEntry: TemplateLibraryEntry | null;
@@ -33,6 +34,7 @@ export default function TemplateLibraryPanel({
   onRename,
   onDuplicate,
 }: TemplateLibraryPanelProps) {
+  const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'favorites' | 'starter' | 'saved'>('all');
   const [sortMode, setSortMode] = useState<'recent' | 'name' | 'stones'>('recent');
@@ -136,14 +138,14 @@ export default function TemplateLibraryPanel({
           className="inline-flex items-center gap-1 rounded bg-violet-500/20 px-2 py-1 text-xs font-medium text-violet-200 transition hover:bg-violet-500/35"
         >
           <FolderOpen className="h-3 w-3" />
-          Open
+          {t('Open')}
         </button>
         {!entry.tags.includes('autosave') && (
           <button
             onClick={() => onDuplicate(entry.templateId)}
             className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-xs text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
           >
-            Copy
+            {t('Copy')}
           </button>
         )}
         {!entry.builtIn && !entry.tags.includes('autosave') && (
@@ -151,7 +153,7 @@ export default function TemplateLibraryPanel({
             onClick={() => onRename(entry.templateId)}
             className="inline-flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-xs text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
           >
-            Rename
+            {t('Rename')}
           </button>
         )}
         {!entry.builtIn && !entry.tags.includes('autosave') && (
@@ -174,18 +176,18 @@ export default function TemplateLibraryPanel({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="inline-flex rounded-full border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--studio-ink-muted)]">
-                Saved in this browser
+                {t('Saved in this browser')}
               </div>
               <div className="flex items-center gap-2 text-[var(--studio-ink)]">
                 <LibraryBig className="h-4 w-4 text-amber-400" />
-                <h2 className="text-sm font-semibold">My Designs</h2>
+                <h2 className="text-sm font-semibold">{t('My Designs')}</h2>
               </div>
             </div>
             <button
               onClick={onClose}
               className="rounded-md px-3 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
             >
-              Close
+              {t('Close')}
             </button>
           </div>
         </div>
@@ -196,14 +198,14 @@ export default function TemplateLibraryPanel({
             className="inline-flex shrink-0 items-center gap-2 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-500"
           >
             <Save className="h-3.5 w-3.5" />
-            Save to My Designs
+            {t('Save to My Designs')}
           </button>
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search…"
-            aria-label="Search designs"
+            placeholder={t('Search…')}
+            aria-label={t('Search designs')}
             className="min-w-0 flex-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs text-[var(--studio-ink)] placeholder:text-[var(--studio-ink-muted)] focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
           <div className="flex items-center gap-1">
@@ -224,27 +226,27 @@ export default function TemplateLibraryPanel({
             ))}
           </div>
           <select
-            aria-label="Sort designs"
+            aria-label={t('Sort designs')}
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as 'recent' | 'name' | 'stones')}
             className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 text-xs text-[var(--studio-ink)]"
           >
-            <option value="recent">Recent</option>
-            <option value="name">Name</option>
-            <option value="stones">Stones</option>
+            <option value="recent">{t('Recent')}</option>
+            <option value="name">{t('Name')}</option>
+            <option value="stones">{t('Stones')}</option>
           </select>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {builtInEntries.length === 0 && userEntries.length === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">
-              <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">No saved designs yet.</p>
-              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Press “Save to My Designs” to keep the current canvas in this browser.</p>
+              <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">{t('No saved designs yet.')}</p>
+              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">{t('Press “Save to My Designs” to keep the current canvas in this browser.')}</p>
             </div>
           ) : totalVisibleEntries === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">
-              <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">No designs match these filters.</p>
-              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Try a different search term or switch the active filter.</p>
+              <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">{t('No designs match these filters.')}</p>
+              <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">{t('Try a different search term or switch the active filter.')}</p>
             </div>
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-1">

@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { GETTING_STARTED_STEPS, readOnboardingDismissed, writeOnboardingDismissed } from '../lib/onboarding';
 
+import { useT } from '../lib/i18n';
 /**
  * Four-step first-project guide. Dismissible; once closed it stays closed in this
  * browser. Renders nothing until the saved choice has been read (no flash).
  */
 export default function GettingStartedGuide() {
+  const t = useT();
   const [dismissed, setDismissed] = useState<boolean | null>(null);
   // The four steps start collapsed, on every screen, so the canvas keeps its space and the studio opens calm.
   const [expanded, setExpanded] = useState(false);
@@ -23,7 +25,7 @@ export default function GettingStartedGuide() {
     // An overlay on the canvas, not a row above it: the guide appears after the saved "dismissed" choice has been
     // read, and a row inserted then pushed the whole studio down (a layout shift of 0.13 in Lighthouse).
     <section
-      aria-label="Getting started"
+      aria-label={t('Getting started')}
       className="absolute z-20 rounded-lg max-lg:inset-x-3 max-lg:bottom-16 lg:left-1/2 lg:top-12 lg:w-[min(46rem,calc(100%-1.5rem))] lg:-translate-x-1/2 border border-[var(--studio-border-strong)] bg-[var(--studio-surface)]/95 px-3 py-2 shadow-lg backdrop-blur"
     >
       <div className="flex items-start justify-between gap-3">
@@ -51,7 +53,7 @@ export default function GettingStartedGuide() {
           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--studio-border)] px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--studio-ink-muted)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
         >
           <X className="h-3 w-3" aria-hidden="true" />
-          Got it
+          {t('Got it')}
         </button>
       </div>
     </section>

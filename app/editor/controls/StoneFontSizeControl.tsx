@@ -11,6 +11,7 @@ import {
 } from '../stoneFontSizes';
 import { editorFieldLabelClassName } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 interface StoneFontSizeControlProps {
   fontId: string;
   text: string;
@@ -28,6 +29,7 @@ const mm = (value: number) => `${Math.round(value)}`;
  * This shows how big the user's words come out at every size the font has, and which one is the biggest that fits a mat.
  */
 export default function StoneFontSizeControl({ fontId, text, stoneSize, letterSpacingMm, lineSpacingMm, onPick }: StoneFontSizeControlProps) {
+  const t = useT();
   const defaults = defaultStoneFontSpacing(fontId);
   const letter = typeof letterSpacingMm === 'number' ? letterSpacingMm : defaults.letterSpacingMm;
   const line = typeof lineSpacingMm === 'number' ? lineSpacingMm : defaults.lineSpacingMm;
@@ -47,14 +49,14 @@ export default function StoneFontSizeControl({ fontId, text, stoneSize, letterSp
 
   if (!text.trim()) return null;
   const options = result && result.key === key ? result.options : null;
-  if (!options) return <p className="text-xs text-[var(--studio-ink-muted)]" role="status">Measuring your words…</p>;
+  if (!options) return <p className="text-xs text-[var(--studio-ink-muted)]" role="status">{t('Measuring your words…')}</p>;
   if (options.every((option) => option.widthMm === null)) return null;
 
   const suggestion = stoneFontSizeSuggestion(options, stoneSize);
 
   return (
-    <div className="space-y-2" role="group" aria-label="How big your words come out">
-      <span className={editorFieldLabelClassName}>Size of your words</span>
+    <div className="space-y-2" role="group" aria-label={t('How big your words come out')}>
+      <span className={editorFieldLabelClassName}>{t('Size of your words')}</span>
       <ul className="space-y-1">
         {options.map((option) => (
           <li key={option.size}>

@@ -13,6 +13,7 @@ import { getHtvColor } from './htvMaterialCatalog';
 import ShapeThumbnail from './ShapeThumbnail';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
 
+import { useT } from '../lib/i18n';
 interface HtvToolsPanelProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
@@ -44,6 +45,7 @@ function PanelSection({ title, icon, children, defaultOpen = true }: { title: st
 }
 
 export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeGarmentColor = getGarmentColor(state.garment.colorId);
   const placementDefinitions = useMemo(() => getPlacementsForGarmentType(state.garment.type), [state.garment.type]);
@@ -67,7 +69,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
   };
 
   return (
-    <aside aria-label="Design tools" className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
+    <aside aria-label={t('Design tools')} className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
       <input
         ref={fileInputRef}
         type="file"
@@ -80,31 +82,31 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         }}
       />
 
-      <PanelSection title="Add to design">
+      <PanelSection title={t('Add to design')}>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onAddText}
             className="flex flex-col items-start gap-2 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-3 text-left transition hover:border-[var(--studio-border-strong)] hover:bg-[var(--studio-surface-hover)]"
           >
             <Type className="h-4 w-4 text-violet-300" />
-            <span className="text-sm font-medium text-[var(--studio-ink)]">Text</span>
-            <span className="text-xs text-[var(--studio-ink-subtle)]">Real cut-ready letterforms</span>
+            <span className="text-sm font-medium text-[var(--studio-ink)]">{t('Text')}</span>
+            <span className="text-xs text-[var(--studio-ink-subtle)]">{t('Real cut-ready letterforms')}</span>
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-start gap-2 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-3 text-left transition hover:border-[var(--studio-border-strong)] hover:bg-[var(--studio-surface-hover)]"
           >
             <Upload className="h-4 w-4 text-violet-300" />
-            <span className="text-sm font-medium text-[var(--studio-ink)]">Import</span>
-            <span className="text-xs text-[var(--studio-ink-subtle)]">SVG, PNG, or JPEG</span>
+            <span className="text-sm font-medium text-[var(--studio-ink)]">{t('Import')}</span>
+            <span className="text-xs text-[var(--studio-ink-subtle)]">{t('SVG, PNG, or JPEG')}</span>
           </button>
         </div>
       </PanelSection>
 
-      <PanelSection title="Workspace library" icon={<LibraryBig className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
+      <PanelSection title={t('Workspace library')} icon={<LibraryBig className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
         {recentLibraryAssets.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-3 text-xs leading-6 text-[var(--studio-ink-subtle)]">
-            No library assets yet. Upload assets in Library and they will appear here.
+            {t('No library assets yet. Upload assets in Library and they will appear here.')}
           </div>
         ) : (
           <div className="space-y-2">
@@ -135,7 +137,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         )}
       </PanelSection>
 
-      <PanelSection title="Shapes" icon={<Shapes className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
+      <PanelSection title={t('Shapes')} icon={<Shapes className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
         <div className="grid grid-cols-4 gap-2">
           {HTV_SHAPES.map((shape) => (
             <button
@@ -151,7 +153,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         </div>
       </PanelSection>
 
-      <PanelSection title="Design templates" icon={<Sparkles className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
+      <PanelSection title={t('Design templates')} icon={<Sparkles className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
         <div className="grid gap-2">
           {HTV_DESIGN_TEMPLATES.map((template) => (
             <button
@@ -166,8 +168,8 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         </div>
       </PanelSection>
 
-      <PanelSection title="Color palettes" icon={<Palette className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
-        <p className="text-xs text-[var(--studio-ink-subtle)]">Applies across your layers in stack order.</p>
+      <PanelSection title={t('Color palettes')} icon={<Palette className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
+        <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Applies across your layers in stack order.')}</p>
         <div className="space-y-2">
           {HTV_COLOR_PALETTES.map((palette) => (
             <button
@@ -196,12 +198,12 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
             type="button"
             className="w-full rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface-2)] px-3 py-2 text-sm font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-surface-hover)] hover:text-white"
           >
-            More
+            {t('More')}
           </button>
         </div>
       </PanelSection>
 
-      <PanelSection title="Garment & placement" icon={<Shirt className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
+      <PanelSection title={t('Garment & placement')} icon={<Shirt className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
         <div className="space-y-3 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] p-3">
           <div className="inline-flex rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-1">
             {(['canvas', 'garment', '3d'] as const).map((surface) => (
@@ -224,21 +226,21 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
           </div>
           {designSurface === 'garment' && (
             <div className="space-y-1.5 border-t border-[var(--studio-border)] pt-3">
-              <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Garment overlays</span>
+              <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{t('Garment overlays')}</span>
               <div className="grid grid-cols-2 gap-1">
                 <button
                   type="button"
                   onClick={() => onTogglePlacementOverlayMode('active-only')}
                   className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${placementOverlayMode === 'active-only' ? 'bg-violet-500/35 text-white' : 'bg-[var(--studio-surface)] text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
                 >
-                  Only active
+                  {t('Only active')}
                 </button>
                 <button
                   type="button"
                   onClick={() => onTogglePlacementOverlayMode('all-active')}
                   className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${placementOverlayMode === 'all-active' ? 'bg-violet-500/35 text-white' : 'bg-[var(--studio-surface)] text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
                 >
-                  Show all active
+                  {t('Show all active')}
                 </button>
               </div>
             </div>
@@ -270,7 +272,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Print placements</span>
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{t('Print placements')}</span>
           <div className="space-y-2">
             {placementDefinitions.map((zone) => {
               const enabled = state.garment.activePlacementZones.includes(zone.id);
@@ -297,7 +299,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Garment color</span>
+            <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{t('Garment color')}</span>
             <span className="text-xs text-[var(--studio-ink-subtle)]">{activeGarmentColor.name}</span>
           </div>
           <div className="grid grid-cols-6 gap-2">
@@ -316,12 +318,12 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
             type="button"
             className="w-full rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface-2)] px-3 py-2 text-sm font-medium text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-surface-hover)] hover:text-white"
           >
-            Import
+            {t('Import')}
           </button>
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Size</span>
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{t('Size')}</span>
           <div className="grid grid-cols-5 gap-1">
             {garmentDefinition.availableSizes.map((size) => (
               <button
@@ -336,7 +338,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">Placement</span>
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-subtle)]">{t('Placement')}</span>
           <div className="space-y-1">
             {placementDefinitions.map((zone) => (
               <button

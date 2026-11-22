@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '../lib/i18n';
+import LanguageSwitch from './LanguageSwitch';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -159,6 +161,7 @@ export function getModeMeta(pathname: string, activeCalibrationProfile: ReturnTy
 }
 
 export default function GlobalTopNav() {
+  const t = useT();
   const pathname = usePathname();
   const [activeCalibrationProfile, setActiveCalibrationProfile] = useState<ReturnType<typeof readActiveCalibrationProfile> | null>(null);
   // The menu is open only for the page it was opened on, so navigating closes it without an effect.
@@ -201,11 +204,11 @@ export default function GlobalTopNav() {
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium tracking-[0.18em] text-zinc-400 uppercase">Rhinestone OS</div>
-            <div className="truncate text-sm font-medium text-zinc-200">Rhinestone and HTV templates</div>
+            <div className="truncate text-sm font-medium text-zinc-200">{t('Rhinestone and HTV templates')}</div>
           </div>
         </Link>
 
-        <nav aria-label="Main" className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
+        <nav aria-label={t('Main')} className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
@@ -221,7 +224,7 @@ export default function GlobalTopNav() {
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -235,39 +238,40 @@ export default function GlobalTopNav() {
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-medium text-zinc-200 transition hover:bg-white/10 xl:hidden"
         >
           {menuOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
-          Menu
+          {t('Menu')}
         </button>
 
         <div className="hidden items-center gap-2 whitespace-nowrap lg:flex">
           <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs 2xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
-            {modeMeta.studioLabel}
+            {t(modeMeta.studioLabel)}
           </span>
 
-          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${getNavStatusClassName(modeMeta.status)}`} title={modeMeta.statusText}>
+          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${getNavStatusClassName(modeMeta.status)}`} title={t(modeMeta.statusText)}>
             <StatusIcon className="h-3.5 w-3.5" />
-            {getNavStatusLabel(modeMeta.status, modeMeta.statusText)}
+            {t(getNavStatusLabel(modeMeta.status, modeMeta.statusText))}
           </span>
 
           <Link
             href="/library"
             className="hidden rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 2xl:inline-flex"
           >
-            Manage Assets
+            {t('Manage Assets')}
           </Link>
+          <LanguageSwitch />
           {/* Pointless on the studio page itself. */}
           {!pathname.startsWith('/rhinestone') && (
             <Link
               href="/rhinestone"
               className="rounded-md bg-violet-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-violet-500"
             >
-              Open Studio
+              {t('Open Studio')}
             </Link>
           )}
         </div>
       </div>
 
       {menuOpen && (
-        <nav id="global-nav-menu" aria-label="Main" className="border-t border-white/10 bg-[#121215] px-3 py-2 xl:hidden">
+        <nav id="global-nav-menu" aria-label={t('Main')} className="border-t border-white/10 bg-[#121215] px-3 py-2 xl:hidden">
           <ul className="mx-auto grid max-w-[1600px] gap-1 sm:grid-cols-2">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href);
@@ -282,7 +286,7 @@ export default function GlobalTopNav() {
                     }`}
                   >
                     <Icon className="h-5 w-5" aria-hidden="true" />
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 </li>
               );

@@ -7,8 +7,10 @@ import type { EditorAction, EditorState } from './EditorState';
 import { boundsOfStones, nextPartId, offsetBelow, partsStones, translateStones } from './designParts';
 import NumericInput from './controls/NumericInput';
 
+import { useT } from '../lib/i18n';
 /** Turn by any angle, spread out, and take back to edit: the less common things to do with a part. */
 function PartExtras({ partId, partName, canEdit, dispatch }: { partId: string; partName: string; canEdit: boolean; dispatch: React.Dispatch<EditorAction> }) {
+  const t = useT();
   const [degrees, setDegrees] = useState<number | ''>(15);
   const [percent, setPercent] = useState<number | ''>(120);
   const turn = typeof degrees === 'number' && Number.isFinite(degrees) && degrees % 360 !== 0;
@@ -19,15 +21,15 @@ function PartExtras({ partId, partName, canEdit, dispatch }: { partId: string; p
         <div className="min-w-0 flex-1">
           <NumericInput label="Turn by" value={degrees} unit="°" step={1} min={-360} max={360} onChange={setDegrees} />
         </div>
-        <button type="button" disabled={!turn} aria-label={`Turn ${partName} by this angle`} onClick={() => typeof degrees === 'number' && dispatch({ type: 'TURN_PART_BY', id: partId, degrees })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">Turn</button>
+        <button type="button" disabled={!turn} aria-label={`Turn ${partName} by this angle`} onClick={() => typeof degrees === 'number' && dispatch({ type: 'TURN_PART_BY', id: partId, degrees })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">{t('Turn')}</button>
       </div>
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
           <NumericInput label="Spread out to" value={percent} unit="%" step={5} min={100} max={500} onChange={setPercent} />
         </div>
-        <button type="button" disabled={!spread} aria-label={`Spread out ${partName}`} onClick={() => typeof percent === 'number' && dispatch({ type: 'SPREAD_PART', id: partId, factor: percent / 100 })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">Spread</button>
+        <button type="button" disabled={!spread} aria-label={`Spread out ${partName}`} onClick={() => typeof percent === 'number' && dispatch({ type: 'SPREAD_PART', id: partId, factor: percent / 100 })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">{t('Spread')}</button>
       </div>
-      <p className="text-xs text-[var(--studio-ink-muted)]">Spreading moves the stones apart; they keep their size. It never brings them closer.</p>
+      <p className="text-xs text-[var(--studio-ink-muted)]">{t('Spreading moves the stones apart; they keep their size. It never brings them closer.')}</p>
       <button
         type="button"
         disabled={!canEdit}
@@ -37,7 +39,7 @@ function PartExtras({ partId, partName, canEdit, dispatch }: { partId: string; p
       >
         Edit the stones of {partName}
       </button>
-      {!canEdit && <p className="text-xs text-[var(--studio-ink-muted)]">Add the piece you are working on to the design first, then you can take this one back.</p>}
+      {!canEdit && <p className="text-xs text-[var(--studio-ink-muted)]">{t('Add the piece you are working on to the design first, then you can take this one back.')}</p>}
     </div>
   );
 }
@@ -80,6 +82,7 @@ function IconButton({ label, onClick, disabled = false, children }: { label: str
  * the next piece, placed below. Each part can be renamed, moved by its offset and removed.
  */
 export default function DesignPartsPanel({ state, dispatch }: { state: EditorState; dispatch: React.Dispatch<EditorAction> }) {
+  const t = useT();
   const working = workingStones(state);
   const canAdd = working.length > 0 && state.activeTool !== 'select';
 
@@ -105,9 +108,9 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
   return (
     <div className="flex flex-col gap-3" data-testid="design-parts">
       {state.parts.length > 0 && (
-        <section aria-label="Parts of this design" className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
+        <section aria-label={t('Parts of this design')} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Parts of this design</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('Parts of this design')}</h3>
             <div className="flex gap-1">
               <IconButton label="Undo change to parts" disabled={state.partsHistory.past.length === 0} onClick={() => dispatch({ type: 'UNDO_PARTS' })}>
                 <Undo2 className="h-4 w-4" aria-hidden="true" />
@@ -182,9 +185,9 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
       )}
 
       {state.parts.length > 0 && working.length > 0 && (
-        <section aria-label="Position of this piece" className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
+        <section aria-label={t('Position of this piece')} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Position of this piece</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('Position of this piece')}</h3>
             <div className="flex gap-1">
               <IconButton label="Align this piece to the left edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'left' })}>
                 <AlignHorizontalJustifyStart className="h-4 w-4" aria-hidden="true" />
@@ -220,11 +223,11 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
           className="inline-flex items-center justify-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-2 text-sm font-medium text-[var(--studio-ink)] hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Add to design
+          {t('Add to design')}
         </button>
       )}
       {canAdd && state.parts.length === 0 && (
-        <p className="-mt-1 text-xs text-[var(--studio-ink-muted)]">Keeps this piece and starts the next one below it: a name and a number, or text and a logo.</p>
+        <p className="-mt-1 text-xs text-[var(--studio-ink-muted)]">{t('Keeps this piece and starts the next one below it: a name and a number, or text and a logo.')}</p>
       )}
     </div>
   );

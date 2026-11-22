@@ -119,6 +119,7 @@ function replaceOutlineFontStatus(next: OutlineFontStatusState) {
 }
 
 export default function EditorShell() {
+  const t = useT();
   const { theme, toggleTheme } = useStudioTheme();
   const searchParams = useSearchParams();
   const AUTOSAVE_STORAGE_KEY = 'rhinestone-template-library-autosave';
@@ -1734,7 +1735,7 @@ export default function EditorShell() {
   if (autosaveDecision === 'deciding') {
     return (
       <div data-theme={theme} className="flex h-full min-h-0 flex-1 items-center justify-center bg-[var(--studio-bg)] text-sm text-[var(--studio-ink-muted)]">
-        Loading your workspace…
+        {t('Loading your workspace…')}
       </div>
     );
   }
@@ -1815,7 +1816,7 @@ export default function EditorShell() {
 
       <EditorDialog
         open={Boolean(pendingGeneratorAction)}
-        title="Regenerate from source settings?"
+        title={t('Regenerate from source settings?')}
         description="The current design is editable. Regenerating will replace your manual stone edits with a new generated baseline from the source panel."
         confirmLabel="Regenerate and replace edits"
         onConfirm={() => applyPendingGeneratorAction('replace')}
@@ -1830,7 +1831,7 @@ export default function EditorShell() {
 
       <ExportDialog
         open={exportDialogOpen}
-        title="Export SVG"
+        title={t('Export SVG')}
         svg={exportPreview?.svg ?? null}
         error={exportPreview?.error ?? null}
         widthMm={exportPreview?.widthMm ?? null}
@@ -1928,8 +1929,8 @@ export default function EditorShell() {
           }}
         />
 
-        <main id="main-content" tabIndex={-1} aria-label="Canvas" className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] max-lg:min-h-0 lg:order-none lg:min-h-0">
-          <h1 className="sr-only">Rhinestone Studio</h1>
+        <main id="main-content" tabIndex={-1} aria-label={t('Canvas')} className="relative order-1 flex min-h-[58vh] min-w-0 flex-1 flex-col bg-[var(--studio-surface)] max-lg:min-h-0 lg:order-none lg:min-h-0">
+          <h1 className="sr-only">{t('Rhinestone Studio')}</h1>
           {/* With a panel open on a phone the canvas needs every pixel, so the guide and the hint strip step aside. */}
           {!(isMobile && mobilePanel !== 'none') && (
             <>
@@ -2069,10 +2070,11 @@ function StudioToolRail({
   mobileOpen: boolean;
   onSelectTool: (tool: typeof DEFAULT_EDITOR_STATE.activeTool) => void;
 }) {
+  const t = useT();
   return (
     <nav
       className={`order-2 shrink-0 border-[var(--studio-border)] bg-[var(--studio-well)] max-lg:max-h-[44dvh] max-lg:overflow-y-auto max-lg:border-t max-lg:p-3 ${mobileOpen ? 'max-lg:grid max-lg:grid-cols-3 max-lg:gap-2 sm:max-lg:grid-cols-5' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:w-[68px] lg:flex-col lg:gap-1 lg:border-r lg:px-1.5 lg:py-2`}
-      aria-label="Studio tools"
+      aria-label={t('Studio tools')}
     >
       {RAIL_TOOLS.map((tool) => {
         const Icon = tool.icon;
@@ -2098,6 +2100,7 @@ function StudioToolRail({
 // ─── Tabbed context panel ───────────────────────────────────────────────────
 
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
+import { useT } from '../lib/i18n';
 function StudioContextPanel({
   state,
   dispatch,
@@ -2122,6 +2125,7 @@ function StudioContextPanel({
   /** Phones/tablets: which bottom-bar panel is open. `'none'` on desktop, where both tabs are visible. */
   mobilePanel: 'none' | 'tools' | 'design' | 'inspect';
 }) {
+  const t = useT();
   // Auto-switch: Inspect when select tool is active, Design (source settings) for generators.
   const autoTab = state.activeTool === 'select' ? 'inspector' : 'source';
   const [manualTab, setManualTab] = useState<'source' | 'inspector' | null>(null);
@@ -2136,9 +2140,9 @@ function StudioContextPanel({
   const mobileVisible = mobilePanel === 'design' || mobilePanel === 'inspect';
 
   return (
-    <aside aria-label="Design and inspector" className={`order-2 min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobileVisible ? 'max-lg:flex' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0`}>
+    <aside aria-label={t('Design and inspector')} className={`order-2 min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobileVisible ? 'max-lg:flex' : 'max-lg:hidden'} lg:order-none lg:flex lg:h-full lg:max-h-none lg:w-[260px] lg:border-l lg:border-t-0`}>
       {/* Tabs */}
-      <div role="tablist" aria-label="Panel" className="flex shrink-0 border-b max-lg:hidden border-[var(--studio-border)] bg-[var(--studio-well)]">
+      <div role="tablist" aria-label={t('Panel')} className="flex shrink-0 border-b max-lg:hidden border-[var(--studio-border)] bg-[var(--studio-well)]">
         {(['source', 'inspector'] as const).map((t) => (
           <button
             key={t}

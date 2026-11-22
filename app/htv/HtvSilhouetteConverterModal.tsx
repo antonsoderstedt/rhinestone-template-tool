@@ -14,6 +14,7 @@ import { centerPolylines, polylinesToPathD } from './htvGeometry';
 import { prepareTraceImage, runSilhouetteTrace, type PreparedTraceImage, type SilhouetteTraceOutcome, type SilhouetteTraceParams } from './silhouetteTrace';
 import Modal from '../editor/ui/Modal';
 
+import { useT } from '../lib/i18n';
 /** Wait this long after the last slider move before tracing, so dragging stays smooth. */
 const TRACE_DEBOUNCE_MS = 150;
 
@@ -25,6 +26,7 @@ interface HtvSilhouetteConverterModalProps {
 }
 
 export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onCancel, onApply }: HtvSilhouetteConverterModalProps) {
+  const t = useT();
   const [threshold, setThreshold] = useState(128);
   const [invert, setInvert] = useState(false);
   const [smoothingToleranceMm, setSmoothingToleranceMm] = useState(0.35);
@@ -77,10 +79,10 @@ export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onC
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <h2 id="htv-silhouette-title" className="text-sm font-semibold text-ink">Convert image to silhouette</h2>
-            <p className="mt-0.5 text-xs text-ink-muted">Adjust the sliders until the outline looks right, then apply.</p>
+            <h2 id="htv-silhouette-title" className="text-sm font-semibold text-ink">{t('Convert image to silhouette')}</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">{t('Adjust the sliders until the outline looks right, then apply.')}</p>
           </div>
-          <button onClick={onCancel} aria-label="Cancel" className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface-raised hover:text-ink">
+          <button onClick={onCancel} aria-label={t('Cancel')} className="rounded-lg p-2 text-ink-secondary transition hover:bg-surface-raised hover:text-ink">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -119,12 +121,12 @@ export default function HtvSilhouetteConverterModal({ image, previewDataUrl, onC
 
             <label className="flex items-center gap-2 text-xs font-medium text-ink-secondary">
               <input type="checkbox" checked={invert} onChange={(e) => setInvert(e.target.checked)} className="rounded border-border bg-surface-sunken text-accent-600" />
-              Invert (trace the light areas instead)
+              {t('Invert (trace the light areas instead)')}
             </label>
 
             {!tracing && outcome?.status === 'error' && (
               <div role="alert" className="rounded-xl border border-danger-500/30 bg-danger-50 px-3 py-2 text-xs text-danger-700">
-                <p className="font-semibold">Could not trace this image</p>
+                <p className="font-semibold">{t('Could not trace this image')}</p>
                 <p className="mt-0.5">{outcome.message}</p>
               </div>
             )}

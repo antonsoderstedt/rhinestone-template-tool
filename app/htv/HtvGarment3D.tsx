@@ -28,6 +28,7 @@ import { loadOutlineFont, layoutTextToOpenTypePolylines, type Polyline } from '@
 import type { HtvLayer, HtvState } from './HtvState';
 import { describe3dFailure, isWebglAvailable, type Preview3dFailure } from './webglSupport';
 
+import { useT } from '../lib/i18n';
 const TEXTURE_PX = 768;
 
 interface Garment3DProfile {
@@ -558,6 +559,7 @@ function LoadingBadge() {
  *   user can still see their design on the garment.
  */
 export default function HtvGarment3D({ state, fallback }: { state: HtvState; fallback: ReactNode }) {
+  const t = useT();
   const { canvas: textureCanvas, texture, markDirty } = useMutableCanvasTexture();
   const { lost, remountKey, onCreated, remount } = useWebglContextRecovery();
   // Only mounted after the user opens the 3D tab (never server-rendered), so probing during init is safe.
@@ -593,7 +595,7 @@ export default function HtvGarment3D({ state, fallback }: { state: HtvState; fal
             onClick={retry}
             className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
-            Retry 3D
+            {t('Retry 3D')}
           </button>
         </div>
       </div>
@@ -627,7 +629,7 @@ export default function HtvGarment3D({ state, fallback }: { state: HtvState; fal
       <FrontDesignRasterizer state={state} canvas={textureCanvas} onDraw={markDirty} />
       <LoadingBadge />
       <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--studio-border)] bg-black/40 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">
-        Drag to rotate · scroll to zoom
+        {t('Drag to rotate · scroll to zoom')}
       </div>
     </div>
   );

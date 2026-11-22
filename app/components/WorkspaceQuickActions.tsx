@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
 
+import { useT } from '../lib/i18n';
 export interface WorkspaceQuickAction {
   label: string;
   description: string;
@@ -16,8 +17,9 @@ export interface WorkspaceQuickAction {
  * which are dark by default and washed these cards out).
  */
 export default function WorkspaceQuickActions({ actions }: { actions: WorkspaceQuickAction[] }) {
+  const t = useT();
   return (
-    <nav aria-label="Shortcuts" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <nav aria-label={t('Shortcuts')} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {actions.map(({ label, description, href, icon: Icon, tone = 'default' }) => {
         const styles = tone === 'brand'
           ? 'border-accent-300 bg-accent-50 hover:border-accent-400'
@@ -35,7 +37,7 @@ export default function WorkspaceQuickActions({ actions }: { actions: WorkspaceQ
             </div>
             <p className="mt-1.5 text-sm leading-6 text-ink-secondary">{description}</p>
             <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-accent-700">
-              Open
+              {t('Open')}
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
             </span>
           </Link>

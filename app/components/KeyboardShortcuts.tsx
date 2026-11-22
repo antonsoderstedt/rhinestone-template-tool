@@ -11,16 +11,18 @@ import {
   type ShortcutGroup,
 } from '../lib/studioShortcuts';
 
+import { useT } from '../lib/i18n';
 const OPEN_EVENT = 'studio:open-shortcuts';
 
 /** Topbar button that opens the shortcuts sheet (the host below listens for it). */
 export function KeyboardShortcutsButton() {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
-      aria-label="Keyboard shortcuts"
-      title="Keyboard shortcuts (?)"
+      aria-label={t('Keyboard shortcuts')}
+      title={t('Keyboard shortcuts (?)')}
       className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-secondary)] transition hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]"
     >
       <Keyboard className="h-4 w-4" aria-hidden="true" />
@@ -56,6 +58,7 @@ function Combination({ keys }: { keys: string[] }) {
  * (not while typing in a field or while another dialog is open).
  */
 export function KeyboardShortcutsHost({ studio }: { studio: 'rhinestone' | 'htv' }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const groups: ShortcutGroup[] = studio === 'htv' ? HTV_SHORTCUT_GROUPS : RHINESTONE_SHORTCUT_GROUPS;
 
@@ -79,11 +82,11 @@ export function KeyboardShortcutsHost({ studio }: { studio: 'rhinestone' | 'htv'
     <Modal open={open} onClose={() => setOpen(false)} titleId={TITLE_ID}>
       <div role="document" className="flex max-h-[88vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl">
         <div className="flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4">
-          <h2 id={TITLE_ID} className="text-base font-semibold text-white">Keyboard shortcuts</h2>
+          <h2 id={TITLE_ID} className="text-base font-semibold text-white">{t('Keyboard shortcuts')}</h2>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            aria-label="Close keyboard shortcuts"
+            aria-label={t('Close keyboard shortcuts')}
             className="rounded-lg p-2 text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -107,7 +110,7 @@ export function KeyboardShortcutsHost({ studio }: { studio: 'rhinestone' | 'htv'
           ))}
         </div>
         <p className="border-t border-zinc-800 px-5 py-3 text-xs text-zinc-400">
-          Single-key shortcuts are paused while you type in a field or while a dialog is open.
+          {t('Single-key shortcuts are paused while you type in a field or while a dialog is open.')}
         </p>
       </div>
     </Modal>

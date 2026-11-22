@@ -61,9 +61,11 @@ import {
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
 
+import { useT } from '../lib/i18n';
 const DEFAULT_TEXT_FONT_ID = listOutlineFonts().find((f) => !f.isLegacy)?.fontId ?? '';
 
 export default function HtvShell() {
+  const t = useT();
   const { theme, toggleTheme } = useStudioTheme();
   const searchParams = useSearchParams();
   const [state, dispatch] = useReducer(htvReducer, DEFAULT_HTV_STATE);
@@ -620,8 +622,8 @@ export default function HtvShell() {
           />
         </div>
 
-        <main id="main-content" tabIndex={-1} aria-label="Design surface" className="order-1 min-h-[58vh] min-w-0 flex-1 max-lg:min-h-0 lg:order-none lg:min-h-0">
-          <h1 className="sr-only">HTV Studio</h1>
+        <main id="main-content" tabIndex={-1} aria-label={t('Design surface')} className="order-1 min-h-[58vh] min-w-0 flex-1 max-lg:min-h-0 lg:order-none lg:min-h-0">
+          <h1 className="sr-only">{t('HTV Studio')}</h1>
           {designSurface === 'garment' ? (
             <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
           ) : designSurface === '3d' ? (
@@ -654,7 +656,7 @@ export default function HtvShell() {
 
         <ExportDialog
           open={exportDialogOpen}
-          title="Export HTV SVG"
+          title={t('Export HTV SVG')}
           svg={htvExportFresh?.svg ?? null}
           loading={exportDialogOpen && !htvExportFresh}
           error={htvExportFresh?.error ?? null}
@@ -683,7 +685,7 @@ export default function HtvShell() {
               checked={htvExportOptions.mirror}
               onChange={(event) => setHtvExportOptions((current) => ({ ...current, mirror: event.target.checked }))}
             />
-            Mirror horizontally (recommended for iron-on vinyl)
+            {t('Mirror horizontally (recommended for iron-on vinyl)')}
           </label>
           <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
             <input
@@ -691,7 +693,7 @@ export default function HtvShell() {
               checked={htvExportOptions.weedBorder}
               onChange={(event) => setHtvExportOptions((current) => ({ ...current, weedBorder: event.target.checked }))}
             />
-            Weed border (cut line around the design)
+            {t('Weed border (cut line around the design)')}
           </label>
           <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
             <input
@@ -699,7 +701,7 @@ export default function HtvShell() {
               checked={htvExportOptions.registrationMarks}
               onChange={(event) => setHtvExportOptions((current) => ({ ...current, registrationMarks: event.target.checked }))}
             />
-            Registration marks (corner crosses)
+            {t('Registration marks (corner crosses)')}
           </label>
           <HtvColourFilesPanel
             layers={exportLayers}

@@ -10,6 +10,7 @@ import HtvMockupImage from './HtvMockupImage';
 import { expandSelectionToGroups, type HtvAction, type HtvLayer, type HtvState } from './HtvState';
 import { getHtvMockupView, HTV_MOCKUP_IMAGE_SIZE } from './htvMockupRegistry';
 
+import { useT } from '../lib/i18n';
 const FIT_MARGIN = 0.9;
 
 function trySetPointerCapture(target: EventTarget | null, pointerId: number) {
@@ -68,6 +69,7 @@ type Interaction =
     };
 
 export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverlays }: { state: HtvState; dispatch: React.Dispatch<HtvAction>; showAllPlacementOverlays: boolean }) {
+  const t = useT();
   const { garment, layers } = state;
   const color = getGarmentColor(garment.colorId);
   const garmentDefinition = getGarmentDefinition(garment.type);
@@ -305,7 +307,7 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
   return (
     <div className="relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden bg-[var(--studio-surface)] p-4 lg:p-8">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Garment canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">{t('Garment canvas')}</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {activePlacementLayers.length > 0
             ? `${activePlacementLayers.length} layer${activePlacementLayers.length === 1 ? '' : 's'} on ${garment.type} · ${garment.placementZone}`
@@ -400,13 +402,13 @@ export default function HtvGarmentStage({ state, dispatch, showAllPlacementOverl
       </div>
 
       <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom in">
+        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom in')}>
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom out')}>
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Reset view')}>
           <Scan className="h-4 w-4" />
         </button>
       </div>

@@ -15,6 +15,7 @@ import {
   editorSelectClassName,
 } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 interface PlacementModeControlProps {
   coverageMode: TemplateCoverageMode;
   availableCoverageModes: readonly TemplateCoverageMode[];
@@ -59,6 +60,7 @@ export default function PlacementModeControl({
   onContourSettingsChange,
   onRadialSettingsChange,
 }: PlacementModeControlProps) {
+  const t = useT();
   const visibleCoverage = COVERAGE_OPTIONS.filter((option) => availableCoverageModes.includes(option.value));
   const visiblePatterns = PATTERN_OPTIONS.filter((option) => availablePlacementPatterns.includes(option.value));
   const usesFillPattern = coverageMode === 'fill' || coverageMode === 'outline-fill';
@@ -115,7 +117,7 @@ export default function PlacementModeControl({
 
       {usesContour && (
         <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
-          <div className={editorFieldLabelClassName}>Contour rows</div>
+          <div className={editorFieldLabelClassName}>{t('Contour rows')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
               label="Rows"
@@ -136,7 +138,7 @@ export default function PlacementModeControl({
             />
           </div>
           <label className="flex flex-col gap-1.5">
-            <span className={editorFieldLabelClassName}>Direction</span>
+            <span className={editorFieldLabelClassName}>{t('Direction')}</span>
             <select
               value={contourSettings.direction}
               onChange={(event) => onContourSettingsChange({ ...contourSettings, direction: event.target.value as ContourDirection })}
@@ -152,7 +154,7 @@ export default function PlacementModeControl({
 
       {usesRadial && (
         <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
-          <div className={editorFieldLabelClassName}>Radial placement</div>
+          <div className={editorFieldLabelClassName}>{t('Radial placement')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
               label="Ring spacing"
@@ -170,7 +172,7 @@ export default function PlacementModeControl({
                 onChange={(event) => onRadialSettingsChange({ ...radialSettings, includeCenterStone: event.target.checked })}
                 className="h-4 w-4 rounded border-border bg-surface"
               />
-              Include center stone
+              {t('Include center stone')}
             </label>
           </div>
           <div className="grid grid-cols-2 gap-3">

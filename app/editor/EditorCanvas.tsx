@@ -40,6 +40,7 @@ import {
 } from './selectionBox';
 import { IconButton } from './ui';
 
+import { useT } from '../lib/i18n';
 interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
@@ -127,6 +128,7 @@ export default function EditorCanvas({
   onManualViewChange: rawOnManualViewChange,
   artworkSource = null,
 }: EditorCanvasProps) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -1378,23 +1380,23 @@ export default function EditorCanvas({
   return (
     <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
       <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">Canvas</div>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">{t('Canvas')}</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {hasCanvasContent ? `${stones.length} stones · ${state.canvas.showGrid ? 'grid on' : 'grid off'}` : 'Pick a source or draw directly to start'}
         </div>
       </div>
 
       <div className="absolute right-4 top-4 z-10 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-md backdrop-blur-sm lg:flex-col lg:p-1.5">
-        <IconButton onClick={handleZoomIn} title="Zoom in" aria-label="Zoom in">
+        <IconButton onClick={handleZoomIn} title={t('Zoom in')} aria-label={t('Zoom in')}>
           <Plus className="h-4 w-4" />
         </IconButton>
-        <IconButton onClick={handleZoomOut} title="Zoom out" aria-label="Zoom out">
+        <IconButton onClick={handleZoomOut} title={t('Zoom out')} aria-label={t('Zoom out')}>
           <Minus className="h-4 w-4" />
         </IconButton>
-        <IconButton onClick={handleZoomReset} title="Reset zoom to 100%" aria-label="Reset zoom">
+        <IconButton onClick={handleZoomReset} title={t('Reset zoom to 100%')} aria-label={t('Reset zoom')}>
           <Scan className="h-4 w-4" />
         </IconButton>
-        <IconButton onClick={handleFitToScreen} title="Fit the design to the current canvas view" aria-label="Fit to screen">
+        <IconButton onClick={handleFitToScreen} title={t('Fit the design to the current canvas view')} aria-label={t('Fit to screen')}>
           <Expand className="h-4 w-4" />
         </IconButton>
         <div className="mx-1 w-px bg-border lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
@@ -1402,7 +1404,7 @@ export default function EditorCanvas({
           onClick={() => setPanMode((on) => !on)}
           intent={panMode ? 'active' : 'default'}
           title={panMode ? 'Stop moving the view with one finger' : 'Move the view with one finger or the mouse'}
-          aria-label="Toggle hand tool"
+          aria-label={t('Toggle hand tool')}
           aria-pressed={panMode}
         >
           <Hand className="h-4 w-4" />
@@ -1411,7 +1413,7 @@ export default function EditorCanvas({
           onClick={() => dispatch({ type: 'UPDATE_CANVAS', updates: { realisticStones: !state.canvas.realisticStones } })}
           intent={state.canvas.realisticStones ? 'active' : 'default'}
           title={state.canvas.realisticStones ? 'Show flat holes' : 'Show shiny stones'}
-          aria-label="Toggle shiny stones"
+          aria-label={t('Toggle shiny stones')}
           aria-pressed={state.canvas.realisticStones}
         >
           <Gem className="h-4 w-4" />
@@ -1420,7 +1422,7 @@ export default function EditorCanvas({
           onClick={toggleGrid}
           intent={state.canvas.showGrid ? 'active' : 'default'}
           title={state.canvas.showGrid ? 'Hide grid overlay' : 'Show grid overlay'}
-          aria-label="Toggle grid"
+          aria-label={t('Toggle grid')}
         >
           <Grid2X2 className="h-4 w-4" />
         </IconButton>
@@ -1847,8 +1849,8 @@ export default function EditorCanvas({
 
       {stones.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-8 text-center">
-          <p className="text-base font-semibold text-[var(--studio-ink-secondary)]">Nothing here yet</p>
-          <p className="max-w-sm text-sm text-[var(--studio-ink-muted)]">Type a text, upload artwork or pick a starter in the panel on the right.</p>
+          <p className="text-base font-semibold text-[var(--studio-ink-secondary)]">{t('Nothing here yet')}</p>
+          <p className="max-w-sm text-sm text-[var(--studio-ink-muted)]">{t('Type a text, upload artwork or pick a starter in the panel on the right.')}</p>
         </div>
       )}
 
@@ -1870,7 +1872,7 @@ export default function EditorCanvas({
             </div>
           )}
           {hoverSuggestedFrom && state.manualTool.interactionMode === 'place' && (
-            <div className="mt-1 text-warning-600">Smart assist nudged this stone to a safer spot.</div>
+            <div className="mt-1 text-warning-600">{t('Smart assist nudged this stone to a safer spot.')}</div>
           )}
         </div>
       )}
@@ -1879,7 +1881,7 @@ export default function EditorCanvas({
       {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
         <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
           {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
-          <div className="mt-1 text-[var(--studio-ink-muted)]">Delete or drag to move</div>
+          <div className="mt-1 text-[var(--studio-ink-muted)]">{t('Delete or drag to move')}</div>
         </div>
       )}
     </div>

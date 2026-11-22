@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ValidationIssue {
@@ -19,6 +20,7 @@ interface ValidationIssuesListProps {
  * Shows a success message when valid with no issues.
  */
 export default function ValidationIssuesList({ valid, issues }: ValidationIssuesListProps) {
+  const t = useT();
   return (
     <div
       className={`rounded border p-3 text-sm ${
@@ -30,7 +32,7 @@ export default function ValidationIssuesList({ valid, issues }: ValidationIssues
       <strong>{valid ? '✓ Template valid' : '✗ Template invalid'}</strong>
       {valid && issues.length === 0 && (
         <p className="mt-0.5 text-xs opacity-75">
-          No issues detected. Safe to export.
+          {t('No issues detected. Safe to export.')}
         </p>
       )}
       {issues.length > 0 && (

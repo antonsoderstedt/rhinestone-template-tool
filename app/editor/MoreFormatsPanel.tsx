@@ -3,6 +3,7 @@
 import { FileDown } from 'lucide-react';
 import { createDxfExport, createEpsExport, type RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 
+import { useT } from '../lib/i18n';
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -28,6 +29,7 @@ export default function MoreFormatsPanel({
   uncalibrated: boolean;
   onDownloaded: (message: string) => void;
 }) {
+  const t = useT();
   if (template.stones.length === 0) return null;
   const suffix = uncalibrated ? '-uncalibrated' : '';
   const download = (kind: 'dxf' | 'eps') => {
@@ -42,12 +44,12 @@ export default function MoreFormatsPanel({
     <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-zinc-300">
       <p className="flex items-center gap-1.5 font-semibold text-zinc-100">
         <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
-        Other file types
+        {t('Other file types')}
       </p>
-      <p className="mt-1 leading-5 text-zinc-400">For cutters and programs that do not open SVG. Every hole is a circle, in millimetres.</p>
+      <p className="mt-1 leading-5 text-zinc-400">{t('For cutters and programs that do not open SVG. Every hole is a circle, in millimetres.')}</p>
       <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" disabled={!downloadAllowed} onClick={() => download('dxf')} className={buttonClass}>Download DXF</button>
-        <button type="button" disabled={!downloadAllowed} onClick={() => download('eps')} className={buttonClass}>Download EPS</button>
+        <button type="button" disabled={!downloadAllowed} onClick={() => download('dxf')} className={buttonClass}>{t('Download DXF')}</button>
+        <button type="button" disabled={!downloadAllowed} onClick={() => download('eps')} className={buttonClass}>{t('Download EPS')}</button>
       </div>
     </div>
   );

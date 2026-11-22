@@ -7,6 +7,7 @@ import Modal from '../editor/ui/Modal';
 import { NAV_ITEMS } from './GlobalTopNav';
 import type { StudioTheme } from '../lib/studioTheme';
 
+import { useT } from '../lib/i18n';
 export interface StudioMenuItem {
   id: string;
   label: string;
@@ -45,6 +46,7 @@ export default function StudioMenuSheet({
   theme: StudioTheme;
   onToggleTheme: () => void;
 }) {
+  const t = useT();
   return (
     <Modal
       open={open}
@@ -57,11 +59,11 @@ export default function StudioMenuSheet({
         className="flex max-h-[85dvh] w-screen max-w-lg flex-col overflow-hidden rounded-t-2xl border border-zinc-800 bg-zinc-950 pb-[env(safe-area-inset-bottom)] text-zinc-100 shadow-2xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-2">
-          <h2 id={TITLE_ID} className="text-base font-semibold">Menu</h2>
+          <h2 id={TITLE_ID} className="text-base font-semibold">{t('Menu')}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={t('Close menu')}
             className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -102,15 +104,15 @@ export default function StudioMenuSheet({
           ))}
 
           <section aria-labelledby="studio-menu-appearance">
-            <h3 id="studio-menu-appearance" className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Appearance</h3>
+            <h3 id="studio-menu-appearance" className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">{t('Appearance')}</h3>
             <button type="button" onClick={() => { onToggleTheme(); onClose(); }} className={`${rowClass} text-zinc-100 hover:bg-zinc-900`}>
               {theme === 'dark' ? <Sun className="h-5 w-5 text-zinc-300" aria-hidden="true" /> : <Moon className="h-5 w-5 text-zinc-300" aria-hidden="true" />}
               <span className="flex-1">{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span>
             </button>
           </section>
 
-          <nav aria-label="Go to" className="border-t border-zinc-800 pt-3">
-            <h3 className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Go to</h3>
+          <nav aria-label={t('Go to')} className="border-t border-zinc-800 pt-3">
+            <h3 className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">{t('Go to')}</h3>
             <ul>
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;

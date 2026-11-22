@@ -34,6 +34,7 @@ import {
 } from '../lib/workspaceRecovery';
 import { readActiveCalibrationProfileId } from '../lib/workspaceVault';
 
+import { useT } from '../lib/i18n';
 type StudioFilter = 'all' | 'rhinestone' | 'htv';
 type SortMode = 'recent' | 'name' | 'favorites';
 
@@ -55,6 +56,7 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
 }
 
 export default function DesignsPage() {
+  const t = useT();
   const router = useRouter();
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [rhinestoneDesigns, setRhinestoneDesigns] = useState<TemplateLibraryEntry[]>([]);
@@ -242,7 +244,7 @@ export default function DesignsPage() {
 
         <WorkspaceHero
           eyebrow="My Designs"
-          title="My Designs"
+          title={t('My Designs')}
           description="Open a saved design to keep working on it. Mark favourites and archive the ones you no longer need."
           tone="neutral"
         />
@@ -268,24 +270,24 @@ export default function DesignsPage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name or tag" aria-label="Search designs"
+                placeholder={t('Search by name or tag')} aria-label={t('Search designs')}
                 className={workspaceInputClassName}
               />
             </label>
-            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className={workspaceSelectClassName} aria-label="Filter by studio">
-              <option value="all">All studios</option>
-              <option value="rhinestone">Rhinestone</option>
-              <option value="htv">HTV</option>
+            <select value={studioFilter} onChange={(event) => setStudioFilter(event.target.value as StudioFilter)} className={workspaceSelectClassName} aria-label={t('Filter by studio')}>
+              <option value="all">{t('All studios')}</option>
+              <option value="rhinestone">{t('Rhinestone')}</option>
+              <option value="htv">{t('HTV')}</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label="Filter by status">
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-              <option value="all">All statuses</option>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label={t('Filter by status')}>
+              <option value="active">{t('Active')}</option>
+              <option value="archived">{t('Archived')}</option>
+              <option value="all">{t('All statuses')}</option>
             </select>
-            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className={workspaceSelectClassName} aria-label="Sort designs">
-              <option value="recent">Recently updated</option>
-              <option value="name">Name (A–Z)</option>
-              <option value="favorites">Favorites first</option>
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className={workspaceSelectClassName} aria-label={t('Sort designs')}>
+              <option value="recent">{t('Recently updated')}</option>
+              <option value="name">{t('Name (A–Z)')}</option>
+              <option value="favorites">{t('Favorites first')}</option>
             </select>
           </div>
         </WorkspaceSurface>
@@ -357,14 +359,14 @@ export default function DesignsPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-600),var(--color-accent-600))] px-4 py-3 text-sm font-semibold text-ink-inverse"
                 >
                   <FolderHeart className="h-4 w-4" />
-                  Open and continue
+                  {t('Open and continue')}
                 </button>
                 <button
                   onClick={() => setRenameTarget({ studio: design.studio, id: design.id, name: design.name })}
                   className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-ink-secondary transition hover:text-ink"
                 >
                   <Pencil className="h-4 w-4" />
-                  Rename
+                  {t('Rename')}
                 </button>
                 <button
                   onClick={() => {
@@ -390,7 +392,7 @@ export default function DesignsPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm font-medium text-danger-600 transition hover:bg-danger-500/10"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {t('Delete')}
                 </button>
               </div>
 
@@ -404,12 +406,12 @@ export default function DesignsPage() {
         {visibleDesigns.length === 0 && (
           rhinestoneDesigns.length + vault.htvDesigns.length === 0 ? (
             <WorkspaceEmptyState
-              title="No saved designs yet"
+              title={t('No saved designs yet')}
               description="Press Save in the Rhinestone or HTV studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed."
             />
           ) : (
             <WorkspaceEmptyState
-              title="No designs match the current filters"
+              title={t('No designs match the current filters')}
               description="Switch studio or status filters, or clear the search to see everything again. Archived designs are hidden under the Active filter."
             />
           )
@@ -418,7 +420,7 @@ export default function DesignsPage() {
 
       <PromptDialog
         open={renameTarget !== null}
-        title="Rename design"
+        title={t('Rename design')}
         label="Design name"
         initialValue={renameTarget?.name ?? ''}
         confirmLabel="Rename"

@@ -1,5 +1,6 @@
 import type { MachineRecommendation } from '@/src/lib/rhinestone-engine/index';
 
+import { useT } from '../lib/i18n';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
@@ -16,52 +17,51 @@ export default function MachineCutSettingsCard({
 }: {
   recommendation: MachineRecommendation;
 }) {
+  const t = useT();
   return (
     <div className="rounded-lg border border-accent-500/30 bg-accent-50 px-5 py-4 text-sm">
       <p className="font-semibold text-accent-700 text-base mb-1">
         Machine cut settings — {recommendation.machine}
       </p>
       <p className="text-xs text-accent-700/80 mb-3">
-        These are cutter settings, not template settings. They control how your
-        machine cuts the material and never change hole diameter, spacing, or
-        exported dimensions.
+        {t('These are cutter settings, not template settings. They control how your machine cuts the material and never change hole diameter, spacing, or exported dimensions.')}
       </p>
 
       <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Material</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Material')}</dt>
           <dd className="font-semibold text-ink">{recommendation.material}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Blade</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Blade')}</dt>
           <dd className="font-semibold text-ink">{recommendation.blade}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Custom pressure</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Custom pressure')}</dt>
           <dd className="font-semibold text-ink">{recommendation.customPressure}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Pressure</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Pressure')}</dt>
           <dd className="font-semibold text-ink">{recommendation.pressureSetting}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Passes</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Passes')}</dt>
           <dd className="font-semibold text-ink">{recommendation.passes}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Multi-cut</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Multi-cut')}</dt>
           <dd className="font-semibold text-ink">{recommendation.multiCut ? 'On' : 'Off'}</dd>
         </div>
         <div>
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Mirror</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Mirror')}</dt>
           <dd className="font-semibold text-ink">{recommendation.mirror ? 'Yes' : 'No'}</dd>
         </div>
         <div className="col-span-2 sm:col-span-3">
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Liner</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Liner')}</dt>
           <dd className="text-ink">{recommendation.linerHandling}</dd>
         </div>
         <div className="col-span-2 sm:col-span-3">
-          <dt className="text-accent-700 uppercase tracking-wide text-xs">Mat</dt>
+          <dt className="text-accent-700 uppercase tracking-wide text-xs">{t('Mat')}</dt>
           <dd className="text-ink">{recommendation.mat}</dd>
         </div>
       </dl>

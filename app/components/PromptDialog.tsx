@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import Modal from '../editor/ui/Modal';
 
+import { useT } from '../lib/i18n';
 export interface PromptDialogProps {
   open: boolean;
   title: string;
@@ -42,6 +43,7 @@ function PromptDialogContent({
   titleId,
   descriptionId,
 }: Omit<PromptDialogProps, 'open'> & { titleId: string; descriptionId: string }) {
+  const t = useT();
   const [value, setValue] = useState(initialValue);
   const [touched, setTouched] = useState(false);
   const error = validate(value);
@@ -79,7 +81,7 @@ function PromptDialogContent({
           type="button"
           onClick={onCancel}
           className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          aria-label="Close dialog"
+          aria-label={t('Close dialog')}
         >
           <X className="h-4 w-4" />
         </button>

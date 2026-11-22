@@ -6,6 +6,7 @@ import { createZip } from '../lib/zip';
 import { createHtvColourFiles, buildColourFilesNote, type HtvColourFile, type HtvExportOptions } from './htvExport';
 import type { HtvLayer } from './HtvState';
 
+import { useT } from '../lib/i18n';
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -31,6 +32,7 @@ export default function HtvColourFilesPanel({
   filenameBase: string;
   onDownloaded: (message: string) => void;
 }) {
+  const t = useT();
   const [files, setFiles] = useState<HtvColourFile[] | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +59,7 @@ export default function HtvColourFilesPanel({
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-zinc-300">
       <p className="flex items-center gap-1.5 font-semibold text-zinc-100">
         <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-        Cut each colour separately
+        {t('Cut each colour separately')}
       </p>
       <p className="mt-1 leading-5 text-zinc-400">
         {files.length} colours: {files.map((f) => f.colourName).join(', ')}. One file per vinyl colour, all the same size so they line up when you press them on top of each other.
@@ -67,7 +69,7 @@ export default function HtvColourFilesPanel({
         onClick={download}
         className="mt-2 inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
       >
-        Download one file per colour (.zip)
+        {t('Download one file per colour (.zip)')}
       </button>
     </div>
   );

@@ -14,6 +14,7 @@ import {
 } from '@/src/lib/rhinestone-engine/index';
 import { createZip } from '../lib/zip';
 
+import { useT } from '../lib/i18n';
 type MatChoice = '12x12' | '12x24';
 
 const MATS: Record<MatChoice, { label: string; short: string; long: number }> = {
@@ -69,6 +70,7 @@ export function buildLayoutText(name: string, plan: SplitPlan, matLabel: string,
 }
 
 export default function SplitExportPanel({ template, svgOptions, designName, filenameBase, downloadAllowed, uncalibrated, onDownloaded }: SplitExportPanelProps) {
+  const t = useT();
   const [matChoice, setMatChoice] = useState<MatChoice>('12x24');
   const padding = svgOptions.paddingMm ?? 0;
 
@@ -108,14 +110,14 @@ export default function SplitExportPanel({ template, svgOptions, designName, fil
     <section aria-labelledby="split-export-title" className="flex flex-col gap-2.5" data-testid="split-export">
       <h3 id="split-export-title" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300">
         <Scissors className="h-3.5 w-3.5" aria-hidden="true" />
-        Split across mats
+        {t('Split across mats')}
       </h3>
       <p className="text-xs leading-5 text-zinc-400">
-        Too big for one mat, or want smaller pieces? Cut the design in parts. Seams run between stones, so no stone is cut.
+        {t('Too big for one mat, or want smaller pieces? Cut the design in parts. Seams run between stones, so no stone is cut.')}
       </p>
 
       <fieldset className="flex flex-col gap-1 text-xs text-zinc-200">
-        <legend className="sr-only">Mat size</legend>
+        <legend className="sr-only">{t('Mat size')}</legend>
         {(Object.keys(MATS) as MatChoice[]).map((key) => (
           <label key={key} className="flex items-center gap-2">
             <input type="radio" name="split-mat" checked={matChoice === key} onChange={() => setMatChoice(key)} />
@@ -126,7 +128,7 @@ export default function SplitExportPanel({ template, svgOptions, designName, fil
 
       {plan.parts.length === 0 ? null : !plan.splittable ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          The stones are too large to split for this mat. Choose a smaller stone size.
+          {t('The stones are too large to split for this mat. Choose a smaller stone size.')}
         </p>
       ) : plan.fitsWhole ? (
         <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200" data-testid="split-fits">
@@ -199,7 +201,7 @@ export default function SplitExportPanel({ template, svgOptions, designName, fil
                   className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-700 px-2 py-1 font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Download part ${part.index} of ${plan.parts.length}`}
                 >
-                  <Download className="h-3 w-3" aria-hidden="true" /> SVG
+                  <Download className="h-3 w-3" aria-hidden="true" /> {t('SVG')}
                 </button>
               </li>
             ))}
@@ -214,9 +216,9 @@ export default function SplitExportPanel({ template, svgOptions, designName, fil
             <Download className="h-4 w-4" aria-hidden="true" />
             Download all {plan.parts.length} parts (.zip)
           </button>
-          {!downloadAllowed && <p className="text-xs text-amber-200">Confirm the calibration notice below to enable the downloads.</p>}
+          {!downloadAllowed && <p className="text-xs text-amber-200">{t('Confirm the calibration notice below to enable the downloads.')}</p>}
           {(template.cutShapes?.length ?? 0) > 0 && (
-            <p className="text-xs text-amber-200">Cut outlines belong to the whole design and are left out of the parts.</p>
+            <p className="text-xs text-amber-200">{t('Cut outlines belong to the whole design and are left out of the parts.')}</p>
           )}
         </>
       )}

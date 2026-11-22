@@ -29,6 +29,7 @@ import {
 import { DEFAULT_PREVIEW_TEXT, buildFontLaunchUrl, getFontLaunchAvailability } from '../lib/fontLaunch';
 import { useFontPreviewLoader, type FontPreviewSpec } from './useFontPreviewLoader';
 
+import { useT } from '../lib/i18n';
 function bytesToDataUrl(bytes: Uint8Array, mimeType: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -161,6 +162,7 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
 }
 
 export default function FontsPage() {
+  const t = useT();
   const router = useRouter();
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [installedManifestMeta, setInstalledManifestMeta] = useState<InstalledFontManifestMeta | null>(null);
@@ -436,13 +438,13 @@ export default function FontsPage() {
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <WorkspaceHero
           eyebrow="Fonts"
-          title="Fonts"
+          title={t('Fonts')}
           description="Type your own text to compare fonts side by side, then send one to the Rhinestone or HTV studio with your text already in place."
           tone="accent"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
               <Upload className="h-4 w-4" />
-              Upload fonts
+              {t('Upload fonts')}
               <input
                 type="file"
                 accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2,font/ttf,font/otf"
@@ -472,9 +474,9 @@ export default function FontsPage() {
           <WorkspaceSurface className="p-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-ink">Imported font libraries</h2>
+                <h2 className="text-xl font-semibold text-ink">{t('Imported font libraries')}</h2>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-ink-secondary">
-                  Large imports are grouped by family so you are not scrolling through every weight and file format.
+                  {t('Large imports are grouped by family so you are not scrolling through every weight and file format.')}
                 </p>
               </div>
               <button
@@ -505,8 +507,8 @@ export default function FontsPage() {
               <input
                 value={previewText}
                 onChange={(event) => setPreviewText(event.target.value)}
-                placeholder="Type your text"
-                aria-label="Preview text — used on every card and sent to the studio"
+                placeholder={t('Type your text')}
+                aria-label={t('Preview text — used on every card and sent to the studio')}
                 className={workspaceInputClassName}
               />
             </label>
@@ -516,26 +518,26 @@ export default function FontsPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search fonts"
-                aria-label="Search fonts by name, category or tag"
+                placeholder={t('Search fonts')}
+                aria-label={t('Search fonts by name, category or tag')}
                 className={workspaceInputClassName}
               />
             </label>
-            <select aria-label="Source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)} className={workspaceSelectClassName}>
-              <option value="all">All sources</option>
-              <option value="bundled">Bundled</option>
-              <option value="workspace-installed">Imported libraries</option>
-              <option value="browser-uploaded">Uploaded by you</option>
+            <select aria-label={t('Source')} value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)} className={workspaceSelectClassName}>
+              <option value="all">{t('All sources')}</option>
+              <option value="bundled">{t('Bundled')}</option>
+              <option value="workspace-installed">{t('Imported libraries')}</option>
+              <option value="browser-uploaded">{t('Uploaded by you')}</option>
             </select>
             <div className="grid gap-3 md:grid-cols-2">
-              <select aria-label="Category" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={workspaceSelectClassName}>
-                <option value="all">All categories</option>
+              <select aria-label={t('Category')} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={workspaceSelectClassName}>
+                <option value="all">{t('All categories')}</option>
                 {categories.map((category) => <option key={category} value={category}>{categoryLabel(category)}</option>)}
               </select>
-              <select aria-label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
-                <option value="name">Name</option>
-                <option value="category">Category</option>
-                <option value="favorites">Favorites first</option>
+              <select aria-label={t('Sort by')} value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
+                <option value="name">{t('Name')}</option>
+                <option value="category">{t('Category')}</option>
+                <option value="favorites">{t('Favorites first')}</option>
               </select>
             </div>
           </div>
@@ -545,7 +547,7 @@ export default function FontsPage() {
         </WorkspaceSurface>
 
         {shownFamilies.length > 0 && (
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2" aria-label="Imported font families">
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2" aria-label={t('Imported font families')}>
             {shownFamilies.map((family) => {
               const expanded = expandedFamilies[family.familyKey] ?? false;
               const unavailable = fileUnavailable(family.representative);
@@ -626,7 +628,7 @@ export default function FontsPage() {
           </section>
         )}
 
-        <section className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3" aria-label="Fonts">
+        <section className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3" aria-label={t('Fonts')}>
           {shownStandalone.map((font) => {
             const unavailable = fileUnavailable(font);
             const editable = font.source !== 'bundled';
@@ -671,7 +673,7 @@ export default function FontsPage() {
                 {editable ? (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <label className="space-y-2 text-sm text-ink-secondary">
-                      <span className="font-medium text-ink">Category</span>
+                      <span className="font-medium text-ink">{t('Category')}</span>
                       <select
                         value={font.category}
                         onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, category: event.target.value, updatedAt: new Date().toISOString() }))}
@@ -681,7 +683,7 @@ export default function FontsPage() {
                       </select>
                     </label>
                     <label className="space-y-2 text-sm text-ink-secondary">
-                      <span className="font-medium text-ink">Style label</span>
+                      <span className="font-medium text-ink">{t('Style label')}</span>
                       <input
                         value={font.styleLabel}
                         onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, styleLabel: event.target.value, updatedAt: new Date().toISOString() }))}
@@ -689,7 +691,7 @@ export default function FontsPage() {
                       />
                     </label>
                     <label className="space-y-2 text-sm text-ink-secondary md:col-span-2">
-                      <span className="font-medium text-ink">Default text style</span>
+                      <span className="font-medium text-ink">{t('Default text style')}</span>
                       <select
                         value={font.preferredTextCoverageMode}
                         onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, preferredTextCoverageMode: event.target.value as UploadedWorkspaceFont['preferredTextCoverageMode'], updatedAt: new Date().toISOString() }))}
@@ -699,7 +701,7 @@ export default function FontsPage() {
                       </select>
                     </label>
                     <label className="space-y-2 text-sm text-ink-secondary md:col-span-2">
-                      <span className="font-medium text-ink">License / source</span>
+                      <span className="font-medium text-ink">{t('License / source')}</span>
                       <input
                         value={font.licenseSource}
                         onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, licenseSource: event.target.value, updatedAt: new Date().toISOString() }))}
@@ -707,7 +709,7 @@ export default function FontsPage() {
                       />
                     </label>
                     <label className="space-y-2 text-sm text-ink-secondary md:col-span-2">
-                      <span className="font-medium text-ink">Production note</span>
+                      <span className="font-medium text-ink">{t('Production note')}</span>
                       <textarea
                         value={font.note}
                         onChange={(event) => updateUploadedFont(font.key, (current) => ({ ...current, note: event.target.value, updatedAt: new Date().toISOString() }))}
@@ -734,7 +736,7 @@ export default function FontsPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-sm font-medium text-ink-secondary transition hover:text-ink"
                   >
                     <Archive className="h-4 w-4" />
-                    Archive
+                    {t('Archive')}
                   </button>
                 </div>
               </article>
@@ -756,7 +758,7 @@ export default function FontsPage() {
 
         {totalCards === 0 && (
           <WorkspaceEmptyState
-            title="No fonts match the current filters"
+            title={t('No fonts match the current filters')}
             description="Clear the search, change the source or category, or upload a font file to add to the list."
           />
         )}
@@ -767,6 +769,7 @@ export default function FontsPage() {
 
 /** Preview text in the font, or a clear message when the font file could not be loaded. */
 function FontSample({ font, text, unavailable }: { font: FontCatalogItem; text: string; unavailable: boolean }) {
+  const t = useT();
   return (
     <div className="mt-5 rounded-[1.5rem] border border-border bg-surface px-5 py-6">
       <p
@@ -777,7 +780,7 @@ function FontSample({ font, text, unavailable }: { font: FontCatalogItem; text: 
       </p>
       {unavailable && (
         <p role="alert" className="mt-3 text-sm text-warning-600">
-          This font file could not be loaded, so it cannot be previewed or used. Re-download the font and upload it again.
+          {t('This font file could not be loaded, so it cannot be previewed or used. Re-download the font and upload it again.')}
         </p>
       )}
     </div>
@@ -833,6 +836,7 @@ function LaunchButtons({
  * spaces) and saves on blur or Enter, so typing "a, b" is possible.
  */
 function TagsField({ fontName, tags, onCommit }: { fontName: string; tags: string[]; onCommit: (tags: string[]) => void }) {
+  const t = useT();
   const [draft, setDraft] = useState(tags.join(', '));
   const commit = () => {
     const next = draft.split(',').map((tag) => tag.trim()).filter(Boolean);
@@ -841,7 +845,7 @@ function TagsField({ fontName, tags, onCommit }: { fontName: string; tags: strin
   return (
     <div className="mt-4 space-y-2 text-sm text-ink-secondary">
       <label className="block space-y-2">
-        <span className="font-medium text-ink">Tags</span>
+        <span className="font-medium text-ink">{t('Tags')}</span>
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}

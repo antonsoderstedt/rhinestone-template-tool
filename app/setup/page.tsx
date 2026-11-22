@@ -10,6 +10,7 @@ import { WorkspaceHero, WorkspacePage, WorkspaceSurface } from '../components/wo
 import { getCalibrationGateSummary } from '../lib/workspaceRecovery';
 import { EMPTY_WORKSPACE_VAULT, readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
 
+import { useT } from '../lib/i18n';
 const STEPS = [
   { id: 'test-pack', label: 'Test pack', hint: 'Cut test shapes' },
   { id: 'measure', label: 'Measure', hint: 'Find your hole sizes' },
@@ -18,6 +19,7 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]['id'];
 
 export default function SetupPage() {
+  const t = useT();
   const [vault, setVault] = useState(() => EMPTY_WORKSPACE_VAULT);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [step, setStep] = useState<StepId>('test-pack');
@@ -49,7 +51,7 @@ export default function SetupPage() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <WorkspaceHero
           eyebrow="Setup & calibration"
-          title="Make the holes fit your stones"
+          title={t('Make the holes fit your stones')}
           description="Cut a few test shapes, measure which hole sizes seat your stones, then approve them. Export unlocks once your material is approved."
           tone="accent"
           aside={(
@@ -60,9 +62,9 @@ export default function SetupPage() {
               </div>
               <p className="mt-3 text-sm leading-6 text-ink-secondary">{gate.nextStep}</p>
               <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-secondary">
-                <div><dt className="inline font-semibold text-ink">Active profile: </dt><dd className="inline">{gate.activeProfileName ?? 'none'}</dd></div>
+                <div><dt className="inline font-semibold text-ink">{t('Active profile:')} </dt><dd className="inline">{gate.activeProfileName ?? 'none'}</dd></div>
                 <div className="flex items-center gap-1">
-                  <dt className="inline font-semibold text-ink">Last approval: </dt>
+                  <dt className="inline font-semibold text-ink">{t('Last approval:')} </dt>
                   <dd className="inline-flex items-center gap-1">
                     {gate.lastApprovedAt ? <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> : <Clock3 className="h-3 w-3" aria-hidden="true" />}
                     {gate.lastApprovedAt ? new Date(gate.lastApprovedAt).toLocaleDateString() : 'not yet'}
@@ -73,8 +75,8 @@ export default function SetupPage() {
           )}
         />
 
-        <nav aria-label="Setup steps">
-          <div role="tablist" aria-label="Setup steps" className="grid gap-3 sm:grid-cols-3">
+        <nav aria-label={t('Setup steps')}>
+          <div role="tablist" aria-label={t('Setup steps')} className="grid gap-3 sm:grid-cols-3">
             {STEPS.map((item, index) => {
               const selected = item.id === step;
               return (
@@ -106,7 +108,7 @@ export default function SetupPage() {
                 <div>
                   <h2 className="text-2xl font-semibold text-ink">1. Cut the test pack</h2>
                   <p className="mt-1 text-sm text-ink-secondary">
-                    Four ready-to-cut SVGs for checking your Cricut and flock. Start with a small scrap of material.
+                    {t('Four ready-to-cut SVGs for checking your Cricut and flock. Start with a small scrap of material.')}
                   </p>
                 </div>
                 <CricutTestPack />
@@ -120,7 +122,7 @@ export default function SetupPage() {
                   <div>
                     <h2 className="text-2xl font-semibold text-ink">2. Measure your hole sizes</h2>
                     <p className="mt-1 text-sm text-ink-secondary">
-                      Cut the calibration sheet (stone sizes SS6–SS20), find the hole that seats each stone, and enter it below.
+                      {t('Cut the calibration sheet (stone sizes SS6–SS20), find the hole that seats each stone, and enter it below.')}
                     </p>
                   </div>
                   <CalibrationSheetGenerator />
@@ -131,8 +133,7 @@ export default function SetupPage() {
                 <div>
                   <h2 className="text-2xl font-semibold text-ink">3. Save and approve</h2>
                   <p className="mt-1 text-sm text-ink-secondary">
-                    Save your measured sizes as a profile and approve it after you have checked that stones seat correctly.
-                    Approved profiles unlock export in the studios.
+                    {t('Save your measured sizes as a profile and approve it after you have checked that stones seat correctly. Approved profiles unlock export in the studios.')}
                   </p>
                 </div>
               )}

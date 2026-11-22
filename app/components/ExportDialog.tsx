@@ -5,6 +5,7 @@ import { AlertTriangle, Copy, Download, Printer, X } from 'lucide-react';
 import Modal from '../editor/ui/Modal';
 import { buildPrintSheetHtml, getMatFit, sanitizeExportFilename } from './exportDialogHelpers';
 
+import { useT } from '../lib/i18n';
 export interface ExportDialogNote {
   tone: 'warning' | 'info';
   text: string;
@@ -60,6 +61,7 @@ function ExportDialogContent({
   onClose,
   children,
 }: Omit<ExportDialogProps, 'open'>) {
+  const t = useT();
   const [filename, setFilename] = useState(defaultFilename);
   const [acknowledged, setAcknowledged] = useState(false);
   const [copied, setCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -109,7 +111,7 @@ function ExportDialogContent({
           type="button"
           onClick={onClose}
           className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          aria-label="Close export dialog"
+          aria-label={t('Close export dialog')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -125,22 +127,22 @@ function ExportDialogContent({
             {!loading && error && <span className="text-center text-sm text-red-600">{error}</span>}
             {!loading && !error && previewSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- inline SVG data URL preview of the exact export
-              <img src={previewSrc} alt="Preview of the exported SVG" className="max-h-full max-w-full object-contain" />
+              <img src={previewSrc} alt={t('Preview of the exported SVG')} className="max-h-full max-w-full object-contain" />
             )}
           </div>
           <p className="text-xs leading-5 text-zinc-400">
-            Preview of the exact file you will download. It is a vector SVG sized in millimetres.
+            {t('Preview of the exact file you will download. It is a vector SVG sized in millimetres.')}
           </p>
         </div>
 
         <div className="flex flex-col gap-4 text-sm text-zinc-300">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-zinc-400">Width</dt>
+              <dt className="text-xs uppercase tracking-wide text-zinc-400">{t('Width')}</dt>
               <dd className="text-sm font-semibold text-white">{widthMm !== null ? `${widthMm.toFixed(1)} mm` : '—'}{widthMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(widthMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-zinc-400">Height</dt>
+              <dt className="text-xs uppercase tracking-wide text-zinc-400">{t('Height')}</dt>
               <dd className="text-sm font-semibold text-white">{heightMm !== null ? `${heightMm.toFixed(1)} mm` : '—'}{heightMm !== null && <span className="ml-1 text-xs font-normal text-zinc-400">({(heightMm / 25.4).toFixed(1)} in)</span>}</dd>
             </div>
             {summaryRows.map((row) => (
@@ -181,17 +183,17 @@ function ExportDialogContent({
                 <>
                   <p className="flex items-center gap-1.5 font-semibold">
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    Material not calibrated
+                    {t('Material not calibrated')}
                   </p>
                   <p className="mt-1 text-amber-200/90">
-                    Hole sizes are recommended defaults and are not verified. Calibrate first for a production-ready file.
+                    {t('Hole sizes are recommended defaults and are not verified. Calibrate first for a production-ready file.')}
                   </p>
                   <button
                     type="button"
                     onClick={calibration.onCalibrate}
                     className="mt-2 rounded-md border border-amber-400/40 px-2.5 py-1 font-medium text-amber-100 hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    Calibrate material
+                    {t('Calibrate material')}
                   </button>
                   <label className="mt-3 flex items-start gap-2 text-amber-100">
                     <input
@@ -207,10 +209,10 @@ function ExportDialogContent({
                   </label>
                 </>
               ) : (
-                <p>Material calibrated (self-attested approval).</p>
+                <p>{t('Material calibrated (self-attested approval).')}</p>
               )}
               {calibration.perSize && calibration.perSize.length > 0 && (
-                <ul aria-label="Calibration by stone size" className="mt-2 space-y-1">
+                <ul aria-label={t('Calibration by stone size')} className="mt-2 space-y-1">
                   {calibration.perSize.map((entry) => (
                     <li key={entry.stoneSize} className={entry.state === 'unverified' ? 'text-amber-100' : 'text-zinc-300'}>{entry.text}</li>
                   ))}
@@ -223,7 +225,7 @@ function ExportDialogContent({
 
       <div className="flex flex-col gap-3 border-t border-zinc-800 px-5 py-4 sm:flex-row sm:items-end">
         <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-400">
-          File name
+          {t('File name')}
           <input
             type="text"
             value={filename}
@@ -241,13 +243,13 @@ function ExportDialogContent({
             onClick={onClose}
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
           >
-            Cancel
+            {t('Cancel')}
           </button>
           <button
             type="button"
             disabled={!canDownload}
             onClick={() => void copySvg()}
-            title="Copy the SVG text to paste into another program"
+            title={t('Copy the SVG text to paste into another program')}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Copy className="h-4 w-4" />
@@ -257,11 +259,11 @@ function ExportDialogContent({
             type="button"
             disabled={!canDownload || widthMm === null || heightMm === null}
             onClick={printTrueSize}
-            title="Print at true size, or save as a PDF from the print window"
+            title={t('Print at true size, or save as a PDF from the print window')}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Printer className="h-4 w-4" />
-            Print true size
+            {t('Print true size')}
           </button>
           <button
             type="button"

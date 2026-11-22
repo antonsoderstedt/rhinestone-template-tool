@@ -3,6 +3,7 @@
 import { STONE_COLOUR_PRESETS, inkOn, isStoneColour } from '../stoneColours';
 import { editorFieldLabelClassName } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 /** Swatches for the quick colours, "None", and any colour from the system picker. */
 export default function StoneColourPicker({
   label,
@@ -16,6 +17,7 @@ export default function StoneColourPicker({
   onChange: (colour: string | null) => void;
   noneLabel?: string;
 }) {
+  const t = useT();
   const current = value && isStoneColour(value) ? value.toLowerCase() : null;
   const isPreset = current !== null && STONE_COLOUR_PRESETS.some((preset) => preset.hex.toLowerCase() === current);
   return (
@@ -54,7 +56,7 @@ export default function StoneColourPicker({
             onChange={(event) => onChange(event.target.value.toLowerCase())}
             className={`h-7 w-7 cursor-pointer rounded-full border-2 bg-transparent p-0 ${current !== null && !isPreset ? 'border-violet-500' : 'border-[var(--studio-border-strong)]'}`}
           />
-          Other
+          {t('Other')}
         </label>
       </div>
     </div>
