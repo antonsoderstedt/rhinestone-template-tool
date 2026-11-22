@@ -36,7 +36,7 @@ import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
-import { alignDelta, boundsOfStones, offsetBelow, type HorizontalAlign, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
+import { alignDelta, alignDeltaY, isVerticalAlign, rotateStonesBy, spreadStones, type PartAlign, boundsOfStones, offsetBelow, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
 
 export type EditorTool =
   | 'select'          // Select and move stones
@@ -696,8 +696,12 @@ export type EditorAction =
   | { type: 'SET_PARTS'; parts: DesignPart[]; workingOffset: { x: number; y: number } }
   | { type: 'TRANSFORM_PART'; id: string; op: PartTransform }
   | { type: 'DUPLICATE_PART'; id: string }
-  | { type: 'ALIGN_PART'; id: string; align: HorizontalAlign }
-  | { type: 'ALIGN_WORKING'; align: HorizontalAlign }
+  | { type: 'ALIGN_PART'; id: string; align: PartAlign }
+  | { type: 'ALIGN_WORKING'; align: PartAlign }
+  | { type: 'TURN_PART_BY'; id: string; degrees: number }
+  | { type: 'SPREAD_PART'; id: string; factor: number }
+  /** Takes a kept part back into the piece being worked on, to edit its stones. Only when there is no piece now. */
+  | { type: 'EDIT_PART'; id: string }
   | { type: 'SET_DESIGN_STONE_COLOUR'; colour: string | null }
   | { type: 'SET_STONES_COLOUR'; ids: string[]; colour: string | null }
   | { type: 'END_PARTS_STEP' }
@@ -934,20 +938,61 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (!target) return state;
       const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
       const others = boundsOfStones([...workingStones, ...partsStones(state.parts.filter((part) => part.id !== action.id))]);
-      const dx = alignDelta(boundsOfStones(partsStones([target])), others, action.align);
-      if (dx === 0) return state;
+      const own = boundsOfStones(partsStones([target]));
+      const dx = isVerticalAlign(action.align) ? 0 : alignDelta(own, others, action.align);
+      const dy = isVerticalAlign(action.align) ? alignDeltaY(own, others, action.align) : 0;
+      if (dx === 0 && dy === 0) return state;
       return withPartsHistory(
         state,
-        state.parts.map((part) => (part.id === action.id ? { ...part, offsetX: Math.round((part.offsetX + dx) * 1e4) / 1e4 } : part)),
+        state.parts.map((part) => (part.id === action.id ? { ...part, offsetX: Math.round((part.offsetX + dx) * 1e4) / 1e4, offsetY: Math.round((part.offsetY + dy) * 1e4) / 1e4 } : part)),
         null,
       );
     }
 
     case 'ALIGN_WORKING': {
       const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
-      const dx = alignDelta(boundsOfStones(workingStones), boundsOfStones(partsStones(state.parts)), action.align);
-      if (dx === 0) return state;
-      return editorReducer(state, { type: 'SET_WORKING_OFFSET', x: Math.round((state.workingOffset.x + dx) * 1e4) / 1e4, y: state.workingOffset.y });
+      const own = boundsOfStones(workingStones);
+      const others = boundsOfStones(partsStones(state.parts));
+      const dx = isVerticalAlign(action.align) ? 0 : alignDelta(own, others, action.align);
+      const dy = isVerticalAlign(action.align) ? alignDeltaY(own, others, action.align) : 0;
+      if (dx === 0 && dy === 0) return state;
+      return editorReducer(state, { type: 'SET_WORKING_OFFSET', x: Math.round((state.workingOffset.x + dx) * 1e4) / 1e4, y: Math.round((state.workingOffset.y + dy) * 1e4) / 1e4 });
+    }
+
+    case 'TURN_PART_BY':
+      if (!Number.isFinite(action.degrees) || action.degrees % 360 === 0) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: rotateStonesBy(part.stones, action.degrees) } : part)),
+        null,
+      );
+
+    case 'SPREAD_PART':
+      if (!Number.isFinite(action.factor) || action.factor <= 1) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: spreadStones(part.stones, action.factor) } : part)),
+        null,
+      );
+
+    case 'EDIT_PART': {
+      const part = state.parts.find((candidate) => candidate.id === action.id);
+      if (!part) return state;
+      const working = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      if (working.length > 0) return state; // there is a piece in progress: it has to be added to the design first
+      const stones = part.stones.map((stone) => ({
+        ...stone,
+        center: { x: Math.round((stone.center.x + part.offsetX) * 1e4) / 1e4, y: Math.round((stone.center.y + part.offsetY) * 1e4) / 1e4 },
+      }));
+      const next = withPartsHistory(state, state.parts.filter((candidate) => candidate.id !== action.id), null);
+      return {
+        ...next,
+        activeTool: 'select',
+        workingOffset: { x: 0, y: 0 },
+        selectedStoneIds: new Set(),
+        editableTemplate: { isEditable: true, stones, originalTemplate: null, sourceGenerator: 'manual-editor' },
+        history: { past: [], future: [] },
+      };
     }
 
     case 'UNDO_PARTS': {

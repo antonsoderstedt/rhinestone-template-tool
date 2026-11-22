@@ -53,3 +53,14 @@ up with the rest by left edge, middle or right edge (`ALIGN_PART`, `ALIGN_WORKIN
 
 In the browser: a name kept as a part (168 stones), a second piece typed below it (200 stones in all, as the status bar says),
 and both restored after a reload with the text of the second piece intact.
+
+
+## Update 2026-11-22
+
+- Turn by any angle (about the middle of the part; spacing is unchanged) and "spread out" (stones move apart about the middle and keep
+  their size; never closer, so a part cannot be made to touch itself).
+- Align top / middle / bottom as well as left / centre / right, for parts and for the piece being worked on.
+- Dragging a part snaps its edges and middle to the edges and middles of the other pieces within 2 mm; hold Alt to move freely.
+- "Edit the stones of this part" takes a part back as editable stones, only when there is no piece in progress (it would be
+  mixed with it otherwise), and undoes in the parts history.
+- The parts list also shows in the Select tool.

@@ -118,9 +118,12 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
       <div className="rhinestone-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto overscroll-contain bg-[var(--studio-surface)] p-3 backdrop-blur-xl">
 
         {state.activeTool === 'select' ? (
-          <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
-            <p className="text-xs text-[var(--studio-ink-muted)]">Switch to the Inspect tab to fine-tune selection position, alignment, and export options.</p>
-          </PanelSection>
+          <>
+            <PanelSection title="Select tool" description="Click, shift-click, or drag a box on the canvas to select stones.">
+              <p className="text-xs text-[var(--studio-ink-muted)]">Switch to the Inspect tab to fine-tune selection position, alignment, and export options.</p>
+            </PanelSection>
+            {state.parts.length > 0 && <DesignPartsPanel state={state} dispatch={dispatch} />}
+          </>
         ) : (
           <>
             <PanelSection title={statusCopy.label} description={statusCopy.description} defaultOpen={false}>

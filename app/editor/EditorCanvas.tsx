@@ -4,7 +4,7 @@ import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
 import { isNudgeKey, nudgeMoves } from './nudge';
 import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
-import { partsStones } from './designParts';
+import { PART_SNAP_MM, boundsOfStones, partsStones, snapOffset } from './designParts';
 
 import { Expand, Gem, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
@@ -901,15 +901,31 @@ export default function EditorCanvas({
     e.stopPropagation();
     const start = screenToMm(e.clientX, e.clientY, svg, transform);
     const { offsetX, offsetY } = part;
+    // Where the part is now and where everything else is, to snap against while dragging.
+    const ownBounds = boundsOfStones(partsStones([part]));
+    const workingNow = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+    const otherBounds = [
+      boundsOfStones(workingNow),
+      ...state.parts.filter((candidate) => candidate.id !== partId).map((candidate) => boundsOfStones(partsStones([candidate]))),
+    ].filter((bounds): bounds is NonNullable<typeof bounds> => bounds !== null);
     dispatch({ type: 'END_PARTS_STEP' });
     const move = (event: PointerEvent) => {
       const current = getCanvasTransform();
       if (!current) return;
       const point = screenToMm(event.clientX, event.clientY, svg, current);
+      let nextX = offsetX + point.x - start.x;
+      let nextY = offsetY + point.y - start.y;
+      // The part clicks into line with the edges and middles of the other pieces when it comes within 2 mm; hold Alt to move freely.
+      if (!event.altKey && ownBounds) {
+        const moved = { minX: ownBounds.minX + nextX - offsetX, maxX: ownBounds.maxX + nextX - offsetX, minY: ownBounds.minY + nextY - offsetY, maxY: ownBounds.maxY + nextY - offsetY };
+        const snap = snapOffset(moved, otherBounds, PART_SNAP_MM);
+        nextX += snap.x;
+        nextY += snap.y;
+      }
       dispatch({
         type: 'UPDATE_PART',
         id: partId,
-        updates: { offsetX: Math.round((offsetX + point.x - start.x) * 10) / 10, offsetY: Math.round((offsetY + point.y - start.y) * 10) / 10 },
+        updates: { offsetX: Math.round(nextX * 10) / 10, offsetY: Math.round(nextY * 10) / 10 },
       });
     };
     const end = () => {

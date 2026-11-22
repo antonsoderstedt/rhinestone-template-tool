@@ -1,10 +1,46 @@
 'use client';
 
-import { AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart, Copy, FlipHorizontal2, FlipVertical2, Plus, Redo2, RotateCw, Trash2, Undo2 } from 'lucide-react';
+import { useState } from 'react';
+import { AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Copy, FlipHorizontal2, FlipVertical2, Plus, Redo2, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import type { Stone } from '@/src/lib/rhinestone-engine/index';
 import type { EditorAction, EditorState } from './EditorState';
 import { boundsOfStones, nextPartId, offsetBelow, partsStones, translateStones } from './designParts';
 import NumericInput from './controls/NumericInput';
+
+/** Turn by any angle, spread out, and take back to edit: the less common things to do with a part. */
+function PartExtras({ partId, partName, canEdit, dispatch }: { partId: string; partName: string; canEdit: boolean; dispatch: React.Dispatch<EditorAction> }) {
+  const [degrees, setDegrees] = useState<number | ''>(15);
+  const [percent, setPercent] = useState<number | ''>(120);
+  const turn = typeof degrees === 'number' && Number.isFinite(degrees) && degrees % 360 !== 0;
+  const spread = typeof percent === 'number' && percent > 100;
+  return (
+    <div className="space-y-2 rounded-md border border-dashed border-[var(--studio-border)] p-2">
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <NumericInput label="Turn by" value={degrees} unit="°" step={1} min={-360} max={360} onChange={setDegrees} />
+        </div>
+        <button type="button" disabled={!turn} aria-label={`Turn ${partName} by this angle`} onClick={() => typeof degrees === 'number' && dispatch({ type: 'TURN_PART_BY', id: partId, degrees })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">Turn</button>
+      </div>
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <NumericInput label="Spread out to" value={percent} unit="%" step={5} min={100} max={500} onChange={setPercent} />
+        </div>
+        <button type="button" disabled={!spread} aria-label={`Spread out ${partName}`} onClick={() => typeof percent === 'number' && dispatch({ type: 'SPREAD_PART', id: partId, factor: percent / 100 })} className="rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40">Spread</button>
+      </div>
+      <p className="text-xs text-[var(--studio-ink-muted)]">Spreading moves the stones apart; they keep their size. It never brings them closer.</p>
+      <button
+        type="button"
+        disabled={!canEdit}
+        onClick={() => dispatch({ type: 'EDIT_PART', id: partId })}
+        title={canEdit ? 'Take this part back to edit its stones one by one' : 'Add the piece you are working on to the design first'}
+        className="w-full rounded-md border border-[var(--studio-border)] px-2.5 py-2 text-xs font-medium hover:bg-[var(--studio-hover-overlay)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Edit the stones of {partName}
+      </button>
+      {!canEdit && <p className="text-xs text-[var(--studio-ink-muted)]">Add the piece you are working on to the design first, then you can take this one back.</p>}
+    </div>
+  );
+}
 
 function suggestName(state: EditorState): string {
   const firstLine = (text: string) => text.split('\n')[0]!.trim().slice(0, 24);
@@ -112,6 +148,15 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
                   <IconButton label={`Align ${part.name} to the right edge`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'right' })}>
                     <AlignHorizontalJustifyEnd className="h-4 w-4" aria-hidden="true" />
                   </IconButton>
+                  <IconButton label={`Align ${part.name} to the top edge`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'top' })}>
+                    <AlignVerticalJustifyStart className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Centre ${part.name} vertically`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'middle' })}>
+                    <AlignVerticalJustifyCenter className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Align ${part.name} to the bottom edge`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'bottom' })}>
+                    <AlignVerticalJustifyEnd className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
                   <IconButton label={`Rotate ${part.name} a quarter turn`} onClick={() => dispatch({ type: 'TRANSFORM_PART', id: part.id, op: 'rotate-cw' })}>
                     <RotateCw className="h-4 w-4" aria-hidden="true" />
                   </IconButton>
@@ -129,6 +174,7 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
                   <NumericInput label="Move right" value={part.offsetX} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetX: value } })} />
                   <NumericInput label="Move down" value={part.offsetY} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'UPDATE_PART', id: part.id, updates: { offsetY: value } })} />
                 </div>
+                <PartExtras partId={part.id} partName={part.name} canEdit={working.length === 0} dispatch={dispatch} />
               </li>
             ))}
           </ul>
@@ -145,6 +191,15 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
               </IconButton>
               <IconButton label="Centre this piece" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'center' })}>
                 <AlignHorizontalJustifyCenter className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Align this piece to the top edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'top' })}>
+                <AlignVerticalJustifyStart className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Centre this piece vertically" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'middle' })}>
+                <AlignVerticalJustifyCenter className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Align this piece to the bottom edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'bottom' })}>
+                <AlignVerticalJustifyEnd className="h-4 w-4" aria-hidden="true" />
               </IconButton>
               <IconButton label="Align this piece to the right edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'right' })}>
                 <AlignHorizontalJustifyEnd className="h-4 w-4" aria-hidden="true" />

@@ -263,3 +263,104 @@ describe('aligning pieces', () => {
     expect(state.parts[0]!.offsetX).toBe(3);
   });
 });
+
+import { MAX_SPREAD_FACTOR, alignDeltaY, rotateStonesBy, snapOffset, spreadStones } from '../app/editor/designParts';
+
+describe('parts: free rotation, spreading, vertical alignment, snapping (plan B2, B3, B13, B14)', () => {
+  const mk = (id: string, x: number, y: number) => ({ id, center: { x, y }, stoneSize: 'SS10' as const, holeDiameterMm: 3 });
+  const row = [mk('a', 0, 0), mk('b', 10, 0), mk('c', 20, 0)];
+  const distance = (a: { center: { x: number; y: number } }, b: { center: { x: number; y: number } }) => Math.hypot(a.center.x - b.center.x, a.center.y - b.center.y);
+
+  it('turns by any angle without changing the spacing between stones', () => {
+    for (const deg of [30, 45, 90, 137, -60]) {
+      const turned = rotateStonesBy(row, deg);
+      expect(distance(turned[0]!, turned[1]!)).toBeCloseTo(10, 3);
+      expect(distance(turned[0]!, turned[2]!)).toBeCloseTo(20, 3);
+    }
+    const quarter = rotateStonesBy(row, 90);
+    expect(quarter.map((s) => s.center.x.toFixed(2))).toEqual(['10.00', '10.00', '10.00']);
+    expect(quarter[0]!.center.y).toBeCloseTo(-10, 3);
+  });
+
+  it('turning 360 degrees brings the stones back, and a bad angle changes nothing', () => {
+    expect(rotateStonesBy(row, 360).map((s) => [Math.round(s.center.x), Math.round(s.center.y)])).toEqual([[0, 0], [10, 0], [20, 0]]);
+    expect(rotateStonesBy(row, Number.NaN)).toEqual(row);
+  });
+
+  it('spreads about the middle, and never brings stones closer', () => {
+    const wider = spreadStones(row, 2);
+    expect(wider.map((s) => s.center.x)).toEqual([-10, 10, 30]);
+    expect(spreadStones(row, 0.5).map((s) => s.center.x)).toEqual([0, 10, 20]);
+    expect(spreadStones(row, 99).map((s) => s.center.x)).toEqual([10 - 10 * MAX_SPREAD_FACTOR, 10, 10 + 10 * MAX_SPREAD_FACTOR]);
+    expect(wider[0]!.holeDiameterMm).toBe(3);
+  });
+
+  it('lines up top, middle and bottom', () => {
+    const own = { minX: 0, minY: 10, maxX: 5, maxY: 20 };
+    const others = { minX: 0, minY: 0, maxX: 5, maxY: 40 };
+    expect(alignDeltaY(own, others, 'top')).toBe(-10);
+    expect(alignDeltaY(own, others, 'middle')).toBe(5);
+    expect(alignDeltaY(own, others, 'bottom')).toBe(20);
+    expect(alignDeltaY(own, null, 'top')).toBe(0);
+  });
+
+  it('snaps to the nearest edge or middle within the threshold, per axis', () => {
+    const others = [{ minX: 0, minY: 0, maxX: 100, maxY: 40 }];
+    // Left edge 1.2 mm from the others' left edge; top 30 mm away: only x snaps.
+    expect(snapOffset({ minX: 1.2, minY: 70, maxX: 41.2, maxY: 90 }, others, 2)).toEqual({ x: -1.2, y: 0 });
+    // The middle of own (x 50) is 0.5 from the middle of the others (50.5 -> own middle 50).
+    expect(snapOffset({ minX: 30, minY: 70, maxX: 70, maxY: 90 }, [{ minX: 0, minY: 0, maxX: 101, maxY: 40 }], 2).x).toBe(0.5);
+    expect(snapOffset({ minX: 30, minY: 70, maxX: 70, maxY: 90 }, [], 2)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+import { DEFAULT_EDITOR_STATE as BASE_STATE, editorReducer as reduce } from '../app/editor/EditorState';
+import { createRhinestoneTemplate as makeTemplate } from '../src/lib/rhinestone-engine/index';
+
+describe('parts in the reducer: turn by angle, spread, vertical align, take back (plan B2, B3, B14)', () => {
+  const stone = (id: string, x: number, y: number) => ({ id, center: { x, y }, stoneSize: 'SS10' as const, holeDiameterMm: 3 });
+  const withOnePart = () => {
+    let state = structuredClone(BASE_STATE);
+    state = reduce(state, { type: 'SET_TEMPLATE', template: makeTemplate({ id: 't', name: 't', stones: [stone('a', 10, 10), stone('b', 20, 10), stone('c', 30, 10)] }) });
+    state = reduce({ ...state, activeTool: 'grid' }, { type: 'ADD_PART', part: { id: 'p1', name: 'Row', offsetX: 0, offsetY: 0, stones: [stone('a', 10, 10), stone('b', 20, 10), stone('c', 30, 10)] } });
+    return reduce(state, { type: 'SET_TEMPLATE', template: null });
+  };
+
+  it('turns a part by an angle with one undo step, and ignores a full turn', () => {
+    let state = withOnePart();
+    expect(reduce(state, { type: 'TURN_PART_BY', id: 'p1', degrees: 360 })).toBe(state);
+    state = reduce(state, { type: 'TURN_PART_BY', id: 'p1', degrees: 90 });
+    expect(state.parts[0]!.stones.map((s) => Math.round(s.center.x))).toEqual([20, 20, 20]);
+    expect(reduce(state, { type: 'UNDO_PARTS' }).parts[0]!.stones.map((s) => s.center.x)).toEqual([10, 20, 30]);
+  });
+
+  it('spreads out, never in', () => {
+    let state = withOnePart();
+    expect(reduce(state, { type: 'SPREAD_PART', id: 'p1', factor: 0.8 })).toBe(state);
+    state = reduce(state, { type: 'SPREAD_PART', id: 'p1', factor: 1.5 });
+    expect(state.parts[0]!.stones.map((s) => s.center.x)).toEqual([5, 20, 35]);
+  });
+
+  it('aligns a part vertically with the piece being worked on', () => {
+    let state = withOnePart();
+    state = reduce({ ...state, activeTool: 'grid' }, { type: 'SET_TEMPLATE', template: makeTemplate({ id: 't2', name: 't2', stones: [stone('w', 10, 50), stone('x', 10, 70)] }) });
+    state = reduce(state, { type: 'ALIGN_PART', id: 'p1', align: 'top' });
+    // Top edge of the part (y 10 - 1.5) moves to the top edge of the working piece (y 50 - 1.5).
+    expect(state.parts[0]!.offsetY).toBe(40);
+    expect(state.parts[0]!.offsetX).toBe(0);
+  });
+
+  it('takes a part back to edit its stones, but only when no piece is in progress, and in one parts undo step', () => {
+    let state = withOnePart();
+    state = reduce(state, { type: 'SET_TEMPLATE', template: makeTemplate({ id: 'w', name: 'w', stones: [stone('w', 50, 50)] }) });
+    expect(reduce(state, { type: 'EDIT_PART', id: 'p1' })).toBe(state);
+    state = reduce(state, { type: 'SET_TEMPLATE', template: null });
+    state = reduce(state, { type: 'UPDATE_PART', id: 'p1', updates: { offsetX: 5, offsetY: 7 } });
+    const back = reduce(state, { type: 'EDIT_PART', id: 'p1' });
+    expect(back.parts).toHaveLength(0);
+    expect(back.activeTool).toBe('select');
+    expect(back.editableTemplate.isEditable).toBe(true);
+    expect(back.editableTemplate.stones.map((s) => [s.center.x, s.center.y])).toEqual([[15, 17], [25, 17], [35, 17]]);
+    expect(reduce(back, { type: 'UNDO_PARTS' }).parts).toHaveLength(1);
+  });
+});

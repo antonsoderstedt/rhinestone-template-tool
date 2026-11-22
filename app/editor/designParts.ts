@@ -42,7 +42,7 @@ export function translateTemplate(template: RhinestoneTemplate, dx: number, dy: 
   };
 }
 
-const round = (value: number) => Math.round(value * 1e4) / 1e4;
+const round = (value: number) => Math.round(value * 1e4) / 1e4 + 0; // + 0 turns -0 into 0
 
 /** The stones of a part where they are shown: offset applied, ids made unique to the part, tagged with its id. */
 export function placedPartStones(part: DesignPart): Stone[] {
@@ -147,3 +147,72 @@ export function alignDelta(own: Bounds | null, others: Bounds | null, align: Hor
   const pick = (b: Bounds) => (align === 'left' ? b.minX : align === 'right' ? b.maxX : (b.minX + b.maxX) / 2);
   return round(pick(others) - pick(own));
 }
+
+/** Turns the stones by any angle (degrees, clockwise on screen) about the middle of their bounding box. Spacing is unchanged. */
+export function rotateStonesBy(stones: readonly Stone[], degrees: number): Stone[] {
+  const bounds = boundsOfStones(stones);
+  if (!bounds || !Number.isFinite(degrees)) return stones.map((stone) => ({ ...stone, center: { ...stone.center } }));
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  const angle = (degrees * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return stones.map((stone) => {
+    const dx = stone.center.x - cx;
+    const dy = stone.center.y - cy;
+    return { ...stone, center: { x: round(cx + dx * cos - dy * sin), y: round(cy + dx * sin + dy * cos) } };
+  });
+}
+
+/** Smallest factor "spread out" accepts: stones keep their size, so bringing them closer could make them touch. */
+export const MIN_SPREAD_FACTOR = 1;
+export const MAX_SPREAD_FACTOR = 5;
+
+/**
+ * Moves the stones apart (or leaves them) about the middle of their bounding box. The stones keep their size, so the part gets
+ * bigger and more open, never tighter: a factor below 1 is treated as 1.
+ */
+export function spreadStones(stones: readonly Stone[], factor: number): Stone[] {
+  const f = Math.min(MAX_SPREAD_FACTOR, Math.max(MIN_SPREAD_FACTOR, Number.isFinite(factor) ? factor : 1));
+  const bounds = boundsOfStones(stones);
+  if (!bounds || f === 1) return stones.map((stone) => ({ ...stone, center: { ...stone.center } }));
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  return stones.map((stone) => ({ ...stone, center: { x: round(cx + (stone.center.x - cx) * f), y: round(cy + (stone.center.y - cy) * f) } }));
+}
+
+export type VerticalAlign = 'top' | 'middle' | 'bottom';
+export type PartAlign = HorizontalAlign | VerticalAlign;
+export const isVerticalAlign = (align: PartAlign): align is VerticalAlign => align === 'top' || align === 'middle' || align === 'bottom';
+
+/** Like `alignDelta`, for the top edges, the middles or the bottom edges. */
+export function alignDeltaY(own: Bounds | null, others: Bounds | null, align: VerticalAlign): number {
+  if (!own || !others) return 0;
+  const pick = (b: Bounds) => (align === 'top' ? b.minY : align === 'bottom' ? b.maxY : (b.minY + b.maxY) / 2);
+  return round(pick(others) - pick(own));
+}
+
+/**
+ * How far to nudge a piece being dragged so that an edge or the middle of it lines up with the edge or middle of another piece,
+ * when they are within `thresholdMm`. Each axis is decided on its own; 0 where nothing is close enough.
+ */
+export function snapOffset(own: Bounds, others: readonly Bounds[], thresholdMm: number): Point2 {
+  const best = (ownLines: number[], otherLines: number[]) => {
+    let result = 0;
+    let distance = thresholdMm + 1e-9;
+    for (const a of ownLines) {
+      for (const b of otherLines) {
+        const d = Math.abs(b - a);
+        if (d < distance) {
+          distance = d;
+          result = b - a;
+        }
+      }
+    }
+    return round(result);
+  };
+  const xs = (b: Bounds) => [b.minX, (b.minX + b.maxX) / 2, b.maxX];
+  const ys = (b: Bounds) => [b.minY, (b.minY + b.maxY) / 2, b.maxY];
+  return { x: best(xs(own), others.flatMap(xs)), y: best(ys(own), others.flatMap(ys)) };
+}
+export const PART_SNAP_MM = 2;
