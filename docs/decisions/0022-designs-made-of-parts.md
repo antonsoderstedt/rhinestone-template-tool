@@ -35,10 +35,16 @@ change to the parts is one undo step (`UNDO_PARTS` / `REDO_PARTS`, 50 deep): add
 typing a position is one step, a rename none, and opening a design clears the history. This is separate from the stone-edit
 history of the editable stones.
 
+## Dragging and aligning (B13, B14 for parts)
+
+A part is dragged on the canvas by any of its stones (any tool except the pen): it moves by the pointer's travel, rounded to
+0.1 mm, and one drag is one undo step (`END_PARTS_STEP` marks the ends). Each part, and the piece being worked on, can be lined
+up with the rest by left edge, middle or right edge (`ALIGN_PART`, `ALIGN_WORKING`; no-op when alone or already there).
+
 ## Limits (next steps)
 
-- A part is frozen: its text or artwork cannot be changed afterwards. Free-angle rotation, scaling, aligning and centring parts,
-  dragging them on the canvas, the same for the piece being worked on, and one undo for everything (settings included) are the
+- A part is frozen: its text or artwork cannot be changed afterwards. Free-angle rotation, scaling, vertical alignment and snapping while
+  dragging, turning and mirroring the piece being worked on, and one undo for everything (settings included) are the
   remaining parts of J15, B2, B3 and B13.
 - Fit to mat resizes the piece being worked on, not the parts.
 - The parts list is in the Design panel and is hidden while the Select tool is active.

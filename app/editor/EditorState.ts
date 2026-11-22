@@ -35,7 +35,7 @@ import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
-import { boundsOfStones, offsetBelow, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
+import { alignDelta, boundsOfStones, offsetBelow, type HorizontalAlign, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
 
 export type EditorTool =
   | 'select'          // Select and move stones
@@ -680,6 +680,9 @@ export type EditorAction =
   | { type: 'SET_PARTS'; parts: DesignPart[]; workingOffset: { x: number; y: number } }
   | { type: 'TRANSFORM_PART'; id: string; op: PartTransform }
   | { type: 'DUPLICATE_PART'; id: string }
+  | { type: 'ALIGN_PART'; id: string; align: HorizontalAlign }
+  | { type: 'ALIGN_WORKING'; align: HorizontalAlign }
+  | { type: 'END_PARTS_STEP' }
   | { type: 'UNDO_PARTS' }
   | { type: 'REDO_PARTS' }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
@@ -865,6 +868,31 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         stones: source.stones.map((stone) => ({ ...stone, center: { ...stone.center } })),
       };
       return withPartsHistory(state, [...state.parts, copy], null);
+    }
+
+    case 'END_PARTS_STEP':
+      // The next move of a part starts a new undo step.
+      return state.partsHistory.lastKey === null ? state : { ...state, partsHistory: { ...state.partsHistory, lastKey: null } };
+
+    case 'ALIGN_PART': {
+      const target = state.parts.find((part) => part.id === action.id);
+      if (!target) return state;
+      const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      const others = boundsOfStones([...workingStones, ...partsStones(state.parts.filter((part) => part.id !== action.id))]);
+      const dx = alignDelta(boundsOfStones(partsStones([target])), others, action.align);
+      if (dx === 0) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, offsetX: Math.round((part.offsetX + dx) * 1e4) / 1e4 } : part)),
+        null,
+      );
+    }
+
+    case 'ALIGN_WORKING': {
+      const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      const dx = alignDelta(boundsOfStones(workingStones), boundsOfStones(partsStones(state.parts)), action.align);
+      if (dx === 0) return state;
+      return editorReducer(state, { type: 'SET_WORKING_OFFSET', x: Math.round((state.workingOffset.x + dx) * 1e4) / 1e4, y: state.workingOffset.y });
     }
 
     case 'UNDO_PARTS': {

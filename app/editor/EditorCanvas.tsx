@@ -842,6 +842,38 @@ export default function EditorCanvas({
   };
 
   // Handle mouse down on stone (for dragging)
+  // Dragging a kept part: it moves by the pointer's travel, rounded to 0.1 mm; one drag is one undo step.
+  const startPartDrag = (e: React.PointerEvent<SVGCircleElement>, partId: string) => {
+    if (spacePressed || e.button === 1 || e.button === 2) return;
+    const svg = svgRef.current;
+    const transform = getCanvasTransform();
+    const part = state.parts.find((candidate) => candidate.id === partId);
+    if (!svg || !transform || !part) return;
+    e.stopPropagation();
+    const start = screenToMm(e.clientX, e.clientY, svg, transform);
+    const { offsetX, offsetY } = part;
+    dispatch({ type: 'END_PARTS_STEP' });
+    const move = (event: PointerEvent) => {
+      const current = getCanvasTransform();
+      if (!current) return;
+      const point = screenToMm(event.clientX, event.clientY, svg, current);
+      dispatch({
+        type: 'UPDATE_PART',
+        id: partId,
+        updates: { offsetX: Math.round((offsetX + point.x - start.x) * 10) / 10, offsetY: Math.round((offsetY + point.y - start.y) * 10) / 10 },
+      });
+    };
+    const end = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      dispatch({ type: 'END_PARTS_STEP' });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
+
   const handleStoneMouseDown = (e: React.PointerEvent<SVGCircleElement>, stoneId: string) => {
     // Don't handle if panning
     if (spacePressed || e.button === 1) return;
@@ -1451,7 +1483,7 @@ export default function EditorCanvas({
             const baseColor = getStoneCanvasColor(stone);
             
             const isHovered = hoveredStoneId === stone.id;
-            // A stone of a kept part is not edited on the canvas (see the parts list).
+            // A stone of a kept part is dragged as a whole (see startPartDrag); it is not edited stone by stone.
             const isPartStone = typeof stone.metadata?.partId === 'string';
 
             return (
@@ -1500,9 +1532,9 @@ export default function EditorCanvas({
                   }
                   strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
-                  pointerEvents={isPartStone ? 'none' : undefined}
-                  className={state.activeTool === 'select' && !isPartStone ? 'cursor-pointer transition' : ''}
-                  onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}
+                  pointerEvents={isPartStone && state.activeTool === 'manual' ? 'none' : undefined}
+                  className={isPartStone ? 'cursor-move' : state.activeTool === 'select' ? 'cursor-pointer transition' : ''}
+                  onPointerDown={(e) => (isPartStone ? startPartDrag(e, stone.metadata!.partId as string) : handleStoneMouseDown(e, stone.id))}
                   onPointerEnter={() => state.activeTool === 'select' && setHoveredStoneId(stone.id)}
                   onPointerLeave={() => setHoveredStoneId((current) => (current === stone.id ? null : current))}
                 />

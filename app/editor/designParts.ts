@@ -135,3 +135,15 @@ export function transformStones(stones: readonly Stone[], op: PartTransform): St
     return { ...stone, center: { x: round(cx + x), y: round(cy + y) } };
   });
 }
+
+export type HorizontalAlign = 'left' | 'center' | 'right';
+
+/**
+ * How far a piece with bounds `own` has to move sideways to line up with `others` (the left edges, the middles or the right
+ * edges). Zero when there is nothing to line up with.
+ */
+export function alignDelta(own: Bounds | null, others: Bounds | null, align: HorizontalAlign): number {
+  if (!own || !others) return 0;
+  const pick = (b: Bounds) => (align === 'left' ? b.minX : align === 'right' ? b.maxX : (b.minX + b.maxX) / 2);
+  return round(pick(others) - pick(own));
+}

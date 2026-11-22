@@ -213,3 +213,53 @@ describe('turning, mirroring, duplicating and undoing parts', () => {
     expect(editorReducer(state, { type: 'SET_PARTS', parts: [], workingOffset: { x: 0, y: 0 } }).partsHistory.past).toEqual([]);
   });
 });
+
+describe('aligning pieces', () => {
+  const wide = (): DesignPart => ({ id: 'part-1', name: 'wide', offsetX: 0, offsetY: 0, stones: [stone('a', 10, 10), stone('b', 110, 10)] });
+  const narrow = (): DesignPart => ({ id: 'part-2', name: 'narrow', offsetX: 0, offsetY: 30, stones: [stone('a', 40, 10), stone('b', 50, 10)] });
+  const bounds = (state: EditorState, id: string) => boundsOfStones(partsStones(state.parts.filter((p) => p.id === id)))!;
+
+  it('centres a part on the others, and lines up left and right edges', () => {
+    let state = editorReducer(editorReducer(fresh(), { type: 'ADD_PART', part: wide() }), { type: 'ADD_PART', part: narrow() });
+    const wideBounds = bounds(state, 'part-1');
+    state = editorReducer(state, { type: 'ALIGN_PART', id: 'part-2', align: 'center' });
+    const n = bounds(state, 'part-2');
+    expect((n.minX + n.maxX) / 2).toBeCloseTo((wideBounds.minX + wideBounds.maxX) / 2, 3);
+    state = editorReducer(state, { type: 'ALIGN_PART', id: 'part-2', align: 'left' });
+    expect(bounds(state, 'part-2').minX).toBeCloseTo(wideBounds.minX, 3);
+    state = editorReducer(state, { type: 'ALIGN_PART', id: 'part-2', align: 'right' });
+    expect(bounds(state, 'part-2').maxX).toBeCloseTo(wideBounds.maxX, 3);
+  });
+
+  it('is one undo step, and does nothing when it is already there or alone', () => {
+    let state = editorReducer(editorReducer(fresh(), { type: 'ADD_PART', part: wide() }), { type: 'ADD_PART', part: narrow() });
+    const before = state.partsHistory.past.length;
+    state = editorReducer(state, { type: 'ALIGN_PART', id: 'part-2', align: 'center' });
+    expect(state.partsHistory.past).toHaveLength(before + 1);
+    expect(editorReducer(state, { type: 'ALIGN_PART', id: 'part-2', align: 'center' })).toBe(state);
+    const alone = editorReducer(fresh(), { type: 'ADD_PART', part: wide() });
+    expect(editorReducer(alone, { type: 'ALIGN_PART', id: 'part-1', align: 'center' })).toBe(alone);
+  });
+
+  it('aligns the piece being worked on to the parts', () => {
+    let state = editorReducer(fresh(), { type: 'ADD_PART', part: wide() });
+    state = editorReducer(state, { type: 'SET_TEMPLATE', template: grid() });
+    state = editorReducer(state, { type: 'ALIGN_WORKING', align: 'center' });
+    const w = boundsOfStones(state.template!.stones)!;
+    const p = bounds(state, 'part-1');
+    expect((w.minX + w.maxX) / 2).toBeCloseTo((p.minX + p.maxX) / 2, 2);
+    expect(state.workingOffset.x).not.toBe(0);
+  });
+
+  it('a drag is one undo step per drag, however many moves it has', () => {
+    let state = editorReducer(fresh(), { type: 'ADD_PART', part: wide() });
+    for (let drag = 0; drag < 2; drag++) {
+      state = editorReducer(state, { type: 'END_PARTS_STEP' });
+      for (const x of [1, 2, 3]) state = editorReducer(state, { type: 'UPDATE_PART', id: 'part-1', updates: { offsetX: x + drag * 10 } });
+      state = editorReducer(state, { type: 'END_PARTS_STEP' });
+    }
+    expect(state.partsHistory.past).toHaveLength(3); // the add and the two drags
+    state = editorReducer(state, { type: 'UNDO_PARTS' });
+    expect(state.parts[0]!.offsetX).toBe(3);
+  });
+});

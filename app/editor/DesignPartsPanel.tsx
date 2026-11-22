@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, FlipHorizontal2, FlipVertical2, Plus, Redo2, RotateCw, Trash2, Undo2 } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart, Copy, FlipHorizontal2, FlipVertical2, Plus, Redo2, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import type { Stone } from '@/src/lib/rhinestone-engine/index';
 import type { EditorAction, EditorState } from './EditorState';
 import { boundsOfStones, nextPartId, offsetBelow, partsStones, translateStones } from './designParts';
@@ -103,6 +103,15 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
                 </div>
                 <div className="flex items-center gap-1">
                   <p className="mr-auto text-xs text-[var(--studio-ink-muted)]">{part.stones.length} stones</p>
+                  <IconButton label={`Align ${part.name} to the left edge`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'left' })}>
+                    <AlignHorizontalJustifyStart className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Centre ${part.name}`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'center' })}>
+                    <AlignHorizontalJustifyCenter className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Align ${part.name} to the right edge`} onClick={() => dispatch({ type: 'ALIGN_PART', id: part.id, align: 'right' })}>
+                    <AlignHorizontalJustifyEnd className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
                   <IconButton label={`Rotate ${part.name} a quarter turn`} onClick={() => dispatch({ type: 'TRANSFORM_PART', id: part.id, op: 'rotate-cw' })}>
                     <RotateCw className="h-4 w-4" aria-hidden="true" />
                   </IconButton>
@@ -128,7 +137,20 @@ export default function DesignPartsPanel({ state, dispatch }: { state: EditorSta
 
       {state.parts.length > 0 && working.length > 0 && (
         <section aria-label="Position of this piece" className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Position of this piece</h3>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">Position of this piece</h3>
+            <div className="flex gap-1">
+              <IconButton label="Align this piece to the left edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'left' })}>
+                <AlignHorizontalJustifyStart className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Centre this piece" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'center' })}>
+                <AlignHorizontalJustifyCenter className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Align this piece to the right edge" onClick={() => dispatch({ type: 'ALIGN_WORKING', align: 'right' })}>
+                <AlignHorizontalJustifyEnd className="h-4 w-4" aria-hidden="true" />
+              </IconButton>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <NumericInput label="Move right" value={state.workingOffset.x} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: value, y: state.workingOffset.y })} />
             <NumericInput label="Move down" value={state.workingOffset.y} unit="mm" step={0.5} onChange={(value) => typeof value === 'number' && dispatch({ type: 'SET_WORKING_OFFSET', x: state.workingOffset.x, y: value })} />
