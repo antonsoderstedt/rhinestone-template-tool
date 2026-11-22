@@ -1,6 +1,7 @@
 'use client';
 
 import { isMultiColour, stoneColourOf } from './stoneColours';
+import { describeDesignForScreenReader } from './editorUi';
 import { partsStones } from './designParts';
 
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
@@ -1389,6 +1390,9 @@ export default function EditorCanvas({
           >
             <svg
               ref={svgRef}
+              data-design-canvas=""
+              role="img"
+              aria-label={describeDesignForScreenReader(stones, state.selectedStoneIds.size)}
               viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
               preserveAspectRatio="xMidYMid meet"
               className="absolute inset-0 h-full w-full touch-none bg-[var(--studio-bg)]"

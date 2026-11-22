@@ -6,6 +6,7 @@ import EditorToolbar from '../app/editor/EditorToolbar';
 import EditorToast from '../app/editor/EditorToast';
 import { DEFAULT_EDITOR_STATE } from '../app/editor/EditorState';
 import {
+  describeDesignForScreenReader,
   getEditableStatusCopy,
   getSelectionActionState,
   getSelectionEmptyState,
@@ -152,5 +153,13 @@ describe('editor UI rendering', () => {
 
     expect(html).toContain('role="status"');
     expect(html).toContain('Project saved.');
+  });
+});
+describe('canvas text alternative (plan I1)', () => {
+  it('says what is on the canvas', () => {
+    expect(describeDesignForScreenReader([])).toBe('Design canvas. Nothing here yet.');
+    const stones = [{ center: { x: 10, y: 10 }, holeDiameterMm: 3 }, { center: { x: 110, y: 40 }, holeDiameterMm: 3 }];
+    expect(describeDesignForScreenReader(stones)).toBe('Design canvas. 2 stones, about 103 by 33 millimetres.');
+    expect(describeDesignForScreenReader(stones.slice(0, 1), 1)).toBe('Design canvas. 1 stone, about 3 by 3 millimetres. 1 selected.');
   });
 });

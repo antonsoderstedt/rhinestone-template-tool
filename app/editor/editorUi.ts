@@ -204,3 +204,24 @@ export const TEXT_EXAMPLES: readonly { label: string; text: string }[] = [
 export function getCanvasHint(activeTool: EditorTool): string {
   return TOOL_CANVAS_HINTS[activeTool] ?? 'Pan, zoom, and fit the current design without leaving the editor.';
 }
+
+/** A sentence for screen readers in place of the picture of the design. */
+export function describeDesignForScreenReader(
+  stones: ReadonlyArray<{ center: { x: number; y: number }; holeDiameterMm: number }>,
+  selectedCount = 0,
+): string {
+  if (stones.length === 0) return 'Design canvas. Nothing here yet.';
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const stone of stones) {
+    const r = stone.holeDiameterMm / 2;
+    minX = Math.min(minX, stone.center.x - r);
+    minY = Math.min(minY, stone.center.y - r);
+    maxX = Math.max(maxX, stone.center.x + r);
+    maxY = Math.max(maxY, stone.center.y + r);
+  }
+  const selected = selectedCount > 0 ? ` ${selectedCount} selected.` : '';
+  return `Design canvas. ${stones.length} stone${stones.length === 1 ? '' : 's'}, about ${Math.round(maxX - minX)} by ${Math.round(maxY - minY)} millimetres.${selected}`;
+}

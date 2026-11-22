@@ -330,3 +330,36 @@ body {
 .htv-studio-panel select {
   color-scheme: inherit;
 }
+
+/* People who ask for less motion get none: no transitions, no spinners that sweep, no smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High-contrast / forced-colours mode: the design itself keeps its own colours (a stone is a colour, not decoration),
+   and a pressed or selected button is still visible when the background colours are taken away. */
+@media (forced-colors: active) {
+  svg[data-design-canvas],
+  svg[data-design-canvas] * {
+    forced-color-adjust: none;
+  }
+  [aria-pressed='true'],
+  [aria-selected='true'],
+  [aria-current='page'] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled {
+    opacity: 1;
+    color: GrayText;
+  }
+}
