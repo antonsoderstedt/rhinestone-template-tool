@@ -117,7 +117,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | A10 compact HTV status chips, A11 project named from its text and no permanent "Not saved yet" | **Done** |
 | F2 previous-session copies limited and de-duplicated; G2 HTV "Fit to the print area" (placement and mat); G5 already works (HTV only refuses unloadable fonts) | **Done** |
 | B4 first step: stone colour per artwork colour (preset or the artwork's own), shown on the canvas when a design has several, counted per colour, saved in the project | **Done in part**; colours for text, stone fonts and single stones, and colour in the export, remain |
-| D1 "Copy SVG", D2 print at true size (also gives a PDF through the print window) with a 50 mm check square (D5) | **Done in part**; PNG, DXF, EPS, test patch (D4) and Design Space import help remain |
+| D1 "Copy SVG", D2 print at true size (also gives a PDF through the print window) with a 50 mm check square (D5) | **Done in part**; PNG, DXF, EPS and Design Space import help remain. D4 "Cut a small test first": a 5 × 5 patch with the design's own hole size and tight spacing is in the export dialog |
 | A3 jargon rewritten (Edit stones one by one, Filled letters, Hole size), A4 already works: clicking a stone makes it editable with a toast | **Done** |
 | I1 canvas text alternative (size, stone count, selection), I4 reduced motion and forced colours | **Done in part**; a full screen-reader walk-through, one-finger pan (I2) and real-device checks (I3) remain |
 | B7 ready-made shapes (heart, star, circle, ring, crown, lightning, moon, flower, burst) in the Artwork tool; every look is cuttable (tested) | **Done in part**; borders and more clipart remain |

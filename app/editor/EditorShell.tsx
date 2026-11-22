@@ -43,6 +43,7 @@ import type {
 } from '@/src/lib/rhinestone-engine/index';
 import { useStudioTheme } from '../lib/studioTheme';
 import { planPreviousSessionKeep } from './previousSession';
+import TestPatchPanel from './TestPatchPanel';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -1800,25 +1801,42 @@ export default function EditorShell() {
         onDownload={handleExportDownload}
         onClose={() => setExportDialogOpen(false)}
       >
-        {(gate) =>
-          effectiveTemplate && exportPreview?.widthMm != null && exportPreview.heightMm != null
-            && getMatFit(exportPreview.widthMm, exportPreview.heightMm).status !== 'fits-12x12' ? (
-              <SplitExportPanel
+        {(gate) => {
+          if (!effectiveTemplate) return null;
+          const svgOptions = {
+            includeGuideBox: state.includeGuideBox,
+            includeLabels: state.includeLabels,
+            paddingMm: state.paddingMm,
+            decimalPlaces: 3,
+            uncalibratedOverride: needsCalibration,
+          };
+          const filenameBase = getExportFilename(state.projectName, false).replace(/\.svg$/, '');
+          const doesNotFit = exportPreview?.widthMm != null && exportPreview.heightMm != null
+            && getMatFit(exportPreview.widthMm, exportPreview.heightMm).status !== 'fits-12x12';
+          return (
+            <>
+              {doesNotFit && (
+                <SplitExportPanel
+                  template={effectiveTemplate}
+                  svgOptions={svgOptions}
+                  designName={state.projectName.trim() || 'Rhinestone design'}
+                  filenameBase={filenameBase}
+                  downloadAllowed={gate.downloadAllowed}
+                  uncalibrated={gate.uncalibrated}
+                  onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
+                />
+              )}
+              <TestPatchPanel
                 template={effectiveTemplate}
-                svgOptions={{
-                  includeGuideBox: state.includeGuideBox,
-                  includeLabels: state.includeLabels,
-                  paddingMm: state.paddingMm,
-                  decimalPlaces: 3,
-                  uncalibratedOverride: needsCalibration,
-                }}
-                designName={state.projectName.trim() || 'Rhinestone design'}
-                filenameBase={getExportFilename(state.projectName, false).replace(/\.svg$/, '')}
+                svgOptions={svgOptions}
+                filenameBase={filenameBase}
                 downloadAllowed={gate.downloadAllowed}
                 uncalibrated={gate.uncalibrated}
                 onDownloaded={(message) => setToast({ message, tone: gate.uncalibrated ? 'warning' : 'success' })}
               />
-            ) : null}
+            </>
+          );
+        }}
       </ExportDialog>
 
       <EditorDialog
