@@ -122,6 +122,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | I1 canvas text alternative (size, stone count, selection), I4 reduced motion and forced colours | **Done in part**; a full screen-reader walk-through, one-finger pan (I2) and real-device checks (I3) remain |
 | B7 ready-made shapes (heart, star, circle, ring, crown, lightning, moon, flower, burst) in the Artwork tool; every look is cuttable (tested) | **Done in part**; borders and more clipart remain |
 | F3 "Last backed up" and a quiet reminder after 14 days (from 3 designs up) | **Done**; F1 IndexedDB, F7 backup of fonts / images / calibration, F4-F6 remain |
+| B5 shiny stones preview (a toggle on the canvas; every colour is drawn with a highlight and a darker rim, Crystal AB with a rainbow sheen) | **Done in part**; the fabric photo behind the design (reuse of the HTV mockups) remains |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

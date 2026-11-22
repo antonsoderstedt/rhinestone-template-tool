@@ -254,6 +254,8 @@ export interface CanvasState {
   panX: number;               // px offset
   panY: number;               // px offset
   showGrid: boolean;
+  /** Draw the stones as shiny stones instead of flat holes. A view setting. */
+  realisticStones: boolean;
   gridSizeMm: number;         // mm per grid square
   showRulers: boolean;
 }
@@ -641,6 +643,7 @@ export const DEFAULT_CANVAS_STATE: CanvasState = {
   panX: 0,
   panY: 0,
   showGrid: true,
+  realisticStones: false,
   gridSizeMm: 10,
   showRulers: false,
 };

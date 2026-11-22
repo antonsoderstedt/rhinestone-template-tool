@@ -146,3 +146,21 @@ describe('colour for text, fonts and single stones (plan B4)', () => {
     expect((svg.match(/<circle/g) ?? []).length).toBe(2);
   });
 });
+
+import { AB_COLOUR, gemShades } from '../app/editor/stoneColours';
+
+describe('shiny stones (plan B5)', () => {
+  it('has a highlight lighter and a rim darker than the body', () => {
+    const lum = (hex: string) => 0.299 * parseInt(hex.slice(1, 3), 16) + 0.587 * parseInt(hex.slice(3, 5), 16) + 0.114 * parseInt(hex.slice(5, 7), 16);
+    for (const hex of ['#d4af37', '#1c1c21', '#c8262d']) {
+      const shades = gemShades(hex);
+      expect(lum(shades.highlight)).toBeGreaterThan(lum(shades.body));
+      expect(lum(shades.rim)).toBeLessThan(lum(shades.body));
+      expect(shades.body).toBe(hex);
+    }
+  });
+
+  it('offers Crystal AB as a colour', () => {
+    expect(STONE_COLOUR_PRESETS.some((preset) => preset.hex === AB_COLOUR && preset.label === 'Crystal AB')).toBe(true);
+  });
+});

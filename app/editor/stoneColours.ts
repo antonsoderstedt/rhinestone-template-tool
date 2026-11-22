@@ -14,6 +14,7 @@ export interface StoneColourPreset {
 /** The colours people buy most. A design can use any hex; these are the quick picks. */
 export const STONE_COLOUR_PRESETS: readonly StoneColourPreset[] = [
   { id: 'crystal', label: 'Crystal', hex: '#f3f4f8' },
+  { id: 'ab', label: 'Crystal AB', hex: '#c8bdf0' },
   { id: 'jet', label: 'Jet black', hex: '#1c1c21' },
   { id: 'gold', label: 'Gold', hex: '#d4af37' },
   { id: 'silver', label: 'Silver', hex: '#b9bdc7' },
@@ -101,4 +102,20 @@ export function selectedColourOf(stones: ReadonlyArray<{ id: string; metadata?: 
     else if (shared !== colour) return null;
   }
   return shared ?? null;
+}
+
+/** Crystal AB (aurora borealis) has a rainbow sheen instead of one colour. */
+export const AB_COLOUR = '#c8bdf0';
+
+const mix = (hex: string, towards: number, amount: number): string => {
+  const channel = (offset: number) => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16);
+    return Math.round(value + (towards - value) * amount);
+  };
+  return `#${[1, 3, 5].map((o) => channel(o).toString(16).padStart(2, '0')).join('')}`;
+};
+
+/** The three colours of a shiny stone: a highlight, the body and a darker rim, for drawing a stone that catches the light. */
+export function gemShades(hex: string): { highlight: string; body: string; rim: string } {
+  return { highlight: mix(hex, 255, 0.78), body: hex, rim: mix(hex, 0, 0.45) };
 }

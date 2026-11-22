@@ -1,11 +1,11 @@
 'use client';
 
 import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
-import { applyDesignColour, stoneColourOf } from './stoneColours';
+import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { partsStones } from './designParts';
 
-import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
+import { Expand, Gem, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
@@ -80,6 +80,31 @@ function polylineToPathData(polyline: { points: ReadonlyArray<{ x: number; y: nu
   if (polyline.points.length === 0) return '';
   const [first, ...rest] = polyline.points;
   return `M${first!.x.toFixed(2)} ${first!.y.toFixed(2)}${rest.map((p) => `L${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join('')}${polyline.closed ? 'Z' : ''}`;
+}
+
+const gemId = (hex: string) => `gem-${hex.replace('#', '').toLowerCase()}`;
+
+/** The gradient a shiny stone of this colour is filled with: a highlight up and to the left, the colour, a darker rim. */
+function GemGradient({ hex }: { hex: string }) {
+  if (hex.toLowerCase() === AB_COLOUR) {
+    return (
+      <radialGradient id={gemId(hex)} cx="0.38" cy="0.32" r="0.8">
+        <stop offset="0" stopColor="#ffffff" />
+        <stop offset="0.3" stopColor="#f7d9ff" />
+        <stop offset="0.55" stopColor="#b9d9ff" />
+        <stop offset="0.8" stopColor="#c4f2e0" />
+        <stop offset="1" stopColor="#9a8ad6" />
+      </radialGradient>
+    );
+  }
+  const shades = gemShades(hex);
+  return (
+    <radialGradient id={gemId(hex)} cx="0.38" cy="0.32" r="0.8">
+      <stop offset="0" stopColor={shades.highlight} />
+      <stop offset="0.4" stopColor={shades.body} />
+      <stop offset="1" stopColor={shades.rim} />
+    </radialGradient>
+  );
 }
 
 function getStoneCanvasColor(stone: EditableStone, showStoneColours: boolean): string {
@@ -206,6 +231,9 @@ export default function EditorCanvas({
   }, [state.template, state.editableTemplate, state.parts, state.designStoneColour]);
   // Once any stone has a colour the canvas shows the colours, so the design reads like the real thing.
   const showStoneColours = useMemo(() => stones.some((stone) => stoneColourOf(stone) !== null), [stones]);
+  const realistic = state.canvas.realisticStones;
+  // The colours in use, each drawn with its own gradient so a stone looks like a stone that catches the light.
+  const gemColours = useMemo(() => (realistic ? [...new Set(stones.map((stone) => getStoneCanvasColor(stone, showStoneColours).toLowerCase()))] : []), [realistic, stones, showStoneColours]);
 
   // Cut shapes (e.g. letter-stencil card frames) — not stored on the
   // editable snapshot, so fall back to the pre-edit template when editable.
@@ -1333,6 +1361,15 @@ export default function EditorCanvas({
         </IconButton>
         <div className="mx-1 w-px bg-border lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
         <IconButton
+          onClick={() => dispatch({ type: 'UPDATE_CANVAS', updates: { realisticStones: !state.canvas.realisticStones } })}
+          intent={state.canvas.realisticStones ? 'active' : 'default'}
+          title={state.canvas.realisticStones ? 'Show flat holes' : 'Show shiny stones'}
+          aria-label="Toggle shiny stones"
+          aria-pressed={state.canvas.realisticStones}
+        >
+          <Gem className="h-4 w-4" />
+        </IconButton>
+        <IconButton
           onClick={toggleGrid}
           intent={state.canvas.showGrid ? 'active' : 'default'}
           title={state.canvas.showGrid ? 'Hide grid overlay' : 'Show grid overlay'}
@@ -1427,6 +1464,7 @@ export default function EditorCanvas({
           {/* Grid */}
           {state.canvas.showGrid && (
             <defs>
+              {realistic && gemColours.map((hex) => <GemGradient key={hex} hex={hex} />)}
               <pattern
                 id="grid-minor"
                 width={state.canvas.gridSizeMm}
@@ -1565,12 +1603,12 @@ export default function EditorCanvas({
                   cx={displayX}
                   cy={displayY}
                   r={r - STONE_STROKE_MM / 2}
-                  fill={isPendingErase ? 'rgba(228,69,59,0.18)' : baseColor}
-                  fillOpacity={isPendingErase ? 0.18 : showStoneColours ? 0.95 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
+                  fill={isPendingErase ? 'rgba(228,69,59,0.18)' : realistic ? `url(#${gemId(baseColor)})` : baseColor}
+                  fillOpacity={isPendingErase ? 0.18 : realistic ? 1 : showStoneColours ? 0.95 : isSelected ? 0.6 : isRecentlyPlaced ? 0.6 : 0.5}
                   stroke={
                     isPendingErase
                       ? '#e4453b'
-                      : showStoneColours ? 'rgba(255,255,255,0.55)' : baseColor
+                      : realistic ? gemShades(baseColor).rim : showStoneColours ? 'rgba(255,255,255,0.55)' : baseColor
                   }
                   strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
