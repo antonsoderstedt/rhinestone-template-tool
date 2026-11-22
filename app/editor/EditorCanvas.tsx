@@ -2,6 +2,7 @@
 
 import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
 import { isNudgeKey, nudgeMoves } from './nudge';
+import { visibleStonesForView } from './visibleStones';
 import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { PART_SNAP_MM, boundsOfStones, partsStones, snapOffset } from './designParts';
@@ -396,6 +397,13 @@ export default function EditorCanvas({
   const viewBox = useMemo(
     () => (viewportSize ? expandViewBoxToAspect(baseViewBox, viewportSize.width / viewportSize.height) : baseViewBox),
     [baseViewBox, viewportSize],
+  );
+
+  // A big design is drawn only where it can be seen (plus a margin), so zooming in on a few thousand stones stays smooth.
+  // Selected stones are always kept, and the stones themselves are all still there: this only decides what is drawn.
+  const drawnStones = useMemo(
+    () => visibleStonesForView(stones, viewBox, state.selectedStoneIds),
+    [stones, viewBox, state.selectedStoneIds],
   );
 
   // Ruler tick/label spacing adapts to zoom so labels never crowd together when zoomed out.
@@ -1578,7 +1586,7 @@ export default function EditorCanvas({
           )}
 
           {/* Stones */}
-          {stones.map((stone) => {
+          {drawnStones.map((stone) => {
             const isSelected = state.selectedStoneIds.has(stone.id);
             const isPendingErase = eraseState?.pendingStoneIds.has(stone.id) ?? false;
             const isRecentlyPlaced = recentPlacedStoneIds.has(stone.id);
