@@ -98,7 +98,9 @@ export default function EditorStatusBar({
           <Clock3 className="h-3.5 w-3.5" />
           <span>{autosaveLabel}</span>
         </span>
-        <span>My Designs: <span className="font-medium text-[var(--studio-ink-secondary)]">{activeLibraryName ?? 'Not saved yet'}</span></span>
+        {activeLibraryName && (
+          <span>Saved in My Designs: <span className="font-medium text-[var(--studio-ink-secondary)]">{activeLibraryName}</span></span>
+        )}
         <span>Zoom: <span className="font-mono text-[var(--studio-ink-secondary)]">{Math.round(canvas.zoom * 100)}%</span></span>
         {canvas.showGrid && (
           <span className="text-[var(--studio-ink-muted)]">Grid: {canvas.gridSizeMm}mm</span>

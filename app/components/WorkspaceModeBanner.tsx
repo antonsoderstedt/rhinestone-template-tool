@@ -3,11 +3,18 @@ import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export type WorkspaceStatus = 'Ready' | 'Warning' | 'Blocked';
 
+export interface StatusChip {
+  label: string;
+  tone: 'neutral' | 'success' | 'warning';
+}
+
 export interface WorkspaceModeBannerProps {
   mode: string;
   status: WorkspaceStatus;
   project: string;
   guidance: string;
+  /** Short facts shown as chips. When the status is Ready the sentence below is only for screen readers. */
+  chips?: readonly StatusChip[];
   calibrationState?: {
     label: string;
     tone: 'success' | 'warning' | 'danger';
@@ -35,11 +42,13 @@ const statusConfig: Record<WorkspaceStatus, { labelClassName: string; iconClassN
   },
 };
 
-export default function WorkspaceModeBanner({ mode, status, project, guidance, calibrationState }: WorkspaceModeBannerProps) {
+export default function WorkspaceModeBanner({ mode, status, project, guidance, chips, calibrationState }: WorkspaceModeBannerProps) {
   const { Icon, badgeClassName, iconClassName, labelClassName } = statusConfig[status];
   // On a phone long guidance (size warnings, say) is clamped to two lines until the user opens it.
   const [expanded, setExpanded] = useState(false);
-  const longGuidance = guidance.length > 90;
+  // With chips, a Ready design needs no sentence; anything that needs attention still gets its explanation.
+  const guidanceHidden = chips !== undefined && status === 'Ready';
+  const longGuidance = guidance.length > 90 && !guidanceHidden;
 
   const calibrationToneClassName = calibrationState?.tone === 'success'
     ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
@@ -59,6 +68,20 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
               <Icon className={`h-3.5 w-3.5 ${iconClassName}`} />
               {status}
             </span>
+            {chips?.map((chip) => (
+              <span
+                key={chip.label}
+                className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${
+                  chip.tone === 'warning'
+                    ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
+                    : chip.tone === 'success'
+                      ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+                      : 'border-[var(--studio-border)] bg-[var(--studio-hover-overlay-soft)] text-[var(--studio-ink-secondary)]'
+                }`}
+              >
+                {chip.label}
+              </span>
+            ))}
             {calibrationState && (
               <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${calibrationToneClassName}`}>
                 {calibrationState.label}
@@ -71,7 +94,7 @@ export default function WorkspaceModeBanner({ mode, status, project, guidance, c
           </div>
         </div>
 
-        <p className={`mt-2 max-w-4xl text-xs leading-5 text-[var(--studio-ink-secondary)] ${expanded ? '' : 'max-lg:line-clamp-2'}`}>
+        <p className={guidanceHidden ? 'sr-only' : `mt-2 max-w-4xl text-xs leading-5 text-[var(--studio-ink-secondary)] ${expanded ? '' : 'max-lg:line-clamp-2'}`}>
           {guidance}
         </p>
         {longGuidance && (

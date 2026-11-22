@@ -1324,7 +1324,7 @@ export default function EditorShell() {
           setToast({ message: 'Font not found — using a default font instead.', tone: 'warning' });
         }
         dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'text' });
-        dispatch({ type: 'SET_PROJECT_NAME', name: `${(launchText ?? 'Preview').replace(/\s+/g, ' ').trim()} Rhinestone Design` });
+        dispatch({ type: 'SET_PROJECT_NAME', name: `${(launchText ?? 'Preview').replace(/\s+/g, ' ').trim()} Rhinestone Design`, auto: true });
         dispatch({
           type: 'UPDATE_TEXT_TOOL',
           updates: {

@@ -114,6 +114,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | A1 / B6 first step: one Text tool; style gallery of the user's own words in every outline font, dot matrix and stone font; stone fonts no longer a separate tool | **Done in part** (ADR 0023); B9 / B11 for stone fonts: real size of the words at every stone size and a one-click best fit; alphabets and stencils in the gallery, several fonts per text, per-letter style, kerning, text on a path remain |
 | B10 filled typography, C1 / C2 clean small outline text, H3 for outline fonts | **Done** (ADR 0024): text uses the artwork layout; every bundled font × 25 / 45 / 60 mm × outline / rows / solid is cuttable |
 | A5, A6, A7, A8, A12: recovery card only when there is something to recover, taglines and strip removed, plain headings, starter gallery on the home page | **Done** |
+| A10 compact HTV status chips, A11 project named from its text and no permanent "Not saved yet" | **Done** |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

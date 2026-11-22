@@ -583,6 +583,7 @@ export default function HtvShell() {
         status={htvStatus.status}
         project={state.projectName || 'Untitled HTV Design'}
         guidance={htvStatus.guidance}
+        chips={htvStatus.chips}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">

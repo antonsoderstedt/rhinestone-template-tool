@@ -258,6 +258,8 @@ export interface CanvasState {
 export interface EditorState {
   // Project
   projectName: string;
+  /** True while the name was made from the text, so changing the text renames the design. Typing a name turns it off. */
+  projectNameIsAuto: boolean;
   
   // Active tool & tool states
   activeTool: EditorTool;
@@ -636,6 +638,7 @@ export const DEFAULT_CANVAS_STATE: CanvasState = {
 
 export const DEFAULT_EDITOR_STATE: EditorState = {
   projectName: 'Untitled Project',
+  projectNameIsAuto: true,
   activeTool: 'text',
   textTool: { ...DEFAULT_TEXT_TOOL_STATE },
   clipboard: { ...DEFAULT_CLIPBOARD },
@@ -663,7 +666,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
 
 export type EditorAction =
   | { type: 'SET_ACTIVE_TOOL'; tool: EditorTool }
-  | { type: 'SET_PROJECT_NAME'; name: string }
+  | { type: 'SET_PROJECT_NAME'; name: string; auto?: boolean }
   | { type: 'UPDATE_TEXT_TOOL'; updates: Partial<TextToolState> }
   | { type: 'UPDATE_SVG_TOOL'; updates: Partial<SvgToolState> }
   | { type: 'UPDATE_GRID_TOOL'; updates: Partial<GridToolState> }
@@ -789,16 +792,33 @@ function withPartsHistory(state: EditorState, parts: DesignPart[], key: string |
   };
 }
 
+/** "YOUR NAME design": the words of the first line, so a design is never "Untitled Project" once it has text. */
+export function projectNameFromText(text: string): string {
+  const firstLine = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).find((line) => line.length > 0);
+  if (!firstLine) return 'Untitled Project';
+  const words = firstLine.length > 28 ? `${firstLine.slice(0, 27).trimEnd()}…` : firstLine;
+  return `${words} design`;
+}
+
+function withAutoName(state: EditorState, text: string): EditorState {
+  if (!state.projectNameIsAuto) return state;
+  const name = projectNameFromText(text);
+  return name === state.projectName ? state : { ...state, projectName: name };
+}
+
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
       return { ...state, activeTool: action.tool };
     
     case 'SET_PROJECT_NAME':
-      return { ...state, projectName: action.name };
+      return { ...state, projectName: action.name, projectNameIsAuto: action.auto === true };
     
     case 'UPDATE_TEXT_TOOL':
-      return { ...state, textTool: normalizeTextToolUpdate(state.textTool, action.updates) };
+      return withAutoName(
+        { ...state, textTool: normalizeTextToolUpdate(state.textTool, action.updates) },
+        action.updates.text ?? state.textTool.text,
+      );
     
     case 'UPDATE_SVG_TOOL':
       return { ...state, svgTool: normalizeSvgToolUpdate(state.svgTool, action.updates) };
@@ -810,10 +830,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
-      return {
-        ...state,
-        rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates),
-      };
+      return withAutoName(
+        {
+          ...state,
+          rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates),
+        },
+        action.updates.text ?? state.rhinestoneFontTool.text,
+      );
     
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };

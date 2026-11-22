@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_EDITOR_STATE,
   editorReducer,
+  projectNameFromText,
   type EditableStone,
   type EditorState,
 } from '../app/editor/EditorState';
@@ -365,5 +366,30 @@ describe('SET_TEMPLATE', () => {
     const withTemplate = editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_TEMPLATE', template });
     expect(withTemplate.template).toBe(template);
     expect(editorReducer(withTemplate, { type: 'SET_TEMPLATE', template })).toBe(withTemplate);
+  });
+});
+
+describe('project name from the text (plan A11)', () => {
+  it('names a new design from its words, and follows the words while the name is automatic', () => {
+    let state = editorReducer(DEFAULT_EDITOR_STATE, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Mia Rose' } });
+    expect(state.projectName).toBe('Mia Rose design');
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Team\nTigers' } });
+    expect(state.projectName).toBe('Team design');
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: '' } });
+    expect(state.projectName).toBe('Untitled Project');
+  });
+
+  it('stops renaming once the user has typed a name, and for a stone font too', () => {
+    let state = editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_PROJECT_NAME', name: 'Birthday shirt' });
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Mia' } });
+    expect(state.projectName).toBe('Birthday shirt');
+
+    const fresh = editorReducer(DEFAULT_EDITOR_STATE, { type: 'UPDATE_RHINESTONE_FONT_TOOL', updates: { text: 'Sulay' } });
+    expect(fresh.projectName).toBe('Sulay design');
+  });
+
+  it('shortens long text', () => {
+    expect(projectNameFromText('A very long sentence that goes on and on and on')).toMatch(/^A very long sentence that…? design$|…\s?design$/);
+    expect(projectNameFromText('   \n ')).toBe('Untitled Project');
   });
 });
