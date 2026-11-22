@@ -133,6 +133,8 @@ export interface SvgToolState {
   layerRoles: Record<string, 'stones' | 'ignore'>;
   /** The colour the stones of each artwork colour are (`#rrggbb`); absent = the artwork's own colour. */
   layerStoneColours: Record<string, string>;
+  /** Show the artwork as drawn, faintly, behind the stones. A view setting: not part of the design, not saved. */
+  showSourceBehind: boolean;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
@@ -545,6 +547,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   },
   layerRoles: {},
   layerStoneColours: {},
+  showSourceBehind: true,
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {

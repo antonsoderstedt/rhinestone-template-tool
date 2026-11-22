@@ -1,5 +1,6 @@
 'use client';
 
+import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
 import { isMultiColour, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { partsStones } from './designParts';
@@ -41,6 +42,8 @@ interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
   onNotify?: (message: string, tone: 'success' | 'warning' | 'error' | 'info') => void;
+  /** The artwork as drawn, shown faintly behind the stones. */
+  artworkSource?: PlacedShape[] | null;
   fitRequestId?: number;
   onManualViewChange?: (view: { zoom: number; panX: number; panY: number }) => void;
 }
@@ -72,6 +75,13 @@ function buildRulerTickValues(start: number, end: number, stepMm: number): numbe
   return ticks;
 }
 
+/** `M x y L x y … Z` for one polyline. */
+function polylineToPathData(polyline: { points: ReadonlyArray<{ x: number; y: number }>; closed?: boolean }): string {
+  if (polyline.points.length === 0) return '';
+  const [first, ...rest] = polyline.points;
+  return `M${first!.x.toFixed(2)} ${first!.y.toFixed(2)}${rest.map((p) => `L${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join('')}${polyline.closed ? 'Z' : ''}`;
+}
+
 function getStoneCanvasColor(stone: EditableStone, showStoneColours: boolean): string {
   if (showStoneColours) {
     const colour = stoneColourOf(stone);
@@ -88,6 +98,7 @@ export default function EditorCanvas({
   onNotify,
   fitRequestId = 0,
   onManualViewChange: rawOnManualViewChange,
+  artworkSource = null,
 }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -1468,6 +1479,25 @@ export default function EditorCanvas({
               opacity="0.8"
             />
           ))}
+
+          {/* The artwork as drawn, behind the stones, so the stones can be judged against the real shape. */}
+          {artworkSource && state.activeTool === 'svg' && state.svgTool.showSourceBehind && (
+            <g aria-hidden="true" pointerEvents="none" data-testid="artwork-source">
+              {artworkSource.map((shape, index) => (
+                <path
+                  key={index}
+                  d={shape.polylines.map(polylineToPathData).join(' ')}
+                  fill={shape.fill ?? 'none'}
+                  fillOpacity={0.28 * shape.fillOpacity}
+                  fillRule={shape.fillRule}
+                  stroke={shape.stroke ?? 'none'}
+                  strokeOpacity={0.28 * shape.strokeOpacity}
+                  strokeWidth={shape.strokeWidthMm}
+                  strokeLinejoin="round"
+                />
+              ))}
+            </g>
+          )}
 
           {/* Stones */}
           {stones.map((stone) => {

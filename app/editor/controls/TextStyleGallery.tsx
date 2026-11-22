@@ -20,7 +20,7 @@ interface TextStyleGalleryProps {
   dispatch: React.Dispatch<EditorAction>;
 }
 
-function DotsPicture({ thumbnail }: { thumbnail: TextThumbnail }) {
+export function DotsPicture({ thumbnail }: { thumbnail: TextThumbnail }) {
   const { viewBox, dots } = thumbnail;
   return (
     <svg

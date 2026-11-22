@@ -1871,6 +1871,7 @@ export default function EditorShell() {
             </>
           )}
           <EditorCanvas
+            artworkSource={artworkInfo?.source ?? null}
             state={state}
             dispatch={editorDispatch}
             onNotify={notify}

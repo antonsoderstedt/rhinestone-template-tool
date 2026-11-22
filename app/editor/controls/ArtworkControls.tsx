@@ -1,6 +1,8 @@
 'use client';
 
 import { STONE_COLOUR_PRESETS } from '../stoneColours';
+import { DotsPicture } from './TextStyleGallery';
+import type { TextThumbnail } from '../textStyleThumbnails';
 import { AlertTriangle, Info } from 'lucide-react';
 import type { StoneSizeId } from '@/src/lib/rhinestone-engine/index';
 import type { ArtworkLook } from '@/src/lib/rhinestone-engine/index';
@@ -19,7 +21,10 @@ export function ArtworkLookControl({
   rowCount,
   onLookChange,
   onRowCountChange,
+  thumbnails,
 }: {
+  /** The artwork in each look, as stones. */
+  thumbnails?: Partial<Record<ArtworkLook, TextThumbnail>>;
   look: ArtworkLook;
   rowCount: number;
   onLookChange: (look: ArtworkLook) => void;
@@ -38,6 +43,11 @@ export function ArtworkLookControl({
             aria-pressed={look === option.look}
             className={`${editorSegmentBaseClassName} text-center ${look === option.look ? editorSegmentActiveClassName : editorSegmentIdleClassName}`}
           >
+            {thumbnails?.[option.look] && (
+              <span className="mb-1 block text-center">
+                <DotsPicture thumbnail={thumbnails[option.look]!} />
+              </span>
+            )}
             <span className="text-sm font-medium">{option.label}</span>
           </button>
         ))}

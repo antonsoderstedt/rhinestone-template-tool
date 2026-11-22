@@ -107,7 +107,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | J3 honest renderer, J4 canvas / panel polish, H5 error boundaries | **Done** |
 | J5 importer | **Done** (ADR 0020) |
 | J6 colour layers, J7 feasibility, J8 centre line, J9 fill, J10 contour, J11 one spacing rule | **Done** (ADR 0021): one pipeline, 100 % cuttable on the corpus |
-| J12 Artwork panel | **Done in part**: three looks, colour list, advice; preview of the source behind the stones and a look gallery with thumbnails remain |
+| J12 Artwork panel | **Done** for SVG artwork: Look gallery with a picture of the user's own art in each look, the original shown faintly behind the stones (can be turned off), colour list with stone colours, advice. Pictures (raster) have the looks but no backdrop or thumbnails yet |
 | J13 raster into the same pipeline, J14 raster controls | **Done** (ADR 0021) |
 | A2 panel boilerplate removed ("Driven by generator settings", "These settings control the generated baseline…") | **Done** |
 | J15 / B1 first step: several parts in one design ("Add to design", move, rename, remove, turn, mirror, duplicate, drag on the canvas, align, undo, saved) | **Done** (ADR 0022); live elements, rotate / flip / scale, drag on canvas and undo remain |

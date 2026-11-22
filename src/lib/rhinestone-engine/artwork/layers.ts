@@ -49,6 +49,19 @@ export interface BuildLayersOptions {
   grid?: GridOptions;
 }
 
+/** A shape of the artwork as drawn, after scaling and placing (mm). For showing the source behind the stones. */
+export interface PlacedShape {
+  polylines: Polyline[];
+  fill: string | null;
+  /** Fill opacity times the shape's opacity. */
+  fillOpacity: number;
+  fillRule: 'nonzero' | 'evenodd';
+  stroke: string | null;
+  /** After scaling (mm). */
+  strokeWidthMm: number;
+  strokeOpacity: number;
+}
+
 export interface ArtworkLayers {
   layers: ArtworkLayer[];
   grid: Grid;
@@ -56,6 +69,8 @@ export interface ArtworkLayers {
   scale: number;
   /** The shapes' outlines after scaling, for measuring the result against the source. */
   polylines: Polyline[];
+  /** The shapes as drawn, in document order. Empty for a raster image. */
+  placedShapes?: PlacedShape[];
   warnings: string[];
 }
 
@@ -164,7 +179,16 @@ export function buildArtworkLayers(shapes: readonly ImportedShape[], options: Bu
     for (const layer of layers) if (layer.role === 'ignore') warnings.push(`${layer.colour}: ${layer.reason}`);
   }
 
-  return { layers, grid, scale, polylines: placed.flatMap((p) => p.polylines), warnings };
+  const placedShapes: PlacedShape[] = placed.map(({ shape, polylines }) => ({
+    polylines,
+    fill: shape.fill,
+    fillOpacity: shape.fillOpacity * shape.opacity,
+    fillRule: shape.fillRule,
+    stroke: shape.stroke,
+    strokeWidthMm: shape.strokeWidth * scale,
+    strokeOpacity: shape.strokeOpacity * shape.opacity,
+  }));
+  return { layers, grid, scale, polylines: placed.flatMap((p) => p.polylines), placedShapes, warnings };
 }
 
 export { boundsOfPolylines };

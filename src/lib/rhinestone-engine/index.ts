@@ -223,7 +223,7 @@ export type { ImportedShape, SvgImportResult, SvgImportOptions } from './svg/svg
 export { importSvgArtwork, findUnsafeSvgContent } from './svg/svgImport';
 export type { ArtworkLook, CreateArtworkTemplateOptions, ArtworkTemplateResult } from './artwork/artworkTemplate';
 export { createArtworkTemplate } from './artwork/artworkTemplate';
-export type { ArtworkLayer, ArtworkLayers, BuildLayersOptions } from './artwork/layers';
+export type { ArtworkLayer, ArtworkLayers, BuildLayersOptions, PlacedShape } from './artwork/layers';
 export { buildArtworkLayers } from './artwork/layers';
 export type { RasterImage, RasterLayersOptions } from './artwork/rasterLayers';
 export { buildRasterLayers } from './artwork/rasterLayers';

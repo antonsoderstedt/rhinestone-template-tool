@@ -35,6 +35,7 @@ import AdvancedSection from './controls/AdvancedSection';
 import FillModeControl from './controls/FillModeControl';
 import { type OutlineFontStatus } from './controls/FontPicker';
 import TextStyleGallery from './controls/TextStyleGallery';
+import { useLookThumbnails } from './useLookThumbnails';
 import StoneFontSizeControl from './controls/StoneFontSizeControl';
 import PlacementModeControl from './controls/PlacementModeControl';
 import { ArtworkAdvice, ArtworkLayersList, ArtworkLookControl } from './controls/ArtworkControls';
@@ -1152,6 +1153,7 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
 
 function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolPropertiesProps) {
   const { svgTool } = state;
+  const lookThumbnails = useLookThumbnails(svgTool);
   // Why the last file was refused, shown under the file picker until a good file is loaded.
   const [uploadError, setUploadError] = useState<string | null>(null);
   const currentTemplateSize = state.template ? getTemplatePhysicalSize(state.template) : null;
@@ -1239,6 +1241,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
   const sharedArtworkControls = (
     <>
           <ArtworkLookControl
+            thumbnails={lookThumbnails}
             look={lookFromCoverage(svgTool.coverageMode)}
             rowCount={svgTool.contourSettings.rowCount}
             onLookChange={(look) => {
@@ -1247,6 +1250,18 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
             }}
             onRowCountChange={(rowCount) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { contourSettings: { ...svgTool.contourSettings, rowCount } } })}
           />
+
+          {artworkInfo && artworkInfo.source.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-ink-secondary">
+              <input
+                type="checkbox"
+                checked={svgTool.showSourceBehind}
+                onChange={(event) => dispatch({ type: 'UPDATE_SVG_TOOL', updates: { showSourceBehind: event.target.checked } })}
+                className="h-3.5 w-3.5 rounded"
+              />
+              Show the original behind the stones
+            </label>
+          )}
 
           {artworkInfo && (
             <ArtworkLayersList

@@ -13,7 +13,7 @@ import type { Polyline } from '../path/polyline';
 import { createRhinestoneTemplate } from '../template/createTemplate';
 import { getMinimumCenterDistance, getRecommendedCenterDistance, getRecommendedHoleDiameter } from '../profiles/materialProfiles';
 import { getDensitySpacing, type DensityPreset } from '../spacing/density';
-import { buildArtworkLayers, type ArtworkLayer, type ArtworkLayers, type BuildLayersOptions } from './layers';
+import { buildArtworkLayers, type PlacedShape, type ArtworkLayer, type ArtworkLayers, type BuildLayersOptions } from './layers';
 import { buildRegionField, emptyMask, type RegionField } from './regionField';
 import { analyseFeasibility, type FeasibilityReport } from './feasibility';
 import { layoutRows, type StoneKind } from './rowsLayout';
@@ -55,6 +55,8 @@ export interface ArtworkTemplateResult {
   layers: Array<Pick<ArtworkLayer, 'colour' | 'areaMm2' | 'role' | 'reason'> & { stones: number }>;
   /** Outlines of the shapes after scaling. */
   polylines: Polyline[];
+  /** The shapes as drawn (SVG artwork only), to show the source behind the stones. */
+  placedShapes: PlacedShape[];
   /** The shape the stones are meant to cover: every layer that got stones, as a distance field. */
   silhouette: RegionField;
   pitchMm: number;
@@ -186,5 +188,5 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
     ? analyseFeasibility(built.layers.map((layer, i) => ({ ...layer, role: layerSummary[i]!.role })), { materialProfileId })
     : null;
 
-  return { template, layers: layerSummary, polylines: built.polylines, silhouette: buildRegionField(union), pitchMm: pitch, scale: built.scale, feasibility, warnings };
+  return { template, layers: layerSummary, polylines: built.polylines, placedShapes: built.placedShapes ?? [], silhouette: buildRegionField(union), pitchMm: pitch, scale: built.scale, feasibility, warnings };
 }

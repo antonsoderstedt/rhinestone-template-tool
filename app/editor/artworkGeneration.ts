@@ -11,11 +11,13 @@ import {
   type ArtworkLook,
   type FeasibilityReport,
   type ImportedShape,
+  type PlacedShape,
   type RasterImage,
   type RhinestoneTemplate,
   type StoneSizeId,
   type SvgImportResult,
 } from '@/src/lib/rhinestone-engine/index';
+import { dotsOf, type TextThumbnail } from './textStyleThumbnails';
 import type { TemplateCoverageMode } from '@/src/lib/rhinestone-engine/fill/fillTemplate';
 import type { SvgToolState } from './EditorState';
 
@@ -28,6 +30,8 @@ export interface ArtworkLayerInfo {
 
 export interface ArtworkInfo {
   layers: ArtworkLayerInfo[];
+  /** The artwork as drawn, to show behind the stones (empty for a picture). */
+  source: PlacedShape[];
   feasibility: FeasibilityReport | null;
   warnings: string[];
   stoneSize: StoneSizeId;
@@ -61,7 +65,11 @@ export interface ArtworkGeneration {
   info: ArtworkInfo;
 }
 
-export function generateSvgArtwork(svgTool: SvgToolState, shapesOverride?: readonly ImportedShape[]): ArtworkGeneration {
+export function generateSvgArtwork(
+  svgTool: SvgToolState,
+  shapesOverride?: readonly ImportedShape[],
+  overrides: { look?: ArtworkLook; analyse?: boolean } = {},
+): ArtworkGeneration {
   const imported = shapesOverride ? null : getImportedArtwork(svgTool.uploadedSvgText ?? '');
   const shapes = shapesOverride ?? imported!.shapes;
   const custom = typeof svgTool.customSpacingMm === 'number' ? svgTool.customSpacingMm : undefined;
@@ -72,7 +80,7 @@ export function generateSvgArtwork(svgTool: SvgToolState, shapesOverride?: reado
     name: svgTool.svgFileName || 'SVG Preview',
     shapes,
     stoneSize: svgTool.stoneSize,
-    look: lookFromCoverage(svgTool.coverageMode),
+    look: overrides.look ?? lookFromCoverage(svgTool.coverageMode),
     rowCount: svgTool.contourSettings.rowCount,
     widthMm: typeof svgTool.targetWidthMm === 'number' ? svgTool.targetWidthMm : undefined,
     heightMm: typeof svgTool.targetHeightMm === 'number' ? svgTool.targetHeightMm : undefined,
@@ -81,13 +89,14 @@ export function generateSvgArtwork(svgTool: SvgToolState, shapesOverride?: reado
     customSpacingMm: custom,
     layerRoles: svgTool.layerRoles,
     layerStoneColours: svgTool.layerStoneColours,
-    analyse: true,
+    analyse: overrides.analyse ?? true,
   });
 
   return {
     template: result.template,
     info: {
       layers: result.layers.map((layer) => ({ colour: layer.colour, role: layer.role, reason: layer.reason, stones: layer.stones })),
+      source: result.placedShapes,
       feasibility: result.feasibility,
       warnings: [...(imported?.warnings ?? []), ...result.warnings],
       stoneSize: svgTool.stoneSize,
@@ -129,9 +138,26 @@ export function generateRasterArtwork(svgTool: SvgToolState, image: RasterImage)
     template: result.template,
     info: {
       layers: result.layers.map((layer) => ({ colour: layer.colour, role: layer.role, reason: layer.reason, stones: layer.stones })),
+      source: result.placedShapes,
       feasibility: result.feasibility,
       warnings: [...layers.warnings, ...result.warnings],
       stoneSize: svgTool.stoneSize,
     },
   };
+}
+
+/** Past this many stones a picture of each look would take too long to make, so none is made. */
+const THUMBNAIL_STONE_LIMIT = 6000;
+
+/** Small pictures of the artwork in each look, made by the same generator (no size advice, so it is quicker). */
+export function generateLookThumbnails(svgTool: SvgToolState): Partial<Record<ArtworkLook, TextThumbnail>> {
+  const pictures: Partial<Record<ArtworkLook, TextThumbnail>> = {};
+  if (!svgTool.uploadedSvgText) return pictures;
+  for (const option of ARTWORK_LOOKS) {
+    const { template } = generateSvgArtwork(svgTool, undefined, { look: option.look, analyse: false });
+    if (template.stones.length > THUMBNAIL_STONE_LIMIT) return {};
+    const drawn = dotsOf(template);
+    if (drawn) pictures[option.look] = { ...drawn, isSample: false };
+  }
+  return pictures;
 }
