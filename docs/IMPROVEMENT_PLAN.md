@@ -121,6 +121,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | A3 jargon rewritten (Edit stones one by one, Filled letters, Hole size), A4 already works: clicking a stone makes it editable with a toast | **Done** |
 | I1 canvas text alternative (size, stone count, selection), I4 reduced motion and forced colours | **Done in part**; a full screen-reader walk-through, one-finger pan (I2) and real-device checks (I3) remain |
 | B7 ready-made shapes (heart, star, circle, ring, crown, lightning, moon, flower, burst) in the Artwork tool; every look is cuttable (tested) | **Done in part**; borders and more clipart remain |
+| F3 "Last backed up" and a quiet reminder after 14 days (from 3 designs up) | **Done**; F1 IndexedDB, F7 backup of fonts / images / calibration, F4-F6 remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

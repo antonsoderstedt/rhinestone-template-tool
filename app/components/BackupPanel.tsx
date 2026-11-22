@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DatabaseBackup, Download, Upload } from 'lucide-react';
 import { LocalStorageTemplateLibraryRepository } from '@/src/lib/rhinestone-engine/index';
 import { readWorkspaceVault, writeWorkspaceVault } from '../lib/workspaceVault';
@@ -14,6 +14,7 @@ import {
   parseWorkspaceBackup,
   serializeWorkspaceBackup,
 } from '../lib/workspaceBackup';
+import { getBackupStatus, readLastBackupAt, writeLastBackupAt } from '../lib/backupReminder';
 import { WorkspaceSurface } from './workspace/WorkspaceChrome';
 
 interface BackupPanelProps {
@@ -28,6 +29,25 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
+  // When the last backup was made and how many designs there are, read after load (they live in this browser).
+  const [backupState, setBackupState] = useState<{ lastBackupAt: string | null; designCount: number; now: Date } | null>(null);
+
+  const refreshBackupState = async () => {
+    const record = await new LocalStorageTemplateLibraryRepository().list();
+    const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length;
+    setBackupState({ lastBackupAt: readLastBackupAt(window.localStorage), designCount, now: new Date() });
+  };
+  useEffect(() => {
+    let cancelled = false;
+    void new LocalStorageTemplateLibraryRepository().list().then((record) => {
+      if (cancelled) return;
+      const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length;
+      setBackupState({ lastBackupAt: readLastBackupAt(window.localStorage), designCount, now: new Date() });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleBackup = async () => {
     setBusy(true);
@@ -42,6 +62,8 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
       const createdAt = new Date().toISOString();
       const backup = createWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, createdAt });
       downloadJson(buildBackupFilename(createdAt), serializeWorkspaceBackup(backup));
+      writeLastBackupAt(window.localStorage, createdAt);
+      await refreshBackupState();
       setNotice({
         tone: 'success',
         text: `Backed up ${total} ${total === 1 ? 'design' : 'designs'} to a file. Keep it somewhere safe; you can restore it in any browser.`,
@@ -103,6 +125,18 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
             Restoring it adds missing designs and keeps the newest copy of the rest; nothing is deleted.
             Uploaded fonts and images, calibration and settings are not included.
           </p>
+          {backupState && (() => {
+            const status = getBackupStatus(backupState);
+            return (
+              <p
+                role="status"
+                className={`mt-2 text-sm font-medium ${status.due ? 'text-amber-600' : 'text-ink-secondary'}`}
+              >
+                {status.label}
+                {status.due ? '. It is a good time to make a new backup.' : '.'}
+              </p>
+            );
+          })()}
         </div>
         <div className="flex flex-wrap gap-3">
           <button
