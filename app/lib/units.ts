@@ -5,7 +5,7 @@
  * what a person reads and types. The choice is kept in this browser, like the language and theme.
  */
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 export type LengthUnit = 'mm' | 'in';
 export const MM_PER_INCH = 25.4;
@@ -54,6 +54,13 @@ export function setUnit(next: LengthUnit): void {
   listeners.forEach((notify) => notify());
 }
 
+/** The first render is the default (as on the server); the saved choice is read right after, so hydration always matches. */
 export function useUnit(): LengthUnit {
-  return useSyncExternalStore(subscribe, readStoredUnit, () => DEFAULT_UNIT);
+  const [unit, setUnitState] = useState<LengthUnit>(DEFAULT_UNIT);
+  useEffect(() => {
+    const sync = () => setUnitState(readStoredUnit());
+    queueMicrotask(sync);
+    return subscribe(sync);
+  }, []);
+  return unit;
 }

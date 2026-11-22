@@ -5,7 +5,7 @@
 ## Decision
 
 - Two languages, English and Swedish, chosen with a switch (top bar, status bar of the Rhinestone studio, and kept in this
-  browser). A Swedish browser starts in Swedish. `<html lang>` follows the choice.
+  browser). `<html lang>` follows the choice.
 - **`t('English text')`** (`useT()` in `app/lib/i18n.ts`) looks the English text up in `app/lib/i18n/sv.json`. A text with no
   Swedish entry shows in English. `{name}` in a text is replaced by a value.
 - **A test** (`tests/i18n.test.ts`) fails if a `t('…')` in the source has no Swedish entry, if an entry is empty, or if the
