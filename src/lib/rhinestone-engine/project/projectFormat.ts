@@ -163,6 +163,8 @@ export interface SavedStone {
   color?: string;
   /** Optional group path for imported stones */
   group?: string;
+  /** The colour this stone will be (`#rrggbb`); no effect on cutting. */
+  stoneColour?: string;
 }
 
 export interface EditableTemplateState {
@@ -288,6 +290,8 @@ export interface RhinestoneProjectFile {
   parts?: SavedPart[];
   /** Where the piece the generator is making sits (mm), so regenerating puts it back. */
   workingOffset?: { x: number; y: number };
+  /** One colour for every stone that has none of its own (`#rrggbb`). */
+  designStoneColour?: string;
   /** Active tool when saved (optional, defaults to generator's tool) */
   activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'letter-stencil' | 'template-import' | 'manual';
   /** Manual tool settings */
@@ -587,6 +591,10 @@ function validateSavedStone(v: unknown, idx: number): SavedStone {
   };
   if (typeof s.color === 'string') result.color = s.color;
   if (typeof s.group === 'string') result.group = s.group;
+  if (s.stoneColour !== undefined) {
+    if (typeof s.stoneColour !== 'string' || !/^#[0-9a-f]{6}$/i.test(s.stoneColour)) throw new Error(`[Project] ${ctx}.stoneColour must be a colour like #aabbcc`);
+    result.stoneColour = s.stoneColour.toLowerCase();
+  }
   return result;
 }
 
@@ -852,6 +860,12 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     workingOffset = { x: requireFiniteNumber(offset, 'x', 'workingOffset'), y: requireFiniteNumber(offset, 'y', 'workingOffset') };
   }
 
+  let designStoneColour: string | undefined = undefined;
+  if (obj.designStoneColour !== undefined) {
+    if (typeof obj.designStoneColour !== 'string' || !/^#[0-9a-f]{6}$/i.test(obj.designStoneColour)) throw new Error('[Project] designStoneColour must be a colour like #aabbcc');
+    designStoneColour = obj.designStoneColour.toLowerCase();
+  }
+
   return {
     schemaVersion: 1,
     savedAt: obj.savedAt,
@@ -861,6 +875,7 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     editableState,
     parts,
     workingOffset,
+    designStoneColour,
     activeTool,
     manualToolState,
   };

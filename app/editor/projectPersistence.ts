@@ -1,3 +1,4 @@
+import { applyDesignColour, stoneColourOf } from './stoneColours';
 import type {
   DotMatrixTextProjectState,
   GeneratorId,
@@ -51,15 +52,17 @@ function toSavedStones(stones: readonly EditableStone[]) {
           ? stone.metadata.stroke
           : undefined,
       group: typeof stone.metadata?.group === 'string' ? stone.metadata.group : undefined,
+      stoneColour: stoneColourOf(stone) ?? undefined,
     };
     return saved;
   });
 }
 
 /** The design as it is exported and checked: the piece being worked on plus every part kept with "Add to design". */
-export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'> & { parts?: EditorState['parts'] }): RhinestoneTemplate | null {
+export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'> & { parts?: EditorState['parts']; designStoneColour?: string | null }): RhinestoneTemplate | null {
   const working = buildWorkingTemplate(state);
-  return composeDesign(working, state.parts ?? [], state.projectName);
+  const composed = composeDesign(working, state.parts ?? [], state.projectName);
+  return composed && state.designStoneColour ? { ...composed, stones: applyDesignColour(composed.stones, state.designStoneColour) } : composed;
 }
 
 function buildWorkingTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
@@ -321,6 +324,7 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
       : undefined,
     parts: state.parts.length > 0 ? state.parts.map(toSavedPart) : undefined,
     workingOffset: state.workingOffset.x !== 0 || state.workingOffset.y !== 0 ? { ...state.workingOffset } : undefined,
+    designStoneColour: state.designStoneColour ?? undefined,
     activeTool: state.activeTool,
     manualToolState: {
       snapToGrid: state.manualTool.snapToGrid,
@@ -330,10 +334,11 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
   };
 }
 
-export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number; color?: string; group?: string }): EditableStone {
+export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number; color?: string; group?: string; stoneColour?: string }): EditableStone {
   const metadata: NonNullable<EditableStone['metadata']> = {};
   if (stone.color) metadata.fill = stone.color;
   if (stone.group) metadata.group = stone.group;
+  if (stone.stoneColour) metadata.stoneColour = stone.stoneColour;
   return {
     id: stone.id,
     center: { x: stone.x, y: stone.y },

@@ -1,7 +1,7 @@
 'use client';
 
 import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
-import { isMultiColour, stoneColourOf } from './stoneColours';
+import { applyDesignColour, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { partsStones } from './designParts';
 
@@ -201,10 +201,11 @@ export default function EditorCanvas({
   const stones = useMemo(() => {
     const working = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones || [];
     // Parts kept with "Add to design" are drawn with the rest; they are changed from the parts list, not on the canvas.
-    return state.parts.length > 0 ? [...working, ...partsStones(state.parts)] : working;
-  }, [state.template, state.editableTemplate, state.parts]);
-  // With more than one stone colour the canvas shows them, so the design reads like the real thing.
-  const showStoneColours = useMemo(() => isMultiColour(stones), [stones]);
+    const all = state.parts.length > 0 ? [...working, ...partsStones(state.parts)] : working;
+    return state.designStoneColour ? applyDesignColour(all, state.designStoneColour) : all;
+  }, [state.template, state.editableTemplate, state.parts, state.designStoneColour]);
+  // Once any stone has a colour the canvas shows the colours, so the design reads like the real thing.
+  const showStoneColours = useMemo(() => stones.some((stone) => stoneColourOf(stone) !== null), [stones]);
 
   // Cut shapes (e.g. letter-stencil card frames) — not stored on the
   // editable snapshot, so fall back to the pre-edit template when editable.

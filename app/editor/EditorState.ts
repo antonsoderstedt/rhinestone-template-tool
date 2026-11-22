@@ -5,6 +5,7 @@
  * with a unified state model for the entire editor.
  */
 
+import { withStoneColour } from './stoneColours';
 import {
   RhinestoneTemplate,
   StoneSizeId,
@@ -285,6 +286,8 @@ export interface EditorState {
   // Pieces kept with "Add to design", and where the piece being worked on sits.
   parts: DesignPart[];
   workingOffset: { x: number; y: number };
+  /** One colour for every stone that has none of its own; null = no colour (the plain purple). */
+  designStoneColour: string | null;
   /** Undo and redo for changes to the parts (adding, moving, turning, removing). */
   partsHistory: { past: DesignPart[][]; future: DesignPart[][]; lastKey: string | null };
   
@@ -657,6 +660,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
   parts: [],
   workingOffset: { x: 0, y: 0 },
+  designStoneColour: null,
   partsHistory: { past: [], future: [], lastKey: null },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
@@ -691,6 +695,8 @@ export type EditorAction =
   | { type: 'DUPLICATE_PART'; id: string }
   | { type: 'ALIGN_PART'; id: string; align: HorizontalAlign }
   | { type: 'ALIGN_WORKING'; align: HorizontalAlign }
+  | { type: 'SET_DESIGN_STONE_COLOUR'; colour: string | null }
+  | { type: 'SET_STONES_COLOUR'; ids: string[]; colour: string | null }
   | { type: 'END_PARTS_STEP' }
   | { type: 'UNDO_PARTS' }
   | { type: 'REDO_PARTS' }
@@ -817,6 +823,23 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'SET_ACTIVE_TOOL':
       return { ...state, activeTool: action.tool };
     
+    case 'SET_DESIGN_STONE_COLOUR':
+      return { ...state, designStoneColour: action.colour };
+
+    case 'SET_STONES_COLOUR': {
+      if (!state.editableTemplate.isEditable || action.ids.length === 0) return state;
+      const ids = new Set(action.ids);
+      const historyEntry: HistoryEntry = { stones: state.editableTemplate.stones, selectedIds: new Set(state.selectedStoneIds) };
+      return {
+        ...state,
+        editableTemplate: {
+          ...state.editableTemplate,
+          stones: state.editableTemplate.stones.map((stone) => (ids.has(stone.id) ? withStoneColour(stone, action.colour) : stone)),
+        },
+        history: { past: [...state.history.past, historyEntry], future: [] },
+      };
+    }
+
     case 'SET_PROJECT_NAME':
       return { ...state, projectName: action.name, projectNameIsAuto: action.auto === true };
     

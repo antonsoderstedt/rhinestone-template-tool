@@ -76,3 +76,29 @@ export function inkOn(hex: string): '#111111' | '#ffffff' {
   const b = parseInt(hex.slice(5, 7), 16);
   return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#111111' : '#ffffff';
 }
+
+/** A copy of the stone with this colour, or without any colour when `colour` is null. */
+export function withStoneColour<T extends { metadata?: Record<string, string | number | boolean> }>(stone: T, colour: string | null): T {
+  const metadata = { ...(stone.metadata ?? {}) };
+  if (colour && isStoneColour(colour)) metadata.stoneColour = colour.toLowerCase();
+  else delete metadata.stoneColour;
+  return { ...stone, metadata: Object.keys(metadata).length > 0 ? metadata : undefined };
+}
+
+/** Stones that have no colour of their own get the design's colour; the others keep theirs. */
+export function applyDesignColour<T extends { metadata?: Record<string, string | number | boolean> }>(stones: readonly T[], colour: string | null): T[] {
+  if (!colour || !isStoneColour(colour)) return [...stones];
+  return stones.map((stone) => (stoneColourOf(stone) ? stone : withStoneColour(stone, colour)));
+}
+
+/** The colour all the selected stones share, or null when they differ or have none. */
+export function selectedColourOf(stones: ReadonlyArray<{ id: string; metadata?: Record<string, unknown> }>, selected: ReadonlySet<string>): string | null {
+  let shared: string | null | undefined;
+  for (const stone of stones) {
+    if (!selected.has(stone.id)) continue;
+    const colour = stoneColourOf(stone);
+    if (shared === undefined) shared = colour;
+    else if (shared !== colour) return null;
+  }
+  return shared ?? null;
+}

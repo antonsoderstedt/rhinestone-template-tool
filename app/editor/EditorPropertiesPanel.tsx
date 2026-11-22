@@ -25,6 +25,8 @@ import QuickFixes from './QuickFixes';
 import DesignPartsPanel from './DesignPartsPanel';
 import StoneEstimateCard from './StoneEstimateCard';
 import StoneColourCounts from './controls/StoneColourCounts';
+import StoneColourPicker from './controls/StoneColourPicker';
+import { selectedColourOf } from './stoneColours';
 import { getQuickFixes, type QuickFixAction } from './quickFixItems';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
 import StoneProfileControl from './controls/StoneProfileControl';
@@ -199,6 +201,17 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
             step={0.5}
           />
         </PanelSection>
+
+        {stones && stones.length > 0 && (
+          <PanelSection title="Stone colour" description="What colour the stones will be. Each colour of an uploaded artwork can have its own." defaultOpen={false}>
+            <StoneColourPicker
+              label="Colour of the stones"
+              value={state.designStoneColour}
+              noneLabel="No colour"
+              onChange={(colour) => dispatch({ type: 'SET_DESIGN_STONE_COLOUR', colour })}
+            />
+          </PanelSection>
+        )}
 
         {stones && stones.length > 0 && (
           <PanelSection title="Stones to buy" description="How many stones and packs this design needs." defaultOpen={false}>
@@ -1753,6 +1766,16 @@ function SelectToolProperties({ state, dispatch }: ToolPropertiesProps) {
         <div className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-4 py-3 shadow-sm">
           <p className="text-sm font-medium text-[var(--studio-ink)]">{selectedCount} stone{selectedCount > 1 ? 's' : ''} selected</p>
           <p className="mt-1 text-xs text-[var(--studio-ink-muted)]">Selection actions only affect the highlighted stones.</p>
+          {editableTemplate.isEditable && (
+            <div className="mt-3">
+              <StoneColourPicker
+                label="Colour of the selected stones"
+                value={selectedColourOf(editableTemplate.stones, state.selectedStoneIds)}
+                noneLabel="Design colour"
+                onChange={(colour) => dispatch({ type: 'SET_STONES_COLOUR', ids: Array.from(state.selectedStoneIds), colour })}
+              />
+            </div>
+          )}
         </div>
       )}
       

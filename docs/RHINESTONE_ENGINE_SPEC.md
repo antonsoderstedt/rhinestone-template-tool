@@ -917,3 +917,8 @@ ridge); stones may reach a little past the edge. Deterministic, same spacing rul
 `createArtworkTemplate` option `layerStoneColours` (artwork colour -> `#rrggbb`) sets `metadata.stoneColour` on the stones of
 that layer. Without it, an artwork with more than one stone layer gets each layer's own colour; a one-colour artwork gets none.
 The colour never affects placement or export geometry. Saved in the project as `generatorState.layerStoneColours`.
+
+Any design can carry colour: `metadata.stoneColour` on a stone, and a project-level `designStoneColour` for stones with none of
+their own (applied when the effective template is built). The SVG export writes `data-stone-colour="#rrggbb"` on the circle and
+nothing else changes: the stroke stays the same for all stones, because a different stroke colour makes Cricut Design Space split
+the file into colour layers and the template is cut as one.

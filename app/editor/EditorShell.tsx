@@ -986,6 +986,7 @@ export default function EditorShell() {
       })),
       workingOffset: project.workingOffset ?? { x: 0, y: 0 },
     });
+    dispatch({ type: 'SET_DESIGN_STONE_COLOUR', colour: project.designStoneColour ?? null });
 
     if (project.exportSettings) {
       dispatch({
