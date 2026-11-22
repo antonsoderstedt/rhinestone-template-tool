@@ -23,6 +23,7 @@ import {
 import type { ExportReadinessResult } from '@/src/lib/rhinestone-engine/index';
 import ExportReadinessPanel from '../components/ExportReadinessPanel';
 import QuickFixes from './QuickFixes';
+import DesignPartsPanel from './DesignPartsPanel';
 import StoneEstimateCard from './StoneEstimateCard';
 import { getQuickFixes, type QuickFixAction } from './quickFixItems';
 import { EditorState, EditorAction, EditorTool } from './EditorState';
@@ -136,6 +137,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
               {sourceTool === 'grid' && <GridToolProperties state={state} dispatch={dispatch} />}
               {sourceTool === 'manual' && <ManualToolProperties state={state} dispatch={dispatch} />}
             </PanelSection>
+            <DesignPartsPanel state={state} dispatch={dispatch} />
           </>
         )}
       </div>

@@ -42,7 +42,7 @@ code that was not read. **Impact** = how much it changes what a user can make or
 
 | # | Suggestion | What was seen |
 |---|-----------|---------------|
-| B1 | **Multiple elements per design** with move / rotate / scale / align / order | A Rhinestone design is exactly one source (one text, or one artwork, …); switching tools swaps the whole design. HTV already has layers |
+| B1 | **Multiple elements per design** (first step done: parts, ADR 0022) with move / rotate / scale / align / order | A Rhinestone design is exactly one source (one text, or one artwork, …); switching tools swaps the whole design. HTV already has layers |
 | B2 | **Whole-design transforms**: rotate, flip / mirror, move, resize by width or height after generation | Only the generator's own size fields exist; to rotate you edit stones |
 | B3 | **Undo / redo for everything** (text, font, size, tool settings), not only stone edits | The Undo button is disabled while typing and changing settings; it only works after "Make editable" |
 | B4 | **Stone colours**: per-stone or per-layer colour, multi-colour designs, counts per colour for ordering | Every stone is the same purple circle; colour exists only as metadata |

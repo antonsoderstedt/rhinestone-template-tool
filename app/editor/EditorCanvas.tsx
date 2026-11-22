@@ -1,5 +1,7 @@
 'use client';
 
+import { partsStones } from './designParts';
+
 import { Expand, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
@@ -180,11 +182,10 @@ export default function EditorCanvas({
 
   // Determine which stones to render
   const stones = useMemo(() => {
-    if (state.editableTemplate.isEditable) {
-      return state.editableTemplate.stones;
-    }
-    return state.template?.stones || [];
-  }, [state.template, state.editableTemplate]);
+    const working = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones || [];
+    // Parts kept with "Add to design" are drawn with the rest; they are changed from the parts list, not on the canvas.
+    return state.parts.length > 0 ? [...working, ...partsStones(state.parts)] : working;
+  }, [state.template, state.editableTemplate, state.parts]);
 
   // Cut shapes (e.g. letter-stencil card frames) — not stored on the
   // editable snapshot, so fall back to the pre-edit template when editable.
@@ -1450,6 +1451,8 @@ export default function EditorCanvas({
             const baseColor = getStoneCanvasColor(stone);
             
             const isHovered = hoveredStoneId === stone.id;
+            // A stone of a kept part is not edited on the canvas (see the parts list).
+            const isPartStone = typeof stone.metadata?.partId === 'string';
 
             return (
               <g key={stone.id}>
@@ -1497,7 +1500,8 @@ export default function EditorCanvas({
                   }
                   strokeWidth={isPendingErase ? '0.5' : STONE_STROKE_MM}
                   strokeDasharray={isPendingErase ? '1.2 1.2' : undefined}
-                  className={state.activeTool === 'select' ? 'cursor-pointer transition' : ''}
+                  pointerEvents={isPartStone ? 'none' : undefined}
+                  className={state.activeTool === 'select' && !isPartStone ? 'cursor-pointer transition' : ''}
                   onPointerDown={(e) => handleStoneMouseDown(e, stone.id)}
                   onPointerEnter={() => state.activeTool === 'select' && setHoveredStoneId(stone.id)}
                   onPointerLeave={() => setHoveredStoneId((current) => (current === stone.id ? null : current))}

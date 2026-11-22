@@ -378,6 +378,7 @@ export type {
   TemplateImportProjectState,
   GeneratorProjectState,
   RhinestoneProjectFile,
+  SavedPart,
 } from './project/projectFormat';
 export {
   parseRhinestoneProject,

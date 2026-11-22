@@ -13,6 +13,7 @@ import type {
 import { TRW_STONE_SIZE_CALIBRATION } from '@/src/lib/rhinestone-engine/index';
 import type { RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 import type { EditableStone, EditorState } from './EditorState';
+import { composeDesign } from './designParts';
 import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
 
 export function readRhinestoneAutosave(raw: string | null): TemplateLibraryEntry | null {
@@ -24,6 +25,16 @@ export function readRhinestoneAutosave(raw: string | null): TemplateLibraryEntry
   } catch {
     return null;
   }
+}
+
+function toSavedPart(part: EditorState['parts'][number]) {
+  return {
+    id: part.id,
+    name: part.name,
+    offsetX: part.offsetX,
+    offsetY: part.offsetY,
+    stones: part.stones.map((stone) => ({ id: stone.id, x: stone.center.x, y: stone.center.y, stoneSize: stone.stoneSize, holeDiameterMm: stone.holeDiameterMm })),
+  };
 }
 
 function toSavedStones(stones: readonly EditableStone[]) {
@@ -45,7 +56,13 @@ function toSavedStones(stones: readonly EditableStone[]) {
   });
 }
 
-export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
+/** The design as it is exported and checked: the piece being worked on plus every part kept with "Add to design". */
+export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'> & { parts?: EditorState['parts'] }): RhinestoneTemplate | null {
+  const working = buildWorkingTemplate(state);
+  return composeDesign(working, state.parts ?? [], state.projectName);
+}
+
+function buildWorkingTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
   if (!state.editableTemplate.isEditable) {
     return state.template;
   }
@@ -275,7 +292,11 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
 }
 
 export function buildProjectFileFromEditorState(state: EditorState): RhinestoneProjectFile | null {
-  const generatorState = buildGeneratorStateFromEditorState(state);
+  let generatorState = buildGeneratorStateFromEditorState(state);
+  if (!generatorState && state.parts.length > 0) {
+    // Nothing is being generated right now, but parts were kept: save them with an empty manual design.
+    generatorState = { generatorId: 'manual-editor', stones: [], includeGuideBox: state.includeGuideBox, paddingMm: state.paddingMm } satisfies ManualEditorProjectState;
+  }
   if (!generatorState) {
     return null;
   }
@@ -297,6 +318,8 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
           originalGeneratorState: generatorState.generatorId === 'manual-editor' ? null : generatorState,
         }
       : undefined,
+    parts: state.parts.length > 0 ? state.parts.map(toSavedPart) : undefined,
+    workingOffset: state.workingOffset.x !== 0 || state.workingOffset.y !== 0 ? { ...state.workingOffset } : undefined,
     activeTool: state.activeTool,
     manualToolState: {
       snapToGrid: state.manualTool.snapToGrid,

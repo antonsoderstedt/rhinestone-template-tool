@@ -35,6 +35,8 @@ import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
 
+import { translateStones, translateTemplate, type DesignPart } from './designParts';
+
 export type EditorTool =
   | 'select'          // Select and move stones
   | 'text'            // Text (outline or dot-matrix)
@@ -273,6 +275,10 @@ export interface EditorState {
   
   // Editable template (when in manual/select mode)
   editableTemplate: EditableTemplateState;
+
+  // Pieces kept with "Add to design", and where the piece being worked on sits.
+  parts: DesignPart[];
+  workingOffset: { x: number; y: number };
   
   // Canvas
   canvas: CanvasState;
@@ -638,6 +644,8 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   svgAlphabetTool: { ...DEFAULT_SVG_ALPHABET_TOOL_STATE },
   letterStencilTool: { ...DEFAULT_LETTER_STENCIL_TOOL_STATE },
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
+  parts: [],
+  workingOffset: { x: 0, y: 0 },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
   canvas: { ...DEFAULT_CANVAS_STATE },
@@ -662,6 +670,11 @@ export type EditorAction =
   | { type: 'UPDATE_LETTER_STENCIL_TOOL'; updates: Partial<LetterStencilToolState> }
   | { type: 'UPDATE_TEMPLATE_IMPORT_TOOL'; updates: Partial<TemplateImportToolState> }
   | { type: 'SET_TEMPLATE'; template: RhinestoneTemplate | null }
+  | { type: 'ADD_PART'; part: DesignPart }
+  | { type: 'REMOVE_PART'; id: string }
+  | { type: 'UPDATE_PART'; id: string; updates: Partial<Pick<DesignPart, 'name' | 'offsetX' | 'offsetY'>> }
+  | { type: 'SET_WORKING_OFFSET'; x: number; y: number }
+  | { type: 'SET_PARTS'; parts: DesignPart[]; workingOffset: { x: number; y: number } }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
   | { type: 'UPDATE_EXPORT_SETTINGS'; updates: { includeGuideBox?: boolean; includeLabels?: boolean; paddingMm?: number } }
   | { type: 'SET_SELECTED_STONES'; ids: Set<string> }
@@ -784,10 +797,45 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'UPDATE_TEMPLATE_IMPORT_TOOL':
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
     
-    case 'SET_TEMPLATE':
+    case 'SET_TEMPLATE': {
       // Generation sets `null` again for every settings change on an empty design; no new state, no render.
       if (state.template === action.template) return state;
-      return { ...state, template: action.template };
+      // The generator always draws at its own origin; the piece's place in the design is applied here.
+      const placed = action.template ? translateTemplate(action.template, state.workingOffset.x, state.workingOffset.y) : null;
+      return { ...state, template: placed };
+    }
+
+    case 'ADD_PART':
+      return { ...state, parts: [...state.parts, action.part] };
+
+    case 'REMOVE_PART':
+      return { ...state, parts: state.parts.filter((part) => part.id !== action.id) };
+
+    case 'UPDATE_PART':
+      return { ...state, parts: state.parts.map((part) => (part.id === action.id ? { ...part, ...action.updates } : part)) };
+
+    case 'SET_PARTS':
+      return { ...state, parts: action.parts, workingOffset: action.workingOffset };
+
+    case 'SET_WORKING_OFFSET': {
+      // Move the piece being worked on by the difference, wherever its stones are (generated or already editable).
+      const dx = action.x - state.workingOffset.x;
+      const dy = action.y - state.workingOffset.y;
+      if (dx === 0 && dy === 0) return state;
+      const editable = state.editableTemplate;
+      return {
+        ...state,
+        workingOffset: { x: action.x, y: action.y },
+        template: state.template ? translateTemplate(state.template, dx, dy) : null,
+        editableTemplate: editable.isEditable
+          ? {
+              ...editable,
+              stones: translateStones(editable.stones, dx, dy),
+              originalTemplate: editable.originalTemplate ? translateTemplate(editable.originalTemplate, dx, dy) : null,
+            }
+          : editable,
+      };
+    }
     
     case 'UPDATE_CANVAS':
       return { ...state, canvas: { ...state.canvas, ...action.updates } };

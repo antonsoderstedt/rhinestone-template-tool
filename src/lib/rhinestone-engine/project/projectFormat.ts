@@ -257,6 +257,15 @@ export type GeneratorProjectState =
 
 // ─── Project file format ──────────────────────────────────────────────────────
 
+/** A piece of the design that was kept with "Add to design". */
+export interface SavedPart {
+  id: string;
+  name: string;
+  offsetX: number;
+  offsetY: number;
+  stones: SavedStone[];
+}
+
 export interface RhinestoneProjectFile {
   schemaVersion: 1;
   /** ISO 8601 timestamp. */
@@ -273,6 +282,10 @@ export interface RhinestoneProjectFile {
   generatorState: GeneratorProjectState;
   /** Editable template state (present when user has made manual edits) */
   editableState?: EditableTemplateState;
+  /** Pieces kept with "Add to design", under the piece the generator is making. */
+  parts?: SavedPart[];
+  /** Where the piece the generator is making sits (mm), so regenerating puts it back. */
+  workingOffset?: { x: number; y: number };
   /** Active tool when saved (optional, defaults to generator's tool) */
   activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'letter-stencil' | 'template-import' | 'manual';
   /** Manual tool settings */
@@ -795,6 +808,35 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     };
   }
 
+  let parts: SavedPart[] | undefined = undefined;
+  if (obj.parts !== undefined) {
+    if (!Array.isArray(obj.parts)) throw new Error('[Project] parts must be an array');
+    const seen = new Set<string>();
+    parts = obj.parts.map((raw: unknown, i: number): SavedPart => {
+      const ctx = `parts[${i}]`;
+      const part = asRecord(raw, ctx);
+      const id = part.id;
+      if (typeof id !== 'string' || id.length === 0) throw new Error(`[Project] ${ctx}.id must be a non-empty string`);
+      if (seen.has(id)) throw new Error(`[Project] ${ctx}.id "${id}" is used twice`);
+      seen.add(id);
+      if (typeof part.name !== 'string') throw new Error(`[Project] ${ctx}.name must be a string`);
+      if (!Array.isArray(part.stones)) throw new Error(`[Project] ${ctx}.stones must be an array`);
+      return {
+        id,
+        name: part.name,
+        offsetX: requireFiniteNumber(part, 'offsetX', ctx),
+        offsetY: requireFiniteNumber(part, 'offsetY', ctx),
+        stones: part.stones.map((stone: unknown, k: number) => validateSavedStone(stone, k)),
+      };
+    });
+  }
+
+  let workingOffset: { x: number; y: number } | undefined = undefined;
+  if (obj.workingOffset !== undefined) {
+    const offset = asRecord(obj.workingOffset, 'workingOffset');
+    workingOffset = { x: requireFiniteNumber(offset, 'x', 'workingOffset'), y: requireFiniteNumber(offset, 'y', 'workingOffset') };
+  }
+
   return {
     schemaVersion: 1,
     savedAt: obj.savedAt,
@@ -802,6 +844,8 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     exportSettings,
     generatorState,
     editableState,
+    parts,
+    workingOffset,
     activeTool,
     manualToolState,
   };

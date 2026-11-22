@@ -968,6 +968,17 @@ export default function EditorShell() {
       dispatch({ type: 'DISCARD_EDITABLE_CHANGES' });
     }
     dispatch({ type: 'SET_PROJECT_NAME', name: project.projectName });
+    dispatch({
+      type: 'SET_PARTS',
+      parts: (project.parts ?? []).map((part) => ({
+        id: part.id,
+        name: part.name,
+        offsetX: part.offsetX,
+        offsetY: part.offsetY,
+        stones: part.stones.map((stone) => ({ id: stone.id, center: { x: stone.x, y: stone.y }, stoneSize: stone.stoneSize, holeDiameterMm: stone.holeDiameterMm })),
+      })),
+      workingOffset: project.workingOffset ?? { x: 0, y: 0 },
+    });
 
     if (project.exportSettings) {
       dispatch({
