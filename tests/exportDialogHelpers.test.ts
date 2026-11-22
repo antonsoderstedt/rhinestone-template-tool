@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMatFit, readSvgSizeMm, sanitizeExportFilename } from '../app/components/exportDialogHelpers';
+import { PRINT_CHECK_SQUARE_MM, buildPrintSheetHtml, getMatFit, readSvgSizeMm, sanitizeExportFilename } from '../app/components/exportDialogHelpers';
 
 describe('getMatFit', () => {
   it('fits a small design on a 12 x 12 in mat', () => {
@@ -78,5 +78,29 @@ describe('readSvgSizeMm', () => {
   it('only reads the root element, not shapes inside it', () => {
     const svg = '<svg viewBox="0 0 1 1"><rect width="9mm" height="9mm"/></svg>';
     expect(readSvgSizeMm(svg)).toBeNull();
+  });
+});
+
+describe('print sheet (plan D2, D5)', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="40mm" viewBox="0 0 100 40"><circle cx="5" cy="5" r="2"/></svg>';
+
+  it('makes a page the size of the design with margins and a 50 mm check square', () => {
+    const html = buildPrintSheetHtml(svg, { widthMm: 100, heightMm: 40 }, 'Mia design');
+    expect(html).toContain('@page { size: 120mm 120mm; margin: 0; }');
+    expect(html).toContain(`width: ${PRINT_CHECK_SQUARE_MM}mm; height: ${PRINT_CHECK_SQUARE_MM}mm`);
+    expect(html).toContain('<circle cx="5"');
+    expect(html).toContain('must measure 50 mm');
+  });
+
+  it('keeps the SVG as it is (no raster) and prints itself', () => {
+    const html = buildPrintSheetHtml(svg, { widthMm: 100, heightMm: 40 }, 'x');
+    expect(html).not.toMatch(/<canvas|<img|toDataURL/);
+    expect(html).toContain('window.print()');
+  });
+
+  it('escapes the title', () => {
+    const html = buildPrintSheetHtml(svg, { widthMm: 100, heightMm: 40 }, '<script>alert(1)</script>');
+    expect(html).not.toContain('<title><script>');
+    expect(html).toContain('&lt;script&gt;');
   });
 });

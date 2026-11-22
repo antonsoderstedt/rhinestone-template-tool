@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { AlertTriangle, Download, X } from 'lucide-react';
+import { AlertTriangle, Copy, Download, Printer, X } from 'lucide-react';
 import Modal from '../editor/ui/Modal';
-import { getMatFit, sanitizeExportFilename } from './exportDialogHelpers';
+import { buildPrintSheetHtml, getMatFit, sanitizeExportFilename } from './exportDialogHelpers';
 
 export interface ExportDialogNote {
   tone: 'warning' | 'info';
@@ -62,6 +62,7 @@ function ExportDialogContent({
 }: Omit<ExportDialogProps, 'open'>) {
   const [filename, setFilename] = useState(defaultFilename);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [copied, setCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   const needsCalibration = Boolean(calibration?.needsCalibration);
   const matFit = widthMm !== null && heightMm !== null ? getMatFit(widthMm, heightMm) : null;
@@ -72,6 +73,25 @@ function ExportDialogContent({
     : sanitizedFilename;
   const gateOpen = !needsCalibration || acknowledged;
   const canDownload = Boolean(svg) && !loading && !error && gateOpen;
+  const copySvg = async () => {
+    if (!svg) return;
+    try {
+      await navigator.clipboard.writeText(svg);
+      setCopied('copied');
+    } catch {
+      setCopied('failed');
+    }
+  };
+  // Prints the exported SVG at true size, with a 50 mm square to check the scale (also how to get a PDF).
+  const printTrueSize = () => {
+    if (!svg || widthMm === null || heightMm === null) return;
+    const html = buildPrintSheetHtml(svg, { widthMm, heightMm }, defaultFilename || 'design');
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    const opened = window.open(url, '_blank');
+    // The page prints itself when it has loaded; the address is released afterwards.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    if (!opened) setCopied('failed');
+  };
   const extra = typeof children === 'function' ? children({ downloadAllowed: gateOpen, uncalibrated: needsCalibration }) : children;
 
   const matToneClass = matFit?.status === 'fits-12x12'
@@ -208,13 +228,33 @@ function ExportDialogContent({
             Saved as {downloadFilename}
           </span>
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!canDownload}
+            onClick={() => void copySvg()}
+            title="Copy the SVG text to paste into another program"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Copy className="h-4 w-4" />
+            {copied === 'copied' ? 'Copied' : copied === 'failed' ? 'Could not copy' : 'Copy SVG'}
+          </button>
+          <button
+            type="button"
+            disabled={!canDownload || widthMm === null || heightMm === null}
+            onClick={printTrueSize}
+            title="Print at true size, or save as a PDF from the print window"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Printer className="h-4 w-4" />
+            Print true size
           </button>
           <button
             type="button"
