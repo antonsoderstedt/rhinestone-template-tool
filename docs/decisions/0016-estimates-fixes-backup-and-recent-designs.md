@@ -57,3 +57,8 @@ N5 recent designs with thumbnails on the start page.
   a computer without the uploaded font use a default font (ADR 0010).
 - Found while testing, **not fixed here**: in the *light* studio theme axe reports contrast failures in untouched chrome (the
   *Inspect* tab label, the *Pen* tool badge and similar `text-violet-300` styles). Dark theme is clean. Belongs in the Phase 13 pass.
+
+
+## Update 2026-11-22: calibration profiles
+
+Backups now also carry the calibration profiles (an optional field, so older backups still restore). They are merged by id, a profile is replaced only by a newer copy, and a damaged one is skipped and counted. Fonts, images and settings are still not included.
