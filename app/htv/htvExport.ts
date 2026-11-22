@@ -79,6 +79,11 @@ export interface HtvExportOptions {
   registrationMarks?: boolean;
   /** Space between the artwork and the file edge / weed border in mm. Default: 6. */
   marginMm?: number;
+  /**
+   * Size and place the file as if these layers were drawn, but draw only `layers`. Several files made with the same
+   * frame (one per colour) line up exactly when pressed on top of each other.
+   */
+  frameLayers?: readonly HtvLayer[];
 }
 
 export const DEFAULT_HTV_EXPORT_MARGIN_MM = 6;
@@ -134,11 +139,17 @@ export async function createHtvSvgExport(
     throw new Error('createHtvSvgExport: no visible layers have drawable geometry to export.');
   }
 
+  let frame = drawable;
+  if (options.frameLayers) {
+    const framed = (await Promise.all(options.frameLayers.filter((l) => l.visible).map(resolveLayerGeometry))).filter((r) => r.polylines.length > 0);
+    if (framed.length > 0) frame = framed;
+  }
+
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const { layer, polylines } of drawable) {
+  for (const { layer, polylines } of frame) {
     for (const polyline of polylines) {
       for (const point of polyline.points) {
         const world = transformPoint(point, layer);
@@ -203,4 +214,47 @@ export async function createHtvSvgExport(
     layerCount: drawable.length,
     mirrored: mirror,
   };
+}
+
+export interface HtvColourFile {
+  colorId: string;
+  /** The colour's name, for the file name. */
+  colourName: string;
+  layerCount: number;
+  svg: string;
+}
+
+/**
+ * One file per vinyl colour, every file with the same frame so they line up when pressed on top of each other. The
+ * colours come in the order they first appear (the layer stack, bottom first). Empty when there is only one colour.
+ */
+export async function createHtvColourFiles(
+  layers: readonly HtvLayer[],
+  projectName: string,
+  options: HtvExportOptions = {},
+): Promise<HtvColourFile[]> {
+  const visible = layers.filter((layer) => layer.visible);
+  const order: string[] = [];
+  for (const layer of visible) if (!order.includes(layer.colorId)) order.push(layer.colorId);
+  if (order.length < 2) return [];
+  const files: HtvColourFile[] = [];
+  for (const colorId of order) {
+    const own = visible.filter((layer) => layer.colorId === colorId);
+    const result = await createHtvSvgExport(own, projectName, { ...options, frameLayers: visible });
+    files.push({ colorId, colourName: getHtvColor(colorId).name, layerCount: result.layerCount, svg: result.svg });
+  }
+  return files;
+}
+
+/** The text file that goes in the zip: which file is which colour and in what order to press them. */
+export function buildColourFilesNote(projectName: string, files: readonly HtvColourFile[], fileNames: readonly string[]): string {
+  const lines = [
+    `${projectName} – one file per vinyl colour`,
+    '',
+    'Every file has the same size and the same position for the design, so the colours line up when pressed on top of each other.',
+    'Cut each colour from its own vinyl. Press them in the order below (the first one goes on the garment first).',
+    '',
+  ];
+  files.forEach((file, i) => lines.push(`${i + 1}. ${file.colourName}: ${fileNames[i] ?? ''} (${file.layerCount} ${file.layerCount === 1 ? 'layer' : 'layers'})`));
+  return `${lines.join('\n')}\n`;
 }

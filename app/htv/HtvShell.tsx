@@ -23,6 +23,7 @@ import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import HtvGarmentStage from './HtvGarmentStage';
 import dynamic from 'next/dynamic';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
+import HtvColourFilesPanel from './HtvColourFilesPanel';
 import { createHtvSvgExport, type HtvExportOptions } from './htvExport';
 // Loaded when first needed: three.js alone is ~300 KiB and most visits never open the 3D tab or the export dialog.
 const HtvGarment3D = dynamic(() => import('./HtvGarment3D'), { ssr: false });
@@ -700,6 +701,13 @@ export default function HtvShell() {
             />
             Registration marks (corner crosses)
           </label>
+          <HtvColourFilesPanel
+            layers={exportLayers}
+            projectName={state.projectName}
+            options={{ ...htvExportOptions, marginMm: weedMarginMm }}
+            filenameBase={sanitizeExportFilename(state.projectName || 'htv-design', 'htv-design').replace(/\.svg$/, '')}
+            onDownloaded={(message) => setToast({ message, tone: 'success' })}
+          />
         </ExportDialog>
 
         <HtvGarmentPreviewPanel open={garmentPreviewOpen} state={state} showAllPlacementOverlays={placementOverlayMode === 'all-active'} onClose={() => setGarmentPreviewOpen(false)} />

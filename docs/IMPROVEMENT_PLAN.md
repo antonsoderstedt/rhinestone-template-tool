@@ -123,6 +123,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | B7 ready-made shapes (heart, star, circle, ring, crown, lightning, moon, flower, burst) in the Artwork tool; every look is cuttable (tested) | **Done in part**; borders and more clipart remain |
 | F3 "Last backed up" and a quiet reminder after 14 days (from 3 designs up) | **Done**; F7 calibration profiles are now in the backup (fonts and images are not); F1 IndexedDB and F4-F6 remain |
 | B5 shiny stones preview (a toggle on the canvas; every colour is drawn with a highlight and a darker rim, Crystal AB with a rainbow sheen) | **Done in part**; the fabric photo behind the design (reuse of the HTV mockups) remains |
+| G1 HTV: one file per vinyl colour in a .zip, all with the same frame so they line up, plus a note with the pressing order | **Done**; weld / offset / arc tools (G3) and own garment photo (G4) remain |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases
