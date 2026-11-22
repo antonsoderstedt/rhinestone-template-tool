@@ -6,13 +6,14 @@
  * parses JSON and validates it; nothing in the file is executed. Pure apart from the helpers that are
  * handed `Date` strings, so the same input always gives the same output.
  *
- * Not included: uploaded fonts, uploaded assets, calibration profiles and settings. Those are large or
+ * Calibration profiles are included (they take minutes to measure and are lost with the browser's data too).
+ * Not included: uploaded fonts, uploaded assets and settings. Those are large or
  * machine-specific; HTV designs that use an uploaded font fall back to a default one when restored on a
  * computer that does not have it (ADR 0010).
  */
 
 import { parseRhinestoneProject, type TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
-import type { HtvDesignEntry } from './workspaceVault';
+import type { CalibrationProfile, HtvDesignEntry } from './workspaceVault';
 
 export const WORKSPACE_BACKUP_KIND = 'rhinestone-studio-backup';
 export const WORKSPACE_BACKUP_VERSION = 1;
@@ -27,6 +28,8 @@ export interface WorkspaceBackup {
   createdAt: string;
   rhinestoneDesigns: TemplateLibraryEntry[];
   htvDesigns: HtvDesignEntry[];
+  /** Optional: older backups have none. */
+  calibrationProfiles?: CalibrationProfile[];
 }
 
 export interface ParsedWorkspaceBackup {
@@ -43,11 +46,14 @@ export interface BackupMergeSummary {
   updatedHtv: number;
   /** Designs left alone because the copy already here is the same age or newer. */
   keptNewer: number;
+  addedCalibration: number;
+  updatedCalibration: number;
 }
 
 export interface BackupMergeResult {
   rhinestoneDesigns: TemplateLibraryEntry[];
   htvDesigns: HtvDesignEntry[];
+  calibrationProfiles: CalibrationProfile[];
   summary: BackupMergeSummary;
   /** Only the rhinestone designs that must be written (added or replaced). */
   rhinestoneToSave: TemplateLibraryEntry[];
@@ -56,6 +62,7 @@ export interface BackupMergeResult {
 export function createWorkspaceBackup(input: {
   rhinestoneDesigns: readonly TemplateLibraryEntry[];
   htvDesigns: readonly HtvDesignEntry[];
+  calibrationProfiles?: readonly CalibrationProfile[];
   createdAt: string;
 }): WorkspaceBackup {
   return {
@@ -64,6 +71,7 @@ export function createWorkspaceBackup(input: {
     createdAt: input.createdAt,
     rhinestoneDesigns: structuredClone([...input.rhinestoneDesigns]),
     htvDesigns: structuredClone([...input.htvDesigns]),
+    ...(input.calibrationProfiles && input.calibrationProfiles.length > 0 ? { calibrationProfiles: structuredClone([...input.calibrationProfiles]) } : {}),
   };
 }
 
@@ -136,6 +144,29 @@ function readHtvEntry(value: unknown): HtvDesignEntry | null {
   };
 }
 
+function readCalibrationProfile(value: unknown): CalibrationProfile | null {
+  if (!isRecord(value)) return null;
+  if (!isNonEmptyString(value.id) || !isNonEmptyString(value.name) || !isNonEmptyString(value.materialProfileId)) return null;
+  if (typeof value.createdAt !== 'string' || typeof value.updatedAt !== 'string') return null;
+  if (value.approvedAt !== undefined && typeof value.approvedAt !== 'string') return null;
+  if (!Array.isArray(value.overrides)) return null;
+  const overrides: CalibrationProfile['overrides'] = [];
+  for (const item of value.overrides) {
+    if (!isRecord(item) || !isNonEmptyString(item.stoneSize)) return null;
+    if (typeof item.holeDiameterMm !== 'number' || !Number.isFinite(item.holeDiameterMm) || item.holeDiameterMm <= 0 || item.holeDiameterMm > 20) return null;
+    overrides.push({ stoneSize: item.stoneSize, holeDiameterMm: item.holeDiameterMm, ...(typeof item.notes === 'string' ? { notes: item.notes } : {}) });
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    materialProfileId: value.materialProfileId,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+    ...(typeof value.approvedAt === 'string' ? { approvedAt: value.approvedAt } : {}),
+    overrides,
+  };
+}
+
 /** Reads a backup file's text. Throws an Error with a message fit to show the user. */
 export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
   let data: unknown;
@@ -157,7 +188,8 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
 
   const rhinestoneDesigns = data.rhinestoneDesigns.map(readRhinestoneEntry);
   const htvDesigns = data.htvDesigns.map(readHtvEntry);
-  const skippedCount = [...rhinestoneDesigns, ...htvDesigns].filter((entry) => entry === null).length;
+  const calibrationProfiles = Array.isArray(data.calibrationProfiles) ? data.calibrationProfiles.map(readCalibrationProfile) : [];
+  const skippedCount = [...rhinestoneDesigns, ...htvDesigns, ...calibrationProfiles].filter((entry) => entry === null).length;
 
   return {
     backup: {
@@ -166,6 +198,7 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : '',
       rhinestoneDesigns: rhinestoneDesigns.filter((entry): entry is TemplateLibraryEntry => entry !== null),
       htvDesigns: htvDesigns.filter((entry): entry is HtvDesignEntry => entry !== null),
+      ...(calibrationProfiles.length > 0 ? { calibrationProfiles: calibrationProfiles.filter((entry): entry is CalibrationProfile => entry !== null) } : {}),
     },
     skippedCount,
   };
@@ -176,10 +209,10 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
  * places is replaced only when the backup's copy is newer; everything else in the backup is added.
  */
 export function mergeWorkspaceBackup(
-  existing: { rhinestoneDesigns: readonly TemplateLibraryEntry[]; htvDesigns: readonly HtvDesignEntry[] },
+  existing: { rhinestoneDesigns: readonly TemplateLibraryEntry[]; htvDesigns: readonly HtvDesignEntry[]; calibrationProfiles?: readonly CalibrationProfile[] },
   backup: WorkspaceBackup,
 ): BackupMergeResult {
-  const summary: BackupMergeSummary = { addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0 };
+  const summary: BackupMergeSummary = { addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 };
 
   const rhinestoneById = new Map(existing.rhinestoneDesigns.map((entry) => [entry.templateId, entry]));
   const rhinestoneToSave: TemplateLibraryEntry[] = [];
@@ -212,9 +245,22 @@ export function mergeWorkspaceBackup(
     }
   }
 
+  const profilesById = new Map((existing.calibrationProfiles ?? []).map((profile) => [profile.id, profile]));
+  for (const incoming of backup.calibrationProfiles ?? []) {
+    const current = profilesById.get(incoming.id);
+    if (!current) {
+      profilesById.set(incoming.id, incoming);
+      summary.addedCalibration += 1;
+    } else if (incoming.updatedAt > current.updatedAt) {
+      profilesById.set(incoming.id, incoming);
+      summary.updatedCalibration += 1;
+    }
+  }
+
   return {
     rhinestoneDesigns: [...rhinestoneById.values()],
     htvDesigns: [...htvById.values()],
+    calibrationProfiles: [...profilesById.values()],
     summary,
     rhinestoneToSave,
   };
@@ -227,6 +273,8 @@ export function describeMergeSummary(summary: BackupMergeSummary, skippedCount: 
   const updated = summary.updatedRhinestone + summary.updatedHtv;
   if (added > 0) parts.push(`added ${added} ${added === 1 ? 'design' : 'designs'}`);
   if (updated > 0) parts.push(`updated ${updated} to the newer copy`);
+  const profiles = summary.addedCalibration + summary.updatedCalibration;
+  if (profiles > 0) parts.push(`restored ${profiles} calibration ${profiles === 1 ? 'profile' : 'profiles'}`);
   if (summary.keptNewer > 0) parts.push(`kept ${summary.keptNewer} that ${summary.keptNewer === 1 ? 'is' : 'are'} already up to date here`);
   if (skippedCount > 0) parts.push(`skipped ${skippedCount} that could not be read`);
   return parts.length > 0 ? `Restored: ${parts.join(', ')}.` : 'The backup had no designs in it.';

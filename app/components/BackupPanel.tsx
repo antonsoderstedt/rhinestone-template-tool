@@ -60,7 +60,7 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
         return;
       }
       const createdAt = new Date().toISOString();
-      const backup = createWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, createdAt });
+      const backup = createWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, calibrationProfiles: vault.calibrationProfiles, createdAt });
       downloadJson(buildBackupFilename(createdAt), serializeWorkspaceBackup(backup));
       writeLastBackupAt(window.localStorage, createdAt);
       await refreshBackupState();
@@ -85,15 +85,15 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
       const repository = new LocalStorageTemplateLibraryRepository();
       const record = await repository.list();
       const vault = readWorkspaceVault();
-      const merged = mergeWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns }, backup);
+      const merged = mergeWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, calibrationProfiles: vault.calibrationProfiles }, backup);
 
       for (const entry of merged.rhinestoneToSave) {
         await repository.save(entry);
       }
       // Read the vault again right before writing so nothing saved in another tab meanwhile is lost.
       const latest = readWorkspaceVault();
-      const latestMerged = mergeWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: latest.htvDesigns }, { ...backup, rhinestoneDesigns: [] });
-      writeWorkspaceVault({ ...latest, htvDesigns: latestMerged.htvDesigns });
+      const latestMerged = mergeWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: latest.htvDesigns, calibrationProfiles: latest.calibrationProfiles }, { ...backup, rhinestoneDesigns: [] });
+      writeWorkspaceVault({ ...latest, htvDesigns: latestMerged.htvDesigns, calibrationProfiles: latestMerged.calibrationProfiles });
 
       setNotice({ tone: 'success', text: describeMergeSummary(merged.summary, skippedCount) });
       onRestored();
@@ -123,7 +123,7 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
           <p className="mt-1 text-sm leading-6 text-ink-secondary">
             Your designs live in this browser only. A backup is one file with every rhinestone and HTV design. It needs no account or link.
             Restoring it adds missing designs and keeps the newest copy of the rest; nothing is deleted.
-            Uploaded fonts and images, calibration and settings are not included.
+            Your calibration profiles are included. Uploaded fonts and images and your settings are not.
           </p>
           {backupState && (() => {
             const status = getBackupStatus(backupState);

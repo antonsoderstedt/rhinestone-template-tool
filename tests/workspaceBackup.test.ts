@@ -129,7 +129,7 @@ describe('mergeWorkspaceBackup', () => {
     const byId = Object.fromEntries(result.rhinestoneDesigns.map((d) => [d.templateId, d.name]));
     expect(byId).toEqual({ new: 'New', newer: 'Newer in backup', older: 'Newer here', 'only-here': 'Only here' });
     expect(result.htvDesigns.map((d) => d.designId).sort()).toEqual(['h-new', 'h-same']);
-    expect(result.summary).toEqual({ addedRhinestone: 1, addedHtv: 1, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 2 });
+    expect(result.summary).toEqual({ addedRhinestone: 1, addedHtv: 1, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 2, addedCalibration: 0, updatedCalibration: 0 });
     expect(result.rhinestoneToSave.map((d) => d.templateId).sort()).toEqual(['new', 'newer']);
   });
 
@@ -141,8 +141,29 @@ describe('mergeWorkspaceBackup', () => {
   });
 
   it('describes what happened in one sentence', () => {
-    expect(describeMergeSummary({ addedRhinestone: 2, addedHtv: 1, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 1 }, 0)).toBe('Restored: added 3 designs, kept 1 that is already up to date here.');
-    expect(describeMergeSummary({ addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0 }, 0)).toBe('The backup had no designs in it.');
-    expect(describeMergeSummary({ addedRhinestone: 1, addedHtv: 0, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 0 }, 2)).toContain('skipped 2');
+    expect(describeMergeSummary({ addedRhinestone: 2, addedHtv: 1, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 1, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('Restored: added 3 designs, kept 1 that is already up to date here.');
+    expect(describeMergeSummary({ addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('The backup had no designs in it.');
+    expect(describeMergeSummary({ addedRhinestone: 1, addedHtv: 0, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 2)).toContain('skipped 2');
+  });
+
+  it('carries calibration profiles in the backup, merges them by age, and skips a damaged one (plan F7)', () => {
+    const profile = (id: string, updatedAt: string, hole = 3.5) => ({
+      id, name: `Profile ${id}`, materialProfileId: 'magic-flock-cricut-maker', createdAt: '2026-01-01T00:00:00Z', updatedAt,
+      approvedAt: '2026-01-02T00:00:00Z', overrides: [{ stoneSize: 'SS10', holeDiameterMm: hole }],
+    });
+    const backup = createWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: [], calibrationProfiles: [profile('a', '2026-03-01T00:00:00Z'), profile('b', '2026-03-01T00:00:00Z')], createdAt: '2026-03-02T00:00:00Z' });
+    const parsed = parseWorkspaceBackup(serializeWorkspaceBackup(backup));
+    expect(parsed.backup.calibrationProfiles).toHaveLength(2);
+
+    const merged = mergeWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: [], calibrationProfiles: [profile('a', '2026-04-01T00:00:00Z', 3.6)] }, parsed.backup);
+    expect(merged.summary).toMatchObject({ addedCalibration: 1, updatedCalibration: 0 });
+    expect(merged.calibrationProfiles.find((p) => p.id === 'a')?.overrides[0]?.holeDiameterMm).toBe(3.6);
+    expect(describeMergeSummary(merged.summary, 0)).toContain('restored 1 calibration profile');
+
+    const damaged = JSON.parse(serializeWorkspaceBackup(backup)) as { calibrationProfiles: Array<{ overrides: Array<{ holeDiameterMm: number }> }> };
+    damaged.calibrationProfiles[0]!.overrides[0]!.holeDiameterMm = -2;
+    const reparsed = parseWorkspaceBackup(JSON.stringify(damaged));
+    expect(reparsed.backup.calibrationProfiles).toHaveLength(1);
+    expect(reparsed.skippedCount).toBe(1);
   });
 });
