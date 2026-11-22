@@ -18,6 +18,7 @@ interface EditorStatusBarProps {
   autosaveUpdatedAt: string | null;
   activeLibraryName: string | null;
   onReportProblem?: () => void;
+  onShowVersions?: () => void;
 }
 
 export default function EditorStatusBar({
@@ -32,6 +33,7 @@ export default function EditorStatusBar({
   autosaveUpdatedAt,
   activeLibraryName,
   onReportProblem,
+  onShowVersions,
 }: EditorStatusBarProps) {
   // On a phone this bar scrolls sideways; a scrollable region has to be reachable with the keyboard.
   const isMobile = useIsMobileStudio();
@@ -102,6 +104,11 @@ export default function EditorStatusBar({
         </span>
         {activeLibraryName && (
           <span>Saved in My Designs: <span className="font-medium text-[var(--studio-ink-secondary)]">{activeLibraryName}</span></span>
+        )}
+        {onShowVersions && (
+          <button type="button" onClick={onShowVersions} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            Earlier versions
+          </button>
         )}
         {onReportProblem && (
           <button type="button" onClick={onReportProblem} className="underline-offset-2 hover:text-[var(--studio-ink)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">

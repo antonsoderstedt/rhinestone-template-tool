@@ -47,6 +47,8 @@ import TestPatchPanel from './TestPatchPanel';
 import MoreFormatsPanel from './MoreFormatsPanel';
 import DesignSpaceGuide from './DesignSpaceGuide';
 import ReportProblemDialog from '../components/ReportProblemDialog';
+import VersionHistoryDialog from './VersionHistoryDialog';
+import { readVersions, recordVersion, removeVersions } from '../lib/versionHistory';
 import EditorTopbar from './EditorTopbar';
 import EditorCanvas from './EditorCanvas';
 import EditorPropertiesPanel from './EditorPropertiesPanel';
@@ -145,6 +147,7 @@ export default function EditorShell() {
   const [libraryRecord, setLibraryRecord] = useState<TemplateLibraryRecord>({ version: 1, builtInTemplates: [], userTemplates: [] });
   const [artworkInfo, setArtworkInfo] = useState<ArtworkInfo | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
   const [outlineFontStatus, setOutlineFontStatus] = useState<{
     status: 'idle' | 'loading' | 'error';
     message: string | null;
@@ -1371,6 +1374,13 @@ export default function EditorShell() {
     if (activeLibraryTemplateId) {
       const currentEntry = await templateLibraryRepositoryRef.current.get(activeLibraryTemplateId);
       if (currentEntry && !currentEntry.builtIn) {
+        // The version being replaced is kept, so a save that turned out worse can be undone later.
+        recordVersion(window.localStorage, currentEntry.templateId, {
+          savedAt: currentEntry.updatedAt,
+          name: currentEntry.name,
+          stoneCount: currentEntry.stoneCount,
+          projectJson: JSON.stringify(currentEntry.snapshot.project),
+        });
         entry = buildCurrentLibraryEntry(currentEntry.templateId, currentEntry.name, currentEntry.createdAt, currentEntry.favorite);
       }
     }
@@ -1492,6 +1502,7 @@ export default function EditorShell() {
     if (!repository) return;
     const entry = await repository.get(templateId);
     await repository.delete(templateId);
+    removeVersions(window.localStorage, templateId);
     await refreshTemplateLibrary();
     setToast({
       message: entry ? `Deleted “${entry.name}”.` : 'Design deleted.',
@@ -1941,6 +1952,35 @@ export default function EditorShell() {
         autosaveUpdatedAt={autosaveEntry?.updatedAt ?? null}
         activeLibraryName={activeLibraryEntry?.name ?? null}
         onReportProblem={() => setReportOpen(true)}
+        onShowVersions={activeLibraryTemplateId ? () => setVersionsOpen(true) : undefined}
+      />
+      <VersionHistoryDialog
+        open={versionsOpen && activeLibraryTemplateId !== null}
+        onClose={() => setVersionsOpen(false)}
+        designName={activeLibraryEntry?.name ?? 'this design'}
+        versions={versionsOpen && activeLibraryTemplateId ? readVersions(window.localStorage, activeLibraryTemplateId) : []}
+        now={new Date()}
+        onRestore={(version) => {
+          if (!activeLibraryTemplateId) return;
+          try {
+            const project = parseRhinestoneProject(version.projectJson);
+            // What is open now is kept as a version first, so going back is never a loss.
+            const current = buildProjectFileFromEditorState(state);
+            if (current) {
+              recordVersion(window.localStorage, activeLibraryTemplateId, {
+                savedAt: new Date().toISOString(),
+                name: state.projectName,
+                stoneCount: effectiveTemplate?.stones.length ?? 0,
+                projectJson: JSON.stringify(current),
+              });
+            }
+            applyProjectToEditor(project);
+            setVersionsOpen(false);
+            setToast({ message: 'Went back to that version. Save to keep it.', tone: 'success' });
+          } catch {
+            setToast({ message: 'That version could not be opened.', tone: 'error' });
+          }
+        }}
       />
       <ReportProblemDialog
         open={reportOpen}
