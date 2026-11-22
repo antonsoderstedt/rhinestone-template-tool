@@ -901,3 +901,12 @@ engine stays pure and deterministic, with no font parsing at compose time.
 An alphabet definition may also carry `glyphFileFallbackByChar`: alternate
 file basenames tried when the primary `<char>.svg` is missing (e.g. the Old
 English SS10 package names its i-glyph with a dotless ı).
+
+
+## Outline text through the artwork layout
+
+For bundled fonts (not the built-in stroke font) with the default placement pattern, `createOutlineTemplateFromPolylines`
+lays out the glyph polylines (after scaling and arc warp) with `createArtworkTemplate`: one shape, fill rule non-zero, look
+`outline` / `rows` / `solid` from the coverage mode, `overhang: true`. See ADR 0024. `layoutRows` option `overhang` puts one
+row down the middle of parts thinner than a stone (found from a contour 1.5 cells deep, merged pairwise, then centred on the
+ridge); stones may reach a little past the edge. Deterministic, same spacing rule as artwork.

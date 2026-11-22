@@ -24,6 +24,11 @@ export interface RowsLayoutOptions {
   edgeInsetMm?: number;
   /** Fill what the rows leave with a hex lattice. Default: true when `rows` is `all`. */
   fillRemainder?: boolean;
+  /**
+   * Also put one row down the middle of parts thinner than a stone, where a stone cannot lie wholly inside. The stones
+   * then reach a little past the edge. Meant for letters, where a thin stroke should still get stones.
+   */
+  overhang?: boolean;
 }
 
 export type StoneKind = 'edge' | 'row' | 'fill';
@@ -134,6 +139,36 @@ export function layoutRows(field: RegionField, options: RowsLayoutOptions): Plac
     lastRow = k;
     for (const loop of loops) {
       for (const point of sampleLoop(loop, { pitchMm })) place(point.x, point.y, k, k === 0 ? 'edge' : 'row');
+    }
+  }
+
+  // Parts thinner than a stone: one row down the middle, found from a shallow contour (both sides of the part meet and are
+  // merged into one stone halfway between). Only where the normal rows could not go, never next to a normal stone.
+  if (options.overhang) {
+    const floor = field.cell;
+    const overhang = new Set<number>();
+    for (const loop of extractContours(field, field.cell * 1.5)) {
+      for (const point of sampleLoop(loop, { pitchMm })) {
+        if (climbToRidge(field, point.x, point.y).depth >= inset) continue;
+        const conflicts = index.near(point.x, point.y, minCentreDistanceMm);
+        if (conflicts.length === 0) {
+          if (sampleField(field, point.x, point.y) >= floor) {
+            accept(point.x, point.y, 0, 'edge');
+            overhang.add(placed.length - 1);
+          }
+          continue;
+        }
+        const other = conflicts[0]!;
+        if (!overhang.has(other) || merged.has(other)) continue;
+        const o = placed[other]!;
+        const mx = (point.x + o.x) / 2;
+        const my = (point.y + o.y) / 2;
+        if (sampleField(field, mx, my) < floor || index.near(mx, my, minCentreDistanceMm, other).length > 0) continue;
+        index.remove(other);
+        placed[other] = { x: mx, y: my, row: 0, kind: 'edge' };
+        index.add(other);
+        merged.add(other);
+      }
     }
   }
 

@@ -33,6 +33,7 @@ import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fill
 import { createPolylineFilledRhinestoneTemplate } from '../fill/fillTemplate';
 import type { FillPlacementPattern, RadialPlacementSettings } from '../fill/placementPatterns';
 import { createGlyphScanlineFillTemplate } from './glyphScanlineFill';
+import { createArtworkTemplate, type ArtworkLook } from '../artwork/artworkTemplate';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -442,6 +443,40 @@ function createOutlineTemplateFromPolylines(
       metadata: withSourceCounts(sortStonesByGeometry(keptStones)),
     });
   };
+
+  // Letters of a real font go through the same layout as artwork: rows of stones that follow the letter, one centre
+  // row for thin strokes, nothing outside the letter, and one spacing rule. The older generators remain for the
+  // built-in stroke font (its letters are lines, not shapes) and for the special placement patterns.
+  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && placementPattern === 'default' && fillPattern === 'offset-grid') {
+    const look: ArtworkLook = coverageMode === 'fill' || coverageMode === 'outline-fill' ? 'solid' : coverageMode === 'contour' ? 'rows' : 'outline';
+    const artwork = createArtworkTemplate({
+      id,
+      name,
+      shapes: [
+        {
+          order: 0,
+          element: 'path',
+          polylines: finalPolylines.map((polyline) => ({ ...polyline, closed: true })),
+          fill: '#000000',
+          fillOpacity: 1,
+          stroke: null,
+          strokeWidth: 0,
+          strokeOpacity: 1,
+          opacity: 1,
+          fillRule: 'nonzero',
+        },
+      ],
+      stoneSize,
+      look,
+      rowCount: contourSettings?.rowCount,
+      overhang: true,
+      densityPreset,
+      customSpacingMm: customSpacingMm ?? spacingMm,
+      materialProfileId,
+      metadata: { ...metadata, textPlacementStrategy: 'artwork-rows-v1' },
+    });
+    return artwork.template;
+  }
 
   if (
     options.fontId !== LEGACY_OUTLINE_FONT_ID &&

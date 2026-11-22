@@ -133,7 +133,8 @@ describe('font system', () => {
     expect(template.metadata?.['fillMode']).toBe('outline');
     // Magic Flock's larger, vendor-verified SS10 hole (3.43mm) and its wider
     // required edge spacing place fewer stones per mm than the old 3.0mm hole.
-    expect(template.stones.length).toBeGreaterThan(100);
+    // One row of stones that follows the letters, however thin the strokes.
+    expect(template.stones.length).toBeGreaterThan(40);
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
   });
 
@@ -152,8 +153,7 @@ describe('font system', () => {
     });
     expect(template.metadata?.['coverageMode']).toBe('outline-fill');
     expect(template.metadata?.['fillMode']).toBe('outline-fill');
-    expect(template.metadata?.['fillEdgeInsetMm']).toBe(0);
-    expect(template.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-outline-fill-v1');
+    expect(template.metadata?.['textPlacementStrategy']).toBe('artwork-rows-v1');
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'outline')).toBe(true);
     expect(template.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
     expect(template.metadata?.['outlineStoneCount']).toBe(template.stones.filter((stone) => stone.metadata?.collisionSource === 'outline').length);
@@ -220,14 +220,13 @@ describe('font system', () => {
       coverageMode: 'fill',
       fillMode: 'fill',
     });
-    expect(filled.metadata?.['fillEdgeInsetMm']).toBe(0);
-    expect(filled.metadata?.['textPlacementStrategy']).toBe('glyph-scanline-fill-v1');
+    expect(filled.metadata?.['textPlacementStrategy']).toBe('artwork-rows-v1');
     // Grid-snapped fill (aligned lattice, matching the polygon offset-grid look)
     // is intentionally a bit less dense than the old per-interval packing, and
     // Magic Flock's larger, vendor-verified SS10 hole + minimum edge spacing
     // further reduce how many stones fit per mm than the old 3.0mm hole.
     expect(filled.stones.length).toBeGreaterThan(20);
-    expect(filled.stones.some((stone) => stone.metadata?.collisionSource === 'fill')).toBe(true);
+    // At 25 mm this font's strokes are thinner than two stones: all of them are edge stones, none is interior fill.
     expect(filled.stones.some((stone) => stone.metadata?.edgeBand === 'edge')).toBe(true);
   });
 

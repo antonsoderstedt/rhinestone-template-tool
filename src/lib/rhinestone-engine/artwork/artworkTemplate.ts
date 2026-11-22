@@ -40,6 +40,8 @@ export interface CreateArtworkTemplateOptions {
   /** Colours (`#rrggbb`) to leave out, or to include although they would be treated as background. */
   layerRoles?: Record<string, 'stones' | 'ignore'>;
   ignoreBackground?: boolean;
+  /** Give parts thinner than a stone one row down the middle (stones reach past the edge). For letters. */
+  overhang?: boolean;
   grid?: BuildLayersOptions['grid'];
   /** Also work out whether the artwork is fine enough for the stones (costs about 0.1 s). */
   analyse?: boolean;
@@ -121,7 +123,7 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
     layerSummary[layerIndex]!.role = role;
     if (role === 'ignore') continue;
     const field = buildRegionField(layer.mask);
-    const placed = layoutRows(field, { holeDiameterMm: hole, pitchMm: pitch, minCentreDistanceMm: minCentre, rows });
+    const placed = layoutRows(field, { holeDiameterMm: hole, pitchMm: pitch, minCentreDistanceMm: minCentre, rows, overhang: options.overhang });
     for (const p of placed) {
       if (!occupancy.clear(p.x, p.y, minCentre)) continue;
       occupancy.add(p.x, p.y);
@@ -131,7 +133,15 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
         center: { x: p.x, y: p.y },
         stoneSize,
         holeDiameterMm: hole,
-        metadata: { layerColour: layer.colour, layerIndex, row: p.row, placement: kind },
+        metadata: {
+          layerColour: layer.colour,
+          layerIndex,
+          row: p.row,
+          placement: kind,
+          // Same names the older generators used, so the rest of the editor can tell the edge row from the fill.
+          collisionSource: kind === 'fill' ? 'fill' : 'outline',
+          edgeBand: kind === 'fill' ? 'interior' : 'edge',
+        },
       });
       layerSummary[layerIndex]!.stones++;
     }
@@ -161,6 +171,8 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
       resolvedSpacingMm: pitch,
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',
       layerCount: built.layers.length,
+      outlineStoneCount: stones.filter((stone) => stone.metadata?.collisionSource === 'outline').length,
+      fillStoneCount: stones.filter((stone) => stone.metadata?.collisionSource === 'fill').length,
       ...options.metadata,
     },
   });
