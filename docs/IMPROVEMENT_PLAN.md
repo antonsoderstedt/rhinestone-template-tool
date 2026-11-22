@@ -128,6 +128,7 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | H6 "Report a problem" (a file made on the user's computer, design attached only if ticked, nothing sent); F1 storage fullness warning and persistent-storage request; F6 decided: no accounts (ADR 0026); D6 Design Space import guide | **Done** |
 | F4 share link (design inside the `#` part of the address, nothing uploaded), F5 earlier versions of a saved design | **Done** (ADR 0026) |
 | Parts: turn by any angle, spread out, vertical align, snap while dragging, take a part back to edit, parts list in the Select tool | **Done** (ADR 0022 update); scaling a part smaller is deliberately not offered (stones keep their size) |
+| I2 hand tool: one finger or the mouse moves the view (a button on the canvas) | **Done** |
 | Rest of phase 6, phases 3-7 | Next |
 
 ## 4. Phases

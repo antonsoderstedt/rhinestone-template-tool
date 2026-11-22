@@ -6,7 +6,7 @@ import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneC
 import { describeDesignForScreenReader } from './editorUi';
 import { PART_SNAP_MM, boundsOfStones, partsStones, snapOffset } from './designParts';
 
-import { Expand, Gem, Grid2X2, Minus, Plus, Scan } from 'lucide-react';
+import { Expand, Gem, Grid2X2, Hand, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
@@ -893,7 +893,7 @@ export default function EditorCanvas({
   // Handle mouse down on stone (for dragging)
   // Dragging a kept part: it moves by the pointer's travel, rounded to 0.1 mm; one drag is one undo step.
   const startPartDrag = (e: React.PointerEvent<SVGCircleElement>, partId: string) => {
-    if (spacePressed || e.button === 1 || e.button === 2) return;
+    if (panning || e.button === 1 || e.button === 2) return;
     const svg = svgRef.current;
     const transform = getCanvasTransform();
     const part = state.parts.find((candidate) => candidate.id === partId);
@@ -941,7 +941,7 @@ export default function EditorCanvas({
 
   const handleStoneMouseDown = (e: React.PointerEvent<SVGCircleElement>, stoneId: string) => {
     // Don't handle if panning
-    if (spacePressed || e.button === 1) return;
+    if (panning || e.button === 1) return;
     
     if (state.activeTool !== 'select') return;
     if (!state.editableTemplate.isEditable) {
@@ -1089,7 +1089,7 @@ export default function EditorCanvas({
   // Handle mouse down on SVG (for pan)
   const handleSvgMouseDown = (e: React.PointerEvent<SVGSVGElement>) => {
     // Space + left click or middle mouse button = pan
-    if (spacePressed || e.button === 1) {
+    if (panning || e.button === 1) {
       e.preventDefault();
       setPanState({
         isPanning: true,
@@ -1157,7 +1157,7 @@ export default function EditorCanvas({
     if (!shouldStartBoxSelection({
       activeTool: state.activeTool,
       button: e.button,
-      spacePressed,
+      spacePressed: panning,
       clickedStone: Boolean(clickedStone),
       draggingStone: Boolean(dragState?.isDragging),
     })) {
@@ -1336,6 +1336,9 @@ export default function EditorCanvas({
 
   // Space key pan state
   const [spacePressed, setSpacePressed] = useState(false);
+  // The hand button: one finger (or the mouse) pans, for touch screens where Space and the middle button do not exist.
+  const [panMode, setPanMode] = useState(false);
+  const panning = spacePressed || panMode;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1387,6 +1390,15 @@ export default function EditorCanvas({
           <Expand className="h-4 w-4" />
         </IconButton>
         <div className="mx-1 w-px bg-border lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
+        <IconButton
+          onClick={() => setPanMode((on) => !on)}
+          intent={panMode ? 'active' : 'default'}
+          title={panMode ? 'Stop moving the view with one finger' : 'Move the view with one finger or the mouse'}
+          aria-label="Toggle hand tool"
+          aria-pressed={panMode}
+        >
+          <Hand className="h-4 w-4" />
+        </IconButton>
         <IconButton
           onClick={() => dispatch({ type: 'UPDATE_CANVAS', updates: { realisticStones: !state.canvas.realisticStones } })}
           intent={state.canvas.realisticStones ? 'active' : 'default'}
@@ -1475,7 +1487,7 @@ export default function EditorCanvas({
               style={{
                 width: '100%',
                 height: '100%',
-                cursor: spacePressed || panState ? 'grab' :
+                cursor: panning || panState ? 'grab' :
                         state.activeTool === 'manual' ? (hoverCollision ? 'not-allowed' : 'crosshair') :
                         state.activeTool === 'select' ? 'default' :
                         'default',
