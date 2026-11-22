@@ -106,7 +106,7 @@ export default function SetupPage() {
             {step === 'test-pack' && (
               <>
                 <div>
-                  <h2 className="text-2xl font-semibold text-ink">1. Cut the test pack</h2>
+                  <h2 className="text-2xl font-semibold text-ink">{t('1. Cut the test pack')}</h2>
                   <p className="mt-1 text-sm text-ink-secondary">
                     {t('Four ready-to-cut SVGs for checking your Cricut and flock. Start with a small scrap of material.')}
                   </p>
@@ -167,8 +167,7 @@ export default function SetupPage() {
         </div>
 
         <p className="text-xs leading-relaxed text-ink-muted">
-          Exported SVGs use real <code>&lt;circle&gt;</code> elements sized in mm. The stone sizes shown are starting values, not
-          measurements — always cut a test sheet before production.
+          {t('Exported SVGs use real circle elements sized in mm. The stone sizes shown are starting values, not measurements — always cut a test sheet before production.')}
         </p>
       </div>
     </WorkspacePage>

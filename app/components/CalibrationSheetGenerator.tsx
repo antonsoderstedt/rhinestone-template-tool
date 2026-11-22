@@ -115,10 +115,8 @@ export default function CalibrationSheetGenerator() {
       {/* SS12 is preliminary only — no verified vendor value exists yet. */}
       {sizeRows.some((row) => row.provisional) && (
         <div className="rounded border border-warning-500/40 bg-warning-50 p-3 text-sm text-warning-600">
-          <strong>{t('SS12 has no verified official value yet.')}</strong> The values above
-          are a preliminary starting point only. Cut the calibration sheet and choose
-          the smallest hole where the stone brushes in easily and seats/turns correctly,
-          then treat that as your own calibrated value — never as an official default.
+          <strong>{t('SS12 has no verified official value yet.')}</strong>{' '}
+          {t('The values above are a preliminary starting point only. Cut the calibration sheet and choose the smallest hole where the stone brushes in easily and seats/turns correctly, then treat that as your own calibrated value — never as an official default.')}
         </div>
       )}
 

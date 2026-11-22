@@ -68,7 +68,7 @@ export default function MachineCutSettingsCard({
 
       {recommendation.testCutRequired && (
         <p className="mt-3 text-xs font-medium text-warning-600">
-          ⚠ A test cut on scrap material is mandatory before cutting production designs.
+          {t('⚠ A test cut on scrap material is mandatory before cutting production designs.')}
         </p>
       )}
 

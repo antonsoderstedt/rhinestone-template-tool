@@ -349,14 +349,13 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
       <div className="rounded-lg bg-warning-50 border border-warning-500/30 px-5 py-4 text-sm text-warning-600 leading-relaxed">
         <p className="font-semibold mb-1">{t('How to find your hole diameters')}</p>
         <ol className="ml-4 list-decimal space-y-1 text-xs">
-          <li>Download and cut the <strong>Calibration Sheet</strong> on a scrap of Magic Flock.</li>
+          <li>{t('Download and cut the Calibration Sheet on a scrap of Magic Flock.')}</li>
           <li>{t('Place stones in each hole and find which diameter seats correctly.')}</li>
           <li>{t('Enter those measured hole diameters below (one per stone size).')}</li>
           <li>{t('Use the calibrated preview grid to verify before production.')}</li>
         </ol>
         <p className="mt-2 text-xs text-warning-600">
-          ⚠ Calibration values are saved in this browser and restored automatically when you return.
-          Clear saved values any time you want to start over from the recommended defaults.
+          {t('⚠ Calibration values are saved in this browser and restored automatically when you return. Clear saved values any time you want to start over from the recommended defaults.')}
         </p>
       </div>
 
@@ -366,7 +365,7 @@ export default function CalibrationWorkflow({ view = 'measure' }: { view?: 'meas
           <div>
             <h3 className="text-sm font-semibold text-ink-secondary">{t('Enter the hole diameters that worked (mm)')}</h3>
             <p className="mt-1 text-xs text-ink-muted">
-              <strong>{t('Stone diameter')}</strong> is the size of the rhinestone itself. <strong>Hole diameter</strong> is the size of the hole the machine cuts; it is a little larger so the stone seats firmly.
+              {t('Stone diameter is the size of the rhinestone itself. Hole diameter is the size of the hole the machine cuts; it is a little larger so the stone seats firmly.')}
             </p>
           </div>
           <div className="flex items-center gap-2">

@@ -54,10 +54,10 @@ export default function CricutTestPack() {
           {t('A curated set of four SVG templates designed to help you validate your Cricut Maker 3 + Magic Flock setup before cutting production designs. Download all four, import them into Cricut Design Space, and cut on a small scrap of Magic Flock first.')}
         </p>
         <ol className="mt-2 ml-4 list-decimal space-y-0.5 text-xs text-info-600">
-          <li>Cut the <strong>Calibration Sheet</strong> — find the correct hole diameter for your blade and flock batch.</li>
-          <li>Cut the <strong>Grid</strong> — verify stone seating and spacing.</li>
-          <li>Cut <strong>SMOOCH</strong> — test text density.</li>
-          <li>Cut the <strong>Diamond</strong> — test outline shape accuracy at corners.</li>
+          <li>{t('Cut the Calibration Sheet — find the correct hole diameter for your blade and flock batch.')}</li>
+          <li>{t('Cut the Grid — verify stone seating and spacing.')}</li>
+          <li>{t('Cut SMOOCH — test text density.')}</li>
+          <li>{t('Cut the Diamond — test outline shape accuracy at corners.')}</li>
         </ol>
       </div>
 

@@ -14,6 +14,23 @@ describe('translating text that is not written through t() (plan A9)', () => {
     expect(translateExact('sv', 'Mia Rose design')).toBe('Mia Rose design');
   });
 
+  it('translates the sentences with numbers in them that are made in code', () => {
+    expect(translateExact('sv', '1 layer · full front')).toBe('1 lager · hela framsidan');
+    expect(translateExact('sv', '3 layers · left chest')).toBe('3 lager · vänster bröst');
+    expect(translateExact('sv', '127 stones · grid on')).toBe('127 stenar · rutnät på');
+    expect(translateExact('sv', 'Design canvas. 127 stones, about 126 by 41 millimetres. 2 selected.')).toBe('Designyta. 127 stenar, ungefär 126 gånger 41 millimeter. 2 markerade.');
+    expect(translateExact('sv', 'Design canvas. Nothing here yet.')).toBe('Designyta. Inget här än.');
+    expect(translateExact('sv', '2 layers elsewhere, not exported')).toBe('2 lager på andra platser, exporteras inte');
+    expect(translateExact('en', '1 layer · full front')).toBe('1 layer · full front');
+  });
+
+  it('translates favourites, storage and time sentences', () => {
+    expect(translateExact('sv', 'Add Mia design to favorites')).toBe('Lägg till Mia design som favorit');
+    expect(translateExact('sv', "9% of this browser's storage is used")).toBe('9 % av den här webbläsarens lagring används');
+    expect(translateExact('sv', '2 days ago')).toBe('för 2 dagar sedan');
+    expect(translateExact('sv', '127 stones · SS10')).toBe('127 stenar · SS10');
+  });
+
   it('never touches fields the user types in, or marked parts', () => {
     expect(shouldSkip({ tagName: 'TEXTAREA' })).toBe(true);
     expect(shouldSkip({ tagName: 'INPUT' })).toBe(true);
