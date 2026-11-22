@@ -17,3 +17,10 @@
 ## Consequences
 
 Colour is never the stroke in any of these formats (see the stone colour note in the engine spec).
+
+## Registration marks for split parts (D3)
+
+Not added. A mark would have to be something the cutter cuts (a cross or a hole), and every extra cut shape in a template file is a
+risk: Design Space cuts everything in the file. The split already writes a layout file with the offset of every part from the top
+left corner of the whole design, and parts are cut along seams between stones, so they meet at stone spacing. Revisit if people
+report that parts are hard to line up.

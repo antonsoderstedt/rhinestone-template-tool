@@ -131,7 +131,8 @@ has none of the vector quality work (layers, skeleton, contours) and a separate,
 | I2 hand tool: one finger or the mouse moves the view (a button on the canvas) | **Done** |
 | E3 calibration status per stone size (export dialog); E1 decided: no machine selector (ADR 0027); C4 SVG artwork laid out in a Web Worker with main-thread fallback; C5 moving stones uses a spatial grid (5,000 stones in well under a second); C6 big designs are drawn only where they are in view | **Done** |
 | A9 Swedish interface: language switch, `t()` with a test that every text has a Swedish entry (about 1,060 texts), a safety net for the rest, `<html lang>` | **Done in part** (ADR 0028): the studios, home, designs, settings, setup, fonts and library are in Swedish; engine messages with numbers are not; the mm / inch switch is in the top bar and the studio's status bar and changes the sizes shown and typed |
-| Rest of phase 6, phases 3-7 | Next |
+| H7 legacy audit written (`docs/LEGACY_AUDIT.md`); D3 registration marks decided against (ADR 0025); G3 weld / offset / arc text already exist in the HTV inspector ("Merge selected shapes", "Add outline layer offset", Curve); several fonts in one design is done with parts (one part per font) | **Done** |
+| Left: G4 own garment photo (needs a placement editor), B6 per-letter style, E2 one-screen guided calibration, B5 fabric photo behind the design, raster artwork backdrop and thumbnails, I3 real devices, H4 licensed fixture fonts | Not done |
 
 ## 4. Phases
 
