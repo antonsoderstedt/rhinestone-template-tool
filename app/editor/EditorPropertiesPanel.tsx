@@ -38,6 +38,7 @@ import FillModeControl from './controls/FillModeControl';
 import { type OutlineFontStatus } from './controls/FontPicker';
 import TextStyleGallery from './controls/TextStyleGallery';
 import ShapeGalleryPicker from './controls/ShapeGalleryPicker';
+import LibraryAssetPicker from './controls/LibraryAssetPicker';
 import { useLookThumbnails } from './useLookThumbnails';
 import StoneFontSizeControl from './controls/StoneFontSizeControl';
 import PlacementModeControl from './controls/PlacementModeControl';
@@ -1359,6 +1360,24 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           <span className="text-xs text-ink-secondary mt-1">📄 {currentArtworkName}</span>
         )}
       </label>
+
+      <LibraryAssetPicker
+        currentName={svgTool.assetKind === 'image' ? svgTool.imageFileName : svgTool.svgFileName}
+        onPick={(asset) => {
+          if (asset.kind === 'svg') {
+            const check = validateAssetUpload({ fileName: asset.fileName, mimeType: asset.mimeType, sizeBytes: asset.sizeBytes, svgText: asset.svgText });
+            if (!check.valid) {
+              setUploadError(`${asset.name}: ${check.message}`);
+              return;
+            }
+            setUploadError(null);
+            dispatch({ type: 'UPDATE_SVG_TOOL', updates: { assetKind: 'svg', uploadedSvgText: asset.svgText, svgFileName: asset.fileName, uploadedImageDataUrl: null, imageFileName: null } });
+          } else {
+            setUploadError(null);
+            dispatch({ type: 'UPDATE_SVG_TOOL', updates: { assetKind: 'image', uploadedImageDataUrl: asset.sourceDataUrl, imageFileName: asset.fileName, uploadedSvgText: null, svgFileName: null } });
+          }
+        }}
+      />
 
       <ShapeGalleryPicker
         selectedName={svgTool.assetKind === 'svg' ? svgTool.svgFileName : null}
