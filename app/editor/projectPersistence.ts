@@ -126,6 +126,9 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         paddingMm: state.paddingMm,
         densityPreset: state.gridTool.densityPreset,
         customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : 4.0,
+        ...(state.gridTool.mode === 'area' && typeof state.gridTool.areaWidthMm === 'number' && typeof state.gridTool.areaHeightMm === 'number'
+          ? { area: { widthMm: state.gridTool.areaWidthMm, heightMm: state.gridTool.areaHeightMm, pattern: state.gridTool.areaPattern, seed: state.gridTool.areaSeed } }
+          : {}),
       } satisfies ManualGridProjectState;
     case 'outline-text':
       return {

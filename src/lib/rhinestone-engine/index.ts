@@ -431,3 +431,6 @@ export { createImportedTemplate } from './templateImport/importedTemplate';
 
 export type { LetterStencilSource, StencilLayoutMode, CreateLetterStencilOptions, LetterStencilCardMetadata, LetterStencilResult } from './letterStencil/letterStencilTemplate';
 export { createLetterStencilTemplate } from './letterStencil/letterStencilTemplate';
+
+export { createAllOverTemplate, ALL_OVER_PATTERNS, ALL_OVER_MAX_STONES } from './allOver/allOverTemplate';
+export type { AllOverPattern, CreateAllOverTemplateOptions } from './allOver/allOverTemplate';

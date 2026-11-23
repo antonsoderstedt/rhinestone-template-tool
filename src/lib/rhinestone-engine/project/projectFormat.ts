@@ -91,6 +91,8 @@ export interface ManualGridProjectState {
   paddingMm: number;
   densityPreset: DensityPreset;
   customSpacingMm: number;
+  /** Present when the grid tool was covering an area ("all over") instead of making rows and columns. */
+  area?: { widthMm: number; heightMm: number; pattern: 'grid' | 'hex' | 'diagonal' | 'scatter' | 'fade'; seed: number };
 }
 
 export interface PolylineLogoProjectState {
@@ -469,6 +471,18 @@ function validateDotMatrixText(s: UnknownRecord): DotMatrixTextProjectState {
   };
 }
 
+const VALID_AREA_PATTERNS = new Set(['grid', 'hex', 'diagonal', 'scatter', 'fade']);
+
+function validateArea(value: unknown): NonNullable<ManualGridProjectState['area']> {
+  const area = asRecord(value, 'generatorState.area');
+  const widthMm = requireFiniteNumber(area, 'widthMm', 'generatorState.area');
+  const heightMm = requireFiniteNumber(area, 'heightMm', 'generatorState.area');
+  if (widthMm <= 0 || heightMm <= 0 || widthMm > 5000 || heightMm > 5000) throw new Error('[Project] generatorState.area must be between 0 and 5000 mm');
+  const pattern = area.pattern;
+  if (typeof pattern !== 'string' || !VALID_AREA_PATTERNS.has(pattern)) throw new Error('[Project] generatorState.area.pattern is not a known pattern');
+  return { widthMm, heightMm, pattern: pattern as 'grid' | 'hex' | 'diagonal' | 'scatter' | 'fade', seed: requireFiniteNumber(area, 'seed', 'generatorState.area') };
+}
+
 function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
   const ctx = 'generatorState';
   return {
@@ -481,6 +495,7 @@ function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
+    ...(s.area !== undefined ? { area: validateArea(s.area) } : {}),
   };
 }
 

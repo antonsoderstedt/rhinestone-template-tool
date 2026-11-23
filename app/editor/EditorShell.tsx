@@ -13,6 +13,7 @@ import {
 import type { EditableStone, EditorState } from './EditorState';
 import {
   createStoneGridTemplate,
+  createAllOverTemplate,
   createOutlineTextTemplateAsync,
   createDotMatrixTextTemplate,
   checkExportReadiness,
@@ -302,7 +303,19 @@ export default function EditorShell() {
 
         switch (sourceTool) {
           case 'grid':
-            template = createStoneGridTemplate({
+            template = generationGridTool.mode === 'area' && typeof generationGridTool.areaWidthMm === 'number' && typeof generationGridTool.areaHeightMm === 'number'
+              ? createAllOverTemplate({
+                  id: 'grid-preview',
+                  name: 'All over',
+                  widthMm: generationGridTool.areaWidthMm,
+                  heightMm: generationGridTool.areaHeightMm,
+                  stoneSize: generationGridTool.stoneSize,
+                  pattern: generationGridTool.areaPattern,
+                  densityPreset: generationGridTool.densityPreset,
+                  customSpacingMm: typeof generationGridTool.customSpacingMm === 'number' ? generationGridTool.customSpacingMm : undefined,
+                  seed: generationGridTool.areaSeed,
+                })
+              : createStoneGridTemplate({
               id: 'grid-preview',
               name: 'Grid Preview',
               stoneSize: generationGridTool.stoneSize,
@@ -1035,6 +1048,9 @@ export default function EditorShell() {
             rows: project.generatorState.rows,
             densityPreset: project.generatorState.densityPreset,
             customSpacingMm: project.generatorState.customSpacingMm,
+            ...(project.generatorState.area
+              ? { mode: 'area' as const, areaWidthMm: project.generatorState.area.widthMm, areaHeightMm: project.generatorState.area.heightMm, areaPattern: project.generatorState.area.pattern, areaSeed: project.generatorState.area.seed }
+              : { mode: 'rows' as const }),
           },
         });
         break;

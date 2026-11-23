@@ -5,6 +5,7 @@
  * with a unified state model for the entire editor.
  */
 
+import type { AllOverPattern } from '@/src/lib/rhinestone-engine/index';
 import { withStoneColour } from './stoneColours';
 import {
   RhinestoneTemplate,
@@ -140,12 +141,21 @@ export interface SvgToolState {
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
 
+export type GridToolMode = 'rows' | 'area';
+
 export interface GridToolState {
   stoneSize: StoneSizeId;
   columns: number;
   rows: number;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
+  /** `rows`: a block of rows and columns. `area`: cover a whole area (jeans, a pocket) in a pattern. */
+  mode: GridToolMode;
+  areaWidthMm: number | '';
+  areaHeightMm: number | '';
+  areaPattern: AllOverPattern;
+  /** Which "random" the scatter pattern uses. */
+  areaSeed: number;
 }
 
 // ─── Manual Tool State ────────────────────────────────────────────────────────
@@ -563,6 +573,11 @@ export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
   rows: 3,
   densityPreset: 'standard',
   customSpacingMm: 4.0,
+  mode: 'rows',
+  areaWidthMm: 130,
+  areaHeightMm: 140,
+  areaPattern: 'hex',
+  areaSeed: 1,
 };
 
 export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
