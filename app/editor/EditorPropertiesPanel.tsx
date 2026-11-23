@@ -1366,7 +1366,7 @@ function SvgToolProperties({ state, dispatch, artworkInfo = null }: ToolProperti
           setUploadError(null);
           dispatch({
             type: 'UPDATE_SVG_TOOL',
-            updates: { assetKind: 'svg', uploadedSvgText: shape.svg, svgFileName: shape.label, uploadedImageDataUrl: null, imageFileName: null },
+            updates: { assetKind: 'svg', uploadedSvgText: shape.svg, svgFileName: shape.label, uploadedImageDataUrl: null, imageFileName: null, densityPreset: 'airy' },
           });
         }}
       />

@@ -10,7 +10,7 @@ import type { StoneSizeId } from '../../src/lib/rhinestone-engine/types/index';
 
 export const SETTINGS_STONE_SIZES: readonly StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
 
-export const SETTINGS_DENSITY_PRESETS = ['safe', 'standard', 'dense', 'loose'] as const;
+export const SETTINGS_DENSITY_PRESETS = ['safe', 'standard', 'dense', 'loose', 'airy'] as const;
 export type SettingsDensityPreset = (typeof SETTINGS_DENSITY_PRESETS)[number];
 
 export interface WorkspaceSettings {

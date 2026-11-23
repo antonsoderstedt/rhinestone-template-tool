@@ -29,6 +29,11 @@ export interface RowsLayoutOptions {
    * then reach a little past the edge. Meant for letters, where a thin stroke should still get stones.
    */
   overhang?: boolean;
+  /**
+   * How far a lattice stone has to be from every other stone, as a fraction of the pitch (default: the hard minimum only). A
+   * value near 1 keeps the lattice from squeezing between the edge row and itself, so the fill reads as clean rows.
+   */
+  latticeClearance?: number;
 }
 
 export type StoneKind = 'edge' | 'row' | 'fill';
@@ -191,12 +196,29 @@ export function layoutRows(field: RegionField, options: RowsLayoutOptions): Plac
     const { originX, originY, cell, cols, rows: gridRows } = field;
     const width = cols * cell;
     const height = gridRows * cell;
+    const clear = Math.max(minCentreDistanceMm, (options.latticeClearance ?? 0) * pitchMm);
+    // The lattice is centred on the shape, so a symmetric shape gets a symmetric fill (anchored on the grid's corner it was
+    // lopsided), and its rows run straight across.
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (field.mask[row * cols + col]) {
+          const x = originX + (col + 0.5) * cell;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+        }
+      }
+    }
+    const centreX = Number.isFinite(minX) ? (minX + maxX) / 2 : originX + width / 2;
+    const first = centreX - Math.ceil((centreX - originX) / pitchMm) * pitchMm;
     let r = 0;
     for (let y = originY + rowStep / 2; y < originY + height; y += rowStep, r++) {
       const shift = r % 2 === 0 ? 0 : pitchMm / 2;
-      for (let x = originX + shift + pitchMm / 2; x < originX + width; x += pitchMm) {
+      for (let x = first + shift; x < originX + width; x += pitchMm) {
+        if (x < originX) continue;
         if (sampleField(field, x, y) < insideLimit) continue;
-        if (index.near(x, y, minCentreDistanceMm).length > 0) continue;
+        if (index.near(x, y, clear).length > 0) continue;
         accept(x, y, lastRow + 1, 'fill');
       }
     }

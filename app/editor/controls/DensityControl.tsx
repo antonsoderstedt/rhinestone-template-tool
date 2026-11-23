@@ -18,6 +18,7 @@ interface DensityControlProps {
 }
 
 const DENSITY_OPTIONS: { value: DensityPreset; label: string }[] = [
+  { value: 'airy', label: 'Airy' },
   { value: 'loose', label: 'Loose' },
   { value: 'safe', label: 'Safe' },
   { value: 'standard', label: 'Standard' },

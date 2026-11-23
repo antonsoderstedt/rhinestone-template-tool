@@ -122,7 +122,7 @@ describe('editorReducer', () => {
     expect(state.svgTool.coverageMode).toBe('fill');
     expect(state.svgTool.fillMode).toBe('fill');
     expect(state.svgTool.placementPattern).toBe('hexagonal');
-    expect(state.svgTool.densityPreset).toBe('dense');
+    expect(state.svgTool.densityPreset).toBe('standard');
     expect(state.svgTool.targetWidthMm).toBe(100);
     expect(state.svgTool.targetHeightMm).toBe(40);
     expect(Number(state.svgTool.targetWidthMm)).toBeLessThanOrEqual(280);
@@ -158,7 +158,7 @@ describe('editorReducer', () => {
     expect(artwork.svgTool.coverageMode).toBe('fill');
     expect(artwork.svgTool.fillMode).toBe('fill');
     expect(artwork.svgTool.placementPattern).toBe('hexagonal');
-    expect(artwork.svgTool.densityPreset).toBe('dense');
+    expect(artwork.svgTool.densityPreset).toBe('standard');
 
     const vector = editorReducer(artwork, {
       type: 'UPDATE_SVG_TOOL',

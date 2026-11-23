@@ -462,7 +462,9 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     next.coverageMode = 'fill';
     next.fillMode = 'fill';
     next.placementPattern = 'hexagonal';
-    next.densityPreset = 'dense';
+    // Standard, not Dense: dense is tighter than the recommended distance and needs calibration first. A caller that says which
+    // spacing it wants (a ready-made shape asks for Airy) keeps it.
+    next.densityPreset = updates.densityPreset ?? 'standard';
   };
 
   // A render mode brings its preset along unless the same update says how to cover the shape: restoring a saved design
@@ -552,7 +554,7 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
   },
   layerRoles: {},
   layerStoneColours: {},
-  showSourceBehind: true,
+  showSourceBehind: false,
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {

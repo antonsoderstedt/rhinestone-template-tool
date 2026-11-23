@@ -37,6 +37,7 @@ const DENSITY_LABELS: Record<SettingsDensityPreset, string> = {
   standard: 'Standard — recommended spacing',
   dense: 'Dense — tight, calibrate first',
   loose: 'Loose — open, decorative',
+  airy: 'Airy — open, like commercial templates',
 };
 
 function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {

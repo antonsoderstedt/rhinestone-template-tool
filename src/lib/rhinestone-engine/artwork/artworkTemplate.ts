@@ -115,7 +115,8 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
   const warnings = [...built.warnings];
 
   // Layers painted later are on top: they get their stones first, and lower layers give way where they meet.
-  const rows = look === 'outline' ? 1 : look === 'rows' ? Math.max(1, Math.floor(options.rowCount ?? 3)) : ('all' as const);
+  // Solid = a clean ring along the edge and straight rows of stones filling the inside, which is how a commercial template looks.
+  const rows = look === 'outline' || look === 'solid' ? 1 : Math.max(1, Math.floor(options.rowCount ?? 3));
   const occupancy = new Occupancy(Math.max(minCentre, 1));
   const stones: Stone[] = [];
   const layerSummary: ArtworkTemplateResult['layers'] = built.layers.map((layer) => ({ colour: layer.colour, areaMm2: layer.areaMm2, role: layer.role, reason: layer.reason, stones: 0 }));
@@ -129,7 +130,7 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
     if (role === 'ignore') continue;
     const stoneColour = options.layerStoneColours?.[layer.colour] ?? (stoneLayerCount > 1 ? layer.colour : undefined);
     const field = buildRegionField(layer.mask);
-    const placed = layoutRows(field, { holeDiameterMm: hole, pitchMm: pitch, minCentreDistanceMm: minCentre, rows, overhang: options.overhang });
+    const placed = layoutRows(field, { holeDiameterMm: hole, pitchMm: pitch, minCentreDistanceMm: minCentre, rows, overhang: options.overhang, fillRemainder: look === 'solid', latticeClearance: 0.92 });
     for (const p of placed) {
       if (!occupancy.clear(p.x, p.y, minCentre)) continue;
       occupancy.add(p.x, p.y);
@@ -173,7 +174,7 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
     metadata: {
       generatedBy: 'createArtworkTemplate',
       look,
-      rows: rows === 'all' ? 'all' : rows,
+      rows,
       stoneSize,
       resolvedSpacingMm: pitch,
       materialProfileId: materialProfileId ?? 'magic-flock-cricut-maker',

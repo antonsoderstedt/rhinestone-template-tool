@@ -307,7 +307,7 @@ export interface RhinestoneProjectFile {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 const VALID_STONE_SIZES = new Set(['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20']);
-const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'custom']);
+const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'airy', 'custom']);
 const VALID_FILL_MODES = new Set(['outline', 'fill', 'outline-fill']);
 const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contour']);
 const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
