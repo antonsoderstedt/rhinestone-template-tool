@@ -49,6 +49,10 @@ function flower(): string {
   return petals.join('') + `<circle cx="50" cy="50" r="16" fill="${FILL}"/>`;
 }
 
+const circle = (cx: number, cy: number, r: number) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${FILL}"/>`;
+const ellipse = (cx: number, cy: number, rx: number, ry: number, rotate = 0) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rotate ? ` transform="rotate(${rotate} ${cx} ${cy})"` : ''} fill="${FILL}"/>`;
+
 export const GALLERY_SHAPES: readonly GalleryShape[] = [
   {
     id: 'heart',
@@ -67,4 +71,15 @@ export const GALLERY_SHAPES: readonly GalleryShape[] = [
   { id: 'crescent', label: 'Moon', svg: wrap(path(crescentPath())) },
   { id: 'flower', label: 'Flower', svg: wrap(flower()) },
   { id: 'burst', label: 'Burst', svg: wrap(path(starPath(12, 47, 33, 50, 50))) },
+  { id: 'diamond', label: 'Diamond', svg: wrap(path('M27 8H73L95 38L50 94L5 38Z')) },
+  { id: 'drop', label: 'Drop', svg: wrap(path('M50 5C50 5 18 44 18 64A32 32 0 0 0 82 64C82 44 50 5 50 5Z')) },
+  { id: 'cross', label: 'Cross', svg: wrap(path('M37 6H63V37H94V63H63V94H37V63H6V37H37Z')) },
+  { id: 'shield', label: 'Shield', svg: wrap(path('M50 5L90 17V50C90 75 71 89 50 96C29 89 10 75 10 50V17Z')) },
+  { id: 'clover', label: 'Clover', svg: wrap(`${circle(35, 35, 24)}${circle(65, 35, 24)}${circle(35, 65, 24)}${circle(65, 65, 24)}`) },
+  { id: 'paw', label: 'Paw', svg: wrap(`${circle(20, 42, 11)}${circle(38, 22, 11)}${circle(62, 22, 11)}${circle(80, 42, 11)}${path('M50 50C33 50 20 66 22 79C24 91 37 91 50 86C63 91 76 91 78 79C80 66 67 50 50 50Z')}`) },
+  { id: 'note', label: 'Music', svg: wrap(`${ellipse(32, 78, 19, 14, -18)}<rect x="46" y="14" width="9" height="62" fill="${FILL}"/>${path('M55 14C80 22 88 36 84 54C78 42 68 38 55 38Z')}`) },
+  { id: 'cloud', label: 'Cloud', svg: wrap(`${circle(30, 60, 20)}${circle(52, 46, 26)}${circle(74, 60, 20)}<rect x="30" y="58" width="44" height="22" fill="${FILL}"/>`) },
+  { id: 'flame', label: 'Flame', svg: wrap(path('M50 5C56 24 80 40 80 64C80 82 66 95 50 95C34 95 20 82 20 64C20 52 28 44 34 36C36 46 40 52 46 52C42 34 44 18 50 5Z')) },
+  { id: 'butterfly', label: 'Butterfly', svg: wrap(`${ellipse(28, 36, 24, 18, -28)}${ellipse(72, 36, 24, 18, 28)}${ellipse(32, 68, 17, 14, 22)}${ellipse(68, 68, 17, 14, -22)}<rect x="45" y="22" width="10" height="62" rx="5" fill="${FILL}"/>`) },
+  { id: 'bow', label: 'Bow', svg: wrap(`${path('M50 50L6 24V76Z')}${path('M50 50L94 24V76Z')}${circle(50, 50, 11)}`) },
 ];
