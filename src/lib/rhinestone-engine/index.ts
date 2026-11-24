@@ -437,3 +437,4 @@ export type { AllOverPattern, CreateAllOverTemplateOptions } from './allOver/all
 
 export { withBasePath } from './deploy/basePath';
 export { setFontCatalog, getFontCatalogRevision, subscribeFontCatalog, resolveFontAlias, isLegacyLibraryCopy, type FontCatalogFont } from './textOutline/fontRegistry';
+export { compactFromStones, compactStoneCount, compactToSvg, compactToDots, type CompactDesign, type CompactDots } from './templateImport/compactDesign';

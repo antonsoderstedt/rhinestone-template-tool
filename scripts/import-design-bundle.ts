@@ -5,7 +5,7 @@
  *
  * It writes `public/design-library/` (not committed: the designs are the user's own files and large):
  *   index.json          one entry per design: title, category, stone count, size in mm, stone size, file
- *   svg/<id>.svg        the template itself
+ *   d/<id>.json         the design as compact numbers (stone positions, sizes, colours); see compactDesign.ts
  *
  * Only the SVG of each design is read. Zip files are treated as untrusted: entries are listed first, only plain `.svg` names
  * are extracted (to memory, never to disk paths from the archive), and every file goes through the engine's own SVG safety
@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, relative, resolve, sep } from 'node:path';
-import { importRhinestoneTemplate } from '../src/lib/rhinestone-engine/index';
+import { compactFromStones, importRhinestoneTemplate } from '../src/lib/rhinestone-engine/index';
 
 const MAX_SVG_BYTES = 25 * 1024 * 1024;
 
@@ -107,7 +107,7 @@ function main() {
   }
   const out = resolve(process.argv[3] ?? 'public/design-library');
   rmSync(out, { recursive: true, force: true });
-  mkdirSync(join(out, 'svg'), { recursive: true });
+  mkdirSync(join(out, 'd'), { recursive: true });
 
   const files = walk(source);
   const seen = new Set<string>();
@@ -139,7 +139,7 @@ function main() {
     const titleBase = pretty(basename(entryName)) ;
     const title = !titleBase || /^\d+$/.test(titleBase) || titleBase.length < 3 ? `${pretty(zipName ?? category)} ${titleBase}`.trim() : titleBase;
     const id = `${slug(category)}-${slug(zipName ?? '')}-${slug(basename(entryName, '.svg'))}-${hash.slice(0, 6)}`;
-    writeFileSync(join(out, 'svg', `${id}.svg`), svgText);
+    writeFileSync(join(out, 'd', `${id}.json`), JSON.stringify(compactFromStones(result.stones)));
     entries.push({
       id,
       title,
@@ -149,7 +149,7 @@ function main() {
       widthMm: Math.round(result.widthMm * 10) / 10,
       heightMm: Math.round(result.heightMm * 10) / 10,
       stoneMm: mostCommon(result.stones.map((s) => s.diameterMm)),
-      file: `svg/${id}.svg`,
+      file: `d/${id}.json`,
     });
   };
 
