@@ -37,7 +37,7 @@ cp -Rc "$ROOT/node_modules" "$WORK/node_modules" 2>/dev/null || cp -R "$ROOT/nod
 
 cd "$WORK"
 node scripts/prepare-pages-build.mjs
-GITHUB_PAGES=true NEXT_PUBLIC_BASE_PATH= npx next build
+GITHUB_PAGES=true NEXT_PUBLIC_BASE_PATH= NEXT_PUBLIC_SYNC_ENABLED=1 npx next build
 
 if [ "$WITH_LIBS" = "1" ] || [ "$MODE" = "dev" ]; then
   for lib in design-library font-library; do

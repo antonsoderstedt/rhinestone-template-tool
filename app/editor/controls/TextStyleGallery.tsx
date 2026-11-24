@@ -16,6 +16,7 @@ import {
 } from '../textStyles';
 import { alphabetThumbnail, dotMatrixThumbnail, stoneFontThumbnail, thumbnailText, type TextThumbnail } from '../textStyleThumbnails';
 import { editorFieldLabelClassName } from './controlStyles';
+import { useFontPreviewLoader } from '../../fonts/useFontPreviewLoader';
 
 import { useT } from '../../lib/i18n';
 /** How many looks a group draws before "show more". */
@@ -88,20 +89,29 @@ function AlphabetPicture({ alphabetId, text }: { alphabetId: string; text: strin
   return <DotsPicture thumbnail={ready.thumbnail} />;
 }
 
+/** The words in a traced font. A library font's file is fetched when its card is shown (the bundled ones are declared in CSS). */
+function OutlineWords({ fontId, text }: { fontId: string; text: string }) {
+  const font = getOutlineFontDefinition(fontId);
+  const fromLibrary = font.sourceKind === 'workspace-installed' || font.sourceKind === 'browser-uploaded';
+  const specs = useMemo(
+    () => (fromLibrary && font.assetUrl ? [{ family: font.previewFontFamily, url: font.assetUrl, weight: font.fontWeight, style: font.fontStyle }] : []),
+    [fromLibrary, font.assetUrl, font.previewFontFamily, font.fontWeight, font.fontStyle],
+  );
+  useFontPreviewLoader(specs);
+  return (
+    <p
+      className="flex h-12 items-center justify-center overflow-hidden whitespace-nowrap text-2xl leading-none"
+      style={{ fontFamily: `'${font.previewFontFamily}', system-ui, sans-serif` }}
+    >
+      {thumbnailText(text, DEFAULT_PREVIEW_TEXT)}
+    </p>
+  );
+}
+
 function OptionPicture({ option, text }: { option: TextStyleOption; text: string }) {
   const { choice } = option;
   const dots = useMemo(() => (choice.kind === 'dots' ? dotMatrixThumbnail(text) : null), [choice.kind, text]);
-  if (choice.kind === 'outline') {
-    const font = getOutlineFontDefinition(choice.fontId);
-    return (
-      <p
-        className="flex h-12 items-center justify-center overflow-hidden whitespace-nowrap text-2xl leading-none"
-        style={{ fontFamily: font.previewFontFamily }}
-      >
-        {thumbnailText(text, DEFAULT_PREVIEW_TEXT)}
-      </p>
-    );
-  }
+  if (choice.kind === 'outline') return <OutlineWords fontId={choice.fontId} text={text} />;
   if (choice.kind === 'dots') return dots ? <DotsPicture thumbnail={dots} /> : <p className="h-12" />;
   if (choice.kind === 'alphabet') return <AlphabetPicture alphabetId={choice.alphabetId} text={text} />;
   return <StoneFontPicture fontId={choice.fontId} text={text} />;

@@ -1136,5 +1136,19 @@
   "Offline, sync paused": "Offline, synk pausad",
   "Sign in again to sync": "Logga in igen för att synka",
   "Sync error": "Synkfel",
-  "Click to sync now": "Klicka för att synka nu"
+  "Click to sync now": "Klicka för att synka nu",
+  "All": "Alla",
+  "Built-in": "Inbyggd",
+  "Details": "Detaljer",
+  "Favorites": "Favoriter",
+  "Missing letters: {letters}": "Saknade bokstäver: {letters}",
+  "Restore": "Återställ",
+  "Show archived": "Visa arkiverade",
+  "Show as stones": "Visa som stenar",
+  "The text as stones": "Texten som stenar",
+  "{fonts} fonts in {families} families": "{fonts} typsnitt i {families} familjer",
+  "{n} could not be used": "{n} gick inte att använda",
+  "{n} families": "{n} familjer",
+  "{n} stones at {size}": "{n} stenar i {size}",
+  "Yours": "Dina"
 }

@@ -22,7 +22,7 @@ Saved designs live in each browser's localStorage, so a second computer or a pho
   end of its last sync) and decides push, pull, delete here, or delete there. The newer `updatedAt` wins; a deletion beats an older
   edit and an edit made after a deletion beats the deletion. `SyncManager` runs a round on load, when the tab is shown, when back
   online, every minute and a few seconds after something is saved (it watches the size of the two stores). A Web Lock keeps tabs from
-  syncing at once. A site without the API (GitHub Pages, `next dev`) answers 404 and the sync stays off, with nothing shown.
+  syncing at once. The sync is switched on only in the private deployment's build (`NEXT_PUBLIC_SYNC_ENABLED=1`, set by the deploy script); GitHub Pages and `next dev` never ask for it and show nothing.
 - A small status pill shows "Synced hh:mm" and syncs now when clicked.
 
 ## Consequences

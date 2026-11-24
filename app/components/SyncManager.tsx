@@ -19,10 +19,13 @@ function fingerprint(): string {
 
 /**
  * Starts syncing in the background: once the page has loaded, when the tab is shown again, when the connection returns, every
- * minute, and a few seconds after something is saved. It does nothing on a site without a sync server.
+ * minute, and a few seconds after something is saved. It does nothing on a site without a sync server (the GitHub Pages site,
+ * `next dev`): it is switched on at build time with NEXT_PUBLIC_SYNC_ENABLED=1.
  */
 export default function SyncManager() {
   useEffect(() => {
+    // Only the build made for the private deployment has a sync server (scripts/deploy-private.sh sets this).
+    if (process.env.NEXT_PUBLIC_SYNC_ENABLED !== '1') return undefined;
     const start = window.setTimeout(() => void runSyncNow(true), 1500);
     const onVisible = () => { if (document.visibilityState === 'visible') void runSyncNow(); };
     const onOnline = () => void runSyncNow(true);

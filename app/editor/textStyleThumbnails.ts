@@ -8,6 +8,7 @@
 import {
   TRW_STONE_SIZE_CALIBRATION,
   createDotMatrixTextTemplate,
+  createOutlineTextTemplateAsync,
   createRhinestoneFontTemplate,
   createSvgAlphabetTemplate,
   defaultSvgAlphabetGlyphLoader,
@@ -15,6 +16,7 @@ import {
   getPreferredRhinestoneFontStoneSize,
   getRhinestoneFontDefinition,
   type RhinestoneTemplate,
+  type StoneSizeId,
 } from '@/src/lib/rhinestone-engine/index';
 
 export interface ThumbnailDot {
@@ -160,6 +162,69 @@ export function alphabetThumbnail(alphabetId: string, text: string): Promise<Tex
   if (!cached) {
     cached = makeAlphabetThumbnail(alphabetId, shown, sample);
     alphabetCache.set(key, cached);
+  }
+  return cached;
+}
+
+
+// ─── A traced font, as stones ─────────────────────────────────────────────────
+
+export interface OutlineFontPreview {
+  thumbnail: TextThumbnail | null;
+  stoneCount: number;
+  /** Letters of the text the font cannot draw (they are left out of the picture). */
+  missing: string[];
+}
+
+const outlineCache = new Map<string, Promise<OutlineFontPreview>>();
+const OUTLINE_CONCURRENCY = 2;
+let outlineActive = 0;
+const outlineWaiting: Array<() => void> = [];
+
+/** At most a couple of fonts are traced at once, so a page full of cards does not freeze while it fills in. */
+async function inTurn<T>(work: () => Promise<T>): Promise<T> {
+  if (outlineActive >= OUTLINE_CONCURRENCY) await new Promise<void>((resolve) => outlineWaiting.push(resolve));
+  outlineActive++;
+  try {
+    return await work();
+  } finally {
+    outlineActive--;
+    outlineWaiting.shift()?.();
+  }
+}
+
+async function makeOutlineFontPreview(fontId: string, shown: string, stoneSize: StoneSizeId): Promise<OutlineFontPreview> {
+  const attempt = async (text: string) => {
+    const template = await createOutlineTextTemplateAsync({ id: 'thumb', name: 'thumb', text, stoneSize, fontId, fontSizeMm: 25 });
+    return { drawn: dotsOf(template), count: template.stones.length };
+  };
+  try {
+    const { drawn, count } = await attempt(shown);
+    return { thumbnail: drawn ? { ...drawn, isSample: false } : null, stoneCount: count, missing: [] };
+  } catch (error) {
+    // "Font X has no glyph for: Å Ä. Remove them ..." : draw the rest and say which letters are missing.
+    const message = error instanceof Error ? error.message : '';
+    const listed = /no glyph for: (.+?)\. Remove/.exec(message)?.[1]?.split(' ').filter(Boolean) ?? [];
+    if (listed.length === 0) return { thumbnail: null, stoneCount: 0, missing: [] };
+    const rest = [...shown].filter((character) => !listed.includes(character)).join('').trim();
+    if (rest.length === 0) return { thumbnail: null, stoneCount: 0, missing: listed };
+    try {
+      const { drawn, count } = await attempt(rest);
+      return { thumbnail: drawn ? { ...drawn, isSample: false } : null, stoneCount: count, missing: listed };
+    } catch {
+      return { thumbnail: null, stoneCount: 0, missing: listed };
+    }
+  }
+}
+
+/** The user's words traced in a font and turned into stones (25 mm letters), cached per font, text and stone size. */
+export function outlineFontThumbnail(fontId: string, text: string, stoneSize: StoneSizeId = 'SS10'): Promise<OutlineFontPreview> {
+  const shown = thumbnailText(text, 'Abc');
+  const key = `${fontId}|${stoneSize}|${shown}`;
+  let cached = outlineCache.get(key);
+  if (!cached) {
+    cached = inTurn(() => makeOutlineFontPreview(fontId, shown, stoneSize));
+    outlineCache.set(key, cached);
   }
   return cached;
 }
