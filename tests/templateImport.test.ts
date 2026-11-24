@@ -404,3 +404,29 @@ describe('Template Import', () => {
     });
   });
 });
+
+describe('importRhinestoneTemplate page scale', () => {
+  const stone = (cx: number, cy: number, r: number) =>
+    `<path d="M${cx + r} ${cy}c0,${r * 0.55} ${-r * 0.45},${r} ${-r},${r} ${-r * 0.55},0 ${-r},${-r * 0.45} ${-r},${-r} 0,${-r * 0.55} ${r * 0.45},${-r} ${r},${-r} ${r * 0.55},0 ${r},${r * 0.45} ${r},${r}z"/>`;
+
+  it('uses the page width (mm) when the drawing is in other units, as CorelDRAW writes it', () => {
+    // 100 units per mm: a 3.3 mm stone is 330 units wide, on a 300 mm page.
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="200mm" viewBox="0 0 30000 20000"><g>${stone(1000, 1000, 165)}${stone(1800, 1000, 165)}</g></svg>`;
+    const result = importRhinestoneTemplate({ svgText, applyPageScale: true });
+    expect(result.stones).toHaveLength(2);
+    expect(result.detectedDiameters[0]).toBeCloseTo(3.3, 1);
+    expect(result.widthMm).toBeCloseTo(11.3, 0);
+  });
+
+  it('leaves the units alone unless asked (the alphabet readers rely on that)', () => {
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="200mm" viewBox="0 0 30000 20000"><g>${stone(1000, 1000, 165)}</g></svg>`;
+    expect(importRhinestoneTemplate({ svgText }).detectedDiameters[0]).toBeCloseTo(330, 0);
+  });
+
+  it('keeps taking viewBox units as mm when the page has no real-world width', () => {
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200"><g>${stone(10, 10, 1.65)}${stone(18, 10, 1.65)}</g></svg>`;
+    const result = importRhinestoneTemplate({ svgText, applyPageScale: true });
+    expect(result.detectedDiameters[0]).toBeCloseTo(3.3, 1);
+    expect(result.widthMm).toBeCloseTo(11.3, 0);
+  });
+});

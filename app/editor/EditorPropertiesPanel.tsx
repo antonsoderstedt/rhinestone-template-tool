@@ -38,6 +38,7 @@ import FillModeControl from './controls/FillModeControl';
 import { type OutlineFontStatus } from './controls/FontPicker';
 import TextStyleGallery from './controls/TextStyleGallery';
 import ShapeGalleryPicker from './controls/ShapeGalleryPicker';
+import DesignCollectionPicker from './controls/DesignCollectionPicker';
 import LibraryAssetPicker from './controls/LibraryAssetPicker';
 import { useLookThumbnails } from './useLookThumbnails';
 import StoneFontSizeControl from './controls/StoneFontSizeControl';
@@ -1019,57 +1020,59 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
   const t = useT();
   const { templateImportTool } = state;
 
+  // Checks a template's SVG and puts it up for import; shared by a file from the computer and a design from the collection.
+  const loadSvgText = (svgText: string, fileName: string) => {
+    try {
+      const result = createImportedTemplate({
+        svgText,
+        defaultStoneSizeId: templateImportTool.defaultStoneSize,
+        deduplicateTolerance: 0.01,
+      });
+      if (result.template.stones.length === 0) {
+        dispatch({
+          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+          updates: {
+            pendingSvgText: null,
+            pendingFileName: fileName,
+            importError: 'No identifiable stones found. Use SVG Convert Shape if this file contains artwork rather than a rhinestone template.',
+            importSummary: null,
+          },
+        });
+        return;
+      }
+
+      dispatch({
+        type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+        updates: {
+          pendingSvgText: svgText,
+          pendingFileName: fileName,
+          detectedDiameters: result.detectedDiameters,
+          detectedColors: result.detectedColors,
+          ignoredElements: result.ignoredElements,
+          warnings: result.warnings,
+          importSummary: `${result.template.stones.length} stones ready to import`,
+          importError: null,
+        },
+      });
+    } catch (error) {
+      dispatch({
+        type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
+        updates: {
+          pendingSvgText: null,
+          pendingFileName: fileName,
+          importSummary: null,
+          importError: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const svgText = typeof reader.result === 'string' ? reader.result : '';
-      try {
-        const result = createImportedTemplate({
-          svgText,
-          defaultStoneSizeId: templateImportTool.defaultStoneSize,
-          deduplicateTolerance: 0.01,
-        });
-        if (result.template.stones.length === 0) {
-          dispatch({
-            type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
-            updates: {
-              pendingSvgText: null,
-              pendingFileName: file.name,
-              importError: 'No identifiable stones found. Use SVG Convert Shape if this file contains artwork rather than a rhinestone template.',
-              importSummary: null,
-            },
-          });
-          return;
-        }
-
-        dispatch({
-          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
-          updates: {
-            pendingSvgText: svgText,
-            pendingFileName: file.name,
-            detectedDiameters: result.detectedDiameters,
-            detectedColors: result.detectedColors,
-            ignoredElements: result.ignoredElements,
-            warnings: result.warnings,
-            importSummary: `${result.template.stones.length} stones ready to import`,
-            importError: null,
-          },
-        });
-      } catch (error) {
-        dispatch({
-          type: 'UPDATE_TEMPLATE_IMPORT_TOOL',
-          updates: {
-            pendingSvgText: null,
-            pendingFileName: file.name,
-            importSummary: null,
-            importError: error instanceof Error ? error.message : String(error),
-          },
-        });
-      }
-    };
+    reader.onload = () => loadSvgText(typeof reader.result === 'string' ? reader.result : '', file.name);
     reader.readAsText(file);
     e.target.value = '';
   };
@@ -1104,6 +1107,8 @@ function TemplateImportToolProperties({ state, dispatch }: ToolPropertiesProps) 
           className="text-xs text-ink-secondary file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-accent-500 file:px-3 file:py-2 file:text-xs file:font-medium file:text-ink-inverse hover:file:bg-accent-600"
         />
       </label>
+
+      <DesignCollectionPicker onPick={(svgText, fileName) => loadSvgText(svgText, fileName)} />
 
       <StoneProfileControl
         value={templateImportTool.defaultStoneSize}

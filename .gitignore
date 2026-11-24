@@ -45,3 +45,6 @@ next-env.d.ts
 
 # cross-browser smoke test output
 /e2e-shots
+
+# imported design collection (the user's own, large files)
+/public/design-library/

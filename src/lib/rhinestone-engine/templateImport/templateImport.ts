@@ -44,6 +44,11 @@ export interface TemplateImportResult {
 export interface TemplateImportOptions {
   svgText: string;
   deduplicateTolerance?: number;
+  /**
+   * Scale the drawing to the page width the file states (`width="300mm"` with a viewBox in other units, as CorelDRAW writes
+   * it). Off by default: the alphabet readers are built on viewBox units being taken as mm. On for templates a user imports.
+   */
+  applyPageScale?: boolean;
 }
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -320,7 +325,7 @@ function combineTransforms(parent: SvgTransform, local: SvgTransform): SvgTransf
 }
 
 export function importRhinestoneTemplate(options: TemplateImportOptions): TemplateImportResult {
-  const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE } = options;
+  const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE, applyPageScale = false } = options;
   const sanitizedSvgText = stripSvgStyleElements(svgText);
 
   const safety = validateSafeSvgInput(sanitizedSvgText);
@@ -337,8 +342,18 @@ export function importRhinestoneTemplate(options: TemplateImportOptions): Templa
   const viewBox = viewBoxMatch ? parseViewBox(viewBoxMatch[1]) : null;
   const viewBoxWidth = viewBox?.width ?? null;
 
+  // A file that says how big the page is (width="300mm") and draws in other units (viewBox 0 0 30000 29700, as CorelDRAW
+  // exports it) is scaled so one unit is what the page says it is. Without a real-world width the units are taken as mm.
+  const rootTag = sanitizedSvgText.match(/<\s*svg\b[^>]*>/i)?.[0] ?? '';
+  const rootWidth = rootTag.match(/\swidth\s*=\s*["']\s*([\d.]+)\s*(mm|cm|in)\s*["']/i);
+  let rootScale = 1;
+  if (applyPageScale && rootWidth && viewBox && viewBox.width > 0) {
+    const widthMm = parseFloat(rootWidth[1]!) * (rootWidth[2]!.toLowerCase() === 'cm' ? 10 : rootWidth[2]!.toLowerCase() === 'in' ? 25.4 : 1);
+    if (Number.isFinite(widthMm) && widthMm > 0) rootScale = widthMm / viewBox.width;
+  }
+
   let elementIndex = 0;
-  const transformStack: SvgTransform[] = [IDENTITY_TRANSFORM];
+  const transformStack: SvgTransform[] = [rootScale === 1 ? IDENTITY_TRANSFORM : { a: rootScale, b: 0, c: 0, d: rootScale, e: 0, f: 0 }];
   const groupStack: string[] = [];
   const tagPattern = /<\s*(\/?)\s*(g|circle|ellipse|path)\b[^>]*>/gi;
 

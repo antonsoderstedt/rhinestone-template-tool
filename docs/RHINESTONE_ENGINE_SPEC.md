@@ -649,6 +649,14 @@ Provides `parseSvgViewBox` and `getSvgRootAttributes` for reading the root SVG's
 
 ---
 
+## Template import page scale (`templateImport/templateImport.ts`)
+
+`importRhinestoneTemplate` reads stones that are already placed as `circle`, `ellipse` or circular `path` elements. When the root
+`<svg>` has a real-world `width` (mm, cm or in) and a `viewBox` in other units, the drawing is scaled by `width / viewBox.width`
+so one unit is what the page says (a CorelDRAW export of `width="300mm"` with `viewBox="0 0 30000 29700"` is 100 units per mm).
+Without a real-world width, viewBox units are read as mm, as before. The scale is opt-in (`applyPageScale`, on in
+`createImportedTemplate`): the alphabet and letter-stencil readers are built on the old reading and keep it. See ADR 0030.
+
 ## SVG Import Module (v3, `svg/svgImport.ts`)
 
 `importSvgArtwork(svgText)` reads an SVG as a viewer would, as far as artwork for stones needs, and returns `shapes` (document

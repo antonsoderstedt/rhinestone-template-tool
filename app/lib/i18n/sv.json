@@ -784,7 +784,7 @@
   "Script": "Skrivstil",
   "Search by name or tag": "Sök på namn eller etikett",
   "Search by name, filename, or tag": "Sök på namn, filnamn eller etikett",
-  "Search designs": "Sök designer",
+  "Search designs": "Sök designs",
   "Search fonts": "Sök typsnitt",
   "Search fonts by name, category or tag": "Sök typsnitt på namn, kategori eller etikett",
   "Search…": "Sök…",
@@ -1120,5 +1120,14 @@
   "Search {n} styles": "Sök bland {n} stilar",
   "Search styles": "Sök stilar",
   "No styles match": "Inga stilar matchar",
-  "Show {n} more": "Visa {n} till"
+  "Show {n} more": "Visa {n} till",
+  "Browse the design collection": "Bläddra i designsamlingen",
+  "Design collection": "Designsamling",
+  "Search {n} designs": "Sök bland {n} designs",
+  "{n} designs": "{n} designs",
+  "No designs match.": "Inga designs matchar.",
+  "Loading…": "Laddar…",
+  "Opening…": "Öppnar…",
+  "Could not open {name}.": "Kunde inte öppna {name}.",
+  "No collection has been imported yet. Run this once in the project folder, then reload:": "Ingen samling är importerad ännu. Kör detta en gång i projektmappen och ladda sedan om:"
 }
