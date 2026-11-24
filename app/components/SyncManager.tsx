@@ -7,7 +7,7 @@ import { runSyncNow } from '../lib/sync/syncStore';
 const POLL_MS = 60_000;
 const WATCH_MS = 8_000;
 const QUIET_MS = 4_000;
-const WATCHED_KEYS = ['rhinestone-template-library', 'rhinestone-workspace-vault', 'rhinestone-active-calibration-profile'];
+const WATCHED_KEYS = ['rhinestone-template-library', 'rhinestone-workspace-vault', 'rhinestone-active-calibration-profile', 'rt-language', 'rt-unit'];
 /** Above this many characters only the size and the end of a store are looked at (settings and calibration are at the end). */
 const FULL_HASH_LIMIT = 6_000_000;
 

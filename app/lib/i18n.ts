@@ -17,7 +17,8 @@ export const LANGUAGES: ReadonlyArray<{ id: Language; label: string }> = [
   { id: 'sv', label: 'Svenska' },
 ];
 
-const STORAGE_KEY = 'rt-language';
+export const LANGUAGE_STORAGE_KEY = 'rt-language';
+const STORAGE_KEY = LANGUAGE_STORAGE_KEY;
 const DEFAULT_LANGUAGE: Language = 'en';
 
 export type TranslateVars = Record<string, string | number>;

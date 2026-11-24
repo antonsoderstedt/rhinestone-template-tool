@@ -10,7 +10,8 @@ import { useEffect, useState } from 'react';
 export type LengthUnit = 'mm' | 'in';
 export const MM_PER_INCH = 25.4;
 
-const STORAGE_KEY = 'rt-unit';
+export const UNIT_STORAGE_KEY = 'rt-unit';
+const STORAGE_KEY = UNIT_STORAGE_KEY;
 const DEFAULT_UNIT: LengthUnit = 'mm';
 
 export function isLengthUnit(value: unknown): value is LengthUnit {

@@ -9,13 +9,13 @@
  *   font         fonts the user uploaded                         the workspace vault
  *   fontpref     favourite / archived / tags of one font         the workspace vault
  *   designpref   whether a saved design is archived              the workspace vault
- *   settings     the workspace settings, and the active          the workspace vault, "rhinestone-active-calibration-profile"
- *                calibration profile
+ *   settings     the workspace settings, the active calibration  the workspace vault, "rhinestone-active-calibration-profile",
+ *                profile, the language and the length unit       "rt-language", "rt-unit"
  *
  * Settings and the two kinds of choices have no change time of their own. A change is noticed by comparing the content with what
  * it was at the last look, and the time of the change is kept in a small side table ("stamps").
  *
- * Not synced, on purpose: language, units and theme, which are about this screen and not about the work.
+ * Not synced, on purpose: the theme (light or dark), which is about this screen and not about the work.
  */
 
 import { DEFAULT_TEMPLATE_LIBRARY_STORAGE_KEY } from '@/src/lib/rhinestone-engine/templateLibrary/repository';
@@ -31,6 +31,8 @@ import {
   type WorkspaceAsset,
 } from '../workspaceVault';
 import { DEFAULT_WORKSPACE_SETTINGS, sanitizeWorkspaceSettings } from '../workspaceSettings';
+import { LANGUAGE_STORAGE_KEY, isLanguage, setLanguage } from '../i18n';
+import { UNIT_STORAGE_KEY, isLengthUnit, setUnit } from '../units';
 import { writeStorageItem } from '../storageQuota';
 import type { ItemRef, SyncKind } from './syncPlan';
 
@@ -109,6 +111,18 @@ export function decodeSyncId(encoded: string): string {
 const STAMPED_KINDS: ReadonlySet<SyncKind> = new Set(['settings', 'fontpref', 'designpref']);
 const SETTINGS_ID = 'workspace';
 const ACTIVE_CALIBRATION_ID = 'active-calibration';
+const LANGUAGE_ID = 'language';
+const UNIT_ID = 'unit';
+
+/** What the user chose for the language or the unit on this device, or null if they have not chosen (the default is not a choice). */
+function readChoice(id: typeof LANGUAGE_ID | typeof UNIT_ID): string | null {
+  const value = storage()?.getItem(id === LANGUAGE_ID ? LANGUAGE_STORAGE_KEY : UNIT_STORAGE_KEY);
+  return id === LANGUAGE_ID ? (isLanguage(value) ? value : null) : isLengthUnit(value) ? value : null;
+}
+const choiceData = (id: typeof LANGUAGE_ID | typeof UNIT_ID) => {
+  const value = readChoice(id);
+  return value ? JSON.stringify({ value }) : null;
+};
 
 function readActiveProfileId(): string | null {
   const value = storage()?.getItem(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY);
@@ -123,6 +137,7 @@ function stampedData(kind: SyncKind, id: string): string | null {
   const vault = readWorkspaceVault();
   if (kind === 'settings') {
     if (id === SETTINGS_ID) return JSON.stringify(vault.settings);
+    if (id === LANGUAGE_ID || id === UNIT_ID) return choiceData(id);
     const active = readActiveProfileId();
     return id === ACTIVE_CALIBRATION_ID && active ? JSON.stringify({ profileId: active }) : null;
   }
@@ -144,6 +159,8 @@ function listStamped(items: ItemRef[], stamps: Stamps, now: string): Stamps {
   const entries: Array<[SyncKind, string, string | null]> = [
     ['settings', SETTINGS_ID, JSON.stringify(vault.settings)],
     ['settings', ACTIVE_CALIBRATION_ID, readActiveProfileId() ? JSON.stringify({ profileId: readActiveProfileId() }) : null],
+    ['settings', LANGUAGE_ID, choiceData(LANGUAGE_ID)],
+    ['settings', UNIT_ID, choiceData(UNIT_ID)],
     ...vault.fontPreferences.map((item): [SyncKind, string, string | null] => ['fontpref', encodeSyncId(item.fontKey), fontPrefData(item)]),
     ...vault.designPreferences.map((item): [SyncKind, string, string | null] => ['designpref', encodeSyncId(item.designKey), designPrefData(item)]),
   ];
@@ -240,7 +257,16 @@ export function applyRemoteItem(kind: SyncKind, id: string, data: string, update
   }
 
   if (kind === 'settings') {
-    if (id === ACTIVE_CALIBRATION_ID) {
+    if (id === LANGUAGE_ID || id === UNIT_ID) {
+      const value = parsed.value;
+      if (id === LANGUAGE_ID ? !isLanguage(value) : !isLengthUnit(value)) return false;
+      // In the browser the setters also tell the screen; without one (tests) the value is just stored.
+      const live = typeof window !== 'undefined' && typeof document !== 'undefined';
+      if (live) {
+        if (id === LANGUAGE_ID) setLanguage(value as 'en' | 'sv');
+        else setUnit(value as 'mm' | 'in');
+      } else if (!writeStorageItem(storage(), id === LANGUAGE_ID ? LANGUAGE_STORAGE_KEY : UNIT_STORAGE_KEY, value as string)) return false;
+    } else if (id === ACTIVE_CALIBRATION_ID) {
       if (typeof parsed.profileId !== 'string' || parsed.profileId.trim().length === 0) return false;
       if (!writeStorageItem(storage(), ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY, parsed.profileId)) return false;
     } else if (id === SETTINGS_ID) {
@@ -291,7 +317,8 @@ export function deleteLocalItem(kind: SyncKind, id: string): boolean {
     return writeTemplateRecord({ ...record, userTemplates: record.userTemplates.filter((item) => item.templateId !== id) });
   }
   if (kind === 'settings') {
-    // The settings themselves are never deleted; only the choice of an active calibration profile can go.
+    // The settings themselves, the language and the unit are never deleted (nothing in the app can remove them); only the choice of
+    // an active calibration profile can go.
     if (id !== ACTIVE_CALIBRATION_ID) return true;
     storage()?.removeItem(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY);
     stampAs(kind, id, EPOCH);

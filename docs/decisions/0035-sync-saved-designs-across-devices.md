@@ -14,8 +14,9 @@ Saved designs live in each browser's localStorage, so a second computer or a pho
   profile (`settings`), favourites/tags/archive per font (`fontpref`) and whether a design is archived (`designpref`). These have no
   change time of their own, so a change is noticed by hashing the content; it gets the time it was first noticed, kept in a side table
   (`rhinestone-sync-stamps-v1`). Untouched default settings count as "never changed", so a new device takes the server's settings
-  instead of overwriting them. Not synced, on purpose: language, units and theme (about this screen, not the work), the autosave and
-  the library fonts themselves (the catalog is the same everywhere).
+  instead of overwriting them. The language (`rt-language`) and the length unit (`rt-unit`) are synced the same way, but only when the user has chosen
+  one on that device (the default is not a choice), and applied through the app's own setters so the screen changes at once. Not
+  synced, on purpose: the theme (light or dark), the autosave and the library fonts themselves (the catalog is the same everywhere).
 - **Server** (`worker/`): a Worker that only receives `/api/sync/*` (`run_worker_first`), with a D1 database: `items`
   (owner, kind, id, updated_at, deleted) and `chunks` (the data as text in pieces of 300,000 characters, so an item of several MB fits
   a row). Data is never parsed in the Worker (the free plan allows 10 ms of CPU). A deletion is kept as an item without data (a

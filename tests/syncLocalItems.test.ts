@@ -148,4 +148,39 @@ describe('settings and choices (items without a change time)', () => {
     expect(applyRemoteItem('settings', 'other', '{}')).toBe(false);
     expect(hashText('a')).not.toBe(hashText('b'));
   });
+
+  it('syncs the language and the length unit, but only when the user has chosen one (the default is not a choice)', () => {
+    expect(listAll().some((i) => i.id === 'language' || i.id === 'unit')).toBe(false);
+    localStorage.setItem('rt-language', 'sv');
+    localStorage.setItem('rt-unit', 'in');
+    const items = listAll().filter((i) => i.id === 'language' || i.id === 'unit');
+    expect(items.map((i) => i.id).sort()).toEqual(['language', 'unit']);
+    expect(JSON.parse(readLocalItemData('settings', 'language')!)).toEqual({ value: 'sv' });
+
+    // Another device that has chosen nothing takes both.
+    vi.stubGlobal('localStorage', memoryStorage());
+    expect(applyRemoteItem('settings', 'language', JSON.stringify({ value: 'sv' }), '2026-11-24T10:00:00.000Z')).toBe(true);
+    expect(applyRemoteItem('settings', 'unit', JSON.stringify({ value: 'in' }), '2026-11-24T10:00:00.000Z')).toBe(true);
+    expect(localStorage.getItem('rt-language')).toBe('sv');
+    expect(localStorage.getItem('rt-unit')).toBe('in');
+    // ...and does not send them straight back as changes.
+    expect(listAll().find((i) => i.id === 'language')!.updatedAt).toBe('2026-11-24T10:00:00.000Z');
+  });
+
+  it('notices a changed language, and refuses values that are not a language or a unit', () => {
+    localStorage.setItem('rt-language', 'en');
+    const first = listAll().find((i) => i.id === 'language')!.updatedAt;
+    localStorage.setItem('rt-language', 'sv');
+    expect(Date.parse(listAll().find((i) => i.id === 'language')!.updatedAt)).toBeGreaterThanOrEqual(Date.parse(first));
+    expect(JSON.parse(readLocalItemData('settings', 'language')!).value).toBe('sv');
+    expect(applyRemoteItem('settings', 'language', JSON.stringify({ value: 'fr' }))).toBe(false);
+    expect(applyRemoteItem('settings', 'unit', JSON.stringify({ value: 'cm' }))).toBe(false);
+    expect(localStorage.getItem('rt-language')).toBe('sv');
+  });
+
+  it('never deletes a language or unit choice because of a deletion elsewhere', () => {
+    localStorage.setItem('rt-language', 'sv');
+    expect(deleteLocalItem('settings', 'language')).toBe(true);
+    expect(localStorage.getItem('rt-language')).toBe('sv');
+  });
 });
