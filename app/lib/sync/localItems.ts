@@ -96,6 +96,11 @@ function readStamps(): Stamps {
   }
 }
 
+/** True only when the value really was stored (writeStorageItem answers 'ok', 'full' or 'failed': all non-empty, so never test it as a boolean). */
+function stored(key: string, value: string): boolean {
+  return writeStorageItem(storage(), key, value) === 'ok';
+}
+
 function writeStamps(stamps: Stamps): void {
   writeStorageItem(storage(), STAMPS_STORAGE_KEY, JSON.stringify(stamps));
 }
@@ -265,10 +270,10 @@ export function applyRemoteItem(kind: SyncKind, id: string, data: string, update
       if (live) {
         if (id === LANGUAGE_ID) setLanguage(value as 'en' | 'sv');
         else setUnit(value as 'mm' | 'in');
-      } else if (!writeStorageItem(storage(), id === LANGUAGE_ID ? LANGUAGE_STORAGE_KEY : UNIT_STORAGE_KEY, value as string)) return false;
+      } else if (!stored(id === LANGUAGE_ID ? LANGUAGE_STORAGE_KEY : UNIT_STORAGE_KEY, value as string)) return false;
     } else if (id === ACTIVE_CALIBRATION_ID) {
       if (typeof parsed.profileId !== 'string' || parsed.profileId.trim().length === 0) return false;
-      if (!writeStorageItem(storage(), ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY, parsed.profileId)) return false;
+      if (!stored(ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY, parsed.profileId)) return false;
     } else if (id === SETTINGS_ID) {
       const vault = readWorkspaceVault();
       if (!writeWorkspaceVault({ ...vault, settings: sanitizeWorkspaceSettings(parsed) })) return false;

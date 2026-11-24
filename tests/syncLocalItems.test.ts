@@ -183,4 +183,13 @@ describe('settings and choices (items without a change time)', () => {
     expect(deleteLocalItem('settings', 'language')).toBe(true);
     expect(localStorage.getItem('rt-language')).toBe('sv');
   });
+
+  it('reports a failure, and does not stamp the item, when the storage is full', () => {
+    const full = { ...memoryStorage(), setItem: () => { throw new DOMException('full', 'QuotaExceededError'); } };
+    vi.stubGlobal('localStorage', full);
+    expect(applyRemoteItem('settings', 'language', JSON.stringify({ value: 'sv' }), '2026-11-24T10:00:00.000Z')).toBe(false);
+    expect(applyRemoteItem('settings', 'unit', JSON.stringify({ value: 'in' }), '2026-11-24T10:00:00.000Z')).toBe(false);
+    expect(applyRemoteItem('settings', 'active-calibration', JSON.stringify({ profileId: 'cal-1' }), '2026-11-24T10:00:00.000Z')).toBe(false);
+    expect(full.getItem('rt-language')).toBeNull();
+  });
 });
