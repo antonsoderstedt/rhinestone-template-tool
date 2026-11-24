@@ -9,7 +9,7 @@
  * The newer `updatedAt` wins. A deletion wins over an older edit, an edit made after a deletion wins over the deletion.
  */
 
-export type SyncKind = 'template' | 'asset' | 'htv' | 'calibration';
+export type SyncKind = 'template' | 'asset' | 'htv' | 'calibration' | 'settings' | 'fontpref' | 'designpref' | 'font';
 
 export interface ItemRef {
   kind: SyncKind;

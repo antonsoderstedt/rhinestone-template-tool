@@ -11,10 +11,10 @@ export interface SyncDeps {
   /** null when this site has no sync server (GitHub Pages, local development). */
   fetchManifest(): Promise<RemoteRef[] | null>;
   putItem(kind: SyncKind, id: string, updatedAt: string, data: string | null): Promise<void>;
-  getItem(kind: SyncKind, id: string): Promise<string | null>;
+  getItem(kind: SyncKind, id: string): Promise<{ data: string; updatedAt: string } | null>;
   listLocal(): ItemRef[];
   readLocal(kind: SyncKind, id: string): string | null;
-  applyLocal(kind: SyncKind, id: string, data: string): boolean;
+  applyLocal(kind: SyncKind, id: string, data: string, updatedAt: string): boolean;
   deleteLocal(kind: SyncKind, id: string): boolean;
   loadSynced(): Record<string, string>;
   saveSynced(state: Record<string, string>): void;
@@ -73,8 +73,8 @@ async function run(action: SyncAction, deps: SyncDeps, outcome: SyncOutcome): Pr
       outcome.removedThere++;
       return;
     case 'pull': {
-      const data = await deps.getItem(action.kind, action.id);
-      if (data === null || !deps.applyLocal(action.kind, action.id, data)) throw new Error('Could not take the item');
+      const item = await deps.getItem(action.kind, action.id);
+      if (item === null || !deps.applyLocal(action.kind, action.id, item.data, item.updatedAt)) throw new Error('Could not take the item');
       outcome.pulled++;
       return;
     }
@@ -115,7 +115,9 @@ export function createBrowserSyncDeps(fetcher: typeof fetch = fetch): SyncDeps {
     },
     async getItem(kind, id) {
       const response = await fetcher(itemUrl(kind, id), { cache: 'no-store', credentials: 'same-origin' });
-      return response.ok ? await response.text() : null;
+      if (!response.ok) return null;
+      const updatedAt = response.headers.get('x-sync-updated-at');
+      return updatedAt ? { data: await response.text(), updatedAt } : null;
     },
     listLocal: listLocalItems,
     readLocal: readLocalItemData,
