@@ -115,8 +115,9 @@ export function createArtworkTemplate(options: CreateArtworkTemplateOptions): Ar
   const warnings = [...built.warnings];
 
   // Layers painted later are on top: they get their stones first, and lower layers give way where they meet.
-  // Solid = a clean ring along the edge and straight rows of stones filling the inside, which is how a commercial template looks.
-  const rows = look === 'outline' || look === 'solid' ? 1 : Math.max(1, Math.floor(options.rowCount ?? 3));
+  // Solid = every row, each following the outline of the one outside it (like the rings of an onion, which is how a commercial
+  // template looks), and a lattice only for what the rows leave in the middle.
+  const rows: number | 'all' = look === 'outline' ? 1 : look === 'solid' ? 'all' : Math.max(1, Math.floor(options.rowCount ?? 3));
   const occupancy = new Occupancy(Math.max(minCentre, 1));
   const stones: Stone[] = [];
   const layerSummary: ArtworkTemplateResult['layers'] = built.layers.map((layer) => ({ colour: layer.colour, areaMm2: layer.areaMm2, role: layer.role, reason: layer.reason, stones: 0 }));
