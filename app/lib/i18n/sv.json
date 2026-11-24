@@ -1116,5 +1116,9 @@
   "{share}% of the artwork is thinner than a {size} stone and will be simplified.": "{share} % av bilden är tunnare än en {size}-sten och förenklas.",
   "Öppna den i Cricut Design Space och klipp.": "Öppna den i Cricut Design Space och klipp.",
   "⚠ A test cut on scrap material is mandatory before cutting production designs.": "⚠ Ett testklipp på spillmaterial är obligatoriskt innan du klipper riktiga designer.",
-  "⚠ Calibration values are saved in this browser and restored automatically when you return. Clear saved values any time you want to start over from the recommended defaults.": "⚠ Kalibreringsvärdena sparas i den här webbläsaren och återställs automatiskt när du kommer tillbaka. Rensa sparade värden när du vill börja om från de rekommenderade standardvärdena."
+  "⚠ Calibration values are saved in this browser and restored automatically when you return. Clear saved values any time you want to start over from the recommended defaults.": "⚠ Kalibreringsvärdena sparas i den här webbläsaren och återställs automatiskt när du kommer tillbaka. Rensa sparade värden när du vill börja om från de rekommenderade standardvärdena.",
+  "Search {n} styles": "Sök bland {n} stilar",
+  "Search styles": "Sök stilar",
+  "No styles match": "Inga stilar matchar",
+  "Show {n} more": "Visa {n} till"
 }

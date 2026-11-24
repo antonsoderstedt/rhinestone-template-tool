@@ -212,15 +212,50 @@ export function layoutRows(field: RegionField, options: RowsLayoutOptions): Plac
     }
     const centreX = Number.isFinite(minX) ? (minX + maxX) / 2 : originX + width / 2;
     const first = centreX - Math.ceil((centreX - originX) / pitchMm) * pitchMm;
-    let r = 0;
-    for (let y = originY + rowStep / 2; y < originY + height; y += rowStep, r++) {
-      const shift = r % 2 === 0 ? 0 : pitchMm / 2;
-      for (let x = first + shift; x < originX + width; x += pitchMm) {
-        if (x < originX) continue;
-        if (sampleField(field, x, y) < insideLimit) continue;
-        if (index.near(x, y, clear).length > 0) continue;
-        accept(x, y, lastRow + 1, 'fill');
+
+    // The lattice points that would be accepted for a given phase (a shift of the whole lattice).
+    const latticeFor = (phaseX: number, phaseY: number) => {
+      const points: Array<{ x: number; y: number }> = [];
+      let r = 0;
+      for (let y = originY + rowStep / 2 + phaseY; y < originY + height; y += rowStep, r++) {
+        const shift = r % 2 === 0 ? 0 : pitchMm / 2;
+        for (let x = first + shift + phaseX; x < originX + width; x += pitchMm) {
+          if (x < originX) continue;
+          if (sampleField(field, x, y) < insideLimit) continue;
+          if (index.near(x, y, clear).length > 0) continue;
+          points.push({ x, y });
+        }
       }
+      return points;
+    };
+    // Try a few shifts and keep the one that fits the edge row best (most stones, so the fewest holes). Ties keep the
+    // centred lattice, so a symmetric shape stays symmetric.
+    const steps = [0, 0.25, 0.5, 0.75];
+    let best = latticeFor(0, 0);
+    for (const px of steps) {
+      for (const py of steps) {
+        if (px === 0 && py === 0) continue;
+        const candidate = latticeFor(px * pitchMm, py * rowStep);
+        if (candidate.length > best.length) best = candidate;
+      }
+    }
+    for (const p of best) accept(p.x, p.y, lastRow + 1, 'fill');
+
+    // Whatever the rows and the lattice leave open (the arms of a star, the band between two rows) gets stones too, deepest
+    // first, as long as they keep a full pitch from their neighbours. Rows stay straight where the lattice reached.
+    const gap = Math.max(minCentreDistanceMm, pitchMm * 0.82);
+    const step = Math.max(field.cell, pitchMm / 4);
+    const candidates: Array<{ x: number; y: number; depth: number }> = [];
+    for (let y = originY + step / 2; y < originY + height; y += step) {
+      for (let x = originX + step / 2; x < originX + width; x += step) {
+        const depth = sampleField(field, x, y);
+        if (depth >= insideLimit) candidates.push({ x, y, depth });
+      }
+    }
+    candidates.sort((a, b) => b.depth - a.depth || a.y - b.y || a.x - b.x);
+    for (const c of candidates) {
+      if (index.near(c.x, c.y, gap).length > 0) continue;
+      accept(c.x, c.y, lastRow + 1, 'fill');
     }
   }
 

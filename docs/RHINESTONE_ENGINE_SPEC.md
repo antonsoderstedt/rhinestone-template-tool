@@ -688,6 +688,10 @@ overlapping shapes, holes, touching letters and narrow necks need no polygon cli
    inset = half a hole, so stones lie just inside the edge). Each contour loop gets one stone at every corner (turn above 35°)
    and stones evenly spaced between, never closer than the pitch along the path. `rows` = 1 is the Outline look, a few rows the
    Rows look, `all` plus a hex lattice over what is left (points deep enough and clear of every stone) the Solid look.
+   The lattice is tried at sixteen shifts (quarter-pitch steps) and the one that seats the most stones is kept, ties keep the
+   centred one. A last pass then adds a stone wherever the deepest remaining point is still at least 0.82 of the pitch (never
+   below the hard minimum) from every other stone, deepest first, so narrow parts (a star's arms, the band between two rows)
+   are not left hollow. Still deterministic: candidates are sorted by depth, then y, then x.
    - A candidate closer than the minimum centre distance to a placed stone of the same row is merged with it (one stone halfway)
      when that keeps the spacing: on a part too narrow for two rows the two sides become one row down the middle.
    - Stones in a part that cannot hold a second row (`depth < inset + pitch / 2`) are moved uphill along the field to its

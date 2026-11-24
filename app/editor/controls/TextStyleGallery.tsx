@@ -17,6 +17,9 @@ import { alphabetThumbnail, dotMatrixThumbnail, stoneFontThumbnail, thumbnailTex
 import { editorFieldLabelClassName } from './controlStyles';
 
 import { useT } from '../../lib/i18n';
+/** How many looks a group draws before "show more". */
+const PAGE_SIZE = 24;
+
 interface TextStyleGalleryProps {
   state: TextStyleState;
   dispatch: React.Dispatch<EditorAction>;
@@ -148,6 +151,21 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
   const isOpen = (groupId: string) =>
     groupId === 'traced' || opened.has(groupId) || groups.some((group) => group.id === groupId && group.options.some((option) => isSameTextStyle(current, option.choice)));
+  // A group can hold thousands of looks. Only a page of them is drawn, the rest is a search and a "show more" away, so the panel
+  // stays light. The look in use is always in the page.
+  const [search, setSearch] = useState<Record<string, string>>({});
+  const [shown, setShown] = useState<Record<string, number>>({});
+  const visibleOptions = (group: (typeof groups)[number]) => {
+    const query = (search[group.id] ?? '').trim().toLowerCase();
+    const matching = query
+      ? group.options.filter((option) => `${option.label} ${option.note}`.toLowerCase().includes(query))
+      : group.options;
+    const limit = shown[group.id] ?? PAGE_SIZE;
+    const page = matching.slice(0, limit);
+    const selected = matching.find((option) => isSameTextStyle(current, option.choice));
+    if (selected && !page.includes(selected)) page.unshift(selected);
+    return { page, total: matching.length, rest: Math.max(0, matching.length - page.length) };
+  };
 
   return (
     <div className="space-y-3" role="group" aria-label={t('Text style')}>
@@ -171,9 +189,23 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
               </button>
             )}
           </div>
+          {isOpen(group.id) && group.options.length > PAGE_SIZE && (
+            <input
+              type="search"
+              value={search[group.id] ?? ''}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSearch((all) => ({ ...all, [group.id]: value }));
+                setShown((all) => ({ ...all, [group.id]: PAGE_SIZE }));
+              }}
+              placeholder={t('Search {n} styles', { n: group.options.length })}
+              aria-label={t('Search styles')}
+              className="w-full rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-accent-400"
+            />
+          )}
           {isOpen(group.id) && (
           <ul className="grid grid-cols-2 gap-2">
-            {group.options.map((option) => {
+            {visibleOptions(group).page.map((option) => {
               const selected = isSameTextStyle(current, option.choice);
               return (
                 <li key={option.key}>
@@ -205,6 +237,18 @@ export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryPr
               );
             })}
           </ul>
+          )}
+          {isOpen(group.id) && visibleOptions(group).total === 0 && (
+            <p className="text-xs text-[var(--studio-ink-muted)]">{t('No styles match')}</p>
+          )}
+          {isOpen(group.id) && visibleOptions(group).rest > 0 && (
+            <button
+              type="button"
+              onClick={() => setShown((all) => ({ ...all, [group.id]: (all[group.id] ?? PAGE_SIZE) + PAGE_SIZE }))}
+              className="w-full rounded-lg border border-[var(--studio-border)] px-3 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] hover:border-violet-400/50 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            >
+              {t('Show {n} more', { n: Math.min(PAGE_SIZE, visibleOptions(group).rest) })}
+            </button>
           )}
         </div>
       ))}
