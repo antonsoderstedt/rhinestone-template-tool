@@ -1,4 +1,5 @@
 import type { TemplateCoverageMode, TemplateFillMode } from '@/src/lib/rhinestone-engine/index';
+import { writeStorageItem } from './storageQuota';
 import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
 import { DEFAULT_PREVIEW_TEXT } from './fontLaunch';
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
@@ -267,10 +268,11 @@ export function readWorkspaceVault(): WorkspaceVault {
   }
 }
 
-export function writeWorkspaceVault(vault: WorkspaceVault): void {
+/** Saves the vault. Returns false when the browser's storage is full (or refuses), instead of throwing in the middle of a click. */
+export function writeWorkspaceVault(vault: WorkspaceVault): boolean {
   const storage = getStorage();
-  if (!storage) return;
-  storage.setItem(WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify(vault));
+  if (!storage) return false;
+  return writeStorageItem(storage, WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify(vault)) === 'ok';
 }
 
 export function readActiveCalibrationProfileId(): string | null {

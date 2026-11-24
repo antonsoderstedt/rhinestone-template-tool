@@ -73,7 +73,15 @@ export class LocalStorageTemplateLibraryRepository implements TemplateLibraryRep
       throw new Error('Template library storage is unavailable in this environment.');
     }
 
-    storage.setItem(this.storageKey, JSON.stringify(record));
+    try {
+      storage.setItem(this.storageKey, JSON.stringify(record));
+    } catch (error) {
+      const name = (error as { name?: string } | null)?.name;
+      if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        throw new Error("This browser's storage is full. Back up your designs and delete old ones, then try again.");
+      }
+      throw error;
+    }
   }
 
   async list(): Promise<TemplateLibraryRecord> {

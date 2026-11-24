@@ -60,3 +60,44 @@ export async function requestPersistentStorage(): Promise<boolean> {
     return false;
   }
 }
+
+/** True for the error a browser throws when storage is full (its name and code differ between browsers). */
+export function isQuotaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const { name, code } = error as { name?: unknown; code?: unknown };
+  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014;
+}
+
+export type StorageWriteResult = 'ok' | 'full' | 'failed';
+
+/**
+ * Writes a value without ever throwing. When storage is full it first drops the keys listed in `reclaimable` (leftovers that
+ * are safe to lose) and tries again; if that is not enough it reports `full` and leaves what was there untouched.
+ */
+export function writeStorageItem(
+  storage: Pick<Storage, 'setItem' | 'removeItem'> | null | undefined,
+  key: string,
+  value: string,
+  reclaimable: readonly string[] = [],
+): StorageWriteResult {
+  if (!storage) return 'failed';
+  try {
+    storage.setItem(key, value);
+    return 'ok';
+  } catch (error) {
+    if (!isQuotaError(error)) return 'failed';
+  }
+  for (const stale of reclaimable) {
+    try {
+      storage.removeItem(stale);
+    } catch {
+      /* nothing to reclaim */
+    }
+  }
+  try {
+    storage.setItem(key, value);
+    return 'ok';
+  } catch (error) {
+    return isQuotaError(error) ? 'full' : 'failed';
+  }
+}

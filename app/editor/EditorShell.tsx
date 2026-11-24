@@ -50,6 +50,7 @@ import DesignSpaceGuide from './DesignSpaceGuide';
 import ReportProblemDialog from '../components/ReportProblemDialog';
 import SharePanel from './SharePanel';
 import { calibrationStatusBySize } from '../lib/calibrationStatus';
+import { writeStorageItem } from '../lib/storageQuota';
 import { decodeSharePayload, readSharePayload } from '../lib/shareLink';
 import VersionHistoryDialog from './VersionHistoryDialog';
 import { readVersions, recordVersion, removeVersions } from '../lib/versionHistory';
@@ -665,10 +666,7 @@ export default function EditorShell() {
   const restoredCanvasViewKeyRef = useRef<string | null>(null);
   const persistManualCanvasView = useCallback(
     (view: { zoom: number; panX: number; panY: number }) => {
-      globalThis.localStorage?.setItem(
-        canvasViewStorageKey,
-        JSON.stringify({ ...view, manual: true }),
-      );
+      writeStorageItem(globalThis.localStorage, canvasViewStorageKey, JSON.stringify({ ...view, manual: true }));
     },
     [canvasViewStorageKey],
   );
@@ -777,6 +775,7 @@ export default function EditorShell() {
     });
   }, [buildLibraryTags, buildPreviewRef, effectiveTemplate, inferLibraryCategory, state]);
 
+  const storageFullWarnedRef = useRef(false);
   useEffect(() => {
     if (!effectiveTemplate) return;
     const timeoutId = window.setTimeout(() => {
@@ -787,7 +786,12 @@ export default function EditorShell() {
         readOnly: true,
         tags: [...entry.tags, 'autosave'],
       };
-      globalThis.localStorage?.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(nextAutosaveEntry));
+      // Storage can be full (a few big designs fill it). The autosave then stays in memory only, and the user is told once.
+      const written = writeStorageItem(globalThis.localStorage, AUTOSAVE_STORAGE_KEY, JSON.stringify(nextAutosaveEntry), [`${AUTOSAVE_STORAGE_KEY}-unreadable`]);
+      if (written === 'full' && !storageFullWarnedRef.current) {
+        storageFullWarnedRef.current = true;
+        setToast({ message: "This browser's storage is full, so the autosave is paused. Back up your designs and delete old ones in My Designs.", tone: 'warning' });
+      }
       setAutosaveEntry(nextAutosaveEntry);
     }, 900);
 
