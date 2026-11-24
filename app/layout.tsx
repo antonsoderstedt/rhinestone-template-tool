@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppFrame from "./components/AppFrame";
+import FontCatalogLoader from "./components/FontCatalogLoader";
+import SyncManager from "./components/SyncManager";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +39,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),_transparent_35%),linear-gradient(180deg,#f7f5f3_0%,#f3f0ee_100%)] text-zinc-900">
+        <FontCatalogLoader />
+        <SyncManager />
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

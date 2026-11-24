@@ -12,7 +12,6 @@ import {
   EMPTY_WORKSPACE_VAULT,
   getFontPreference,
   makeWorkspaceId,
-  mergeInstalledWorkspaceFonts,
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
@@ -114,6 +113,16 @@ type FontCatalogItem = {
   fileName: string | null;
 };
 
+/** One entry of the font library's catalog (scripts/build-font-library.ts). */
+interface LibraryCatalogFont {
+  id: string;
+  name: string;
+  family: string;
+  variant: string;
+  category: string;
+  bytes: number;
+}
+
 interface InstalledFontManifestMeta {
   generatedAt?: string;
   importedCount?: number;
@@ -167,7 +176,8 @@ export default function FontsPage() {
   const router = useRouter();
   const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [installedManifestMeta, setInstalledManifestMeta] = useState<InstalledFontManifestMeta | null>(null);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [libraryFonts, setLibraryFonts] = useState<LibraryCatalogFont[]>([]);
+  const [syncMessage] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState(DEFAULT_PREVIEW_TEXT);
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'bundled' | 'browser-uploaded' | 'workspace-installed'>('all');
@@ -184,35 +194,22 @@ export default function FontsPage() {
     queueMicrotask(() => setVault(readWorkspaceVault()));
   }, []);
 
+  // The imported fonts come from the font library's catalog (a small file; each font is fetched when its card is shown). They are
+  // not copied into the browser's storage, only the user's own choices about them (favourites, tags) are.
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
-        const response = await fetch(withBasePath('/fonts/workspace-installed/manifest.json'), { cache: 'no-store' });
+        const response = await fetch(withBasePath('/font-library/catalog.json'));
         if (!response.ok) return;
-        const payload = await response.json() as UploadedWorkspaceFont[] | { meta?: InstalledFontManifestMeta; fonts?: UploadedWorkspaceFont[] };
-        const manifest = Array.isArray(payload) ? payload : (Array.isArray(payload.fonts) ? payload.fonts : []);
-        if (cancelled) return;
-
-        if (!Array.isArray(payload) && payload.meta) {
-          setInstalledManifestMeta(payload.meta);
-        }
-
-        if (!Array.isArray(manifest)) return;
-
-        const currentVault = readWorkspaceVault();
-        const nextVault = mergeInstalledWorkspaceFonts(currentVault, manifest);
-        const same = JSON.stringify(nextVault.uploadedFonts) === JSON.stringify(currentVault.uploadedFonts);
-        if (!same) {
-          persistVault(nextVault, setVault);
-          setSyncMessage(`Added ${manifest.length} imported fonts to your library.`);
-        }
+        const catalog = (await response.json()) as { fonts?: LibraryCatalogFont[]; excluded?: number };
+        if (cancelled || !Array.isArray(catalog.fonts)) return;
+        setLibraryFonts(catalog.fonts);
+        setInstalledManifestMeta({ excludedCount: catalog.excluded ?? 0 });
       } catch {
-        // No local import manifest yet.
+        // No font library here.
       }
     })();
-
     return () => {
       cancelled = true;
     };
@@ -244,28 +241,56 @@ export default function FontsPage() {
     };
   }), [vault]);
 
-  const uploads = useMemo<FontCatalogItem[]>(() => vault.uploadedFonts.map((font) => ({
-    key: font.fontId,
-    name: font.name,
-    familyName: font.familyName ?? font.name,
-    variantName: font.variantName ?? font.styleLabel,
-    importSourceLabel: font.importSourceLabel ?? font.licenseSource,
-    category: font.category,
-    styleLabel: font.styleLabel,
-    previewFamily: font.previewFamily,
-    source: font.sourceKind ?? 'browser-uploaded',
-    favorite: font.favorite,
-    archived: font.archived,
-    tags: font.tags,
-    isBuiltInSimple: false,
-    fontUrl: font.assetUrl ?? font.sourceDataUrl ?? null,
-    fontWeight: 400,
-    fontStyle: 'normal' as const,
-    note: font.note,
-    licenseSource: font.licenseSource,
-    preferredTextCoverageMode: font.preferredTextCoverageMode,
-    fileName: font.fileName,
-  })), [vault.uploadedFonts]);
+  const uploads = useMemo<FontCatalogItem[]>(() => {
+    const own = vault.uploadedFonts.map((font) => ({
+      key: font.fontId,
+      name: font.name,
+      familyName: font.familyName ?? font.name,
+      variantName: font.variantName ?? font.styleLabel,
+      importSourceLabel: font.importSourceLabel ?? font.licenseSource,
+      category: font.category,
+      styleLabel: font.styleLabel,
+      previewFamily: font.previewFamily,
+      source: font.sourceKind ?? 'browser-uploaded',
+      favorite: font.favorite,
+      archived: font.archived,
+      tags: font.tags,
+      isBuiltInSimple: false,
+      fontUrl: font.assetUrl ?? font.sourceDataUrl ?? null,
+      fontWeight: 400,
+      fontStyle: 'normal' as const,
+      note: font.note,
+      licenseSource: font.licenseSource,
+      preferredTextCoverageMode: font.preferredTextCoverageMode,
+      fileName: font.fileName,
+    }));
+    const library = libraryFonts.map((font) => {
+      const preference = getFontPreference(vault, font.id);
+      return {
+        key: font.id,
+        name: font.name,
+        familyName: font.family,
+        variantName: font.variant || 'Regular',
+        importSourceLabel: 'Font library',
+        category: font.category,
+        styleLabel: 'Imported',
+        previewFamily: `FontLibrary_${font.id}`,
+        source: 'workspace-installed' as const,
+        favorite: preference.favorite,
+        archived: preference.archived,
+        tags: preference.tags,
+        isBuiltInSimple: false,
+        fontUrl: withBasePath(`/font-library/f/${font.id}.woff`),
+        fontWeight: 400,
+        fontStyle: 'normal' as const,
+        note: 'From your font library. Review outline quality before production cutting.',
+        licenseSource: 'Your font library',
+        preferredTextCoverageMode: 'outline' as const,
+        fileName: `${font.id}.woff`,
+      };
+    });
+    return [...own, ...library];
+  }, [libraryFonts, vault]);
 
   const catalog = useMemo<FontCatalogItem[]>(() => [...builtIns, ...uploads], [builtIns, uploads]);
 
@@ -408,7 +433,7 @@ export default function FontsPage() {
   };
 
   const updateFont = (font: FontCatalogItem, bundled: (current: FontPreference) => FontPreference, uploaded: (current: UploadedWorkspaceFont) => UploadedWorkspaceFont) => {
-    if (font.source === 'bundled') updateFontPreference(font.key, bundled);
+    if (font.source === 'bundled' || font.source === 'workspace-installed') updateFontPreference(font.key, bundled);
     else updateUploadedFont(font.key, uploaded);
   };
 
@@ -431,7 +456,7 @@ export default function FontsPage() {
     });
   };
 
-  const installedCount = vault.uploadedFonts.filter((font) => font.sourceKind === 'workspace-installed').length;
+  const installedCount = libraryFonts.length;
   const excludedCount = installedManifestMeta?.excludedCount ?? 0;
 
   return (

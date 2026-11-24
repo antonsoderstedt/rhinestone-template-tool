@@ -1129,5 +1129,12 @@
   "Loading…": "Laddar…",
   "Opening…": "Öppnar…",
   "Could not open {name}.": "Kunde inte öppna {name}.",
-  "No collection has been imported yet. Run this once in the project folder, then reload:": "Ingen samling är importerad ännu. Kör detta en gång i projektmappen och ladda sedan om:"
+  "No collection has been imported yet. Run this once in the project folder, then reload:": "Ingen samling är importerad ännu. Kör detta en gång i projektmappen och ladda sedan om:",
+  "Syncing…": "Synkar…",
+  "Synced {time}": "Synkad {time}",
+  "Some items did not sync": "Vissa objekt synkades inte",
+  "Offline, sync paused": "Offline, synk pausad",
+  "Sign in again to sync": "Logga in igen för att synka",
+  "Sync error": "Synkfel",
+  "Click to sync now": "Klicka för att synka nu"
 }

@@ -15,7 +15,10 @@
     "curate:letter-assets": "tsx scripts/generate-letter-asset-curation.ts",
     "plan:letter-assets": "tsx scripts/generate-letter-asset-import-plan.ts",
     "quality": "tsx scripts/quality-report.ts",
-    "import:designs": "tsx scripts/import-design-bundle.ts"
+    "import:designs": "tsx scripts/import-design-bundle.ts",
+    "build:fonts": "tsx scripts/build-font-library.ts",
+    "deploy:cloudflare": "scripts/deploy-private.sh",
+    "deploy:cloudflare:libs": "scripts/deploy-private.sh --with-libs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -56,6 +59,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "jsdom": "^29.1.1",
+    "subset-font": "^2.9.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",

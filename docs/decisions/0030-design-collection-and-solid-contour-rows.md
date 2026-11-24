@@ -20,8 +20,9 @@
 - **Design collection.** `npm run import:designs -- "<folder>"` reads zip files and loose SVGs, extracts only plain `.svg` entries
   (listed first, extracted to memory, never to an archive-chosen path), runs each through the engine's SVG safety check and
   `importRhinestoneTemplate`, drops files with no stones and duplicates, and writes `public/design-library/` (`index.json` and
-  `svg/<id>.svg`). The folder is git-ignored: the designs are the user's own, large files. The Import tool has a "Browse the
-  design collection" picker (search, category, thumbnails that are the templates themselves, loaded when scrolled into view); a pick
+  `d/<id>.json`: each design as compact numbers, see `compactDesign.ts`: stone positions, sizes and colours in hundredths of a mm;
+  127 MB of SVG became 16.4 MB, and the SVG of circles is made again when a design is opened). The folder is git-ignored: the designs are the user's own, large files. The Import tool has a "Browse the
+  design collection" picker (search, category, thumbnails drawn from the stones, fetched when scrolled into view); a pick
   goes through the same check and "Import stones to canvas" step as a file from the computer.
 - **Template import scale.** A file with a real page width (`width="300mm"`) and a viewBox in other units (CorelDRAW writes 100
   units per mm) is scaled to the page width. Without a real-world width, viewBox units are still read as mm.

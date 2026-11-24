@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useSearchParams } from 'next/navigation';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
@@ -82,6 +83,7 @@ export default function HtvShell() {
   const [workspaceVault, setWorkspaceVault] = useState(EMPTY_WORKSPACE_VAULT);
   const nextLayerIdRef = useRef(0);
   const handledQueryRef = useRef<string | null>(null);
+  const fontCatalogRevision = useFontCatalogRevision();
 
   useEffect(() => {
     const sync = () => {
@@ -523,6 +525,8 @@ export default function HtvShell() {
 
     if (queryKey === '|||') return;
     if (handledQueryRef.current === queryKey) return;
+    // A font from the font library can only be found once the library's catalog has loaded.
+    if (fontId && fontCatalogRevision === 0) return;
 
     const applyQueryIntent = async () => {
       if (designId) {
@@ -565,7 +569,7 @@ export default function HtvShell() {
     };
 
     void applyQueryIntent();
-  }, [createLayerId, searchParams, insertWorkspaceAsset, state.garment.placementZone]);
+  }, [createLayerId, fontCatalogRevision, searchParams, insertWorkspaceAsset, state.garment.placementZone]);
 
   return (
     <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">

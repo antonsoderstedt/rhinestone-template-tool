@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import GettingStartedGuide from './GettingStartedGuide';
@@ -133,6 +134,7 @@ export default function EditorShell() {
   const lastSpacingAdjustmentCountRef = useRef<number | null>(null);
   const handledQueryRef = useRef<string | null>(null);
   const launchIntentHandledRef = useRef(false);
+  const fontCatalogRevision = useFontCatalogRevision();
   const [pendingGeneratorAction, setPendingGeneratorAction] = useState<EditorAction | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -1286,6 +1288,8 @@ export default function EditorShell() {
     const queryKey = `${designId ?? ''}|${assetId ?? ''}|${fontId ?? ''}|${launchText ?? ''}|${launchTool ?? ''}`;
 
     if (queryKey === '||||') return;
+    // A font from the font library can only be found once the library's catalog has loaded.
+    if (fontId && fontCatalogRevision === 0) return;
     if (handledQueryRef.current === queryKey) return;
 
     const applyQueryIntent = async () => {
@@ -1385,7 +1389,7 @@ export default function EditorShell() {
     };
 
     void applyQueryIntent();
-  }, [applyProjectToEditor, searchParams]);
+  }, [applyProjectToEditor, fontCatalogRevision, searchParams]);
 
   const handleOpenLibrary = useCallback(() => {
     setTemplateLibraryOpen(true);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { CopyPlus, DiamondMinus, Hand, MoveHorizontal, MoveVertical, PenLine, ScanSearch, Sparkles } from 'lucide-react';
 import {
   createImportedTemplate,
@@ -242,6 +243,7 @@ export default function EditorPropertiesPanel({ state, dispatch, mode, outlineFo
 function TextToolProperties({ state, dispatch, outlineFontStatus }: ToolPropertiesProps) {
   const t = useT();
   const { textTool } = state;
+  useFontCatalogRevision(); // draw again when the font library has loaded
   const textCapabilities = getGeneratorCapabilityProfile('outline-text');
   const selectedFontDefinition = getOutlineFontDefinition(textTool.fontId);
   const supportedCoverageModes = textTool.mode === 'outline'

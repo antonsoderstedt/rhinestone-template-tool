@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid } from 'lucide-react';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
+import { compactToDots, compactToSvg, type CompactDesign } from '@/src/lib/rhinestone-engine/index';
 import { useT } from '../../lib/i18n';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
@@ -30,6 +31,56 @@ function loadIndex(): Promise<DesignCollectionEntry[] | null> {
   return cachedIndex;
 }
 
+const designCache = new Map<string, Promise<CompactDesign | null>>();
+
+function loadDesign(file: string): Promise<CompactDesign | null> {
+  let pending = designCache.get(file);
+  if (!pending) {
+    pending = fetch(`${BASE}/${file}`)
+      .then((response) => (response.ok ? (response.json() as Promise<CompactDesign>) : null))
+      .then((design) => (design && design.v === 1 && Array.isArray(design.s) && Array.isArray(design.c) ? design : null))
+      .catch(() => null);
+    designCache.set(file, pending);
+  }
+  return pending;
+}
+
+/** A small picture of a design, drawn from its stones. The data is fetched only when the card is scrolled into view. */
+function DesignThumb({ file }: { file: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [design, setDesign] = useState<CompactDesign | null>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+    let cancelled = false;
+    const start = () => void loadDesign(file).then((loaded) => { if (!cancelled) setDesign(loaded); });
+    if (typeof IntersectionObserver === 'undefined') {
+      start();
+      return () => { cancelled = true; };
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        start();
+      }
+    }, { rootMargin: '120px' });
+    observer.observe(node);
+    return () => { cancelled = true; observer.disconnect(); };
+  }, [file]);
+  const dots = useMemo(() => (design ? compactToDots(design) : null), [design]);
+  return (
+    <div ref={ref} className="flex h-16 w-full items-center justify-center rounded bg-white">
+      {dots && (
+        <svg viewBox={dots.viewBox} className="h-full w-full" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          {dots.paths.map((path, index) => (
+            <path key={index} d={path.d} fill="none" stroke={path.colour ?? '#7c5ce0'} strokeWidth={path.diameter} strokeLinecap="round" />
+          ))}
+        </svg>
+      )}
+    </div>
+  );
+}
+
 /** Filters by words in the title or category, and by category. Pure, so it can be tested. */
 export function filterDesigns(designs: readonly DesignCollectionEntry[], query: string, category: string): DesignCollectionEntry[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -43,7 +94,7 @@ export function filterDesigns(designs: readonly DesignCollectionEntry[], query: 
 
 /**
  * Browse the design collection (thousands of ready-made templates from the user's own folder) and pick one. The picked
- * design's SVG text is handed to `onPick`, which loads it the same way a file from the computer is loaded.
+ * design is made into SVG text (circles) and handed to `onPick`, which loads it the same way a file from the computer is loaded.
  */
 export default function DesignCollectionPicker({ onPick }: { onPick: (svgText: string, fileName: string, design: DesignCollectionEntry) => void }) {
   const t = useT();
@@ -72,9 +123,9 @@ export default function DesignCollectionPicker({ onPick }: { onPick: (svgText: s
     setLoading(design.id);
     setError(null);
     try {
-      const response = await fetch(`${BASE}/${design.file}`);
-      if (!response.ok) throw new Error(String(response.status));
-      onPick(await response.text(), `${design.title}.svg`, design);
+      const compact = await loadDesign(design.file);
+      if (!compact) throw new Error('missing');
+      onPick(compactToSvg(compact), `${design.title}.svg`, design);
     } catch {
       setError(t('Could not open {name}.', { name: design.title }));
     } finally {
@@ -137,9 +188,7 @@ export default function DesignCollectionPicker({ onPick }: { onPick: (svgText: s
                   onClick={() => void pick(design)}
                   className="flex h-full w-full flex-col gap-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] p-1.5 text-left transition hover:border-violet-400/50 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:opacity-60"
                 >
-                  {/* The template itself is the picture: its stones are the drawing. It is only fetched when scrolled into view. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${BASE}/${design.file}`} alt="" loading="lazy" decoding="async" className="h-16 w-full rounded bg-white object-contain" />
+                  <DesignThumb file={design.file} />
                   <span className="line-clamp-2 text-xs font-medium leading-tight text-[var(--studio-ink)]">{design.title}</span>
                   <span className="text-xs text-[var(--studio-ink-muted)]">
                     {loading === design.id ? t('Opening…') : `${design.stones} · ${Math.round(design.widthMm)}×${Math.round(design.heightMm)} mm`}

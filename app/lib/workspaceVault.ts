@@ -1,4 +1,5 @@
 import type { TemplateCoverageMode, TemplateFillMode } from '@/src/lib/rhinestone-engine/index';
+import { isLegacyLibraryCopy } from '@/src/lib/rhinestone-engine/index';
 import { writeStorageItem } from './storageQuota';
 import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
 import { DEFAULT_PREVIEW_TEXT } from './fontLaunch';
@@ -151,8 +152,10 @@ function getStorage(): Storage | null {
 }
 
 function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): WorkspaceVault {
+  // Imported library fonts used to be copied in here (thousands of them, about 4 MB). They now come from the font library's
+  // catalog, so any copies left by an older version are dropped.
   const uploadedFonts: UploadedWorkspaceFont[] = Array.isArray(raw?.uploadedFonts)
-    ? raw.uploadedFonts.map((font): UploadedWorkspaceFont => ({
+    ? raw.uploadedFonts.filter((font) => !isLegacyLibraryCopy(font)).map((font): UploadedWorkspaceFont => ({
         ...font,
         familyName: typeof font.familyName === 'string' && font.familyName.length > 0 ? font.familyName : font.name,
         variantName: typeof font.variantName === 'string' && font.variantName.length > 0 ? font.variantName : font.styleLabel,
@@ -262,7 +265,11 @@ export function readWorkspaceVault(): WorkspaceVault {
   if (!raw) return normalizeVault(null);
 
   try {
-    return normalizeVault(JSON.parse(raw) as WorkspaceVault);
+    const parsed = JSON.parse(raw) as WorkspaceVault;
+    const normalized = normalizeVault(parsed);
+    // Free the space the old copies of the library fonts took, once.
+    if (Array.isArray(parsed.uploadedFonts) && parsed.uploadedFonts.length > normalized.uploadedFonts.length) writeWorkspaceVault(normalized);
+    return normalized;
   } catch {
     return normalizeVault(null);
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle2, Clock3, PenSquare, WandSparkles } from 'lucide-react';
+import SyncStatusPill from '../components/SyncStatusPill';
 import { RhinestoneTemplate, getTemplatePhysicalSize } from '@/src/lib/rhinestone-engine/index';
 import { CanvasState } from './EditorState';
 import { getEditableStatusCopy } from './editorUi';
@@ -97,6 +98,7 @@ export default function EditorStatusBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 max-lg:shrink-0 max-lg:flex-nowrap">
+        <SyncStatusPill className="!bg-transparent" />
         <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${workflowToneClass}`}>
           {exportReady ? <CheckCircle2 className="h-3.5 w-3.5" /> : exportErrorCount > 0 ? <div className="h-2 w-2 rounded-full bg-danger-500" /> : needsCalibration ? <div className="h-2 w-2 rounded-full bg-warning-500" /> : template ? <div className="h-2 w-2 rounded-full bg-warning-500" /> : <Clock3 className="h-3.5 w-3.5" />}
           <span className="font-medium">{workflowStateLabel}</span>

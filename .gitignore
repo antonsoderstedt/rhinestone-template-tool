@@ -48,3 +48,5 @@ next-env.d.ts
 
 # imported design collection (the user's own, large files)
 /public/design-library/
+/public/font-library/
+.env.cloudflare

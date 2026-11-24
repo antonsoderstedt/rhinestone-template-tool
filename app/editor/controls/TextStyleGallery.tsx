@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { getOutlineFontFaceCss, getOutlineFontDefinition } from '@/src/lib/rhinestone-engine/index';
 import { DEFAULT_PREVIEW_TEXT } from '../../lib/fontLaunch';
 import type { EditorAction } from '../EditorState';
@@ -144,7 +145,9 @@ function WhenVisible({ children, placeholderClassName }: { children: React.React
  */
 export default function TextStyleGallery({ state, dispatch }: TextStyleGalleryProps) {
   const t = useT();
-  const groups = useMemo(() => listTextStyleGroups(), []);
+  const fontCatalogRevision = useFontCatalogRevision();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the groups change when the font library has loaded
+  const groups = useMemo(() => listTextStyleGroups(), [fontCatalogRevision]);
   const current = currentTextStyle(state);
   const text = useSettled(currentWords(state));
   // The groups whose pictures have to be fetched (stone fonts, alphabets) stay closed until asked for, unless one of them is in use.
