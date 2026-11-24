@@ -132,4 +132,18 @@ describe('syncing two devices through a server', () => {
     await expect(syncOnce(device.deps())).rejects.toThrow('offline');
     expect(device.synced).toEqual(before);
   });
+
+  it('keeps what another version of the app noted as synced, and never deletes its items', async () => {
+    const server = new FakeServer();
+    const device = new FakeDevice(server);
+    device.save('template', 'a', '2026-11-24T10:00:00.000Z', 'A');
+    // The server has an item of a kind this build does not know, and the saved state notes one as synced (written by a newer version).
+    server.items.set('future-kind:z', { updatedAt: '2026-11-24T09:00:00.000Z', deleted: false, data: '{}' });
+    device.synced = { 'future-kind:z': '2026-11-24T09:00:00.000Z' };
+    const outcome = await syncOnce(device.deps());
+    expect(outcome.status).toBe('ok');
+    expect(outcome.removedThere).toBe(0);
+    expect(server.items.get('future-kind:z')?.deleted).toBe(false);
+    expect(device.synced['future-kind:z']).toBe('2026-11-24T09:00:00.000Z');
+  });
 });
