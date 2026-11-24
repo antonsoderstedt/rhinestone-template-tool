@@ -12,7 +12,8 @@ export interface SyncSnapshot {
   outcome: SyncOutcome | null;
 }
 
-let snapshot: SyncSnapshot = { phase: 'unknown', lastSyncedAt: null, outcome: null };
+const INITIAL: SyncSnapshot = { phase: 'unknown', lastSyncedAt: null, outcome: null };
+let snapshot: SyncSnapshot = INITIAL;
 const listeners = new Set<() => void>();
 let running = false;
 let lastStart = 0;
@@ -23,7 +24,8 @@ function set(next: Partial<SyncSnapshot>) {
 }
 
 export const getSyncSnapshot = () => snapshot;
-export const getServerSyncSnapshot = (): SyncSnapshot => ({ phase: 'unknown', lastSyncedAt: null, outcome: null });
+/** What the server renders: always the same object (React requires the snapshot to be stable). */
+export const getServerSyncSnapshot = (): SyncSnapshot => INITIAL;
 export function subscribeSync(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
