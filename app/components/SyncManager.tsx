@@ -1,17 +1,26 @@
 'use client';
 
 import { useEffect } from 'react';
+import { hashText } from '../lib/sync/localItems';
 import { runSyncNow } from '../lib/sync/syncStore';
 
 const POLL_MS = 60_000;
 const WATCH_MS = 8_000;
 const QUIET_MS = 4_000;
-const WATCHED_KEYS = ['rhinestone-template-library', 'rhinestone-workspace-vault'];
+const WATCHED_KEYS = ['rhinestone-template-library', 'rhinestone-workspace-vault', 'rhinestone-active-calibration-profile'];
+/** Above this many characters only the size and the end of a store are looked at (settings and calibration are at the end). */
+const FULL_HASH_LIMIT = 6_000_000;
 
-/** A cheap fingerprint of the stores that are synced: their sizes. When it changes, something was saved. */
+/**
+ * A fingerprint of the stores that are synced. When it changes, something was saved. A change that keeps the size (a setting going
+ * from 6 to 9) is caught because the content is hashed.
+ */
 function fingerprint(): string {
   try {
-    return WATCHED_KEYS.map((key) => globalThis.localStorage?.getItem(key)?.length ?? 0).join(':');
+    return WATCHED_KEYS.map((key) => {
+      const raw = globalThis.localStorage?.getItem(key) ?? '';
+      return `${raw.length}.${hashText(raw.length <= FULL_HASH_LIMIT ? raw : raw.slice(-200_000))}`;
+    }).join(':');
   } catch {
     return '';
   }

@@ -33,7 +33,7 @@ class FakeDevice {
         if (current && Date.parse(current.updatedAt) > Date.parse(updatedAt)) return;
         server!.items.set(key, { updatedAt, deleted: data === null, data });
       },
-      getItem: async (kind, id) => server!.items.get(`${kind}:${id}`)?.data ?? null,
+      getItem: async (kind, id) => { const found = server!.items.get(`${kind}:${id}`); return found && found.data !== null ? { data: found.data, updatedAt: found.updatedAt } : null; },
       listLocal: () => [...this.local].map(([key, v]): ItemRef => { const [kind, ...id] = key.split(':'); return { kind: kind as SyncKind, id: id.join(':'), updatedAt: v.updatedAt }; }),
       readLocal: (kind, id) => this.local.get(`${kind}:${id}`)?.data ?? null,
       applyLocal: (kind, id, data) => { const parsed = JSON.parse(data) as { updatedAt: string }; this.local.set(`${kind}:${id}`, { updatedAt: parsed.updatedAt, data }); return true; },
