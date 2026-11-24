@@ -60,27 +60,33 @@ const MAX_STONES = 50000;
 
 // ─── Stone Size Estimation ────────────────────────────────────────────────────
 
-const STONE_SIZE_TOLERANCES: Array<{ id: StoneSizeId; diameterMm: number; tolerance: number }> = [
-  { id: 'SS6', diameterMm: 2.0, tolerance: 0.3 },
-  { id: 'SS8', diameterMm: 2.5, tolerance: 0.3 },
-  { id: 'SS10', diameterMm: 2.8, tolerance: 0.3 },
-  { id: 'SS12', diameterMm: 3.2, tolerance: 0.3 },
-  { id: 'SS16', diameterMm: 4.394, tolerance: 0.4 }, // TRW Clean Stone
-  { id: 'SS20', diameterMm: 5.283, tolerance: 0.4 }, // TRW Clean Stone
+/**
+ * A circle in an imported template can be drawn at the size of the stone or at the size of the hole cut for it (a little
+ * larger). Each stone size is matched against both, and the nearest wins; the result is only a fallback label, the circle
+ * itself keeps its diameter. Holes are the Magic Flock values; stones the typical sizes.
+ */
+const STONE_SIZE_TARGETS: Array<{ id: StoneSizeId; stoneMm: number; holeMm: number }> = [
+  { id: 'SS6', stoneMm: 2.0, holeMm: 2.54 },
+  { id: 'SS8', stoneMm: 2.4, holeMm: 3.0 },
+  { id: 'SS10', stoneMm: 2.8, holeMm: 3.43 },
+  { id: 'SS12', stoneMm: 3.1, holeMm: 3.8 },
+  { id: 'SS16', stoneMm: 3.9, holeMm: 4.394 },
+  { id: 'SS20', stoneMm: 4.7, holeMm: 5.283 },
 ];
+const STONE_SIZE_MATCH_TOLERANCE_MM = 0.3;
 
 export function estimateStoneSizeId(diameterMm: number): StoneSizeId | null {
   let bestMatch: StoneSizeId | null = null;
   let minDistance = Infinity;
-  
-  for (const { id, diameterMm: target, tolerance } of STONE_SIZE_TOLERANCES) {
-    const distance = Math.abs(diameterMm - target);
-    if (distance <= tolerance && distance < minDistance) {
+
+  for (const { id, stoneMm, holeMm } of STONE_SIZE_TARGETS) {
+    const distance = Math.min(Math.abs(diameterMm - stoneMm), Math.abs(diameterMm - holeMm));
+    if (distance <= STONE_SIZE_MATCH_TOLERANCE_MM && distance < minDistance) {
       bestMatch = id;
       minDistance = distance;
     }
   }
-  
+
   return bestMatch;
 }
 
