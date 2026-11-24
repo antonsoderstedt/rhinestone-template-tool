@@ -66,10 +66,13 @@ else
   VARS="\"vars\": { \"TEAM_DOMAIN\": \"$CF_TEAM_DOMAIN\", \"POLICY_AUD\": \"$CF_POLICY_AUD\" }"
 fi
 
+# Cloudflare refuses a date in the future and counts in UTC, which is behind local time for some hours after midnight: use today in UTC.
+COMPAT_DATE="$(python3 -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'))")"
+
 cat > wrangler.jsonc <<JSON
 {
   "name": "$NAME",
-  "compatibility_date": "$(date +%Y-%m-%d)",
+  "compatibility_date": "$COMPAT_DATE",
   "main": "worker/index.ts",
   "workers_dev": true,
   "preview_urls": false,
