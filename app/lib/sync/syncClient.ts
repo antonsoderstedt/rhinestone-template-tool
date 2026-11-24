@@ -4,7 +4,7 @@
  */
 
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
-import { nextSyncedState, planSync, itemKey, type ItemRef, type RemoteRef, type SyncAction, type SyncKind } from './syncPlan';
+import { nextSyncedState, planSync, itemKey, isKnownKind, type ItemRef, type RemoteRef, type SyncAction, type SyncKind } from './syncPlan';
 import { applyRemoteItem, deleteLocalItem, listLocalItems, readLocalItemData } from './localItems';
 
 export interface SyncDeps {
@@ -39,7 +39,8 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
   const synced = deps.loadSynced();
   const actions = planSync(deps.listLocal(), remote, synced, deps.now());
   const outcome: SyncOutcome = { ...EMPTY, status: 'ok' };
-  const keepSynced: Record<string, string> = {};
+  // What another version of the app noted as synced (kinds this build does not know) stays in the saved state as it was.
+  const keepSynced: Record<string, string> = Object.fromEntries(Object.entries(synced).filter(([key]) => !isKnownKind(key.split(':')[0]!)));
 
   for (const action of actions) {
     try {

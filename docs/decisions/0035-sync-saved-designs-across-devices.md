@@ -37,3 +37,16 @@ Saved designs live in each browser's localStorage, so a second computer or a pho
 - The free D1 and Workers plans are enough for one user; a very large library (tens of MB of images) syncs slowly the first time.
 - `scripts/deploy-private.sh` needs `.env.cloudflare` (git-ignored) with the team domain and the Access application's AUD tag, and creates
   the database `rhinestone-sync` on first deploy. `--dev` runs everything locally (no login, local database).
+
+## Hardening after the first live use
+
+Two versions of the app can share one browser's storage for a while (a tab opened before a deployment, and a new one). An old tab
+does not list the newer kinds, sees them in the saved state as "had, now gone", and tells the server they were deleted: this put a
+deletion on `settings:workspace`. Therefore:
+
+- The settings, the language and the unit are **never deleted**: the client ignores a deletion of them (and sends its own value again
+  if it has really been changed) and never sends one; the server answers 400 to such a request.
+- A build only acts on the kinds it knows (`KNOWN_KINDS`): unknown kinds on the server are left alone, and what another version noted
+  in the saved state is kept as it was. Adding a kind later therefore cannot make an older tab delete it.
+- Deleting real items (designs, files, profiles) is unchanged. The tab that did the damage here ran old code; it stops once reloaded.
+

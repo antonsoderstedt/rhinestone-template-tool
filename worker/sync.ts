@@ -80,6 +80,8 @@ export async function handleSync(request: Request, env: SyncEnv, fetcher: typeof
       const updatedAt = url.searchParams.get('updatedAt');
       if (!isTimestamp(updatedAt)) return json({ error: 'Bad updatedAt.' }, 400);
       const deleted = url.searchParams.get('deleted') === '1';
+      // The workspace settings, the language and the unit exist once and are never deleted.
+      if (deleted && kind === 'settings' && ['workspace', 'language', 'unit'].includes(id)) return json({ error: 'This item cannot be deleted.' }, 400);
       const body = deleted ? '' : await request.text();
       if (body.length > MAX_BODY_CHARS) return json({ error: 'Too large.' }, 413);
 
