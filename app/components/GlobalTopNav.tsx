@@ -1,6 +1,7 @@
 'use client';
 
 import { useT } from '../lib/i18n';
+import SyncStatusPill from './SyncStatusPill';
 import LanguageSwitch from './LanguageSwitch';
 import UnitSwitch from './UnitSwitch';
 import Link from 'next/link';
@@ -243,6 +244,7 @@ export default function GlobalTopNav() {
         </button>
 
         <div className="hidden items-center gap-2 whitespace-nowrap lg:flex">
+          <SyncStatusPill />
           <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs 2xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
             {t(modeMeta.studioLabel)}
           </span>
