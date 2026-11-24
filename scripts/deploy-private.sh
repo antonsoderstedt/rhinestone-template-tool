@@ -39,6 +39,8 @@ cat > wrangler.jsonc <<JSON
 {
   "name": "$NAME",
   "compatibility_date": "$(date +%Y-%m-%d)",
+  "workers_dev": true,
+  "preview_urls": false,
   "assets": { "directory": "./out", "not_found_handling": "404-page" }
 }
 JSON
