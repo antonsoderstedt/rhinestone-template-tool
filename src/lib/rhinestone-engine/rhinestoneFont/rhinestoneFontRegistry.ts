@@ -6,6 +6,7 @@
  */
 
 import type { StoneSizeId } from '../types/index';
+import { withBasePath } from '../deploy/basePath';
 
 export type RhinestoneFontId =
   | 'trw-clean-stone'
@@ -54,7 +55,7 @@ export const TRW_CLEAN_STONE_FONT_ID: RhinestoneFontId = 'trw-clean-stone';
 export const DEFAULT_RHINESTONE_FONT_ID: RhinestoneFontId = TRW_CLEAN_STONE_FONT_ID;
 
 function localRhinestoneFontAssetUrl(fontId: RhinestoneFontId): string {
-  return `/api/rhinestone-fonts/${fontId}`;
+  return withBasePath(`/api/rhinestone-fonts/${fontId}`);
 }
 
 export const RHINESTONE_FONT_REGISTRY: readonly RhinestoneFontDefinition[] = [

@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import GettingStartedGuide from './GettingStartedGuide';
 import EmptyCanvasPrompt from './EmptyCanvasPrompt';
@@ -1515,7 +1516,7 @@ export default function EditorShell() {
     }
 
     if (pendingDialog.kind === 'asset-open-error') {
-      window.location.assign('/library');
+      window.location.assign(withBasePath('/library'));
     }
 
     setPendingDialog(null);
@@ -1679,7 +1680,7 @@ export default function EditorShell() {
 
   const handleOpenSetup = useCallback(() => {
     // Navigate to setup page
-    window.location.href = '/setup';
+    window.location.href = withBasePath('/setup');
   }, []);
 
   // ─── Keyboard shortcuts (tools, view, save/export, nudge) ──────────────────

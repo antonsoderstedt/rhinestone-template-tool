@@ -12,6 +12,7 @@ export type OutlineFontCategory =
   | 'Uploads';
 
 import type { TemplateCoverageMode, TemplateFillMode } from '../fill/fillTemplate';
+import { withBasePath } from '../deploy/basePath';
 
 export type OutlineFontId =
   | 'legacy-original'
@@ -56,7 +57,7 @@ const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
 const FONT_ASSET_VERSION = 2;
 
 function localFontAssetUrl(fontId: Exclude<OutlineFontId, 'legacy-original'>): string {
-  return `/api/outline-fonts/${fontId}?v=${FONT_ASSET_VERSION}`;
+  return withBasePath(`/api/outline-fonts/${fontId}?v=${FONT_ASSET_VERSION}`);
 }
 
 export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [

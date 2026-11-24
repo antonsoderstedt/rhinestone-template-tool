@@ -434,3 +434,5 @@ export { createLetterStencilTemplate } from './letterStencil/letterStencilTempla
 
 export { createAllOverTemplate, ALL_OVER_PATTERNS, ALL_OVER_MAX_STONES } from './allOver/allOverTemplate';
 export type { AllOverPattern, CreateAllOverTemplateOptions } from './allOver/allOverTemplate';
+
+export { withBasePath } from './deploy/basePath';

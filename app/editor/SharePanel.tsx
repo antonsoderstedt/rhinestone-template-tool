@@ -1,6 +1,7 @@
 'use client';
 
 import { Link2 } from 'lucide-react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { buildShareLink } from '../lib/shareLink';
 
 import { useT } from '../lib/i18n';
@@ -19,7 +20,7 @@ export default function SharePanel({
       onDone('There is no design to share yet.', 'warning');
       return;
     }
-    const result = await buildShareLink(json, window.location.origin);
+    const result = await buildShareLink(json, window.location.origin, withBasePath('/rhinestone'));
     if (!result.ok) {
       onDone('This design is too big for a link. Send the project file instead (Save project file).', 'warning');
       return;

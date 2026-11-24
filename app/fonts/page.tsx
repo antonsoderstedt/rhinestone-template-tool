@@ -1,6 +1,7 @@
 'use client';
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { useRouter } from 'next/navigation';
 import { Archive, ChevronDown, ChevronUp, Gem, RefreshCcw, Search, Star, SwatchBook, Type, Upload } from 'lucide-react';
 import { inspectFontBytes, listOutlineFonts, repairFontBytes } from '@/src/lib/rhinestone-engine/index';
@@ -188,7 +189,7 @@ export default function FontsPage() {
 
     (async () => {
       try {
-        const response = await fetch('/fonts/workspace-installed/manifest.json', { cache: 'no-store' });
+        const response = await fetch(withBasePath('/fonts/workspace-installed/manifest.json'), { cache: 'no-store' });
         if (!response.ok) return;
         const payload = await response.json() as UploadedWorkspaceFont[] | { meta?: InstalledFontManifestMeta; fonts?: UploadedWorkspaceFont[] };
         const manifest = Array.isArray(payload) ? payload : (Array.isArray(payload.fonts) ? payload.fonts : []);

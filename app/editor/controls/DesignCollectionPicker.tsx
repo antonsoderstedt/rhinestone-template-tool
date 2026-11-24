@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { LayoutGrid } from 'lucide-react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { useT } from '../../lib/i18n';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
@@ -17,7 +18,7 @@ export interface DesignCollectionEntry {
   file: string;
 }
 
-const BASE = '/design-library';
+const BASE = withBasePath('/design-library');
 const PAGE_SIZE = 24;
 let cachedIndex: Promise<DesignCollectionEntry[] | null> | null = null;
 

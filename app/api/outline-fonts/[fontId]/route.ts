@@ -1,7 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
-import { getOutlineFontDefinition, isKnownOutlineFontId, repairFontBytes } from '@/src/lib/rhinestone-engine/index';
+import { getOutlineFontDefinition, isKnownOutlineFontId, OUTLINE_FONT_REGISTRY, repairFontBytes } from '@/src/lib/rhinestone-engine/index';
+
+// The fonts that ship with the app are known when it is built, so each one can be written out as a file (a static export, such
+// as GitHub Pages, has no server to answer later). Anything else was never served: fonts a user adds live in their browser.
+export const dynamic = 'force-static';
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return OUTLINE_FONT_REGISTRY.filter((font) => font.fontId !== 'legacy-original' && font.nodeFilePath).map((font) => ({ fontId: font.fontId }));
+}
 
 function contentTypeForFontFile(filePath: string): string {
   return path.extname(filePath).toLowerCase() === '.woff2' ? 'font/woff2' : 'font/woff';

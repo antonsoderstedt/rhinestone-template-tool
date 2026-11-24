@@ -8,6 +8,7 @@
  */
 
 import type { SvgAlphabetGlyphLoader } from './svgAlphabetTemplate';
+import { withBasePath } from '../deploy/basePath';
 import type { SvgAlphabetId } from './svgAlphabetRegistry';
 import type { StoneSizeId } from '../types/index';
 
@@ -22,7 +23,7 @@ async function loadGlyphSvgOnce(alphabetId: SvgAlphabetId, character: string, ta
   }
 
   const query = targetStoneSizeId ? `?size=${encodeURIComponent(targetStoneSizeId)}` : '';
-  const url = `/api/svg-alphabets/${encodeURIComponent(alphabetId)}/${encodeURIComponent(character)}${query}`;
+  const url = withBasePath(`/api/svg-alphabets/${encodeURIComponent(alphabetId)}/${encodeURIComponent(character)}${query}`);
   const response = await fetch(url);
   if (!response.ok) return null;
   return await response.text();

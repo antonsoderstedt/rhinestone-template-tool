@@ -17,6 +17,7 @@
  */
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
@@ -109,10 +110,10 @@ function buildTorsoProfilePoints(p: Garment3DProfile): THREE.Vector2[] {
  * and still uses the procedural box+handles shape further down.
  */
 const REAL_MODEL_URL: Partial<Record<SelectableGarmentType, string>> = {
-  tee: '/models/tee-real.glb',
-  'oversized-tee': '/models/tee-real.glb',
-  'cropped-tee': '/models/tee-real.glb',
-  hoodie: '/models/hoodie-real.glb',
+  tee: withBasePath('/models/tee-real.glb'),
+  'oversized-tee': withBasePath('/models/tee-real.glb'),
+  'cropped-tee': withBasePath('/models/tee-real.glb'),
+  hoodie: withBasePath('/models/hoodie-real.glb'),
 };
 
 /** Extra scale on top of the model's own auto-normalized size, since oversized/cropped tees are the same base scan. */
