@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, ChevronDown, Loader2, Type } from 'lucide-react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { DEFAULT_PREVIEW_TEXT } from '../../lib/fontLaunch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -43,7 +44,9 @@ export default function FontPicker({ value, previewText, onChange, status }: Fon
   const [activeIndex, setActiveIndex] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const fonts = useMemo(() => listOutlineFonts(), []);
+  const fontCatalogRevision = useFontCatalogRevision();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the list changes when the font library has loaded
+  const fonts = useMemo(() => listOutlineFonts(), [fontCatalogRevision]);
   const selectedFont = getOutlineFontDefinition(value);
   const safePreviewText = previewText.trim() || DEFAULT_PREVIEW_TEXT;
   const selectedIndex = Math.max(0, fonts.findIndex((font) => font.fontId === value));

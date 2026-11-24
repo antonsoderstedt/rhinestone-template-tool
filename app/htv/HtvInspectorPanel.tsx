@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useFontCatalogRevision } from '@/app/lib/useFontCatalog';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import {
   AlignCenterHorizontal,
@@ -198,7 +199,9 @@ export default function HtvInspectorPanel({ state, dispatch, onCombineLayers, on
 
 function TextLayerControls({ layer, dispatch }: { layer: Extract<HtvLayer, { type: 'text' }>; dispatch: React.Dispatch<HtvAction> }) {
   const t = useT();
-  const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), []);
+  const fontCatalogRevision = useFontCatalogRevision();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the list changes when the font library has loaded
+  const outlineFonts = useMemo(() => listOutlineFonts().filter((font) => !font.isLegacy), [fontCatalogRevision]);
   const previewText = layer.text.trim() || DEFAULT_PREVIEW_TEXT;
   const selectedFont = getOutlineFontDefinition(layer.fontId);
 

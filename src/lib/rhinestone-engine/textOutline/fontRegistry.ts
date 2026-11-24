@@ -289,19 +289,78 @@ function getStorage(): Storage | null {
     : null;
 }
 
-function readUploadedWorkspaceFonts(): UploadedWorkspaceFontRecord[] {
+// ─── The font library (loaded at start-up) ───────────────────────────────────────
+
+/**
+ * The imported fonts are a library of thousands, served as small files and described by a catalog the app fetches once. They are
+ * kept here, in memory, and never copied into the browser's storage (earlier versions did, about 4 MB, which filled it).
+ * `setFontCatalog` fills them in; listeners (screens that list fonts) are told so they can draw again.
+ */
+export interface FontCatalogFont {
+  id: string;
+  name: string;
+  family?: string;
+  category?: string;
+}
+
+let catalogFonts: UploadedWorkspaceFontRecord[] = [];
+let catalogAliases: Readonly<Record<string, string>> = {};
+let catalogRevision = 0;
+const catalogListeners = new Set<() => void>();
+
+export function setFontCatalog(fonts: readonly FontCatalogFont[], aliases: Readonly<Record<string, string>>, assetBase = '/font-library/f'): void {
+  catalogFonts = fonts.map((font) => ({
+    fontId: font.id,
+    name: font.name,
+    sourceKind: 'workspace-installed' as const,
+    category: font.category,
+    styleLabel: 'Imported',
+    previewFamily: `FontLibrary_${font.id}`,
+    assetUrl: withBasePath(`${assetBase}/${font.id}.woff`),
+  }));
+  catalogAliases = aliases;
+  catalogRevision++;
+  for (const listener of catalogListeners) listener();
+}
+
+export function getFontCatalogRevision(): number {
+  return catalogRevision;
+}
+
+export function subscribeFontCatalog(listener: () => void): () => void {
+  catalogListeners.add(listener);
+  return () => catalogListeners.delete(listener);
+}
+
+/** A font id from an earlier version of the library (the same font in another file format) mapped to the one that was kept. */
+export function resolveFontAlias(fontId: string): string {
+  return catalogAliases[fontId] ?? fontId;
+}
+
+/** A library font that an older version copied into the browser's storage (its file lives in the old library folder). */
+export function isLegacyLibraryCopy(font: { sourceKind?: string; assetUrl?: string }): boolean {
+  return font.sourceKind === 'workspace-installed' && typeof font.assetUrl === 'string' && font.assetUrl.includes('/fonts/workspace-installed/');
+}
+
+let vaultCache: { raw: string | null; fonts: UploadedWorkspaceFontRecord[] } | null = null;
+let definitionsCache: { raw: string | null; revision: number; list: readonly OutlineFontDefinition[] } | null = null;
+
+/** Fonts the user added in this browser. The library fonts that older versions copied into the vault are ignored. */
+function readVaultFonts(): { raw: string | null; fonts: UploadedWorkspaceFontRecord[] } {
   const storage = getStorage();
-  if (!storage) return [];
-
-  const raw = storage.getItem(WORKSPACE_VAULT_STORAGE_KEY);
-  if (!raw) return [];
-
-  try {
-    const parsed = JSON.parse(raw) as { uploadedFonts?: UploadedWorkspaceFontRecord[] };
-    return Array.isArray(parsed.uploadedFonts) ? parsed.uploadedFonts : [];
-  } catch {
-    return [];
+  const raw = storage ? storage.getItem(WORKSPACE_VAULT_STORAGE_KEY) : null;
+  if (vaultCache && vaultCache.raw === raw) return vaultCache;
+  let fonts: UploadedWorkspaceFontRecord[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { uploadedFonts?: UploadedWorkspaceFontRecord[] };
+      fonts = Array.isArray(parsed.uploadedFonts) ? parsed.uploadedFonts.filter((font) => !isLegacyLibraryCopy(font)) : [];
+    } catch {
+      fonts = [];
+    }
   }
+  vaultCache = { raw, fonts };
+  return vaultCache;
 }
 
 function createUploadedOutlineFontDefinition(record: UploadedWorkspaceFontRecord): OutlineFontDefinition {
@@ -332,7 +391,11 @@ function createUploadedOutlineFontDefinition(record: UploadedWorkspaceFontRecord
 }
 
 export function listUploadedOutlineFonts(): readonly OutlineFontDefinition[] {
-  return readUploadedWorkspaceFonts().map(createUploadedOutlineFontDefinition);
+  const vault = readVaultFonts();
+  if (definitionsCache && definitionsCache.raw === vault.raw && definitionsCache.revision === catalogRevision) return definitionsCache.list;
+  const list = [...vault.fonts, ...catalogFonts].map(createUploadedOutlineFontDefinition);
+  definitionsCache = { raw: vault.raw, revision: catalogRevision, list };
+  return list;
 }
 
 export function listOutlineFonts(): readonly OutlineFontDefinition[] {
@@ -343,7 +406,8 @@ export function getOutlineFontDefinition(fontId: string | undefined | null): Out
   if (!fontId) {
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
-  return listOutlineFonts().find((font) => font.fontId === fontId)
+  const wanted = resolveFontAlias(fontId);
+  return listOutlineFonts().find((font) => font.fontId === wanted)
     ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
 }
 
@@ -357,11 +421,12 @@ export function getSupportedTextCoverageModes(fontId: string | undefined | null)
 
 export function isKnownOutlineFontId(fontId: string | undefined | null): fontId is OutlineFontId {
   if (typeof fontId !== 'string') return false;
-  return FONT_MAP.has(fontId as OutlineFontId) || listUploadedOutlineFonts().some((font) => font.fontId === fontId);
+  const wanted = resolveFontAlias(fontId);
+  return FONT_MAP.has(wanted as OutlineFontId) || listUploadedOutlineFonts().some((font) => font.fontId === wanted);
 }
 
 export function isAvailableOutlineFontId(fontId: string | undefined | null): boolean {
-  return isKnownOutlineFontId(fontId) || listUploadedOutlineFonts().some((font) => font.fontId === fontId);
+  return isKnownOutlineFontId(fontId);
 }
 
 export function getOutlineFontFaceCss(): string {
