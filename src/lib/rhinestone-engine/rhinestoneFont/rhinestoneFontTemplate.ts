@@ -74,6 +74,7 @@ export async function createRhinestoneFontTemplate(
   const template = createRhinestoneTemplate({
     id: 'rhinestone-font-preview',
     name: `Rhinestone Font: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`,
+    source: 'vendor',
     stones,
     widthMm: layout.widthMm,
     heightMm: layout.heightMm,

@@ -185,6 +185,15 @@ describe('Template Import Stone Size Estimation', () => {
     expect(size).toBe('SS20');
   });
 
+  it('reads a circle drawn at the hole size as the same stone size', () => {
+    expect(estimateStoneSizeId(2.54)).toBe('SS6');
+    expect(estimateStoneSizeId(3.3)).toBe('SS10'); // the 3.3 mm holes of common SS10 templates
+    expect(estimateStoneSizeId(3.43)).toBe('SS10');
+    expect(estimateStoneSizeId(3.9)).toBe('SS16'); // a real SS16 stone
+    expect(estimateStoneSizeId(4.47)).toBe('SS16'); // TRW design pages' SS16 hole
+    expect(estimateStoneSizeId(5.38)).toBe('SS20');
+  });
+
   it('returns null for extremely small diameters', () => {
     const size = estimateStoneSizeId(0.5);
     expect(size).toBeNull();

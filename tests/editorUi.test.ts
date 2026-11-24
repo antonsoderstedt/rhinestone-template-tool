@@ -6,6 +6,7 @@ import EditorToolbar from '../app/editor/EditorToolbar';
 import EditorToast from '../app/editor/EditorToast';
 import { DEFAULT_EDITOR_STATE } from '../app/editor/EditorState';
 import {
+  describeDesignForScreenReader,
   getEditableStatusCopy,
   getSelectionActionState,
   getSelectionEmptyState,
@@ -41,7 +42,7 @@ describe('editorUi helpers', () => {
   it('returns clear Generated and Editable status copy', () => {
     expect(getEditableStatusCopy(false)).toEqual({
       label: 'Generated',
-      description: 'Driven by generator settings.',
+      description: 'Changes to the settings below update the design.',
       actionHint: 'Adjust the source settings or make the result editable to fine-tune stones.',
     });
 
@@ -79,13 +80,13 @@ describe('editorUi helpers', () => {
       status: 'Warning',
     });
 
-    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: undefined } as any)).toMatchObject({
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: undefined } as never)).toMatchObject({
       studioLabel: 'HTV Studio',
       status: 'Warning',
       statusText: 'Pending calibration: Magic Flock',
     });
 
-    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: '2025-01-01T00:00:00.000Z' } as any)).toMatchObject({
+    expect(getModeMeta('/htv', { id: 'p-1', name: 'Magic Flock', approvedAt: '2025-01-01T00:00:00.000Z' } as never)).toMatchObject({
       studioLabel: 'HTV Studio',
       status: 'Ready',
       statusText: 'Production ready: Magic Flock',
@@ -107,7 +108,7 @@ describe('editor UI rendering', () => {
         dispatch: vi.fn() as never,
         onNewProject: vi.fn(),
         onOpenProject: vi.fn(),
-        onSaveProject: vi.fn(),
+        onSave: vi.fn(),
         onExport: vi.fn(),
         onOpenSetup: vi.fn(),
       }),
@@ -141,7 +142,7 @@ describe('editor UI rendering', () => {
     );
 
     expect(html).toContain('aria-label="Select"');
-    expect(html).toContain('Pan with Space or middle mouse');
+    expect(html).toContain('Ctrl/Cmd + wheel zooms');
     expect(html).toContain('bg-purple-600');
   });
 
@@ -152,5 +153,13 @@ describe('editor UI rendering', () => {
 
     expect(html).toContain('role="status"');
     expect(html).toContain('Project saved.');
+  });
+});
+describe('canvas text alternative (plan I1)', () => {
+  it('says what is on the canvas', () => {
+    expect(describeDesignForScreenReader([])).toBe('Design canvas. Nothing here yet.');
+    const stones = [{ center: { x: 10, y: 10 }, holeDiameterMm: 3 }, { center: { x: 110, y: 40 }, holeDiameterMm: 3 }];
+    expect(describeDesignForScreenReader(stones)).toBe('Design canvas. 2 stones, about 103 by 33 millimetres.');
+    expect(describeDesignForScreenReader(stones.slice(0, 1), 1)).toBe('Design canvas. 1 stone, about 3 by 3 millimetres. 1 selected.');
   });
 });

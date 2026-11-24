@@ -345,6 +345,9 @@ describe('project round-trip for editable designs', () => {
     state.activeTool = 'text';
     state.textTool.mode = 'outline';
     state.textTool.text = 'HI';
+    // This test builds the design synchronously, which only the built-in font supports; the default is a bundled font.
+    state.textTool.fontId = LEGACY_OUTLINE_FONT_ID;
+    state.textTool.fontSizeMm = 25;
     state.template = createOutlineTextTemplate({
       id: 'text-outline-preview',
       name: 'Outline',
@@ -418,6 +421,35 @@ describe('project round-trip for editable designs', () => {
     expectRoundTrip(state);
   });
 
+  it('keeps which colours of an artwork were switched on or off, and refuses a bad value', () => {
+    const state = cloneState();
+    state.activeTool = 'svg';
+    state.svgTool.uploadedSvgText = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10"><path d="M0 0h30v10z" fill="#ffaef0"/></svg>';
+    state.svgTool.layerRoles = { '#ffaef0': 'stones', '#1A1033': 'ignore' };
+    const file = buildProjectFileFromEditorState(state)!;
+    const restored = parseRhinestoneProject(serializeRhinestoneProject(file));
+    expect(restored.generatorState).toMatchObject({ generatorId: 'svg-upload', layerRoles: { '#ffaef0': 'stones', '#1a1033': 'ignore' } });
+
+    const broken = JSON.parse(serializeRhinestoneProject(file)) as { generatorState: { layerRoles: Record<string, string> } };
+    broken.generatorState.layerRoles = { '#ffaef0': 'maybe' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/layerRoles/);
+    broken.generatorState.layerRoles = { red: 'stones' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/colour/);
+  });
+
+  it('keeps the stone colour chosen for each artwork colour, and refuses a bad one', () => {
+    const state = cloneState();
+    state.activeTool = 'svg';
+    state.svgTool.uploadedSvgText = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10"><path d="M0 0h30v10z" fill="#ffaef0"/></svg>';
+    state.svgTool.layerStoneColours = { '#FFAEF0': '#D4AF37' };
+    const file = buildProjectFileFromEditorState(state)!;
+    const restored = parseRhinestoneProject(serializeRhinestoneProject(file));
+    expect(restored.generatorState).toMatchObject({ layerStoneColours: { '#ffaef0': '#d4af37' } });
+    const broken = JSON.parse(serializeRhinestoneProject(file)) as { generatorState: { layerStoneColours: Record<string, string> } };
+    broken.generatorState.layerStoneColours = { '#ffaef0': 'gold' };
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/layerStoneColours/);
+  });
+
   it('round-trips a fully manual editable design', () => {
     let state = cloneState();
     state.activeTool = 'manual';
@@ -434,5 +466,30 @@ describe('project round-trip for editable designs', () => {
     state.includeLabels = true;
     state = addEditableMutations(state);
     expectRoundTrip(state);
+  });
+});
+
+describe('cover an area (all over) round trip', () => {
+  it('keeps the area, the pattern and the seed, and refuses a bad area', () => {
+    const state = cloneState();
+    state.activeTool = 'grid';
+    state.gridTool = { ...state.gridTool, mode: 'area', areaWidthMm: 250, areaHeightMm: 1000, areaPattern: 'scatter', areaSeed: 5 };
+    const file = buildProjectFileFromEditorState(state)!;
+    const restored = parseRhinestoneProject(serializeRhinestoneProject(file));
+    expect(restored.generatorState).toMatchObject({ generatorId: 'manual-grid', area: { widthMm: 250, heightMm: 1000, pattern: 'scatter', seed: 5 } });
+
+    const broken = JSON.parse(serializeRhinestoneProject(file)) as { generatorState: { area: { pattern: string; widthMm: number } } };
+    broken.generatorState.area.pattern = 'spiral';
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/pattern/);
+    broken.generatorState.area.pattern = 'hex';
+    broken.generatorState.area.widthMm = -3;
+    expect(() => parseRhinestoneProject(JSON.stringify(broken))).toThrow(/area/);
+  });
+
+  it('a rows-and-columns grid has no area', () => {
+    const state = cloneState();
+    state.activeTool = 'grid';
+    const file = buildProjectFileFromEditorState(state)!;
+    expect((file.generatorState as { area?: unknown }).area).toBeUndefined();
   });
 });

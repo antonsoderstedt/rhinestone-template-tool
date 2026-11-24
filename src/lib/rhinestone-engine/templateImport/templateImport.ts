@@ -44,6 +44,11 @@ export interface TemplateImportResult {
 export interface TemplateImportOptions {
   svgText: string;
   deduplicateTolerance?: number;
+  /**
+   * Scale the drawing to the page width the file states (`width="300mm"` with a viewBox in other units, as CorelDRAW writes
+   * it). Off by default: the alphabet readers are built on viewBox units being taken as mm. On for templates a user imports.
+   */
+  applyPageScale?: boolean;
 }
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -55,27 +60,33 @@ const MAX_STONES = 50000;
 
 // ─── Stone Size Estimation ────────────────────────────────────────────────────
 
-const STONE_SIZE_TOLERANCES: Array<{ id: StoneSizeId; diameterMm: number; tolerance: number }> = [
-  { id: 'SS6', diameterMm: 2.0, tolerance: 0.3 },
-  { id: 'SS8', diameterMm: 2.5, tolerance: 0.3 },
-  { id: 'SS10', diameterMm: 2.8, tolerance: 0.3 },
-  { id: 'SS12', diameterMm: 3.2, tolerance: 0.3 },
-  { id: 'SS16', diameterMm: 4.394, tolerance: 0.4 }, // TRW Clean Stone
-  { id: 'SS20', diameterMm: 5.283, tolerance: 0.4 }, // TRW Clean Stone
+/**
+ * A circle in an imported template can be drawn at the size of the stone or at the size of the hole cut for it (a little
+ * larger). Each stone size is matched against both, and the nearest wins; the result is only a fallback label, the circle
+ * itself keeps its diameter. Holes are the Magic Flock values; stones the typical sizes.
+ */
+const STONE_SIZE_TARGETS: Array<{ id: StoneSizeId; stoneMm: number; holeMm: number }> = [
+  { id: 'SS6', stoneMm: 2.0, holeMm: 2.54 },
+  { id: 'SS8', stoneMm: 2.4, holeMm: 3.0 },
+  { id: 'SS10', stoneMm: 2.8, holeMm: 3.43 },
+  { id: 'SS12', stoneMm: 3.1, holeMm: 3.8 },
+  { id: 'SS16', stoneMm: 3.9, holeMm: 4.394 },
+  { id: 'SS20', stoneMm: 4.7, holeMm: 5.283 },
 ];
+const STONE_SIZE_MATCH_TOLERANCE_MM = 0.3;
 
 export function estimateStoneSizeId(diameterMm: number): StoneSizeId | null {
   let bestMatch: StoneSizeId | null = null;
   let minDistance = Infinity;
-  
-  for (const { id, diameterMm: target, tolerance } of STONE_SIZE_TOLERANCES) {
-    const distance = Math.abs(diameterMm - target);
-    if (distance <= tolerance && distance < minDistance) {
+
+  for (const { id, stoneMm, holeMm } of STONE_SIZE_TARGETS) {
+    const distance = Math.min(Math.abs(diameterMm - stoneMm), Math.abs(diameterMm - holeMm));
+    if (distance <= STONE_SIZE_MATCH_TOLERANCE_MM && distance < minDistance) {
       bestMatch = id;
       minDistance = distance;
     }
   }
-  
+
   return bestMatch;
 }
 
@@ -306,8 +317,21 @@ function extractPathStone(
 
 // ─── Main Import Function ─────────────────────────────────────────────────────
 
+const IDENTITY_TRANSFORM: SvgTransform = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
+function combineTransforms(parent: SvgTransform, local: SvgTransform): SvgTransform {
+  return {
+    a: parent.a * local.a + parent.c * local.b,
+    b: parent.b * local.a + parent.d * local.b,
+    c: parent.a * local.c + parent.c * local.d,
+    d: parent.b * local.c + parent.d * local.d,
+    e: parent.a * local.e + parent.c * local.f + parent.e,
+    f: parent.b * local.e + parent.d * local.f + parent.f,
+  };
+}
+
 export function importRhinestoneTemplate(options: TemplateImportOptions): TemplateImportResult {
-  const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE } = options;
+  const { svgText, deduplicateTolerance = DEFAULT_DEDUPLICATE_TOLERANCE, applyPageScale = false } = options;
   const sanitizedSvgText = stripSvgStyleElements(svgText);
 
   const safety = validateSafeSvgInput(sanitizedSvgText);
@@ -324,79 +348,78 @@ export function importRhinestoneTemplate(options: TemplateImportOptions): Templa
   const viewBox = viewBoxMatch ? parseViewBox(viewBoxMatch[1]) : null;
   const viewBoxWidth = viewBox?.width ?? null;
 
-  // Extract elements (simplified regex-based approach)
-  let elementIndex = 0;
-  const transformStack: SvgTransform[] = [{ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }];
-  const groupStack: string[] = [];
+  // A file that says how big the page is (width="300mm") and draws in other units (viewBox 0 0 30000 29700, as CorelDRAW
+  // exports it) is scaled so one unit is what the page says it is. Without a real-world width the units are taken as mm.
+  const rootTag = sanitizedSvgText.match(/<\s*svg\b[^>]*>/i)?.[0] ?? '';
+  const rootWidth = rootTag.match(/\swidth\s*=\s*["']\s*([\d.]+)\s*(mm|cm|in)\s*["']/i);
+  let rootScale = 1;
+  if (applyPageScale && rootWidth && viewBox && viewBox.width > 0) {
+    const widthMm = parseFloat(rootWidth[1]!) * (rootWidth[2]!.toLowerCase() === 'cm' ? 10 : rootWidth[2]!.toLowerCase() === 'in' ? 25.4 : 1);
+    if (Number.isFinite(widthMm) && widthMm > 0) rootScale = widthMm / viewBox.width;
+  }
 
-  const lines = sanitizedSvgText.split('\n');
-  for (const line of lines) {
-    // Handle group start
-    const groupMatch = line.match(/<g\s+([^>]+)>/i);
-    if (groupMatch) {
-      const attrs = parseSvgAttributes(groupMatch[1]!);
-      const groupTransform = attrs.transform ? parseSvgTransform(attrs.transform) : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+  let elementIndex = 0;
+  const transformStack: SvgTransform[] = [rootScale === 1 ? IDENTITY_TRANSFORM : { a: rootScale, b: 0, c: 0, d: rootScale, e: 0, f: 0 }];
+  const groupStack: string[] = [];
+  const tagPattern = /<\s*(\/?)\s*(g|circle|ellipse|path)\b[^>]*>/gi;
+
+  for (const match of sanitizedSvgText.matchAll(tagPattern)) {
+    const rawTag = match[0]!;
+    const closing = match[1] === '/';
+    const tag = match[2]!.toLowerCase();
+
+    if (tag === 'g') {
+      if (closing) {
+        if (transformStack.length > 1) {
+          transformStack.pop();
+          groupStack.pop();
+        }
+        continue;
+      }
+
+      if (/\/\s*>$/.test(rawTag)) {
+        continue;
+      }
+
+      const attrs = parseSvgAttributes(rawTag);
+      const groupTransform = attrs.transform ? parseSvgTransform(attrs.transform) : IDENTITY_TRANSFORM;
       const parentTransform = transformStack[transformStack.length - 1]!;
-      const combinedTransform = {
-        a: parentTransform.a * groupTransform.a + parentTransform.c * groupTransform.b,
-        b: parentTransform.b * groupTransform.a + parentTransform.d * groupTransform.b,
-        c: parentTransform.a * groupTransform.c + parentTransform.c * groupTransform.d,
-        d: parentTransform.b * groupTransform.c + parentTransform.d * groupTransform.d,
-        e: parentTransform.a * groupTransform.e + parentTransform.c * groupTransform.f + parentTransform.e,
-        f: parentTransform.b * groupTransform.e + parentTransform.d * groupTransform.f + parentTransform.f,
-      };
-      transformStack.push(combinedTransform);
+      transformStack.push(combineTransforms(parentTransform, groupTransform));
       groupStack.push(attrs.id || `group-${groupStack.length}`);
       continue;
     }
 
-    // Handle group end
-    if (line.includes('</g>')) {
-      transformStack.pop();
-      groupStack.pop();
-      continue;
+    const attrs = parseSvgAttributes(rawTag);
+    const elementTransform = attrs.transform ? parseSvgTransform(attrs.transform) : IDENTITY_TRANSFORM;
+    const parentTransform = transformStack[transformStack.length - 1]!;
+    const combinedTransform = combineTransforms(parentTransform, elementTransform);
+    const groupPath = groupStack.length > 0 ? groupStack.join('/') : null;
+
+    let stone: ImportedStone | null = null;
+    if (tag === 'circle') {
+      stone = extractCircleStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
+    } else if (tag === 'ellipse') {
+      stone = extractEllipseStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
+    } else if (tag === 'path') {
+      stone = extractPathStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
     }
 
-    // Handle circle, ellipse, path
-    const shapeMatch = line.match(/<(circle|ellipse|path)\s+([^>]+)>/i);
-    if (shapeMatch) {
-      const tag = shapeMatch[1]!.toLowerCase();
-      const attrs = parseSvgAttributes(shapeMatch[2]!);
-      const elementTransform = attrs.transform ? parseSvgTransform(attrs.transform) : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
-      const parentTransform = transformStack[transformStack.length - 1]!;
-      const combinedTransform = {
-        a: parentTransform.a * elementTransform.a + parentTransform.c * elementTransform.b,
-        b: parentTransform.b * elementTransform.a + parentTransform.d * elementTransform.b,
-        c: parentTransform.a * elementTransform.c + parentTransform.c * elementTransform.d,
-        d: parentTransform.b * elementTransform.c + parentTransform.d * elementTransform.d,
-        e: parentTransform.a * elementTransform.e + parentTransform.c * elementTransform.f + parentTransform.e,
-        f: parentTransform.b * elementTransform.e + parentTransform.d * elementTransform.f + parentTransform.f,
-      };
-
-      const groupPath = groupStack.length > 0 ? groupStack.join('/') : null;
-
-      let stone: ImportedStone | null = null;
-      if (tag === 'circle') {
-        stone = extractCircleStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      } else if (tag === 'ellipse') {
-        stone = extractEllipseStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      } else if (tag === 'path') {
-        stone = extractPathStone(tag, attrs, combinedTransform, viewBoxWidth, elementIndex, groupPath);
-      }
-
-      if (stone) {
-        stones.push(stone);
-      } else {
-        ignoredElements++;
-      }
-
-      elementIndex++;
-
-      if (stones.length > MAX_STONES) {
-        warnings.push(`Maximum stone count (${MAX_STONES}) exceeded. Import truncated.`);
-        break;
-      }
+    if (stone) {
+      stones.push(stone);
+    } else {
+      ignoredElements++;
     }
+
+    elementIndex++;
+
+    if (stones.length > MAX_STONES) {
+      warnings.push(`Maximum stone count (${MAX_STONES}) exceeded. Import truncated.`);
+      break;
+    }
+  }
+
+  if (stones.length === 0) {
+    warnings.push('No supported circular stone shapes were found in this SVG.');
   }
 
   // Deduplicate

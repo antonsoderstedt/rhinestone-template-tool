@@ -35,12 +35,12 @@ describe('STONE_SIZE_PROFILES', () => {
     expect(STONE_SIZE_PROFILES.SS10.minCenterDistanceMm).toBe(3.35);
   });
 
-  it('SS16 stoneDiameterMm is 4.394 (TRW calibration)', () => {
-    expect(STONE_SIZE_PROFILES.SS16.stoneDiameterMm).toBe(4.394);
+  it('SS16 stoneDiameterMm is the stone (3.9), not the 4.394 mm Magic Flock hole', () => {
+    expect(STONE_SIZE_PROFILES.SS16.stoneDiameterMm).toBe(3.9);
   });
 
-  it('SS20 stoneDiameterMm is 5.283 (TRW calibration)', () => {
-    expect(STONE_SIZE_PROFILES.SS20.stoneDiameterMm).toBe(5.283);
+  it('SS20 stoneDiameterMm is the stone (4.7), not the 5.283 mm Magic Flock hole', () => {
+    expect(STONE_SIZE_PROFILES.SS20.stoneDiameterMm).toBe(4.7);
   });
 
   it('every stone profile has requiresPhysicalValidation true', () => {
@@ -255,5 +255,20 @@ describe('old-project protection — explicit hole diameters are immutable data'
     expect(legacyStone.holeDiameterMm).toBe(3.0);
     expect(getRecommendedHoleDiameter('SS10')).toBe(3.43);
     expect(legacyStone.holeDiameterMm).not.toBe(getRecommendedHoleDiameter('SS10'));
+  });
+});
+
+describe('stone diameter versus hole diameter', () => {
+  it('keeps them apart: a Magic Flock hole is always larger than its stone, by about half a millimetre', () => {
+    for (const preset of MAGIC_FLOCK_HOLE_PRESETS) {
+      const stone = STONE_SIZE_PROFILES[preset.stoneSize].stoneDiameterMm;
+      expect(preset.holeDiameterMm, preset.stoneSize).toBeGreaterThan(stone);
+      expect(preset.holeDiameterMm - stone, preset.stoneSize).toBeLessThan(0.9);
+    }
+  });
+
+  it('uses typical stone sizes (SS16 about 3.9 mm, SS20 about 4.7 mm)', () => {
+    expect(STONE_SIZE_PROFILES.SS16.stoneDiameterMm).toBeCloseTo(3.9, 1);
+    expect(STONE_SIZE_PROFILES.SS20.stoneDiameterMm).toBeCloseTo(4.7, 1);
   });
 });

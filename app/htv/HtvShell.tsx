@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useSearchParams } from 'next/navigation';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
 import {
@@ -8,6 +9,7 @@ import {
   createHtvTextLayer,
   createHtvVectorLayer,
   htvReducer,
+  type HtvLayer,
   type HtvVectorLayer,
 } from './HtvState';
 import { combineVectorLayers, offsetVectorLayerPolylines } from './htvFormOps';
@@ -19,44 +21,76 @@ import HtvInspectorPanel from './HtvInspectorPanel';
 import HtvSilhouetteConverterModal from './HtvSilhouetteConverterModal';
 import HtvGarmentPreviewPanel from './HtvGarmentPreviewPanel';
 import HtvGarmentStage from './HtvGarmentStage';
-import HtvGarment3D from './HtvGarment3D';
+import dynamic from 'next/dynamic';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
-import { createHtvSvgExport } from './htvExport';
+import HtvColourFilesPanel from './HtvColourFilesPanel';
+import { createHtvSvgExport, type HtvExportOptions } from './htvExport';
+// Loaded when first needed: three.js alone is ~300 KiB and most visits never open the 3D tab or the export dialog.
+const HtvGarment3D = dynamic(() => import('./HtvGarment3D'), { ssr: false });
+const ExportDialog = dynamic(() => import('../components/ExportDialog'));
+import { sanitizeExportFilename } from '../components/exportDialogHelpers';
 import { centerPolylines } from './htvGeometry';
 import { createShapePolylines, getShapeDisplayName, type HtvShapeId } from './htvShapeLibrary';
 import { getDesignTemplate, type HtvDesignTemplateId } from './htvDesignTemplates';
 import { getPlacementsForGarmentType } from './htvPlacementZones';
+import { summarizeHtvStatus } from './htvStatus';
+import { findHtvSizeIssues, summarizeHtvSize } from './htvSizeCheck';
+import { planFitToPlacement } from './htvFitToPlacement';
+import { getPlacementZoneSizeMm } from './htvPlacementZones';
+import { useMeasuredTextSizes } from './useMeasuredTextSizes';
+import { KeyboardShortcutsHost } from '../components/KeyboardShortcuts';
+import MobileStudioBar from '../components/MobileStudioBar';
+import { useIsMobileStudio } from '../lib/useMediaQuery';
+import { Download, Plus, SlidersHorizontal } from 'lucide-react';
+import { isKeyHandlingWidget, isModalOpen, resolveStudioShortcut } from '../lib/studioShortcuts';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
-import { listOutlineFonts, svgStringToPolylines, type TraceableImageData } from '@/src/lib/rhinestone-engine/index';
+import {
+  DEFAULT_OUTLINE_FONT_ID,
+  isAvailableOutlineFontId,
+  listOutlineFonts,
+  svgStringToPolylines,
+  type TraceableImageData,
+} from '@/src/lib/rhinestone-engine/index';
 import {
   buildHtvDesignEntry,
   deserializeHtvState,
+  EMPTY_WORKSPACE_VAULT,
   findAssetById,
   findHtvDesignById,
-  readActiveCalibrationProfile,
   readWorkspaceVault,
   writeWorkspaceVault,
 } from '../lib/workspaceVault';
 
+import { useT } from '../lib/i18n';
 const DEFAULT_TEXT_FONT_ID = listOutlineFonts().find((f) => !f.isLegacy)?.fontId ?? '';
 
 export default function HtvShell() {
+  const t = useT();
   const { theme, toggleTheme } = useStudioTheme();
   const searchParams = useSearchParams();
   const [state, dispatch] = useReducer(htvReducer, DEFAULT_HTV_STATE);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'warning' | 'error' } | null>(null);
   const [garmentPreviewOpen, setGarmentPreviewOpen] = useState(false);
   const [designSurface, setDesignSurface] = useState<'canvas' | 'garment' | '3d'>('canvas');
+  // Phones and tablets: which panel the bottom bar has open under the canvas.
+  const [mobilePanel, setMobilePanel] = useState<'none' | 'add' | 'inspect'>('none');
+  const isMobile = useIsMobileStudio();
   const [placementOverlayMode, setPlacementOverlayMode] = useState<'active-only' | 'all-active'>('all-active');
   const [pendingImage, setPendingImage] = useState<{ image: TraceableImageData; previewDataUrl: string } | null>(null);
   const [activeSavedDesignId, setActiveSavedDesignId] = useState<string | null>(null);
-  const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>(() => readWorkspaceVault().assets.filter((asset) => !asset.archived).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
-  const [activeCalibrationProfile, setActiveCalibrationProfileState] = useState(() => readActiveCalibrationProfile());
+  const [libraryAssets, setLibraryAssets] = useState<WorkspaceAsset[]>([]);
+  const [workspaceVault, setWorkspaceVault] = useState(EMPTY_WORKSPACE_VAULT);
   const nextLayerIdRef = useRef(0);
   const handledQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const sync = () => setActiveCalibrationProfileState(readActiveCalibrationProfile());
+    const sync = () => {
+      const vault = readWorkspaceVault();
+      queueMicrotask(() => {
+        setWorkspaceVault(vault);
+        setLibraryAssets(vault.assets.filter((asset) => !asset.archived).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
+      });
+    };
     sync();
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
@@ -268,28 +302,135 @@ export default function HtvShell() {
     setToast({ message: existing ? 'HTV design updated in My Designs.' : 'HTV design saved to My Designs.', tone: 'success' });
   }, [activeSavedDesignId, state]);
 
-  const handleExport = useCallback(async () => {
-    try {
-      const exportLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
-      const result = await createHtvSvgExport(exportLayers, state.projectName);
-      const blob = new Blob([result.svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${state.projectName.trim() || 'htv-design'}.svg`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setToast({ message: `Exported ${result.layerCount} layer(s) as SVG.`, tone: 'success' });
-    } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : 'Export failed.', tone: 'error' });
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [htvExportOptions, setHtvExportOptions] = useState<Required<Pick<HtvExportOptions, 'mirror' | 'weedBorder' | 'registrationMarks'>>>({
+    mirror: true,
+    weedBorder: false,
+    registrationMarks: false,
+  });
+  const [htvExportPreview, setHtvExportPreview] = useState<{
+    forLayers: readonly HtvLayer[];
+    forOptions: typeof htvExportOptions;
+    forMarginMm: number;
+    svg: string | null;
+    widthMm: number | null;
+    heightMm: number | null;
+    designWidthMm: number | null;
+    designHeightMm: number | null;
+    layerCount: number;
+    error: string | null;
+  } | null>(null);
+
+  const exportLayers = useMemo(
+    () => state.layers.filter((layer) => layer.placementId === state.garment.placementZone),
+    [state.garment.placementZone, state.layers],
+  );
+  const weedMarginMm = workspaceVault.settings.htvWeedMarginMm;
+  const measuredTextSizes = useMeasuredTextSizes(state.layers);
+  const sizeSummary = useMemo(
+    () => summarizeHtvSize(state.layers, state.garment.placementZone, state.garment.type, weedMarginMm, measuredTextSizes),
+    [state.layers, state.garment.placementZone, state.garment.type, weedMarginMm, measuredTextSizes],
+  );
+
+  // The one-click fix for a design that is bigger than its placement area or than a mat.
+  const fitPlan = useMemo(
+    () => (sizeSummary.issues.some((issue) => issue.id === 'exceeds-placement' || issue.id === 'exceeds-mat')
+      ? planFitToPlacement(exportLayers, sizeSummary.zoneSizeMm, measuredTextSizes, weedMarginMm)
+      : null),
+    [exportLayers, measuredTextSizes, sizeSummary.issues, sizeSummary.zoneSizeMm, weedMarginMm],
+  );
+  const fitToPlacement = useCallback(() => {
+    if (!fitPlan) return;
+    dispatch({ type: 'BATCH_UPDATE_LAYERS', updates: fitPlan.updates });
+    setToast({ message: `Made the design ${Math.round(fitPlan.scale * 100)}% of its size so it fits.`, tone: 'success' });
+  }, [fitPlan]);
+
+  useEffect(() => {
+    if (!exportDialogOpen) return;
+    let cancelled = false;
+    void createHtvSvgExport(exportLayers, state.projectName, { ...htvExportOptions, marginMm: weedMarginMm })
+      .then((result) => {
+        if (cancelled) return;
+        setHtvExportPreview({
+          forLayers: exportLayers,
+          forOptions: htvExportOptions,
+          forMarginMm: weedMarginMm,
+          svg: result.svg,
+          widthMm: result.widthMm,
+          heightMm: result.heightMm,
+          designWidthMm: result.designWidthMm,
+          designHeightMm: result.designHeightMm,
+          layerCount: result.layerCount,
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setHtvExportPreview({
+          forLayers: exportLayers,
+          forOptions: htvExportOptions,
+          forMarginMm: weedMarginMm,
+          svg: null,
+          widthMm: null,
+          heightMm: null,
+          designWidthMm: null,
+          designHeightMm: null,
+          layerCount: 0,
+          error: err instanceof Error ? err.message : 'Could not prepare the export.',
+        });
+      });
+    return () => { cancelled = true; };
+  }, [exportDialogOpen, exportLayers, htvExportOptions, state.projectName, weedMarginMm]);
+
+  const htvExportFresh = htvExportPreview
+    && htvExportPreview.forLayers === exportLayers
+    && htvExportPreview.forOptions === htvExportOptions
+    && htvExportPreview.forMarginMm === weedMarginMm
+    ? htvExportPreview
+    : null;
+
+  // The export dialog already reports whether the file fits a mat; here we add whether the artwork fits its placement, using the exact size.
+  const exportPlacementNotes = useMemo(() => {
+    if (!htvExportFresh || htvExportFresh.designWidthMm === null || htvExportFresh.designHeightMm === null) return [];
+    return findHtvSizeIssues({
+      designSizeMm: { widthMm: htvExportFresh.designWidthMm, heightMm: htvExportFresh.designHeightMm },
+      zoneSizeMm: getPlacementZoneSizeMm(state.garment.type, state.garment.placementZone),
+      zoneName: sizeSummary.zoneName,
+      weedMarginMm,
+    })
+      .filter((issue) => issue.id === 'exceeds-placement')
+      .map((issue) => ({ tone: 'warning' as const, text: issue.message }));
+  }, [htvExportFresh, sizeSummary.zoneName, state.garment.placementZone, state.garment.type, weedMarginMm]);
+
+  const handleExport = useCallback(() => {
+    if (exportLayers.length === 0) {
+      setToast({ message: 'Nothing to export yet. Add a layer to the active placement first.', tone: 'warning' });
+      return;
     }
-  }, [state.garment.placementZone, state.layers, state.projectName]);
+    setExportDialogOpen(true);
+  }, [exportLayers.length]);
+
+  const handleExportDownload = useCallback((filename: string) => {
+    if (!htvExportFresh?.svg) return;
+    const blob = new Blob([htvExportFresh.svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportDialogOpen(false);
+    setToast({ message: `Exported ${htvExportFresh.layerCount} layer(s) as SVG.`, tone: 'success' });
+  }, [htvExportFresh]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (isKeyHandlingWidget(e.target) || isModalOpen()) return;
 
+      if (e.key === 'Escape' && state.selectedLayerIds.size > 0) {
+        e.preventDefault();
+        dispatch({ type: 'SET_SELECTED_LAYERS', ids: [] });
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedLayerIds.size > 0) {
         e.preventDefault();
         dispatch({ type: 'DELETE_LAYERS', ids: [...state.selectedLayerIds] });
@@ -320,12 +461,38 @@ export default function HtvShell() {
           .map((l) => ({ id: l.id, updates: { x: l.x + dx, y: l.y + dy } }));
         dispatch({ type: 'BATCH_UPDATE_LAYERS', updates });
       }
+
+      // Save, export, view (fit / zoom). `?` is handled by <KeyboardShortcutsHost>.
+      const shortcut = resolveStudioShortcut(e, { tools: false, nudgeStepMm: 1, nudgeShiftStepMm: 10 });
+      if (!shortcut) return;
+      if (shortcut.type === 'save') {
+        e.preventDefault();
+        handleSaveDesign();
+      } else if (shortcut.type === 'export') {
+        e.preventDefault();
+        handleExport();
+      } else if (shortcut.type === 'fit' || shortcut.type === 'zoom-reset') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+      } else if (shortcut.type === 'zoom-in') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
+      } else if (shortcut.type === 'zoom-out') {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.2) } });
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.selectedLayerIds, state.layers]);
+  }, [state.selectedLayerIds, state.layers, state.canvas.zoom, handleSaveDesign, handleExport]);
+
+  // On a phone, adding something (text, a shape, a file…) moves on to the inspector so it can be edited at once.
+  const showInspectorOnPhone = () => {
+    if (isMobile) setMobilePanel('inspect');
+  };
 
   const activePlacementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+  const htvStatus = summarizeHtvStatus(state.layers, state.garment.placementZone, sizeSummary);
 
   useEffect(() => {
     const activePlacements = getPlacementsForGarmentType(state.garment.type).map((item) => item.id);
@@ -379,13 +546,17 @@ export default function HtvShell() {
       }
 
       if (fontId) {
+        const resolvedFontId = isAvailableOutlineFontId(fontId) ? fontId : DEFAULT_OUTLINE_FONT_ID;
+        if (resolvedFontId !== fontId) {
+          setToast({ message: 'Font not found — using a default font instead.', tone: 'warning' });
+        }
         dispatch({ type: 'SET_PROJECT_NAME', name: `${launchText ?? 'Preview'} HTV Design` });
         dispatch({
           type: 'ADD_LAYERS',
           layers: [createHtvTextLayer({
             id: createLayerId('text'),
-            text: launchText ?? 'Sulay 123',
-            fontId,
+            text: launchText ?? DEFAULT_PREVIEW_TEXT,
+            fontId: resolvedFontId,
             placementId: state.garment.placementZone,
           })],
         });
@@ -397,7 +568,8 @@ export default function HtvShell() {
   }, [createLayerId, searchParams, insertWorkspaceAsset, state.garment.placementZone]);
 
   return (
-    <div data-theme={theme} className="h-full min-h-0 flex flex-col bg-[var(--studio-bg)] text-[var(--studio-ink)]">
+    <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">
+      <KeyboardShortcutsHost studio="htv" />
       <HtvTopbar
         projectName={state.projectName}
         canUndo={state.history.past.length > 0}
@@ -405,7 +577,7 @@ export default function HtvShell() {
         canExport={activePlacementLayers.length > 0}
         canPreviewGarment={activePlacementLayers.length > 0}
         designSurface={designSurface}
-        recentDesigns={readWorkspaceVault().htvDesigns.slice(0, 5).map((design) => ({ id: design.designId, name: design.name }))}
+        recentDesigns={workspaceVault.htvDesigns.slice(0, 5).map((design) => ({ id: design.designId, name: design.name }))}
         dispatch={dispatch}
         onSaveDesign={handleSaveDesign}
         onOpenRecent={(id) => {
@@ -425,33 +597,24 @@ export default function HtvShell() {
 
       <WorkspaceModeBanner
         mode="HTV Studio"
-        status={activeCalibrationProfile?.approvedAt ? 'Ready' : 'Warning'}
+        status={htvStatus.status}
         project={state.projectName || 'Untitled HTV Design'}
-        guidance={
-          !activeCalibrationProfile
-            ? 'Calibration gate is active. Open Setup & Calibration, cut the sheet, and approve a profile before production export.'
-            : activeCalibrationProfile.approvedAt
-              ? 'Active calibration profile is approved. Review placement and export when ready.'
-              : 'Calibration profile is pending approval. Complete the setup workflow before production export.'
-        }
-        calibrationState={
-          activeCalibrationProfile
-            ? { label: activeCalibrationProfile.approvedAt ? `Approved: ${activeCalibrationProfile.name}` : `Pending: ${activeCalibrationProfile.name}`, tone: activeCalibrationProfile.approvedAt ? 'success' : 'warning' }
-            : { label: 'Calibration gate', tone: 'warning' }
-        }
+        guidance={htvStatus.guidance}
+        chips={htvStatus.chips}
+        action={fitPlan ? { label: 'Fit to the print area', onClick: fitToPlacement } : undefined}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--studio-bg)] lg:flex-row lg:overflow-hidden">
-        <div className="order-2 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] lg:flex-row">
+        <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'add' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:max-h-none lg:w-[272px] lg:border-t-0`}>
           <HtvToolsPanel
             state={state}
             dispatch={dispatch}
             libraryAssets={libraryAssets}
-            onAddText={handleAddText}
-            onImportFile={handleImportFile}
-            onAddShape={handleAddShape}
-            onAddTemplate={handleAddTemplate}
-            onAddLibraryAsset={handleAddLibraryAsset}
+            onAddText={(...args) => { showInspectorOnPhone(); return handleAddText(...args); }}
+            onImportFile={(...args) => { showInspectorOnPhone(); return handleImportFile(...args); }}
+            onAddShape={(...args) => { showInspectorOnPhone(); return handleAddShape(...args); }}
+            onAddTemplate={(...args) => { showInspectorOnPhone(); return handleAddTemplate(...args); }}
+            onAddLibraryAsset={(...args) => { showInspectorOnPhone(); return handleAddLibraryAsset(...args); }}
             designSurface={designSurface}
             onToggleDesignSurface={setDesignSurface}
             placementOverlayMode={placementOverlayMode}
@@ -459,17 +622,21 @@ export default function HtvShell() {
           />
         </div>
 
-        <div className="order-1 min-h-[58vh] min-w-0 flex-1 lg:order-none lg:min-h-0">
+        <main id="main-content" tabIndex={-1} aria-label={t('Design surface')} className="order-1 min-h-[58vh] min-w-0 flex-1 max-lg:min-h-0 lg:order-none lg:min-h-0">
+          <h1 className="sr-only">{t('HTV Studio')}</h1>
           {designSurface === 'garment' ? (
             <HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />
           ) : designSurface === '3d' ? (
-            <HtvGarment3D state={state} />
+            <HtvGarment3D
+              state={state}
+              fallback={<HtvGarmentStage state={state} dispatch={dispatch} showAllPlacementOverlays={placementOverlayMode === 'all-active'} />}
+            />
           ) : (
-            <HtvCanvas state={state} dispatch={dispatch} />
+            <HtvCanvas state={state} dispatch={dispatch} measuredSizes={measuredTextSizes} />
           )}
-        </div>
+        </main>
 
-        <div className="order-3 min-h-0 max-h-[34vh] w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0">
+        <div className={`order-3 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'inspect' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:max-h-none lg:w-[288px] lg:border-t-0`}>
           <HtvInspectorPanel
             state={state}
             dispatch={dispatch}
@@ -487,18 +654,86 @@ export default function HtvShell() {
           />
         )}
 
+        <ExportDialog
+          open={exportDialogOpen}
+          title={t('Export HTV SVG')}
+          svg={htvExportFresh?.svg ?? null}
+          loading={exportDialogOpen && !htvExportFresh}
+          error={htvExportFresh?.error ?? null}
+          widthMm={htvExportFresh?.widthMm ?? null}
+          heightMm={htvExportFresh?.heightMm ?? null}
+          summaryRows={[
+            { label: 'Layers', value: String(htvExportFresh?.layerCount ?? exportLayers.length) },
+            { label: 'Weed margin', value: `${weedMarginMm} mm` },
+          ]}
+          notes={[
+            ...exportPlacementNotes,
+            ...(htvExportOptions.mirror
+              ? [{ tone: 'info' as const, text: 'Mirrored for iron-on vinyl: cut it face-down and the text will read correctly once pressed.' }]
+              : [{ tone: 'warning' as const, text: 'Not mirrored. Text and artwork will press on backwards unless your vinyl is cut face-up.' }]),
+            ...(state.layers.length > exportLayers.length
+              ? [{ tone: 'info' as const, text: `${state.layers.length - exportLayers.length} layer(s) on other placements are not included.` }]
+              : []),
+          ]}
+          defaultFilename={sanitizeExportFilename(state.projectName || 'htv-design', 'htv-design').replace(/\.svg$/, '')}
+          onDownload={handleExportDownload}
+          onClose={() => setExportDialogOpen(false)}
+        >
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
+            <input
+              type="checkbox"
+              checked={htvExportOptions.mirror}
+              onChange={(event) => setHtvExportOptions((current) => ({ ...current, mirror: event.target.checked }))}
+            />
+            {t('Mirror horizontally (recommended for iron-on vinyl)')}
+          </label>
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
+            <input
+              type="checkbox"
+              checked={htvExportOptions.weedBorder}
+              onChange={(event) => setHtvExportOptions((current) => ({ ...current, weedBorder: event.target.checked }))}
+            />
+            {t('Weed border (cut line around the design)')}
+          </label>
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
+            <input
+              type="checkbox"
+              checked={htvExportOptions.registrationMarks}
+              onChange={(event) => setHtvExportOptions((current) => ({ ...current, registrationMarks: event.target.checked }))}
+            />
+            {t('Registration marks (corner crosses)')}
+          </label>
+          <HtvColourFilesPanel
+            layers={exportLayers}
+            projectName={state.projectName}
+            options={{ ...htvExportOptions, marginMm: weedMarginMm }}
+            filenameBase={sanitizeExportFilename(state.projectName || 'htv-design', 'htv-design').replace(/\.svg$/, '')}
+            onDownloaded={(message) => setToast({ message, tone: 'success' })}
+          />
+        </ExportDialog>
+
         <HtvGarmentPreviewPanel open={garmentPreviewOpen} state={state} showAllPlacementOverlays={placementOverlayMode === 'all-active'} onClose={() => setGarmentPreviewOpen(false)} />
       </div>
 
       {toast && (
         <div
-          className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
-            toast.tone === 'success' ? 'bg-success-500 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-500 text-ink-inverse' : 'bg-danger-500 text-ink-inverse'
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-4 max-lg:bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg ${
+            toast.tone === 'success' ? 'bg-success-600 text-ink-inverse' : toast.tone === 'warning' ? 'bg-warning-600 text-ink-inverse' : 'bg-danger-600 text-ink-inverse'
           }`}
         >
           {toast.message}
         </div>
       )}
+
+      <MobileStudioBar
+        items={[
+          { id: 'add', label: 'Add', icon: Plus, active: mobilePanel === 'add', onSelect: () => setMobilePanel((current) => (current === 'add' ? 'none' : 'add')) },
+          { id: 'inspect', label: 'Inspect', icon: SlidersHorizontal, active: mobilePanel === 'inspect', onSelect: () => setMobilePanel((current) => (current === 'inspect' ? 'none' : 'inspect')) },
+          { id: 'export', label: 'Export', icon: Download, primary: true, disabled: activePlacementLayers.length === 0, onSelect: handleExport },
+        ]}
+      />
     </div>
   );
 }

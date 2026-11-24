@@ -99,44 +99,46 @@ const SS12_PROFILE: StoneSizeProfile = {
 };
 
 /**
- * SS16 — TRW Clean Stone rhinestone font size.
+ * SS16.
  *
- * ⚠️  PROVISIONAL: These values are derived from TRW vendor specifications for
- * rhinestone fonts. Hole diameter and center distance are estimated and have not
- * been validated by physical cut test. See docs/CALIBRATION_PLAN.md.
+ * The stone is about 3.8–4.0 mm across (3.9 mm). The 4.394 mm that appears for this size in vendor material is the
+ * template HOLE for Magic Flock (0.173 in), which lives in the material profile, never here.
+ *
+ * ⚠️  PROVISIONAL: hole diameter and center distance have not been validated
+ * by physical cut test. See docs/CALIBRATION_PLAN.md.
  */
 const SS16_PROFILE: StoneSizeProfile = {
   id: 'SS16',
-  label: 'SS16 (4.394 mm)',
-  stoneDiameterMm: 4.394, // TRW Clean Stone calibration
+  label: 'SS16 (3.9 mm)',
+  stoneDiameterMm: 3.9, // the stone itself; the Magic Flock hole (4.39 mm) is in the material profile
   // Provisional — must be validated by physical cut test
   recommendedHoleDiameterMm: 4.6,
   // Provisional — must be validated by physical cut test
   minCenterDistanceMm: 5.0,
   notes:
-    'TRW rhinestone font size. Based on vendor specifications. ' +
-    'All values are provisional and require physical calibration.',
+    'Large size. All values are provisional and require physical calibration.',
   requiresPhysicalValidation: true,
 };
 
 /**
- * SS20 — TRW Clean Stone rhinestone font size (largest).
+ * SS20 (largest).
  *
- * ⚠️  PROVISIONAL: These values are derived from TRW vendor specifications for
- * rhinestone fonts. Hole diameter and center distance are estimated and have not
- * been validated by physical cut test. See docs/CALIBRATION_PLAN.md.
+ * The stone is about 4.6–4.8 mm across (4.7 mm). The 5.283 mm that appears for this size in vendor material is the
+ * template HOLE for Magic Flock (0.208 in), which lives in the material profile, never here.
+ *
+ * ⚠️  PROVISIONAL: hole diameter and center distance have not been validated
+ * by physical cut test. See docs/CALIBRATION_PLAN.md.
  */
 const SS20_PROFILE: StoneSizeProfile = {
   id: 'SS20',
-  label: 'SS20 (5.283 mm)',
-  stoneDiameterMm: 5.283, // TRW Clean Stone calibration
+  label: 'SS20 (4.7 mm)',
+  stoneDiameterMm: 4.7, // the stone itself; the Magic Flock hole (5.28 mm) is in the material profile
   // Provisional — must be validated by physical cut test
   recommendedHoleDiameterMm: 5.5,
   // Provisional — must be validated by physical cut test
   minCenterDistanceMm: 6.0,
   notes:
-    'TRW rhinestone font size (largest). Based on vendor specifications. ' +
-    'All values are provisional and require physical calibration.',
+    'Largest size. All values are provisional and require physical calibration.',
   requiresPhysicalValidation: true,
 };
 

@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Archive, Gem, Image as ImageIcon, LibraryBig, Search, Star, SwatchBook, Trash2, Upload } from 'lucide-react';
 import {
   type WorkspaceAsset,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   makeWorkspaceId,
   readWorkspaceVault,
   writeWorkspaceVault,
@@ -20,7 +21,13 @@ import {
   workspaceInputClassName,
   workspaceSelectClassName,
 } from '../components/workspace/WorkspaceChrome';
+import UndoToast from '../components/UndoToast';
+import {
+  DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+  validateAssetUpload,
+} from '@/src/lib/rhinestone-engine/index';
 
+import { useT } from '../lib/i18n';
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -30,9 +37,9 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-async function fileToAsset(file: File): Promise<WorkspaceAsset> {
+async function fileToAsset(file: File, svgTextOverride?: string | null): Promise<WorkspaceAsset> {
   const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
-  const svgText = isSvg ? await file.text() : null;
+  const svgText = isSvg ? (typeof svgTextOverride === 'string' ? svgTextOverride : await file.text()) : null;
   const sourceDataUrl = isSvg
     ? `data:image/svg+xml;utf8,${encodeURIComponent(svgText ?? '')}`
     : await readFileAsDataUrl(file);
@@ -61,14 +68,38 @@ function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.
   writeWorkspaceVault(nextVault);
 }
 
+function getUploadRejectionMessage(code: ReturnType<typeof validateAssetUpload>['code']): string {
+  switch (code) {
+    case 'not_a_valid_svg':
+      return 'not a valid SVG';
+    case 'no_supported_shapes':
+      return 'no supported shapes';
+    case 'file_too_large':
+      return 'file too large';
+    default:
+      return 'upload failed';
+  }
+}
+
 export default function LibraryPage() {
+  const t = useT();
   const router = useRouter();
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [query, setQuery] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | 'svg' | 'image'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'favorites'>('recent');
   const [tagFilter, setTagFilter] = useState('all');
+  const [undoState, setUndoState] = useState<{ toastId: number; message: string; asset: WorkspaceAsset } | null>(null);
+  const [uploadSummary, setUploadSummary] = useState<{
+    tone: 'success' | 'warning' | 'error';
+    message: string;
+    details: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => setVault(readWorkspaceVault()));
+  }, []);
 
   const allTags = useMemo(
     () => Array.from(new Set(vault.assets.flatMap((asset) => asset.tags))).sort((a, b) => a.localeCompare(b)),
@@ -98,12 +129,57 @@ export default function LibraryPage() {
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const uploaded = await Promise.all(Array.from(files).map(fileToAsset));
-    const nextVault = {
-      ...vault,
-      assets: [...uploaded, ...vault.assets],
-    };
-    persistVault(nextVault, setVault);
+    const nextAssets: WorkspaceAsset[] = [];
+    const details: string[] = [];
+    const rejectionReasons: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+      const svgText = isSvg ? await file.text().catch(() => null) : null;
+      const validation = validateAssetUpload({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        svgText,
+        maxSizeBytes: DEFAULT_ASSET_UPLOAD_MAX_SIZE_BYTES,
+      });
+
+      if (!validation.valid) {
+        const reason = getUploadRejectionMessage(validation.code);
+        rejectionReasons.push(reason);
+        details.push(`${file.name} — rejected: ${reason}`);
+        continue;
+      }
+
+      try {
+        const asset = await fileToAsset(file, svgText);
+        nextAssets.push(asset);
+        details.push(`${file.name} — added`);
+      } catch {
+        rejectionReasons.push('could not read file');
+        details.push(`${file.name} — rejected: could not read file`);
+      }
+    }
+
+    if (nextAssets.length > 0) {
+      const nextVault = {
+        ...vault,
+        assets: [...nextAssets, ...vault.assets],
+      };
+      persistVault(nextVault, setVault);
+    }
+
+    const addedCount = nextAssets.length;
+    const rejectedCount = details.length - addedCount;
+    const distinctReasons = Array.from(new Set(rejectionReasons));
+    const message = rejectedCount > 0
+      ? `${addedCount} added, ${rejectedCount} rejected: ${distinctReasons.join(', ')}`
+      : `${addedCount} added`;
+    setUploadSummary({
+      tone: rejectedCount === 0 ? 'success' : addedCount > 0 ? 'warning' : 'error',
+      message,
+      details,
+    });
   };
 
   const updateAsset = (assetId: string, updater: (asset: WorkspaceAsset) => WorkspaceAsset) => {
@@ -114,18 +190,33 @@ export default function LibraryPage() {
     persistVault(nextVault, setVault);
   };
 
+  const deleteAsset = (asset: WorkspaceAsset) => {
+    persistVault({ ...vault, assets: vault.assets.filter((item) => item.assetId !== asset.assetId) }, setVault);
+    setUndoState((current) => ({ toastId: (current?.toastId ?? 0) + 1, message: `Deleted “${asset.name}”.`, asset }));
+  };
+
+  const undoDeleteAsset = () => {
+    if (!undoState) return;
+    // Restore into the latest stored vault so edits made in the meantime are kept.
+    const latest = readWorkspaceVault();
+    if (!latest.assets.some((item) => item.assetId === undoState.asset.assetId)) {
+      persistVault({ ...latest, assets: [undoState.asset, ...latest.assets] }, setVault);
+    }
+    setUndoState(null);
+  };
+
   return (
     <WorkspacePage tone="brand">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <WorkspaceHero
           eyebrow="Library"
-          title="Asset command center"
-          description="Upload artwork in bulk, keep naming and tags clean, and launch the right vector or raster source into the right studio without hunting through folders."
+          title={t('Library')}
+          description={t('Keep your SVG and image files here and open them in the studio. Vector files go to Rhinestone, pictures can be traced for HTV.')}
           tone="brand"
           actions={(
             <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800">
               <Upload className="h-4 w-4" />
-              Bulk upload assets
+              {t('Bulk upload assets')}
               <input
                 type="file"
                 accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"
@@ -138,51 +229,62 @@ export default function LibraryPage() {
               />
             </label>
           )}
-          aside={(
-            <WorkspaceSurface className="p-5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Workspace behavior</div>
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">
-                Vector files stay easy to route into Rhinestone. Raster files stay visible for HTV tracing and silhouette cleanup.
-              </p>
-            </WorkspaceSurface>
-          )}
         />
 
         <section className="grid gap-4 md:grid-cols-3">
-          <WorkspaceMetricCard label="Assets" value={vault.assets.length} />
-          <WorkspaceMetricCard label="Vectors" value={vault.assets.filter((asset) => asset.kind === 'svg').length} />
-          <WorkspaceMetricCard label="Favorited" value={vault.assets.filter((asset) => asset.favorite).length} />
+          <WorkspaceMetricCard label={t('Assets')} value={vault.assets.length} />
+          <WorkspaceMetricCard label={t('Vectors')} value={vault.assets.filter((asset) => asset.kind === 'svg').length} />
+          <WorkspaceMetricCard label={t('Favorited')} value={vault.assets.filter((asset) => asset.favorite).length} />
         </section>
 
         <WorkspaceSurface className="p-5">
+          {uploadSummary && (
+            <div
+              role="status"
+              className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                uploadSummary.tone === 'success'
+                  ? 'border-success-500/30 bg-success-50 text-success-700'
+                  : uploadSummary.tone === 'warning'
+                    ? 'border-warning-500/30 bg-warning-50 text-warning-700'
+                    : 'border-danger-500/30 bg-danger-50 text-danger-700'
+              }`}
+            >
+              <p className="font-semibold">{uploadSummary.message}</p>
+              <ul className="mt-2 space-y-1 text-xs">
+                {uploadSummary.details.map((detail, index) => (
+                  <li key={`${index}-${detail}`}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid gap-3 lg:grid-cols-[1.8fr_repeat(4,minmax(0,1fr))]">
             <label className="flex items-center gap-3">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, filename, or tag"
+                placeholder={t('Search by name, filename, or tag')}
                 className={workspaceInputClassName}
               />
             </label>
-            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName}>
-              <option value="all">All kinds</option>
-              <option value="svg">SVG only</option>
-              <option value="image">Image only</option>
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)} className={workspaceSelectClassName} aria-label={t('Filter by kind')}>
+              <option value="all">{t('All kinds')}</option>
+              <option value="svg">{t('SVG only')}</option>
+              <option value="image">{t('Image only')}</option>
             </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName}>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-              <option value="all">All statuses</option>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label={t('Filter by status')}>
+              <option value="active">{t('Active')}</option>
+              <option value="archived">{t('Archived')}</option>
+              <option value="all">{t('All statuses')}</option>
             </select>
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName}>
-              <option value="all">All tags</option>
+            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className={workspaceSelectClassName} aria-label={t('Filter by tag')}>
+              <option value="all">{t('All tags')}</option>
               {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
             </select>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName}>
-              <option value="recent">Recently updated</option>
-              <option value="name">Name</option>
-              <option value="favorites">Favorites first</option>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className={workspaceSelectClassName} aria-label={t('Sort assets')}>
+              <option value="recent">{t('Recently updated')}</option>
+              <option value="name">{t('Name')}</option>
+              <option value="favorites">{t('Favorites first')}</option>
             </select>
           </div>
         </WorkspaceSurface>
@@ -212,11 +314,11 @@ export default function LibraryPage() {
                 <input
                   value={asset.name}
                   onChange={(event) => updateAsset(asset.assetId, (current) => ({ ...current, name: event.target.value, updatedAt: new Date().toISOString() }))}
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-lg font-semibold text-ink outline-none focus:border-accent-300"
+                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-lg font-semibold text-ink focus:border-accent-300"
                 />
 
                 <label className="block space-y-2 text-sm text-ink-secondary">
-                  <span className="font-medium text-ink">Tags</span>
+                  <span className="font-medium text-ink">{t('Tags')}</span>
                   <input
                     value={asset.tags.join(', ')}
                     onChange={(event) => updateAsset(asset.assetId, (current) => ({
@@ -224,7 +326,7 @@ export default function LibraryPage() {
                       tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean),
                       updatedAt: new Date().toISOString(),
                     }))}
-                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-accent-300"
+                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-accent-300"
                     placeholder="competition, bride, mascot, chrome"
                   />
                 </label>
@@ -241,14 +343,14 @@ export default function LibraryPage() {
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent-300 hover:text-accent-600"
                   >
                     <Gem className="h-4 w-4" />
-                    Open in Rhinestone
+                    {t('Open in Rhinestone')}
                   </button>
                   <button
                     onClick={() => router.push(`/htv?asset=${asset.assetId}`)}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-brand-300 hover:text-brand-600"
                   >
                     <SwatchBook className="h-4 w-4" />
-                    Open in HTV
+                    {t('Open in HTV')}
                   </button>
                 </div>
 
@@ -268,11 +370,11 @@ export default function LibraryPage() {
                     {asset.archived ? 'Restore' : 'Archive'}
                   </button>
                   <button
-                    onClick={() => persistVault({ ...vault, assets: vault.assets.filter((item) => item.assetId !== asset.assetId) }, setVault)}
+                    onClick={() => deleteAsset(asset)}
                     className="inline-flex items-center gap-2 rounded-xl bg-danger-50 px-3 py-2 text-sm font-medium text-danger-600 transition hover:bg-danger-500/10"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {t('Delete')}
                   </button>
                 </div>
               </div>
@@ -282,11 +384,18 @@ export default function LibraryPage() {
 
         {visibleAssets.length === 0 && (
           <WorkspaceEmptyState
-            title="No assets match the current filters"
-            description="Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view."
+            title={t('No assets match the current filters')}
+            description={t('Upload a batch of SVGs, PNGs, or JPGs, or change the filters to bring archived items back into view.')}
           />
         )}
       </div>
+
+      <UndoToast
+        message={undoState?.message ?? null}
+        toastId={undoState?.toastId ?? 0}
+        onUndo={undoDeleteAsset}
+        onDismiss={() => setUndoState(null)}
+      />
     </WorkspacePage>
   );
 }

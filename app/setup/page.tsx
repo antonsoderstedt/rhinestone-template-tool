@@ -2,23 +2,34 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Clock3, FolderOpen, Gem, Settings2, ShieldAlert, SwatchBook } from 'lucide-react';
+import { CheckCircle2, Clock3, ShieldAlert } from 'lucide-react';
 import CalibrationSheetGenerator from '../components/CalibrationSheetGenerator';
 import CricutTestPack from '../components/CricutTestPack';
 import CalibrationWorkflow from '../components/CalibrationWorkflow';
-import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
-import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import { WorkspaceHero, WorkspacePage, WorkspaceSurface } from '../components/workspace/WorkspaceChrome';
 import { getCalibrationGateSummary } from '../lib/workspaceRecovery';
-import { readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
+import { EMPTY_WORKSPACE_VAULT, readActiveCalibrationProfileId, readWorkspaceVault } from '../lib/workspaceVault';
+
+import { useT } from '../lib/i18n';
+const STEPS = [
+  { id: 'test-pack', label: 'Test pack', hint: 'Cut test shapes' },
+  { id: 'measure', label: 'Measure', hint: 'Find your hole sizes' },
+  { id: 'approve', label: 'Approve', hint: 'Unlock export' },
+] as const;
+type StepId = (typeof STEPS)[number]['id'];
 
 export default function SetupPage() {
-  const [vault, setVault] = useState(() => readWorkspaceVault());
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => readActiveCalibrationProfileId());
+  const t = useT();
+  const [vault, setVault] = useState(() => EMPTY_WORKSPACE_VAULT);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const [step, setStep] = useState<StepId>('test-pack');
 
   useEffect(() => {
     const sync = () => {
-      setVault(readWorkspaceVault());
-      setActiveProfileId(readActiveCalibrationProfileId());
+      queueMicrotask(() => {
+        setVault(readWorkspaceVault());
+        setActiveProfileId(readActiveCalibrationProfileId());
+      });
     };
 
     sync();
@@ -30,134 +41,135 @@ export default function SetupPage() {
     };
   }, []);
 
-  const gateSummary = useMemo(() => getCalibrationGateSummary(vault, activeProfileId), [activeProfileId, vault]);
-  const gateTone = gateSummary.workflowState === 'Ready'
-    ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
-    : 'border-amber-400/30 bg-amber-500/10 text-amber-100';
-  const StatusIcon = gateSummary.workflowState === 'Ready' ? CheckCircle2 : ShieldAlert;
+  const gate = useMemo(() => getCalibrationGateSummary(vault, activeProfileId), [activeProfileId, vault]);
+  const ready = gate.workflowState === 'Ready';
+  const StatusIcon = ready ? CheckCircle2 : ShieldAlert;
+  const stepIndex = STEPS.findIndex((item) => item.id === step);
 
   return (
-    <div className="min-h-screen bg-[var(--studio-bg,#0f0f12)] text-[var(--studio-ink,#f1f0ef)]" data-theme="dark">
-      <WorkspaceModeBanner
-        mode="Setup & Calibration"
-        status={gateSummary.workflowState === 'Ready' ? 'Ready' : 'Warning'}
-        project="Production readiness"
-        guidance={gateSummary.workflowState === 'Ready'
-          ? 'The active material profile has been approved. Keep the calibration gate visible before any export or production cut.'
-          : 'Calibration is the gate to production. Cut the calibration sheet and approve the active material profile before export.'}
-        calibrationState={{ label: gateSummary.activeProfileApproved ? 'Approved' : 'Approval gate', tone: gateSummary.activeProfileApproved ? 'success' : 'warning' }}
-      />
-      <main className="mx-auto max-w-5xl px-6 py-14 space-y-14">
-        <WorkspaceQuickActions
-          actions={[
-            { label: 'Resume autosave', description: 'Jump back into the most recent draft in the studio.', href: '/rhinestone', icon: Gem, tone: 'brand' },
-            { label: 'Saved work', description: 'Open archived or active designs before the next cut.', href: '/designs', icon: FolderOpen, tone: 'neutral' },
-            { label: 'HTV studio', description: 'Review garment placements and vinyl cut work.', href: '/htv', icon: SwatchBook, tone: 'neutral' },
-            { label: 'Production settings', description: 'Tune machine, material, and export defaults.', href: '/settings', icon: Settings2, tone: 'default' },
-          ]}
+    <WorkspacePage tone="accent">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+        <WorkspaceHero
+          eyebrow="Setup & calibration"
+          title={t('Make the holes fit your stones')}
+          description={t('Cut a few test shapes, measure which hole sizes seat your stones, then approve them. Export unlocks once your material is approved.')}
+          tone="accent"
+          aside={(
+            <WorkspaceSurface className="p-5">
+              <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${ready ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>
+                <StatusIcon className="h-4 w-4" aria-hidden="true" />
+                {ready ? 'Approved — ready to export' : 'Not approved yet'}
+              </div>
+              <p className="mt-3 text-sm leading-6 text-ink-secondary">{gate.nextStep}</p>
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-secondary">
+                <div><dt className="inline font-semibold text-ink">{t('Active profile:')} </dt><dd className="inline">{gate.activeProfileName ?? 'none'}</dd></div>
+                <div className="flex items-center gap-1">
+                  <dt className="inline font-semibold text-ink">{t('Last approval:')} </dt>
+                  <dd className="inline-flex items-center gap-1">
+                    {gate.lastApprovedAt ? <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> : <Clock3 className="h-3 w-3" aria-hidden="true" />}
+                    {gate.lastApprovedAt ? new Date(gate.lastApprovedAt).toLocaleDateString() : 'not yet'}
+                  </dd>
+                </div>
+              </dl>
+            </WorkspaceSurface>
+          )}
         />
 
-        <section className={`rounded-2xl border p-5 ${gateTone}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/80">Production gate</div>
-              <h2 className="mt-2 text-2xl font-semibold text-[var(--studio-ink,#f1f0ef)]">Cut, measure, approve, then produce.</h2>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-current/30 bg-black/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-current">
-              <StatusIcon className="h-3.5 w-3.5" />
-              {gateSummary.workflowState === 'Ready' ? 'Ready' : 'Pending'}
+        <nav aria-label={t('Setup steps')}>
+          <div role="tablist" aria-label={t('Setup steps')} className="grid gap-3 sm:grid-cols-3">
+            {STEPS.map((item, index) => {
+              const selected = item.id === step;
+              return (
+                <button
+                  key={item.id}
+                  id={`setup-tab-${item.id}`}
+                  role="tab"
+                  type="button"
+                  aria-selected={selected}
+                  aria-controls={`setup-panel-${item.id}`}
+                  onClick={() => setStep(item.id)}
+                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${selected ? 'border-accent-400 bg-surface-raised shadow-sm' : 'border-border bg-surface hover:bg-surface-raised'}`}
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${selected ? 'bg-accent-600 text-ink-inverse' : 'bg-sand-200 text-ink'}`}>{index + 1}</span>
+                  <span>
+                    <span className="block text-sm font-semibold text-ink">{item.label}</span>
+                    <span className="block text-xs text-ink-secondary">{item.hint}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <WorkspaceSurface className="p-6">
+          <div id={`setup-panel-${step}`} role="tabpanel" aria-labelledby={`setup-tab-${step}`} className="space-y-6">
+            {step === 'test-pack' && (
+              <>
+                <div>
+                  <h2 className="text-2xl font-semibold text-ink">{t('1. Cut the test pack')}</h2>
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    {t('Four ready-to-cut SVGs for checking your Cricut and flock. Start with a small scrap of material.')}
+                  </p>
+                </div>
+                <CricutTestPack />
+              </>
+            )}
+
+            {/* One workflow instance for steps 2 and 3 so entered values are shared; it stays mounted. */}
+            <div hidden={step === 'test-pack'} className="space-y-6">
+              {step === 'measure' && (
+                <>
+                  <div>
+                    <h2 className="text-2xl font-semibold text-ink">2. Measure your hole sizes</h2>
+                    <p className="mt-1 text-sm text-ink-secondary">
+                      {t('Cut the calibration sheet (stone sizes SS6–SS20), find the hole that seats each stone, and enter it below.')}
+                    </p>
+                  </div>
+                  <CalibrationSheetGenerator />
+                  <div className="border-t border-border" />
+                </>
+              )}
+              {step === 'approve' && (
+                <div>
+                  <h2 className="text-2xl font-semibold text-ink">3. Save and approve</h2>
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    {t('Save your measured sizes as a profile and approve it after you have checked that stones seat correctly. Approved profiles unlock export in the studios.')}
+                  </p>
+                </div>
+              )}
+              <CalibrationWorkflow view={step === 'approve' ? 'approve' : 'measure'} />
             </div>
           </div>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--studio-ink-secondary,#a8a29e)]">
-            {gateSummary.nextStep}
-          </p>
+        </WorkspaceSurface>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Active profile</div>
-              <div className="mt-2 text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">{gateSummary.activeProfileName ?? 'No active profile'}</div>
-              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">
-                {gateSummary.activeProfileApproved ? 'Approved and ready for production' : 'Waiting on approval'}
-              </div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Approved</div>
-              <div className="mt-2 text-2xl font-semibold text-[var(--studio-ink,#f1f0ef)]">{gateSummary.approvedCalibrationCount}</div>
-              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">Material profiles verified for production</div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-current/15 bg-black/5 p-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-current/75">Last approval</div>
-              <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">
-                {gateSummary.lastApprovedAt ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
-                {gateSummary.lastApprovedAt ? new Date(gateSummary.lastApprovedAt).toLocaleDateString() : 'Not yet'}
-              </div>
-              <div className="mt-2 text-xs text-[var(--studio-ink-secondary,#a8a29e)]">Keep the calibration gate visible before each new material batch</div>
-            </div>
-          </div>
-        </section>
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 mb-4"
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            disabled={stepIndex === 0}
+            onClick={() => setStep(STEPS[stepIndex - 1]!.id)}
+            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink disabled:invisible"
           >
-            ← Back to home
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--studio-ink,#f1f0ef)]">
-            Setup & Calibration
-          </h1>
-          <p className="mt-2 text-base text-[var(--studio-ink-secondary,#a8a29e)] font-medium">
-            Calibrate hole sizes, validate machine output, and approve your material profile before production.
-          </p>
-        </header>
+            ← Back
+          </button>
+          {stepIndex < STEPS.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(STEPS[stepIndex + 1]!.id)}
+              className="rounded-xl bg-ink px-5 py-2.5 text-sm font-semibold text-ink-inverse transition hover:bg-sand-800"
+            >
+              Next: {STEPS[stepIndex + 1]!.label} →
+            </button>
+          ) : (
+            <Link href="/rhinestone" className="rounded-xl bg-ink px-5 py-2.5 text-sm font-semibold text-ink-inverse transition hover:bg-sand-800">
+              Back to the studio →
+            </Link>
+          )}
+        </div>
 
-        {/* ── Cricut Test Pack ─────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-[var(--studio-border,rgba(255,255,255,0.08))] bg-[var(--studio-surface,#1a1a1f)] p-7 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-lg font-bold text-[var(--studio-ink,#f1f0ef)]">🎯 Cricut Test Pack</h2>
-            <p className="mt-1 text-sm text-[var(--studio-ink-secondary,#a8a29e)]">
-              Start here. Four ready-to-cut SVGs for validating your Cricut + Magic Flock setup.
-            </p>
-          </div>
-          <CricutTestPack />
-        </section>
-
-        {/* ── Calibration Workflow ────────────────────────────────────────── */}
-        <section className="rounded-xl border border-[var(--studio-border,rgba(255,255,255,0.08))] bg-[var(--studio-surface,#1a1a1f)] p-7 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">Calibration Workflow</h2>
-            <p className="mt-1 text-sm text-[var(--studio-ink-secondary,#a8a29e)]">
-              Record your measured hole diameters after cutting the calibration sheet.
-              Apply calibrated values to a test grid and download.
-            </p>
-          </div>
-          <CalibrationWorkflow />
-        </section>
-
-        {/* ── Calibration Sheet ────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-[var(--studio-border,rgba(255,255,255,0.08))] bg-[var(--studio-surface,#1a1a1f)] p-7 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-lg font-semibold text-[var(--studio-ink,#f1f0ef)]">Calibration Sheet</h2>
-            <p className="mt-1 text-sm text-[var(--studio-ink-secondary,#a8a29e)]">
-              Hole-diameter variants for SS6–SS12. Cut before any production run.
-              Find the diameter that seats stones perfectly for your blade and flock batch.
-            </p>
-          </div>
-          <CalibrationSheetGenerator />
-        </section>
-
-        {/* ── Footer ──────────────────────────────────────────────────────── */}
-        <footer className="pb-4">
-          <p className="text-xs text-[var(--studio-ink-muted,#6b7280)] leading-relaxed">
-            All exported SVGs contain real vector <code className="text-violet-400">&lt;circle&gt;</code> elements dimensioned in mm.
-            Stone size values are provisional. Always cut a calibration sheet first and
-            approve your material profile before production cutting.
-          </p>
-        </footer>
-
-      </main>
-    </div>
+        <p className="text-xs leading-relaxed text-ink-muted">
+          {t('Exported SVGs use real circle elements sized in mm. The stone sizes shown are starting values, not measurements — always cut a test sheet before production.')}
+        </p>
+      </div>
+    </WorkspacePage>
   );
 }

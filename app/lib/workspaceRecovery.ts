@@ -93,3 +93,8 @@ export function getWorkspaceRecoverySummary(vault: WorkspaceVault, hasAutosave =
     workflowStatus,
   };
 }
+
+/** The home page only shows its "pick up where you left off" card when there is something to pick up. */
+export function hasAnythingToRecover(summary: Pick<WorkspaceRecoverySummary, 'totalSavedDesigns' | 'hasAutosave'>): boolean {
+  return summary.hasAutosave || summary.totalSavedDesigns > 0;
+}

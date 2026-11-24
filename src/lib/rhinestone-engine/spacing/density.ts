@@ -25,9 +25,10 @@ import { getMinimumCenterDistance, getRecommendedCenterDistance, getRecommendedH
  * - `standard`: exactly the recommended center distance
  * - `dense`:    recommended − 0.15 mm, clamped to stone minCenterDistanceMm
  * - `loose`:    recommended + 0.5 mm extra gap
+ * - `airy`:     about 1.55 hole diameters centre to centre (a bridge of ~1.9 mm for SS10), the open look of commercial templates
  * - `custom`:   caller-supplied value (validated against minCenterDistanceMm)
  */
-export type DensityPreset = 'safe' | 'standard' | 'dense' | 'loose' | 'custom';
+export type DensityPreset = 'safe' | 'standard' | 'dense' | 'loose' | 'airy' | 'custom';
 
 export interface GetDensitySpacingOptions {
   stoneSize: StoneSizeId;
@@ -100,6 +101,10 @@ export function getDensitySpacing(
       spacingMm = recommended + 0.5;
       break;
 
+    case 'airy':
+      spacingMm = Math.max(recommended + 0.5, Math.round(holeDiameterMm * 1.55 * 100) / 100);
+      break;
+
     case 'custom': {
       const { customSpacingMm } = options;
       if (customSpacingMm === undefined) {
@@ -126,7 +131,7 @@ export function getDensitySpacing(
     default:
       throw new Error(
         `getDensitySpacing: unknown preset "${String(preset)}". ` +
-          `Valid presets: safe, standard, dense, loose, custom.`,
+          `Valid presets: safe, standard, dense, loose, airy, custom.`,
       );
   }
 
@@ -154,6 +159,7 @@ export function getDensityPresetOptions(): Array<{
     { value: 'standard', label: 'Standard', description: 'Recommended center distance' },
     { value: 'dense',    label: 'Dense',    description: '−0.15 mm, clamped to minimum' },
     { value: 'loose',    label: 'Loose',    description: '+0.5 mm gap — open spacing' },
+    { value: 'airy',     label: 'Airy',     description: 'Open, like commercial templates' },
     { value: 'custom',   label: 'Custom',   description: 'Enter a specific value in mm' },
   ];
 }

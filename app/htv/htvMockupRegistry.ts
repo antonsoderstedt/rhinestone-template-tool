@@ -1,4 +1,5 @@
 import { normalizeGarmentType, type GarmentType, type SelectableGarmentType } from '../components/garmentPreview/garmentCatalog';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import type { HtvPlacementView, HtvPlacementZone } from './htvPlacementZones';
 
 export interface MockupRect {
@@ -22,7 +23,7 @@ export interface HtvMockupDefinition {
 
 const hoodIeMockup: HtvMockupDefinition = {
   front: {
-    imageSrc: '/press-studio-mockups/hoodie-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/hoodie-front.png'),
     placements: {
       'full-front': { x: 182, y: 182, width: 262, height: 290 },
       'left-chest': { x: 314, y: 222, width: 74, height: 74 },
@@ -30,19 +31,19 @@ const hoodIeMockup: HtvMockupDefinition = {
     },
   },
   back: {
-    imageSrc: '/press-studio-mockups/hoodie-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/hoodie-back.png'),
     placements: {
       'full-back': { x: 170, y: 158, width: 286, height: 324 },
     },
   },
   left: {
-    imageSrc: '/press-studio-mockups/hoodie-left.png',
+    imageSrc: withBasePath('/press-studio-mockups/hoodie-left.png'),
     placements: {
       'left-sleeve': { x: 272, y: 168, width: 96, height: 278 },
     },
   },
   right: {
-    imageSrc: '/press-studio-mockups/hoodie-right.png',
+    imageSrc: withBasePath('/press-studio-mockups/hoodie-right.png'),
     placements: {
       'right-sleeve': { x: 258, y: 168, width: 96, height: 278 },
     },
@@ -51,7 +52,7 @@ const hoodIeMockup: HtvMockupDefinition = {
 
 const teeMockup: HtvMockupDefinition = {
   front: {
-    imageSrc: '/press-studio-mockups/tee-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-front.png'),
     placements: {
       'full-front': { x: 176, y: 162, width: 274, height: 338 },
       'left-chest': { x: 316, y: 214, width: 78, height: 78 },
@@ -59,19 +60,19 @@ const teeMockup: HtvMockupDefinition = {
     },
   },
   back: {
-    imageSrc: '/press-studio-mockups/tee-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-back.png'),
     placements: {
       'full-back': { x: 174, y: 156, width: 280, height: 406 },
     },
   },
   left: {
-    imageSrc: '/press-studio-mockups/tee-left.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-left.png'),
     placements: {
       'left-sleeve': { x: 276, y: 154, width: 98, height: 282 },
     },
   },
   right: {
-    imageSrc: '/press-studio-mockups/tee-right.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-right.png'),
     placements: {
       'right-sleeve': { x: 250, y: 154, width: 98, height: 282 },
     },
@@ -80,7 +81,7 @@ const teeMockup: HtvMockupDefinition = {
 
 const oversizedTeeMockup: HtvMockupDefinition = {
   front: {
-    imageSrc: '/press-studio-mockups/tee-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-front.png'),
     placements: {
       'full-front': { x: 170, y: 170, width: 286, height: 346 },
       'left-chest': { x: 320, y: 220, width: 82, height: 82 },
@@ -88,19 +89,19 @@ const oversizedTeeMockup: HtvMockupDefinition = {
     },
   },
   back: {
-    imageSrc: '/press-studio-mockups/tee-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-back.png'),
     placements: {
       'full-back': { x: 170, y: 178, width: 286, height: 360 },
     },
   },
   left: {
-    imageSrc: '/press-studio-mockups/tee-left.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-left.png'),
     placements: {
       'left-sleeve': { x: 274, y: 154, width: 104, height: 294 },
     },
   },
   right: {
-    imageSrc: '/press-studio-mockups/tee-right.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-right.png'),
     placements: {
       'right-sleeve': { x: 246, y: 154, width: 104, height: 294 },
     },
@@ -109,7 +110,7 @@ const oversizedTeeMockup: HtvMockupDefinition = {
 
 const croppedTeeMockup: HtvMockupDefinition = {
   front: {
-    imageSrc: '/press-studio-mockups/tee-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-front.png'),
     placements: {
       'full-front': { x: 184, y: 148, width: 250, height: 208 },
       'left-chest': { x: 308, y: 188, width: 70, height: 70 },
@@ -117,19 +118,19 @@ const croppedTeeMockup: HtvMockupDefinition = {
     },
   },
   back: {
-    imageSrc: '/press-studio-mockups/tee-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-back.png'),
     placements: {
       'full-back': { x: 186, y: 156, width: 246, height: 218 },
     },
   },
   left: {
-    imageSrc: '/press-studio-mockups/tee-left.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-left.png'),
     placements: {
       'left-sleeve': { x: 280, y: 146, width: 88, height: 232 },
     },
   },
   right: {
-    imageSrc: '/press-studio-mockups/tee-right.png',
+    imageSrc: withBasePath('/press-studio-mockups/tee-right.png'),
     placements: {
       'right-sleeve': { x: 254, y: 146, width: 88, height: 232 },
     },
@@ -138,23 +139,23 @@ const croppedTeeMockup: HtvMockupDefinition = {
 
 const toteMockup: HtvMockupDefinition = {
   front: {
-    imageSrc: '/press-studio-mockups/tote-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/tote-front.png'),
     placements: {
       'full-front': { x: 174, y: 228, width: 280, height: 246 },
     },
   },
   back: {
-    imageSrc: '/press-studio-mockups/tote-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/tote-back.png'),
     placements: {
       'full-back': { x: 174, y: 228, width: 280, height: 246 },
     },
   },
   left: {
-    imageSrc: '/press-studio-mockups/tote-front.png',
+    imageSrc: withBasePath('/press-studio-mockups/tote-front.png'),
     placements: {},
   },
   right: {
-    imageSrc: '/press-studio-mockups/tote-back.png',
+    imageSrc: withBasePath('/press-studio-mockups/tote-back.png'),
     placements: {},
   },
 };

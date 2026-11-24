@@ -43,6 +43,7 @@ interface ResolvedOptions {
   includeLabels: boolean;
   paddingMm: number;
   decimalPlaces: number;
+  uncalibratedOverride: boolean;
 }
 
 function resolveOptions(options: ExportOptions): ResolvedOptions {
@@ -51,10 +52,20 @@ function resolveOptions(options: ExportOptions): ResolvedOptions {
     includeLabels: options.includeLabels ?? false,
     paddingMm: options.paddingMm ?? 5,
     decimalPlaces: options.decimalPlaces ?? 3,
+    uncalibratedOverride: options.uncalibratedOverride ?? false,
   };
 }
 
 // ─── Stone rendering ──────────────────────────────────────────────────────────
+
+/**
+ * The colour the stone will be, as a data attribute. Not the stroke: a different stroke colour would make Design Space
+ * split the template into colour layers, and the whole template is cut as one.
+ */
+function stoneColourAttribute(stone: Stone): string {
+  const colour = stone.metadata?.stoneColour;
+  return typeof colour === 'string' && /^#[0-9a-f]{6}$/i.test(colour) ? ` data-stone-colour="${colour.toLowerCase()}"` : '';
+}
 
 function renderStoneCircle(stone: Stone, dp: number): string {
   const cx = formatNumber(stone.center.x, dp);
@@ -83,6 +94,7 @@ function renderStoneCircle(stone: Stone, dp: number): string {
     ` data-stone-id="${safeId}"` +
     ` data-stone-size="${safeSize}"` +
     ` data-hole-diameter-mm="${holeDiameter}"` +
+    stoneColourAttribute(stone) +
     ` />`
   );
 }
@@ -280,9 +292,14 @@ export function createBasicSvgExport(
     `  data-template-id="${safeTemplateId}"`,
     `  data-template-name="${safeTemplateName}"`,
     `  data-unit="mm"`,
+    ...(opts.uncalibratedOverride ? [`  data-calibration="uncalibrated-override"`] : []),
     `>`,
     `  <title>${safeTemplateName}</title>`,
-    `  <desc>Rhinestone template — ${safeTemplateName} — ${template.stones.length} stone(s)</desc>`,
+    `  <desc>Rhinestone template — ${safeTemplateName} — ${template.stones.length} stone(s)${
+      opts.uncalibratedOverride
+        ? ' — exported WITHOUT an approved calibration profile (user override); hole sizes are unverified defaults'
+        : ''
+    }</desc>`,
     ...lines,
     `</svg>`,
   ];

@@ -47,6 +47,13 @@ describe('getDensitySpacing — presets', () => {
     expect(loose.spacingMm).toBeGreaterThan(standard.spacingMm);
   });
 
+  it('airy is the open look of commercial templates: about 1.55 hole diameters, never tighter than loose', () => {
+    const airy = getDensitySpacing({ stoneSize: 'SS10', preset: 'airy' });
+    const loose = getDensitySpacing({ stoneSize: 'SS10', preset: 'loose' });
+    expect(airy.spacingMm).toBeGreaterThanOrEqual(loose.spacingMm);
+    expect(airy.spacingMm).toBeCloseTo(5.32, 1);
+  });
+
   it('ordering: safe > standard > dense, loose > standard', () => {
     const safe     = getDensitySpacing({ stoneSize: 'SS10', preset: 'safe' }).spacingMm;
     const standard = getDensitySpacing({ stoneSize: 'SS10', preset: 'standard' }).spacingMm;
@@ -111,10 +118,10 @@ describe('getDensitySpacing — custom preset', () => {
 });
 
 describe('getDensityPresetOptions', () => {
-  it('returns all 5 presets', () => {
+  it('returns all 6 presets', () => {
     const opts = getDensityPresetOptions();
     const values = opts.map((o) => o.value);
-    expect(values).toEqual(['safe', 'standard', 'dense', 'loose', 'custom']);
+    expect(values).toEqual(['safe', 'standard', 'dense', 'loose', 'airy', 'custom']);
   });
 
   it('each option has value, label, and description', () => {

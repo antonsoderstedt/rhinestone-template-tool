@@ -15,7 +15,7 @@ export interface EditorToolConfig {
 /** The single canonical tool list — drives both the properties-panel switcher and any compact toolbar. */
 export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
   { id: 'select', label: 'Select', description: 'Select, move, and box-select stones', icon: MousePointer2 },
-  { id: 'text', label: 'Text', description: 'Outline or dot-matrix text', icon: Type },
+  { id: 'text', label: 'Text', description: 'Your words in stones: traced letters, dots or a stone font', icon: Type },
   { id: 'rhinestone-font', label: 'Stone Font', description: 'Pre-placed stones from a rhinestone font', icon: Type },
   { id: 'svg-alphabet', label: 'Alphabet', description: 'Compose text from a per-letter SVG alphabet', icon: Type },
   { id: 'letter-stencil', label: 'Stencils', description: 'Reusable per-letter stencil cards to spell words', icon: Type },
@@ -24,6 +24,14 @@ export const EDITOR_TOOLS: readonly EditorToolConfig[] = [
   { id: 'grid', label: 'Grid', description: 'Build an even stone grid', icon: Grid3X3 },
   { id: 'manual', label: 'Pen', description: 'Draw with stones directly', icon: MousePointerClick },
 ];
+
+/** Stone fonts and alphabets are looks of the Text tool now, so the tool rail has no button of their own. */
+export const RAIL_TOOLS: readonly EditorToolConfig[] = EDITOR_TOOLS.filter((tool) => tool.id !== 'rhinestone-font' && tool.id !== 'svg-alphabet');
+
+/** The rail button that stands for the active tool. */
+export function railToolFor(tool: EditorTool): EditorTool {
+  return tool === 'rhinestone-font' || tool === 'svg-alphabet' ? 'text' : tool;
+}
 
 export interface StatusCopy {
   label: 'Generated' | 'Editable';
@@ -113,7 +121,7 @@ export function getEditableStatusCopy(isEditable: boolean): StatusCopy {
       }
     : {
         label: 'Generated',
-        description: 'Driven by generator settings.',
+        description: 'Changes to the settings below update the design.',
         actionHint: 'Adjust the source settings or make the result editable to fine-tune stones.',
       };
 }
@@ -122,10 +130,10 @@ export function getSelectionEmptyState(isEditable: boolean) {
   if (!isEditable) {
     return {
       title: 'Generated output',
-      description: 'Review the generated result, then make it editable when you need per-stone control.',
+      description: 'Changes to the settings update the design. Choose Edit stones one by one when you want to move single stones.',
       tips: [
-        'Switch between Text, SVG, Grid, or Manual to change the source.',
-        'Use Make Editable to enable per-stone selection and movement.',
+        'Use the tool rail to switch between Text, Artwork, Grid and Pen.',
+        'Click a stone, or choose Edit stones one by one, to select and move single stones.',
       ],
     };
   }
@@ -167,16 +175,53 @@ export function getToolShortcutLabel(tool: EditorTool): string | null {
 
 const TOOL_CANVAS_HINTS: Partial<Record<EditorTool, string>> = {
   select: 'Click a stone to select it, drag a box to select several, or drag a stone to move it. Cmd/Ctrl+A selects the whole design.',
-  manual: 'Click or drag to place stones. Hold Space or the middle mouse button to pan.',
-  text: 'Adjust the text settings on the left, then Generate to see your design here.',
+  manual: 'Click or drag to place stones. Hold Space/middle mouse or use wheel to pan. Ctrl/Cmd + wheel zooms.',
+  text: 'Type your text in the panel on the right. The design updates as you type.',
   'rhinestone-font': 'Pick a rhinestone font and type your word — stones are placed for you.',
-  'svg-alphabet': 'Compose a word from the SVG alphabet on the left, then Generate.',
-  'letter-stencil': 'Spell a word with letter stencils on the left, then Generate to preview it here.',
-  svg: 'Upload artwork on the left, then Generate to fill it with stones.',
+  'svg-alphabet': 'Type a word in the panel on the right to compose it from the SVG alphabet.',
+  'letter-stencil': 'Type a word in the panel on the right to spell it with letter stencils.',
+  svg: 'Upload artwork in the panel on the right to fill it with stones.',
   'template-import': 'Import an existing SVG template to bring its stones in here.',
-  grid: 'Set rows, columns and spacing on the left, then Generate an even stone grid.',
+  grid: 'Set rows, columns and spacing in the panel on the right to get an even stone grid.',
 };
+
+/** Short, plain-language meanings for terms beginners meet in the studio. */
+export const GLOSSARY = {
+  stoneSize: 'SS6–SS20 is the rhinestone size. A bigger number means a bigger stone and a bigger hole in the template.',
+  spacing: 'Spacing is the distance between stone centres. Tighter looks fuller but can tear the flock; Safe leaves extra room.',
+  collision: 'Two stones are in collision when their holes are too close to cut cleanly.',
+  calibration: 'Calibration means cutting a test sheet and measuring the real hole sizes, so your export fits your stones.',
+} as const;
+
+/** One-tap examples for an empty design. */
+export const TEXT_EXAMPLES: readonly { label: string; text: string }[] = [
+  { label: 'A name', text: 'EMMA' },
+  { label: 'Jersey number', text: '07' },
+  { label: 'Team + year', text: 'TIGERS 2026' },
+  { label: 'A word', text: 'LOVE' },
+];
 
 export function getCanvasHint(activeTool: EditorTool): string {
   return TOOL_CANVAS_HINTS[activeTool] ?? 'Pan, zoom, and fit the current design without leaving the editor.';
+}
+
+/** A sentence for screen readers in place of the picture of the design. */
+export function describeDesignForScreenReader(
+  stones: ReadonlyArray<{ center: { x: number; y: number }; holeDiameterMm: number }>,
+  selectedCount = 0,
+): string {
+  if (stones.length === 0) return 'Design canvas. Nothing here yet.';
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const stone of stones) {
+    const r = stone.holeDiameterMm / 2;
+    minX = Math.min(minX, stone.center.x - r);
+    minY = Math.min(minY, stone.center.y - r);
+    maxX = Math.max(maxX, stone.center.x + r);
+    maxY = Math.max(maxY, stone.center.y + r);
+  }
+  const selected = selectedCount > 0 ? ` ${selectedCount} selected.` : '';
+  return `Design canvas. ${stones.length} stone${stones.length === 1 ? '' : 's'}, about ${Math.round(maxX - minX)} by ${Math.round(maxY - minY)} millimetres.${selected}`;
 }

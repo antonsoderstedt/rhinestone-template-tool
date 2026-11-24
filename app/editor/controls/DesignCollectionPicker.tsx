@@ -1,0 +1,165 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { LayoutGrid } from 'lucide-react';
+import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
+import { useT } from '../../lib/i18n';
+import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+
+/** One design in the collection built by `npm run import:designs` (see scripts/import-design-bundle.ts). */
+export interface DesignCollectionEntry {
+  id: string;
+  title: string;
+  category: string;
+  stones: number;
+  widthMm: number;
+  heightMm: number;
+  stoneMm: number;
+  file: string;
+}
+
+const BASE = withBasePath('/design-library');
+const PAGE_SIZE = 24;
+let cachedIndex: Promise<DesignCollectionEntry[] | null> | null = null;
+
+function loadIndex(): Promise<DesignCollectionEntry[] | null> {
+  cachedIndex ??= fetch(`${BASE}/index.json`)
+    .then((response) => (response.ok ? (response.json() as Promise<{ designs?: DesignCollectionEntry[] }>) : null))
+    .then((payload) => (payload && Array.isArray(payload.designs) ? payload.designs : null))
+    .catch(() => null);
+  return cachedIndex;
+}
+
+/** Filters by words in the title or category, and by category. Pure, so it can be tested. */
+export function filterDesigns(designs: readonly DesignCollectionEntry[], query: string, category: string): DesignCollectionEntry[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return designs.filter((design) => {
+    if (category !== 'all' && design.category !== category) return false;
+    if (words.length === 0) return true;
+    const haystack = `${design.title} ${design.category}`.toLowerCase();
+    return words.every((word) => haystack.includes(word));
+  });
+}
+
+/**
+ * Browse the design collection (thousands of ready-made templates from the user's own folder) and pick one. The picked
+ * design's SVG text is handed to `onPick`, which loads it the same way a file from the computer is loaded.
+ */
+export default function DesignCollectionPicker({ onPick }: { onPick: (svgText: string, fileName: string, design: DesignCollectionEntry) => void }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [designs, setDesigns] = useState<DesignCollectionEntry[] | null | undefined>(undefined);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const design of designs ?? []) counts.set(design.category, (counts.get(design.category) ?? 0) + 1);
+    return [...counts].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }));
+  }, [designs]);
+  const matching = useMemo(() => filterDesigns(designs ?? [], query, category), [designs, query, category]);
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && designs === undefined) void loadIndex().then(setDesigns);
+  };
+
+  const pick = async (design: DesignCollectionEntry) => {
+    setLoading(design.id);
+    setError(null);
+    try {
+      const response = await fetch(`${BASE}/${design.file}`);
+      if (!response.ok) throw new Error(String(response.status));
+      onPick(await response.text(), `${design.title}.svg`, design);
+    } catch {
+      setError(t('Could not open {name}.', { name: design.title }));
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={toggle}
+        className="inline-flex w-fit items-center gap-2 rounded-md border border-[var(--studio-border)] px-3 py-2 text-xs font-medium text-[var(--studio-ink-secondary)] transition hover:border-violet-400/50 hover:text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-accent-400"
+      >
+        <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+        {t('Browse the design collection')}
+        {designs ? ` (${designs.length})` : ''}
+      </button>
+
+      {open && designs === undefined && <p className="text-xs text-[var(--studio-ink-muted)]">{t('Loading…')}</p>}
+      {open && designs === null && (
+        <p className="text-xs text-[var(--studio-ink-muted)]">
+          {t('No collection has been imported yet. Run this once in the project folder, then reload:')}
+          <code className="mt-1 block break-all rounded bg-[var(--studio-well)] px-2 py-1">npm run import:designs -- &quot;/path/to/your/folder&quot;</code>
+        </p>
+      )}
+
+      {open && designs && (
+        <div className="space-y-2" role="group" aria-label={t('Design collection')}>
+          <span className={editorFieldLabelClassName}>{t('Design collection')}</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setLimit(PAGE_SIZE); }}
+            placeholder={t('Search {n} designs', { n: designs.length })}
+            aria-label={t('Search designs')}
+            className="w-full rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-accent-400"
+          />
+          <select
+            value={category}
+            onChange={(event) => { setCategory(event.target.value); setLimit(PAGE_SIZE); }}
+            aria-label={t('Category')}
+            className={editorSelectClassName}
+          >
+            <option value="all">{t('All categories')} ({designs.length})</option>
+            {categories.map(([name, count]) => (
+              <option key={name} value={name}>{name} ({count})</option>
+            ))}
+          </select>
+          <p className="text-xs text-[var(--studio-ink-muted)]">{t('{n} designs', { n: matching.length })}</p>
+          {matching.length === 0 && <p className="text-xs text-[var(--studio-ink-muted)]">{t('No designs match.')}</p>}
+          <ul className="grid max-h-80 grid-cols-3 gap-1.5 overflow-y-auto pr-1">
+            {matching.slice(0, limit).map((design) => (
+              <li key={design.id}>
+                <button
+                  type="button"
+                  disabled={loading !== null}
+                  aria-label={`${design.title}, ${design.stones} stones, ${design.widthMm} × ${design.heightMm} mm`}
+                  onClick={() => void pick(design)}
+                  className="flex h-full w-full flex-col gap-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-well)] p-1.5 text-left transition hover:border-violet-400/50 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:opacity-60"
+                >
+                  {/* The template itself is the picture: its stones are the drawing. It is only fetched when scrolled into view. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${BASE}/${design.file}`} alt="" loading="lazy" decoding="async" className="h-16 w-full rounded bg-white object-contain" />
+                  <span className="line-clamp-2 text-xs font-medium leading-tight text-[var(--studio-ink)]">{design.title}</span>
+                  <span className="text-xs text-[var(--studio-ink-muted)]">
+                    {loading === design.id ? t('Opening…') : `${design.stones} · ${Math.round(design.widthMm)}×${Math.round(design.heightMm)} mm`}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {matching.length > limit && (
+            <button
+              type="button"
+              onClick={() => setLimit((value) => value + PAGE_SIZE)}
+              className="w-full rounded-lg border border-[var(--studio-border)] px-3 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] hover:border-violet-400/50 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            >
+              {t('Show {n} more', { n: Math.min(PAGE_SIZE, matching.length - limit) })}
+            </button>
+          )}
+          {error && <p role="alert" className="text-xs text-danger-600">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}

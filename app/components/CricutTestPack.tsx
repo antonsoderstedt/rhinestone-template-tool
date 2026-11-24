@@ -11,6 +11,7 @@ import type { StoneSizeId, CricutTestPackItem, ExportReadinessResult } from '@/s
 import SvgExportActions from './SvgExportActions';
 import MachineCutSettingsCard from './MachineCutSettingsCard';
 
+import { useT } from '../lib/i18n';
 // ─── Stone size options ───────────────────────────────────────────────────────
 
 const STONE_SIZES: StoneSizeId[] = ['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20'];
@@ -25,6 +26,7 @@ interface PackItemView extends CricutTestPackItem {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CricutTestPack() {
+  const t = useT();
   const [stoneSize, setStoneSize] = useState<StoneSizeId>('SS10');
 
   /** Build the full pack with SVG and readiness data — deterministic per stoneSize. */
@@ -47,18 +49,15 @@ export default function CricutTestPack() {
 
       {/* ── Intro ────────────────────────────────────────────────────────── */}
       <div className="rounded-lg bg-info-50 border border-info-500/30 px-5 py-4 text-sm text-info-600 leading-relaxed">
-        <p className="font-semibold text-base mb-1">What is the Cricut Test Pack?</p>
+        <p className="font-semibold text-base mb-1">{t('What is the Cricut Test Pack?')}</p>
         <p>
-          A curated set of four SVG templates designed to help you validate your
-          Cricut Maker 3 + Magic Flock setup before cutting production designs.
-          Download all four, import them into Cricut Design Space, and cut on a
-          small scrap of Magic Flock first.
+          {t('A curated set of four SVG templates designed to help you validate your Cricut Maker 3 + Magic Flock setup before cutting production designs. Download all four, import them into Cricut Design Space, and cut on a small scrap of Magic Flock first.')}
         </p>
         <ol className="mt-2 ml-4 list-decimal space-y-0.5 text-xs text-info-600">
-          <li>Cut the <strong>Calibration Sheet</strong> — find the correct hole diameter for your blade and flock batch.</li>
-          <li>Cut the <strong>Grid</strong> — verify stone seating and spacing.</li>
-          <li>Cut <strong>SMOOCH</strong> — test text density.</li>
-          <li>Cut the <strong>Diamond</strong> — test outline shape accuracy at corners.</li>
+          <li>{t('Cut the Calibration Sheet — find the correct hole diameter for your blade and flock batch.')}</li>
+          <li>{t('Cut the Grid — verify stone seating and spacing.')}</li>
+          <li>{t('Cut SMOOCH — test text density.')}</li>
+          <li>{t('Cut the Diamond — test outline shape accuracy at corners.')}</li>
         </ol>
       </div>
 
@@ -68,7 +67,7 @@ export default function CricutTestPack() {
       {/* ── Stone size selector ───────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
         <label className="text-sm font-medium text-ink-secondary" htmlFor="pack-stone-size">
-          Stone size for this pack:
+          {t('Stone size for this pack:')}
         </label>
         <select
           id="pack-stone-size"
@@ -97,6 +96,7 @@ export default function CricutTestPack() {
 // ─── Individual card ──────────────────────────────────────────────────────────
 
 function PackItemCard({ item }: { item: PackItemView }) {
+  const t = useT();
   const { readiness } = item;
   const errors = readiness.issues.filter((i) => i.severity === 'error');
 
@@ -107,8 +107,8 @@ function PackItemCard({ item }: { item: PackItemView }) {
       <div
         className={`px-4 py-2 text-xs font-semibold flex items-center gap-1.5 ${
           readiness.ready
-            ? 'bg-success-500 text-ink-inverse'
-            : 'bg-danger-500 text-ink-inverse'
+            ? 'bg-success-600 text-ink-inverse'
+            : 'bg-danger-600 text-ink-inverse'
         }`}
       >
         {readiness.ready ? '✓ Ready' : '✗ Has errors'}
@@ -124,15 +124,15 @@ function PackItemCard({ item }: { item: PackItemView }) {
         {/* Stats */}
         <dl className="grid grid-cols-3 gap-x-3 text-xs">
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Stones</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Stones')}</dt>
             <dd className="font-semibold text-ink">{readiness.summary.stoneCount}</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Width</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Width')}</dt>
             <dd className="font-semibold text-ink">{readiness.summary.widthMm.toFixed(1)} mm</dd>
           </div>
           <div>
-            <dt className="text-ink-secondary uppercase tracking-wide text-[10px]">Height</dt>
+            <dt className="text-ink-secondary uppercase tracking-wide text-xs">{t('Height')}</dt>
             <dd className="font-semibold text-ink">{readiness.summary.heightMm.toFixed(1)} mm</dd>
           </div>
         </dl>

@@ -49,6 +49,44 @@ describe('Template Import', () => {
       expect(result.ignoredElements).toBe(0);
     });
 
+    it('should import all circles when they are on a single line', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1"/><circle cx="20" cy="10" r="1"/><circle cx="30" cy="10" r="1"/><circle cx="40" cy="10" r="1"/><circle cx="50" cy="10" r="1"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(5);
+      expect(result.warnings.some((warning) => /No supported circular stone shapes/i.test(warning))).toBe(false);
+    });
+
+    it('should ignore self-closing groups without pushing transform state', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g id="self-close" transform="translate(10 20)" /><circle cx="15" cy="15" r="1" /></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(1);
+      expect(result.stones[0]!.center.x).toBeGreaterThanOrEqual(0);
+      expect(result.stones[0]!.center.y).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should import minified SVGs and mixed circular shapes across tags', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50"><circle cx="10" cy="10" r="1"/><ellipse cx="20" cy="10" rx="1" ry="1"/><path d="M 30 9 C 32 5, 35 5, 35 9 C 35 13, 32 15, 30 15 C 28 15, 25 13, 25 9 C 25 5, 28 5, 30 9 Z" fill="green"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(3);
+      expect(result.detectedColors).toContain('green');
+      expect(result.ignoredElements).toBe(0);
+    });
+
+    it('should report no supported shapes instead of silently succeeding', () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"><rect x="0" y="0" width="10" height="10"/></svg>';
+
+      const result = importRhinestoneTemplate({ svgText: svg });
+
+      expect(result.stones.length).toBe(0);
+      expect(result.warnings.some((warning) => warning.toLowerCase().includes('no supported circular stone shapes'))).toBe(true);
+    });
+
     it('should normalize stone positions to origin', () => {
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
@@ -364,5 +402,31 @@ describe('Template Import', () => {
       // Large diameter doesn't match any known size, should use default
       expect(result.template.stones[0]!.stoneSize).toBe('SS12');
     });
+  });
+});
+
+describe('importRhinestoneTemplate page scale', () => {
+  const stone = (cx: number, cy: number, r: number) =>
+    `<path d="M${cx + r} ${cy}c0,${r * 0.55} ${-r * 0.45},${r} ${-r},${r} ${-r * 0.55},0 ${-r},${-r * 0.45} ${-r},${-r} 0,${-r * 0.55} ${r * 0.45},${-r} ${r},${-r} ${r * 0.55},0 ${r},${r * 0.45} ${r},${r}z"/>`;
+
+  it('uses the page width (mm) when the drawing is in other units, as CorelDRAW writes it', () => {
+    // 100 units per mm: a 3.3 mm stone is 330 units wide, on a 300 mm page.
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="200mm" viewBox="0 0 30000 20000"><g>${stone(1000, 1000, 165)}${stone(1800, 1000, 165)}</g></svg>`;
+    const result = importRhinestoneTemplate({ svgText, applyPageScale: true });
+    expect(result.stones).toHaveLength(2);
+    expect(result.detectedDiameters[0]).toBeCloseTo(3.3, 1);
+    expect(result.widthMm).toBeCloseTo(11.3, 0);
+  });
+
+  it('leaves the units alone unless asked (the alphabet readers rely on that)', () => {
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="200mm" viewBox="0 0 30000 20000"><g>${stone(1000, 1000, 165)}</g></svg>`;
+    expect(importRhinestoneTemplate({ svgText }).detectedDiameters[0]).toBeCloseTo(330, 0);
+  });
+
+  it('keeps taking viewBox units as mm when the page has no real-world width', () => {
+    const svgText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200"><g>${stone(10, 10, 1.65)}${stone(18, 10, 1.65)}</g></svg>`;
+    const result = importRhinestoneTemplate({ svgText, applyPageScale: true });
+    expect(result.detectedDiameters[0]).toBeCloseTo(3.3, 1);
+    expect(result.widthMm).toBeCloseTo(11.3, 0);
   });
 });

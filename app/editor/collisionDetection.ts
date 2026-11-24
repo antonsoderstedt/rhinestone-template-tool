@@ -66,7 +66,8 @@ export function wouldMoveCauseCollision(
   const collidingPairs: Array<[string, string]> = [];
   const minGapMm = getMinimumEdgeSpacingMm(materialProfileId);
 
-  // Create temporary positions for all stones
+  // Temporary positions for all stones, bucketed on a grid so that each moving stone is only compared with the stones near it.
+  // (Comparing every pair made nudging a few thousand stones take seconds.)
   const tempPositions = allStones.map(stone => {
     const newPos = moveMap.get(stone.id);
     return {
@@ -81,20 +82,39 @@ export function wouldMoveCauseCollision(
     };
   });
 
-  // Check all pairs
-  for (let i = 0; i < tempPositions.length; i++) {
-    for (let j = i + 1; j < tempPositions.length; j++) {
-      const a = tempPositions[i]!;
-      const b = tempPositions[j]!;
+  let largestRadius = 0;
+  for (const entry of tempPositions) largestRadius = Math.max(largestRadius, entry.circle.radiusMm);
+  // Two circles can only be too close when their centres are within both radii plus the gap.
+  const reach = largestRadius * 2 + minGapMm;
+  const cell = Math.max(reach, 1e-6);
+  const keyOf = (x: number, y: number) => `${Math.floor(x / cell)},${Math.floor(y / cell)}`;
+  const buckets = new Map<string, number[]>();
+  tempPositions.forEach((entry, index) => {
+    const key = keyOf(entry.circle.center.x, entry.circle.center.y);
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(index);
+    else buckets.set(key, [index]);
+  });
 
-      // Skip if neither stone is moving
-      if (!movingIds.has(a.id) && !movingIds.has(b.id)) continue;
-
-      if (circlesOverlap(a.circle, b.circle, minGapMm)) {
-        collidingPairs.push([a.id, b.id]);
+  const found: Array<[number, number]> = [];
+  tempPositions.forEach((a, i) => {
+    if (!movingIds.has(a.id)) return;
+    const cx = Math.floor(a.circle.center.x / cell);
+    const cy = Math.floor(a.circle.center.y / cell);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        for (const j of buckets.get(`${cx + dx},${cy + dy}`) ?? []) {
+          if (j === i) continue;
+          // A pair of two moving stones is seen from both sides; keep it once, from the earlier one.
+          if (movingIds.has(tempPositions[j]!.id) && j < i) continue;
+          if (circlesOverlap(a.circle, tempPositions[j]!.circle, minGapMm)) found.push([Math.min(i, j), Math.max(i, j)]);
+        }
       }
     }
-  }
+  });
+  // Same order as comparing all pairs: by the earlier stone, then the later one.
+  found.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  for (const [i, j] of found) collidingPairs.push([tempPositions[i]!.id, tempPositions[j]!.id]);
 
   return {
     collides: collidingPairs.length > 0,

@@ -27,12 +27,13 @@ import { createRhinestoneTemplate } from '../template/createTemplate';
 import type { TemplateFillMode } from '../fill/fillTemplate';
 import type { FillPattern } from '../fill/polygonFill';
 import { DEFAULT_OUTLINE_FONT_ID, getOutlineFontDefinition, getSupportedTextCoverageModes, isKnownOutlineFontId, LEGACY_OUTLINE_FONT_ID } from './fontRegistry';
-import { loadOutlineFont } from './fontLoader';
+import { findUnsupportedCharacters, loadOutlineFont } from './fontLoader';
 import { layoutTextToOpenTypePolylines } from './openTypeGeometry';
 import type { TemplateCoverageMode, ContourCoverageSettings } from '../fill/fillTemplate';
 import { createPolylineFilledRhinestoneTemplate } from '../fill/fillTemplate';
 import type { FillPlacementPattern, RadialPlacementSettings } from '../fill/placementPatterns';
 import { createGlyphScanlineFillTemplate } from './glyphScanlineFill';
+import { createArtworkTemplate, type ArtworkLook } from '../artwork/artworkTemplate';
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -443,6 +444,40 @@ function createOutlineTemplateFromPolylines(
     });
   };
 
+  // Letters of a real font go through the same layout as artwork: rows of stones that follow the letter, one centre
+  // row for thin strokes, nothing outside the letter, and one spacing rule. The older generators remain for the
+  // built-in stroke font (its letters are lines, not shapes) and for the special placement patterns.
+  if (options.fontId !== LEGACY_OUTLINE_FONT_ID && placementPattern === 'default' && fillPattern === 'offset-grid') {
+    const look: ArtworkLook = coverageMode === 'fill' || coverageMode === 'outline-fill' ? 'solid' : coverageMode === 'contour' ? 'rows' : 'outline';
+    const artwork = createArtworkTemplate({
+      id,
+      name,
+      shapes: [
+        {
+          order: 0,
+          element: 'path',
+          polylines: finalPolylines.map((polyline) => ({ ...polyline, closed: true })),
+          fill: '#000000',
+          fillOpacity: 1,
+          stroke: null,
+          strokeWidth: 0,
+          strokeOpacity: 1,
+          opacity: 1,
+          fillRule: 'nonzero',
+        },
+      ],
+      stoneSize,
+      look,
+      rowCount: contourSettings?.rowCount,
+      overhang: true,
+      densityPreset,
+      customSpacingMm: customSpacingMm ?? spacingMm,
+      materialProfileId,
+      metadata: { ...metadata, textPlacementStrategy: 'artwork-rows-v1' },
+    });
+    return artwork.template;
+  }
+
   if (
     options.fontId !== LEGACY_OUTLINE_FONT_ID &&
     coverageMode === 'fill' &&
@@ -562,9 +597,17 @@ export async function createOutlineTextTemplateAsync(
     return createOutlineTextTemplate(normalized);
   }
 
-  const loadedFont = await loadOutlineFont(normalized.fontId);
+  // A font that lacks Å Ä Ö or punctuation is still fine for text that does not use them.
+  const loadedFont = await loadOutlineFont(normalized.fontId, { allowMissingExtendedCharacters: true });
   if (!loadedFont.font) {
     return createOutlineTextTemplate({ ...normalized, fontId: LEGACY_OUTLINE_FONT_ID });
+  }
+
+  const unsupported = findUnsupportedCharacters(loadedFont.font, normalized.text);
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Font ${fontDefinition.displayName} has no glyph for: ${unsupported.join(' ')}. Remove ${unsupported.length === 1 ? 'it' : 'them'} from the text or choose another font.`,
+    );
   }
 
   const polylines = layoutTextToOpenTypePolylines({

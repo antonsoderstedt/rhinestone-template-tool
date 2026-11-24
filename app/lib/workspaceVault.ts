@@ -1,6 +1,15 @@
 import type { TemplateCoverageMode, TemplateFillMode } from '@/src/lib/rhinestone-engine/index';
+import { writeStorageItem } from './storageQuota';
 import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
+import { DEFAULT_PREVIEW_TEXT } from './fontLaunch';
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
+import {
+  DEFAULT_WORKSPACE_SETTINGS,
+  sanitizeWorkspaceSettings,
+  type WorkspaceSettings,
+} from './workspaceSettings';
+
+export { DEFAULT_WORKSPACE_SETTINGS, type WorkspaceSettings };
 
 export const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
 export const ACTIVE_CALIBRATION_PROFILE_STORAGE_KEY = 'rhinestone-active-calibration-profile';
@@ -93,20 +102,6 @@ export interface HtvDesignEntry {
   snapshot: SerializedHtvState;
 }
 
-export interface WorkspaceSettings {
-  machineModel: string;
-  cuttingMat: string;
-  bladeStrategy: string;
-  defaultMaterial: string;
-  defaultFlock: string;
-  defaultStoneSize: string;
-  defaultRhinestoneSpacingMm: number;
-  defaultHtvCarrier: string;
-  htvWeedMarginMm: number;
-  outputFolderHint: string;
-  qualityChecklist: string;
-}
-
 export interface CalibrationProfileOverride {
   stoneSize: string;
   holeDiameterMm: number;
@@ -134,18 +129,15 @@ export interface WorkspaceVault {
   calibrationProfiles: CalibrationProfile[];
 }
 
-export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
-  machineModel: 'Cricut Maker 3',
-  cuttingMat: 'StandardGrip 12x12',
-  bladeStrategy: 'Fresh fine-point blade before production runs',
-  defaultMaterial: 'Magic Flock',
-  defaultFlock: 'Magic Flock template material',
-  defaultStoneSize: 'SS10',
-  defaultRhinestoneSpacingMm: 4,
-  defaultHtvCarrier: 'Hot peel performance vinyl',
-  htvWeedMarginMm: 6,
-  outputFolderHint: 'Jobs/Ready To Cut',
-  qualityChecklist: 'Check font coverage, preview garment placement, verify labels off for Cricut, confirm material preset, cut a calibration test for new batches.',
+export const EMPTY_WORKSPACE_VAULT: WorkspaceVault = {
+  version: 1,
+  assets: [],
+  uploadedFonts: [],
+  fontPreferences: [],
+  htvDesigns: [],
+  designPreferences: [],
+  settings: { ...DEFAULT_WORKSPACE_SETTINGS },
+  calibrationProfiles: [],
 };
 
 function getStorage(): Storage | null {
@@ -168,7 +160,7 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
         sourceKind: font.sourceKind === 'workspace-installed' ? 'workspace-installed' : 'browser-uploaded',
         category: typeof font.category === 'string' && font.category.length > 0 ? font.category : 'Display',
         styleLabel: typeof font.styleLabel === 'string' && font.styleLabel.length > 0 ? font.styleLabel : 'Uploaded',
-        previewText: typeof font.previewText === 'string' && font.previewText.length > 0 ? font.previewText : 'Sulay 123',
+        previewText: typeof font.previewText === 'string' && font.previewText.length > 0 ? font.previewText : DEFAULT_PREVIEW_TEXT,
         licenseSource: typeof font.licenseSource === 'string' && font.licenseSource.length > 0 ? font.licenseSource : 'User uploaded local workspace asset',
         note: typeof font.note === 'string' && font.note.length > 0 ? font.note : 'Review the generated outlines before production cutting.',
         preferredTextCoverageMode:
@@ -214,10 +206,7 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
     fontPreferences: Array.isArray(raw?.fontPreferences) ? raw.fontPreferences : [],
     htvDesigns: Array.isArray(raw?.htvDesigns) ? raw.htvDesigns : [],
     designPreferences: Array.isArray(raw?.designPreferences) ? raw.designPreferences : [],
-    settings: {
-      ...DEFAULT_WORKSPACE_SETTINGS,
-      ...(raw?.settings ?? {}),
-    },
+    settings: sanitizeWorkspaceSettings(raw?.settings),
     calibrationProfiles,
   };
 }
@@ -260,6 +249,11 @@ export function mergeInstalledWorkspaceFonts(
   };
 }
 
+/** Just the settings, for studios that only need new-project defaults. */
+export function readWorkspaceSettings(): WorkspaceSettings {
+  return readWorkspaceVault().settings;
+}
+
 export function readWorkspaceVault(): WorkspaceVault {
   const storage = getStorage();
   if (!storage) return normalizeVault(null);
@@ -274,10 +268,11 @@ export function readWorkspaceVault(): WorkspaceVault {
   }
 }
 
-export function writeWorkspaceVault(vault: WorkspaceVault): void {
+/** Saves the vault. Returns false when the browser's storage is full (or refuses), instead of throwing in the middle of a click. */
+export function writeWorkspaceVault(vault: WorkspaceVault): boolean {
   const storage = getStorage();
-  if (!storage) return;
-  storage.setItem(WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify(vault));
+  if (!storage) return false;
+  return writeStorageItem(storage, WORKSPACE_VAULT_STORAGE_KEY, JSON.stringify(vault)) === 'ok';
 }
 
 export function readActiveCalibrationProfileId(): string | null {

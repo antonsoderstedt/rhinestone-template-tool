@@ -15,6 +15,7 @@ import {
   createRhinestoneFontTemplate,
   getSupportedRhinestoneFontStoneSizes,
 } from '../src/lib/rhinestone-engine/index';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 describe('Rhinestone Font System', () => {
   beforeEach(() => {
@@ -43,7 +44,7 @@ describe('Rhinestone Font System', () => {
       });
     });
 
-    it('should load a size-aware library font from LETTER UTVALDA', async () => {
+    it.skipIf(!HAS_LETTER_LIBRARY)('should load a size-aware library font from LETTER UTVALDA', async () => {
       const loaded = await loadRhinestoneFont('atletico-real', 'SS10');
 
       expect(loaded.definition.fontId).toBe('atletico-real');
@@ -53,7 +54,7 @@ describe('Rhinestone Font System', () => {
       expect(loaded.font.unitsPerEm).toBeGreaterThan(0);
     });
 
-    it('should load the Cheer Block font from FONT GENERATED CHATGPT', async () => {
+    it.skipIf(!HAS_LETTER_LIBRARY)('should load the Cheer Block font from FONT GENERATED CHATGPT', async () => {
       const loaded = await loadRhinestoneFont('cheer-block', 'SS10');
 
       expect(loaded.definition.fontId).toBe('cheer-block');
@@ -63,7 +64,7 @@ describe('Rhinestone Font System', () => {
       expect(loaded.font.unitsPerEm).toBeGreaterThan(0);
     });
 
-    it('should load the extracted Forever font from FONT GENERATED CHATGPT', async () => {
+    it.skipIf(!HAS_LETTER_LIBRARY)('should load the extracted Forever font from FONT GENERATED CHATGPT', async () => {
       const loaded = await loadRhinestoneFont('forever-script', 'SS10');
 
       expect(loaded.definition.fontId).toBe('forever-script');
@@ -334,7 +335,7 @@ describe('Rhinestone Font System', () => {
       expect(TRW_STONE_SIZE_CALIBRATION.SS20.diameterMm).toBeCloseTo(5.283, 2);
     });
 
-    it('should scale stones correctly for different sizes', async () => {
+    it.skipIf(!HAS_LETTER_LIBRARY)('should scale stones correctly for different sizes', async () => {
       const ss6Result = await createRhinestoneFontTemplate({
         text: 'A',
         rhinestoneFontId: 'atletico-real',

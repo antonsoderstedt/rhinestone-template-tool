@@ -1,17 +1,24 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Minus, Plus, Scan } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Expand, Minus, Plus, Scan } from 'lucide-react';
 import { expandSelectionToGroups, type HtvAction, type HtvLayer, type HtvState } from './HtvState';
 import HtvLayerShape from './HtvLayerShape';
-import { approximateLayerBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
+import { pickArtboard } from './artboard';
+import { getHtvColor } from './htvMaterialCatalog';
+import { fitRect, useTouchViewGestures } from '../lib/touchGestures';
+import { approximateLayerBounds, computeDesignBounds, HTV_WORKSPACE_SIZE_MM, transformedLayerBounds } from './htvGeometry';
 
+import { useT } from '../lib/i18n';
 interface HtvCanvasProps {
   state: HtvState;
   dispatch: React.Dispatch<HtvAction>;
+  /** Real sizes of text layers (their measured outlines). Text layers without one fall back to an estimate. */
+  measuredSizes?: ReadonlyMap<string, { width: number; height: number }>;
 }
 
 const WORKSPACE_SIZE_MM = HTV_WORKSPACE_SIZE_MM;
+const FIT_MARGIN = 0.9;
 
 /** setPointerCapture can throw NotFoundError in edge cases (fast clicks, some stylus/trackpad drivers) — capture is a nice-to-have for drags that leave the handle, not a precondition for starting one. */
 function trySetPointerCapture(target: EventTarget | null, pointerId: number) {
@@ -28,26 +35,35 @@ type Interaction =
   | { kind: 'rotate'; pointerId: number; layerId: string; centerX: number; centerY: number }
   | { kind: 'marquee'; pointerId: number; startMmX: number; startMmY: number; curMmX: number; curMmY: number; moved: boolean };
 
-export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
+export default function HtvCanvas({ state, dispatch, measuredSizes }: HtvCanvasProps) {
+  const t = useT();
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
-  const placementLayers = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+  const placementLayers = useMemo(
+    () => state.layers.filter((layer) => layer.placementId === state.garment.placementZone),
+    [state.garment.placementZone, state.layers],
+  );
 
   const viewBoxSize = WORKSPACE_SIZE_MM / state.canvas.zoom;
   const viewBoxX = -viewBoxSize / 2 + state.canvas.panX;
   const viewBoxY = -viewBoxSize / 2 + state.canvas.panY;
 
+  // The square view box is letterboxed inside a non-square canvas (a tall phone screen especially), so
+  // screen ↔ mm conversion must follow the drawn area, not the element's full width/height.
   const mmPerClientPx = () => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return { x: 1, y: 1 };
-    return { x: viewBoxSize / rect.width, y: viewBoxSize / rect.height };
+    if (!rect || rect.width === 0 || rect.height === 0) return { x: 1, y: 1 };
+    const perPx = viewBoxSize / Math.min(rect.width, rect.height);
+    return { x: perPx, y: perPx };
   };
 
   const clientToMm = (clientX: number, clientY: number) => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return { x: 0, y: 0 };
-    const scale = mmPerClientPx();
-    return { x: viewBoxX + (clientX - rect.left) * scale.x, y: viewBoxY + (clientY - rect.top) * scale.y };
+    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    const drawn = fitRect(rect, { width: viewBoxSize, height: viewBoxSize });
+    const perPx = viewBoxSize / drawn.width;
+    return { x: viewBoxX + (clientX - drawn.left) * perPx, y: viewBoxY + (clientY - drawn.top) * perPx };
   };
 
   const handleLayerPointerDown = (event: React.PointerEvent<SVGGElement>, layer: HtvLayer) => {
@@ -141,7 +157,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         const hits = placementLayers
           .filter((l) => l.visible && !l.locked)
           .filter((l) => {
-            const b = transformedLayerBounds(l);
+            const b = transformedLayerBounds(l, measuredSizes?.get(l.id));
             return b.minX <= maxX && b.maxX >= minX && b.minY <= maxY && b.maxY >= minY;
           })
           .map((l) => l.id);
@@ -162,14 +178,110 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   const zoomIn = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.min(state.canvas.zoom * 1.2, 5) } });
   const zoomOut = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: Math.max(state.canvas.zoom / 1.2, 0.2) } });
   const resetView = () => dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+  const fitToView = useCallback(() => {
+    const bounds = computeDesignBounds(placementLayers, measuredSizes);
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+      dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: 1, panX: 0, panY: 0 } });
+      return;
+    }
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+    // The square view box is drawn at the size of the viewport's shorter side, so whatever its aspect
+    // (a wide desktop canvas or a tall phone), the box must be as large as the design's longer side.
+    const nextViewBoxSize = Math.max(bounds.width, bounds.height) / FIT_MARGIN;
+    const nextZoom = Math.min(Math.max(WORKSPACE_SIZE_MM / nextViewBoxSize, 0.2), 5);
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    dispatch({
+      type: 'UPDATE_CANVAS',
+      updates: {
+        zoom: nextZoom,
+        panX: centerX,
+        panY: centerY,
+      },
+    });
+  }, [dispatch, measuredSizes, placementLayers]);
+
+  const fitToViewRef = useRef(fitToView);
+  useEffect(() => {
+    fitToViewRef.current = fitToView;
+  }, [fitToView]);
+  // Refit when the layers change and when their real (measured) text sizes arrive, so the first view really shows the
+  // whole design instead of an estimate of it.
+  useEffect(() => {
+    fitToViewRef.current();
+  }, [placementLayers, measuredSizes]);
+
+  // Two fingers pinch-zoom and pan; one finger keeps working as select/move/scale/rotate.
+  useTouchViewGestures(svgRef, {
+    minZoom: 0.2,
+    maxZoom: 5,
+    getView: () => ({ zoom: state.canvas.zoom, viewBox: { x: viewBoxX, y: viewBoxY, width: viewBoxSize, height: viewBoxSize } }),
+    onGestureStart: () => setInteraction(null),
+    applyView: ({ zoom, viewBox }) => {
+      dispatch({
+        type: 'UPDATE_CANVAS',
+        updates: { zoom, panX: viewBox.x + viewBox.width / 2, panY: viewBox.y + viewBox.height / 2 },
+      });
+    },
+  });
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      if (event.ctrlKey || event.metaKey) {
+        const delta = event.deltaY > 0 ? 0.9 : 1.1;
+        const nextZoom = Math.min(Math.max(state.canvas.zoom * delta, 0.2), 5);
+        if (nextZoom === state.canvas.zoom) return;
+
+        const currentSize = WORKSPACE_SIZE_MM / state.canvas.zoom;
+        const drawn = fitRect(rect, { width: currentSize, height: currentSize });
+        const fractionX = (event.clientX - drawn.left) / drawn.width;
+        const fractionY = (event.clientY - drawn.top) / drawn.height;
+        const cursorX = -currentSize / 2 + state.canvas.panX + fractionX * currentSize;
+        const cursorY = -currentSize / 2 + state.canvas.panY + fractionY * currentSize;
+        const nextSize = WORKSPACE_SIZE_MM / nextZoom;
+        const nextPanX = cursorX - fractionX * nextSize + nextSize / 2;
+        const nextPanY = cursorY - fractionY * nextSize + nextSize / 2;
+        dispatch({ type: 'UPDATE_CANVAS', updates: { zoom: nextZoom, panX: nextPanX, panY: nextPanY } });
+        return;
+      }
+
+      const mmPerPx = viewBoxSize / Math.max(Math.min(rect.width, rect.height), 1);
+      dispatch({
+        type: 'UPDATE_CANVAS',
+        updates: {
+          panX: state.canvas.panX - event.deltaX * mmPerPx,
+          panY: state.canvas.panY - event.deltaY * mmPerPx,
+        },
+      });
+    };
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', handleWheel);
+  }, [dispatch, state.canvas.panX, state.canvas.panY, state.canvas.zoom, viewBoxSize]);
+
+  // The sheet the design is drawn on follows the vinyl colour, so black (or white) vinyl is never invisible.
+  const artboard = useMemo(
+    () => pickArtboard(placementLayers.filter((layer) => layer.visible).map((layer) => getHtvColor(layer.colorId).hex)),
+    [placementLayers],
+  );
 
   const singleSelectedLayer =
     state.selectedLayerIds.size === 1 ? placementLayers.find((l) => state.selectedLayerIds.has(l.id) && l.visible && !l.locked) ?? null : null;
 
   return (
-    <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
-      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">HTV canvas</div>
+    <div ref={containerRef} className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--studio-surface)]">
+      <div className="absolute left-4 top-4 z-10 max-w-[min(360px,calc(100%-2rem))] rounded-md max-lg:hidden border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--studio-ink-subtle)]">{t('HTV canvas')}</div>
         <div className="mt-1 text-xs text-[var(--studio-ink-muted)]">
           {placementLayers.length > 0 ? `${placementLayers.length} layer${placementLayers.length === 1 ? '' : 's'} · drag to select` : 'Add text, shapes, templates, or imported artwork'}
         </div>
@@ -177,13 +289,15 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
       <svg
         ref={svgRef}
         viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxSize} ${viewBoxSize}`}
-        className="h-full w-full touch-none"
+        preserveAspectRatio="xMidYMid meet"
+        className="absolute inset-0 h-full w-full touch-none"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={() => setInteraction(null)}
         onPointerDown={handleBackgroundPointerDown}
       >
-        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} fill="#202024" />
-        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill="#2a2b31" stroke="rgba(255,255,255,0.08)" />
+        <rect x={viewBoxX - 1000} y={viewBoxY - 1000} width={viewBoxSize + 2000} height={viewBoxSize + 2000} style={{ fill: 'var(--studio-surface)' }} />
+        <rect x={-WORKSPACE_SIZE_MM / 2} y={-WORKSPACE_SIZE_MM / 2} width={WORKSPACE_SIZE_MM} height={WORKSPACE_SIZE_MM} fill={artboard.fill} stroke={artboard.stroke} />
 
         {placementLayers.map((layer) => {
           if (!layer.visible) return null;
@@ -196,7 +310,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
               style={{ cursor: layer.locked ? 'not-allowed' : 'move' }}
             >
               <HtvLayerShape layer={layer} />
-              {selected && <SelectionOutline layer={layer} />}
+              {selected && <SelectionOutline layer={layer} measured={measuredSizes?.get(layer.id)} />}
             </g>
           );
         })}
@@ -204,6 +318,7 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         {singleSelectedLayer && (
           <TransformHandles
             layer={singleSelectedLayer}
+            measured={measuredSizes?.get(singleSelectedLayer.id)}
             zoom={state.canvas.zoom}
             onScaleHandlePointerDown={handleScaleHandlePointerDown}
             onRotateHandlePointerDown={handleRotateHandlePointerDown}
@@ -226,24 +341,27 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
         {placementLayers.length === 0 && (
           <g pointerEvents="none">
             <text x={0} y={-8} textAnchor="middle" fill="#d4d4d8" style={{ fontSize: '12px', fontWeight: 700 }}>
-              Empty HTV workspace
+              {t('Empty HTV workspace')}
             </text>
             <text x={0} y={10} textAnchor="middle" fill="#a1a1aa" style={{ fontSize: '9px' }}>
-              Add text, import artwork, or start from a shape
+              {t('Add text, import artwork, or start from a shape')}
             </text>
           </g>
         )}
       </svg>
 
       <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4 lg:flex-col">
-        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom in">
+        <button onClick={zoomIn} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom in')}>
           <Plus className="h-4 w-4" />
         </button>
-        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Zoom out">
+        <button onClick={zoomOut} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Zoom out')}>
           <Minus className="h-4 w-4" />
         </button>
-        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title="Reset view">
+        <button onClick={resetView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Reset view')}>
           <Scan className="h-4 w-4" />
+        </button>
+        <button onClick={fitToView} className="rounded-md p-2 text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]" title={t('Fit design to view')}>
+          <Expand className="h-4 w-4" />
         </button>
       </div>
       <div className="absolute bottom-3 left-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2 py-1 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
@@ -253,8 +371,8 @@ export default function HtvCanvas({ state, dispatch }: HtvCanvasProps) {
   );
 }
 
-function SelectionOutline({ layer }: { layer: HtvLayer }) {
-  const { width, height } = approximateLayerBounds(layer);
+function SelectionOutline({ layer, measured }: { layer: HtvLayer; measured?: { width: number; height: number } }) {
+  const { width, height } = measured ?? approximateLayerBounds(layer);
   const padding = Math.max(width, height) * 0.06 + 1.5;
   return (
     <rect
@@ -280,16 +398,18 @@ function rotatePoint(x: number, y: number, thetaRad: number): { x: number; y: nu
 
 function TransformHandles({
   layer,
+  measured,
   zoom,
   onScaleHandlePointerDown,
   onRotateHandlePointerDown,
 }: {
   layer: HtvLayer;
+  measured?: { width: number; height: number };
   zoom: number;
   onScaleHandlePointerDown: (event: React.PointerEvent<SVGRectElement>, layer: HtvLayer, corner: { x: number; y: number }) => void;
   onRotateHandlePointerDown: (event: React.PointerEvent<SVGCircleElement>, layer: HtvLayer) => void;
 }) {
-  const { width, height } = approximateLayerBounds(layer);
+  const { width, height } = measured ?? approximateLayerBounds(layer);
   const padding = Math.max(width, height) * 0.06 + 1.5;
   const hw = (width / 2 + padding) * layer.scale;
   const hh = (height / 2 + padding) * layer.scale;

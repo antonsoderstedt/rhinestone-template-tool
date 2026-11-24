@@ -91,6 +91,8 @@ export interface ManualGridProjectState {
   paddingMm: number;
   densityPreset: DensityPreset;
   customSpacingMm: number;
+  /** Present when the grid tool was covering an area ("all over") instead of making rows and columns. */
+  area?: { widthMm: number; heightMm: number; pattern: 'grid' | 'hex' | 'diagonal' | 'scatter' | 'fade'; seed: number };
 }
 
 export interface PolylineLogoProjectState {
@@ -147,6 +149,10 @@ export interface SvgUploadProjectState {
   placementPattern?: FillPlacementPattern;
   contourSettings?: ContourCoverageSettings;
   radialSettings?: RadialPlacementSettings;
+  /** Colours the user switched on or off in an uploaded artwork. */
+  layerRoles?: Record<string, 'stones' | 'ignore'>;
+  /** The stone colour chosen for each colour of an uploaded artwork. */
+  layerStoneColours?: Record<string, string>;
 }
 
 export interface SavedStone {
@@ -159,6 +165,8 @@ export interface SavedStone {
   color?: string;
   /** Optional group path for imported stones */
   group?: string;
+  /** The colour this stone will be (`#rrggbb`); no effect on cutting. */
+  stoneColour?: string;
 }
 
 export interface EditableTemplateState {
@@ -255,6 +263,15 @@ export type GeneratorProjectState =
 
 // ─── Project file format ──────────────────────────────────────────────────────
 
+/** A piece of the design that was kept with "Add to design". */
+export interface SavedPart {
+  id: string;
+  name: string;
+  offsetX: number;
+  offsetY: number;
+  stones: SavedStone[];
+}
+
 export interface RhinestoneProjectFile {
   schemaVersion: 1;
   /** ISO 8601 timestamp. */
@@ -271,6 +288,12 @@ export interface RhinestoneProjectFile {
   generatorState: GeneratorProjectState;
   /** Editable template state (present when user has made manual edits) */
   editableState?: EditableTemplateState;
+  /** Pieces kept with "Add to design", under the piece the generator is making. */
+  parts?: SavedPart[];
+  /** Where the piece the generator is making sits (mm), so regenerating puts it back. */
+  workingOffset?: { x: number; y: number };
+  /** One colour for every stone that has none of its own (`#rrggbb`). */
+  designStoneColour?: string;
   /** Active tool when saved (optional, defaults to generator's tool) */
   activeTool?: 'select' | 'text' | 'svg' | 'grid' | 'rhinestone-font' | 'svg-alphabet' | 'letter-stencil' | 'template-import' | 'manual';
   /** Manual tool settings */
@@ -286,7 +309,7 @@ export interface RhinestoneProjectFile {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 const VALID_STONE_SIZES = new Set(['SS6', 'SS8', 'SS10', 'SS12', 'SS16', 'SS20']);
-const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'custom']);
+const VALID_DENSITY_PRESETS = new Set(['safe', 'standard', 'dense', 'loose', 'airy', 'custom']);
 const VALID_FILL_MODES = new Set(['outline', 'fill', 'outline-fill']);
 const VALID_COVERAGE_MODES = new Set(['outline', 'fill', 'outline-fill', 'contour']);
 const VALID_FILL_PATTERNS = new Set(['grid', 'offset-grid']);
@@ -448,6 +471,18 @@ function validateDotMatrixText(s: UnknownRecord): DotMatrixTextProjectState {
   };
 }
 
+const VALID_AREA_PATTERNS = new Set(['grid', 'hex', 'diagonal', 'scatter', 'fade']);
+
+function validateArea(value: unknown): NonNullable<ManualGridProjectState['area']> {
+  const area = asRecord(value, 'generatorState.area');
+  const widthMm = requireFiniteNumber(area, 'widthMm', 'generatorState.area');
+  const heightMm = requireFiniteNumber(area, 'heightMm', 'generatorState.area');
+  if (widthMm <= 0 || heightMm <= 0 || widthMm > 5000 || heightMm > 5000) throw new Error('[Project] generatorState.area must be between 0 and 5000 mm');
+  const pattern = area.pattern;
+  if (typeof pattern !== 'string' || !VALID_AREA_PATTERNS.has(pattern)) throw new Error('[Project] generatorState.area.pattern is not a known pattern');
+  return { widthMm, heightMm, pattern: pattern as 'grid' | 'hex' | 'diagonal' | 'scatter' | 'fade', seed: requireFiniteNumber(area, 'seed', 'generatorState.area') };
+}
+
 function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
   const ctx = 'generatorState';
   return {
@@ -460,6 +495,7 @@ function validateManualGrid(s: UnknownRecord): ManualGridProjectState {
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
     densityPreset: requireEnum<DensityPreset>(s, 'densityPreset', ctx, VALID_DENSITY_PRESETS),
     customSpacingMm: requireFiniteNumber(s, 'customSpacingMm', ctx),
+    ...(s.area !== undefined ? { area: validateArea(s.area) } : {}),
   };
 }
 
@@ -529,7 +565,33 @@ function validateSvgUpload(s: UnknownRecord): SvgUploadProjectState {
     placementPattern: s.placementPattern === undefined ? 'default' : requireEnum<FillPlacementPattern>(s, 'placementPattern', ctx, VALID_PLACEMENT_PATTERNS),
     contourSettings: parseContourSettings(s.contourSettings, ctx),
     radialSettings: parseRadialSettings(s.radialSettings, ctx),
+    layerRoles: parseLayerRoles(s.layerRoles, ctx),
+    layerStoneColours: parseLayerStoneColours(s.layerStoneColours, ctx),
   };
+}
+
+function parseLayerStoneColours(value: unknown, ctx: string): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value, `${ctx}.layerStoneColours`);
+  const colours: Record<string, string> = {};
+  for (const [colour, stone] of Object.entries(record)) {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) throw new Error(`[Project] ${ctx}.layerStoneColours has a key that is not a colour: ${colour}`);
+    if (typeof stone !== 'string' || !/^#[0-9a-f]{6}$/i.test(stone)) throw new Error(`[Project] ${ctx}.layerStoneColours["${colour}"] must be a colour like #aabbcc`);
+    colours[colour.toLowerCase()] = stone.toLowerCase();
+  }
+  return colours;
+}
+
+function parseLayerRoles(value: unknown, ctx: string): Record<string, 'stones' | 'ignore'> | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value, `${ctx}.layerRoles`);
+  const roles: Record<string, 'stones' | 'ignore'> = {};
+  for (const [colour, role] of Object.entries(record)) {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) throw new Error(`[Project] ${ctx}.layerRoles has a key that is not a colour: ${colour}`);
+    if (role !== 'stones' && role !== 'ignore') throw new Error(`[Project] ${ctx}.layerRoles["${colour}"] must be "stones" or "ignore"`);
+    roles[colour.toLowerCase()] = role;
+  }
+  return roles;
 }
 
 function validateSavedStone(v: unknown, idx: number): SavedStone {
@@ -544,6 +606,10 @@ function validateSavedStone(v: unknown, idx: number): SavedStone {
   };
   if (typeof s.color === 'string') result.color = s.color;
   if (typeof s.group === 'string') result.group = s.group;
+  if (s.stoneColour !== undefined) {
+    if (typeof s.stoneColour !== 'string' || !/^#[0-9a-f]{6}$/i.test(s.stoneColour)) throw new Error(`[Project] ${ctx}.stoneColour must be a colour like #aabbcc`);
+    result.stoneColour = s.stoneColour.toLowerCase();
+  }
   return result;
 }
 
@@ -557,6 +623,41 @@ function validateManualEditor(s: UnknownRecord): ManualEditorProjectState {
     generatorId: 'manual-editor',
     stones: stonesRaw.map((item, i) => validateSavedStone(item, i)),
     includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateSvgAlphabet(s: UnknownRecord): SvgAlphabetProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'svg-alphabet',
+    text: requireString(s, 'text', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    letterSpacingMm: requireFiniteNumber(s, 'letterSpacingMm', ctx),
+    lineSpacingMm: requireFiniteNumber(s, 'lineSpacingMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
+    paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
+  };
+}
+
+function validateLetterStencil(s: UnknownRecord): LetterStencilProjectState {
+  const ctx = 'generatorState';
+  return {
+    generatorId: 'letter-stencil',
+    sourceType: requireEnum<'svg-alphabet' | 'rhinestone-font'>(s, 'sourceType', ctx, new Set(['svg-alphabet', 'rhinestone-font'])),
+    text: requireString(s, 'text', ctx),
+    svgAlphabetId: requireString(s, 'svgAlphabetId', ctx),
+    rhinestoneFontId: requireString(s, 'rhinestoneFontId', ctx),
+    stoneSize: requireEnum<StoneSizeId>(s, 'stoneSize', ctx, VALID_STONE_SIZES),
+    cardPaddingMm: requireFiniteNumber(s, 'cardPaddingMm', ctx),
+    cardCornerRadiusMm: requireFiniteNumber(s, 'cardCornerRadiusMm', ctx),
+    minCardWidthMm: requireFiniteNumber(s, 'minCardWidthMm', ctx),
+    layoutMode: requireEnum<'preview' | 'cut-sheet'>(s, 'layoutMode', ctx, new Set(['preview', 'cut-sheet'])),
+    cutSheetGapMm: requireFiniteNumber(s, 'cutSheetGapMm', ctx),
+    includeGuideBox: requireBoolean(s, 'includeGuideBox', ctx),
+    includeLabels: requireBoolean(s, 'includeLabels', ctx),
     paddingMm: requireFiniteNumber(s, 'paddingMm', ctx),
   };
 }
@@ -640,6 +741,10 @@ function validateGeneratorState(raw: unknown): GeneratorProjectState {
       return validateManualEditor(s);
     case 'rhinestone-font':
       return validateRhinestoneFont(s);
+    case 'svg-alphabet':
+      return validateSvgAlphabet(s);
+    case 'letter-stencil':
+      return validateLetterStencil(s);
     case 'template-import':
       return validateTemplateImport(s);
     default:
@@ -741,6 +846,41 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     };
   }
 
+  let parts: SavedPart[] | undefined = undefined;
+  if (obj.parts !== undefined) {
+    if (!Array.isArray(obj.parts)) throw new Error('[Project] parts must be an array');
+    const seen = new Set<string>();
+    parts = obj.parts.map((raw: unknown, i: number): SavedPart => {
+      const ctx = `parts[${i}]`;
+      const part = asRecord(raw, ctx);
+      const id = part.id;
+      if (typeof id !== 'string' || id.length === 0) throw new Error(`[Project] ${ctx}.id must be a non-empty string`);
+      if (seen.has(id)) throw new Error(`[Project] ${ctx}.id "${id}" is used twice`);
+      seen.add(id);
+      if (typeof part.name !== 'string') throw new Error(`[Project] ${ctx}.name must be a string`);
+      if (!Array.isArray(part.stones)) throw new Error(`[Project] ${ctx}.stones must be an array`);
+      return {
+        id,
+        name: part.name,
+        offsetX: requireFiniteNumber(part, 'offsetX', ctx),
+        offsetY: requireFiniteNumber(part, 'offsetY', ctx),
+        stones: part.stones.map((stone: unknown, k: number) => validateSavedStone(stone, k)),
+      };
+    });
+  }
+
+  let workingOffset: { x: number; y: number } | undefined = undefined;
+  if (obj.workingOffset !== undefined) {
+    const offset = asRecord(obj.workingOffset, 'workingOffset');
+    workingOffset = { x: requireFiniteNumber(offset, 'x', 'workingOffset'), y: requireFiniteNumber(offset, 'y', 'workingOffset') };
+  }
+
+  let designStoneColour: string | undefined = undefined;
+  if (obj.designStoneColour !== undefined) {
+    if (typeof obj.designStoneColour !== 'string' || !/^#[0-9a-f]{6}$/i.test(obj.designStoneColour)) throw new Error('[Project] designStoneColour must be a colour like #aabbcc');
+    designStoneColour = obj.designStoneColour.toLowerCase();
+  }
+
   return {
     schemaVersion: 1,
     savedAt: obj.savedAt,
@@ -748,6 +888,9 @@ export function parseRhinestoneProject(json: string): RhinestoneProjectFile {
     exportSettings,
     generatorState,
     editableState,
+    parts,
+    workingOffset,
+    designStoneColour,
     activeTool,
     manualToolState,
   };

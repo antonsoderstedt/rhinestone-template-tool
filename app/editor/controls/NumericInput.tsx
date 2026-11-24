@@ -57,7 +57,7 @@ export default function NumericInput({
           className={`${editorInputClassName} ${unit ? 'pr-12' : ''}`}
         />
         {unit && (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
             {unit}
           </span>
         )}

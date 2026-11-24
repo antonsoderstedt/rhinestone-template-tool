@@ -29,6 +29,8 @@ export function createImportedTemplate(options: CreateImportedTemplateOptions): 
   const importResult = importRhinestoneTemplate({
     svgText,
     deduplicateTolerance,
+    // A template the user brings in is sized by its page (width in mm), whatever units it is drawn in.
+    applyPageScale: true,
   });
 
   // Convert to stones

@@ -18,6 +18,7 @@ import {
   type SvgAlphabetGlyphLoader,
   type SvgAlphabetId,
 } from '../src/lib/rhinestone-engine/index';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 function makeCircleSvg(circles: Array<{ cx: number; cy: number; r: number }>): string {
   // viewBox uses 0.01mm units to match the CorelDRAW curated exports.
@@ -78,7 +79,7 @@ describe('SVG Alphabet System', () => {
     expect(cheer.libraryRelativeDirBySize?.SS10).toBeDefined();
   });
 
-  it('resolves uppercase, lowercase, and digit glyphs for Forever from separate directories', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves uppercase, lowercase, and digit glyphs for Forever from separate directories', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('forever-script', 'A', 'SS10');
     const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('forever-script', 'a', 'SS10');
@@ -89,7 +90,7 @@ describe('SVG Alphabet System', () => {
     expect(digit).toContain('<svg');
   });
 
-  it('resolves Real College glyphs from combined strip files', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Real College glyphs from combined strip files', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const a = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('real-college', 'A', 'SS10');
     const n = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('real-college', 'N', 'SS10');
@@ -100,7 +101,7 @@ describe('SVG Alphabet System', () => {
     expect(zero).toContain('<svg');
   });
 
-  it('resolves Broadway glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Broadway glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('broadway-retro', 'A', 'SS10');
     const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('broadway-retro', 'a', 'SS10');
@@ -111,7 +112,7 @@ describe('SVG Alphabet System', () => {
     expect(digit).toContain('<svg');
   });
 
-  it('resolves Blessed and Bride glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Blessed and Bride glyphs from zip-backed uppercase, lowercase, and digit paths', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const blessedUpper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('blessed-script', 'A', 'SS10');
     const blessedLower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('blessed-script', 'a', 'SS10');
@@ -128,7 +129,7 @@ describe('SVG Alphabet System', () => {
     expect(brideDigit).toContain('<svg');
   });
 
-  it('resolves Old English uppercase and lowercase glyphs from separate directories at SS10', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Old English uppercase and lowercase glyphs from separate directories at SS10', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'S', 'SS10');
     const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'a', 'SS10');
@@ -137,7 +138,7 @@ describe('SVG Alphabet System', () => {
     expect(lower).toContain('<svg');
   });
 
-  it("resolves the SS10 lowercase i through the dotless-ı filename fallback", async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)("resolves the SS10 lowercase i through the dotless-ı filename fallback", async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const oldEnglish = getSvgAlphabetDefinition('old-english-gothic');
     expect(oldEnglish.glyphFileFallbackByChar?.i).toBe('ı');
@@ -146,7 +147,7 @@ describe('SVG Alphabet System', () => {
     expect(lowerI).toContain('<svg');
   });
 
-  it('resolves Old English uppercase and lowercase glyphs from separate directories at SS6', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Old English uppercase and lowercase glyphs from separate directories at SS6', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const upper = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'S', 'SS6');
     const lower = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('old-english-gothic', 'a', 'SS6');
@@ -177,7 +178,7 @@ describe('SVG Alphabet System', () => {
     expect(oldEnglish.style).toBe('Gothic');
   });
 
-  it('resolves Huge Digits from its zip-backed digit directory', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('resolves Huge Digits from its zip-backed digit directory', async () => {
     clearSvgAlphabetGlyphCacheForTests();
     const zero = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('huge-digits', '0', 'SS10');
     const eight = await defaultSvgAlphabetGlyphLoader.loadGlyphSvg('huge-digits', '8', 'SS10');

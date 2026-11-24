@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Ruler, Settings2 } from 'lucide-react';
 import {
-  DEFAULT_WORKSPACE_SETTINGS,
   type CalibrationProfile,
-  type WorkspaceSettings,
   type WorkspaceVault,
+  EMPTY_WORKSPACE_VAULT,
   readActiveCalibrationProfileId,
   readWorkspaceVault,
   setActiveCalibrationProfile,
@@ -17,13 +16,29 @@ import {
 } from '../lib/workspaceVault';
 import {
   WorkspaceHero,
-  WorkspaceMetricCard,
   WorkspacePage,
   WorkspaceSurface,
   workspaceInputClassName,
-  workspaceTextAreaClassName,
 } from '../components/workspace/WorkspaceChrome';
 import WorkspaceQuickActions from '../components/WorkspaceQuickActions';
+import { resetOnboarding } from '../lib/onboarding';
+import {
+  DEFAULT_WORKSPACE_SETTINGS,
+  SETTINGS_DENSITY_PRESETS,
+  SETTINGS_STONE_SIZES,
+  WORKSPACE_SETTING_LIMITS,
+  type SettingsDensityPreset,
+  type WorkspaceSettings,
+} from '../lib/workspaceSettings';
+
+import { useT } from '../lib/i18n';
+const DENSITY_LABELS: Record<SettingsDensityPreset, string> = {
+  safe: 'Safe — extra gap, easiest to cut',
+  standard: 'Standard — recommended spacing',
+  dense: 'Dense — tight, calibrate first',
+  loose: 'Loose — open, decorative',
+  airy: 'Airy — open, like commercial templates',
+};
 
 function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
   const nextVault = { ...vault, settings: nextSettings };
@@ -32,9 +47,18 @@ function persistSettings(nextSettings: WorkspaceSettings, vault: WorkspaceVault,
 }
 
 export default function SettingsPage() {
-  const [vault, setVault] = useState<WorkspaceVault>(() => readWorkspaceVault());
+  const t = useT();
+  const [vault, setVault] = useState<WorkspaceVault>(EMPTY_WORKSPACE_VAULT);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(() => readActiveCalibrationProfileId());
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [guideReset, setGuideReset] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setVault(readWorkspaceVault());
+      setActiveProfileIdState(readActiveCalibrationProfileId());
+    });
+  }, []);
 
   const settings = vault.settings;
   const update = <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {
@@ -80,9 +104,9 @@ export default function SettingsPage() {
         />
 
         <WorkspaceHero
-          eyebrow={<><Settings2 className="h-3.5 w-3.5" /> Settings</>}
-          title="Operational defaults for the whole workspace"
-          description="Keep machine, material, stone, and output preferences together so the rest of the product can become faster, safer, and more predictable over time."
+          eyebrow={<><Settings2 className="h-3.5 w-3.5" /> {t('Settings')}</>}
+          title={t('Defaults for new projects')}
+          description={t('Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved.')}
           tone="accent"
           aside={(
             <WorkspaceSurface className="p-5">
@@ -94,69 +118,89 @@ export default function SettingsPage() {
           )}
         />
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <WorkspaceMetricCard label="Machine" value={settings.machineModel || 'Unset'} />
-          <WorkspaceMetricCard label="Default stone" value={settings.defaultStoneSize || 'Unset'} />
-          <WorkspaceMetricCard label="Spacing" value={`${settings.defaultRhinestoneSpacingMm} mm`} />
-        </section>
-
         <section className="grid gap-5 xl:grid-cols-2">
-          <FormCard title="Machine">
-            <Field label="Machine model" value={settings.machineModel} onChange={(value) => update('machineModel', value)} />
-            <Field label="Cutting mat" value={settings.cuttingMat} onChange={(value) => update('cuttingMat', value)} />
-            <Field label="Blade strategy" value={settings.bladeStrategy} onChange={(value) => update('bladeStrategy', value)} multiline />
-          </FormCard>
-
-          <FormCard title="Materials">
-            <Field label="Default rhinestone material" value={settings.defaultMaterial} onChange={(value) => update('defaultMaterial', value)} />
-            <Field label="Default flock" value={settings.defaultFlock} onChange={(value) => update('defaultFlock', value)} />
-            <Field label="Default HTV carrier" value={settings.defaultHtvCarrier} onChange={(value) => update('defaultHtvCarrier', value)} />
-          </FormCard>
-
-          <FormCard title="Production defaults">
-            <Field label="Default stone size" value={settings.defaultStoneSize} onChange={(value) => update('defaultStoneSize', value)} />
-            <Field
-              label="Default rhinestone spacing (mm)"
-              value={String(settings.defaultRhinestoneSpacingMm)}
-              onChange={(value) => update('defaultRhinestoneSpacingMm', Number(value) || DEFAULT_WORKSPACE_SETTINGS.defaultRhinestoneSpacingMm)}
+          <FormCard title={t('New rhinestone projects')} note={t('Applies to new projects. Open designs keep their own values.')}>
+            <SelectField
+              label={t('Stone size')}
+              value={settings.defaultStoneSize}
+              options={SETTINGS_STONE_SIZES.map((size) => ({ value: size, label: size }))}
+              onChange={(value) => update('defaultStoneSize', value as WorkspaceSettings['defaultStoneSize'])}
             />
-            <Field
-              label="HTV weed margin (mm)"
-              value={String(settings.htvWeedMarginMm)}
-              onChange={(value) => update('htvWeedMarginMm', Number(value) || DEFAULT_WORKSPACE_SETTINGS.htvWeedMarginMm)}
+            <SelectField
+              label={t('Spacing')}
+              hint={t('Centre distance is worked out from the stone size and your material, so it always stays cuttable.')}
+              value={settings.defaultDensityPreset}
+              options={SETTINGS_DENSITY_PRESETS.map((preset) => ({ value: preset, label: DENSITY_LABELS[preset] }))}
+              onChange={(value) => update('defaultDensityPreset', value as SettingsDensityPreset)}
+            />
+            <NumberField
+              label={t('Uploaded artwork size (mm, longest side)')}
+              hint={t('SVGs you upload are scaled to this size first. You can still resize them.')}
+              value={settings.defaultArtworkLongestSideMm}
+              {...WORKSPACE_SETTING_LIMITS.defaultArtworkLongestSideMm}
+              onCommit={(value) => update('defaultArtworkLongestSideMm', value)}
             />
           </FormCard>
 
-          <FormCard title="Workspace rules">
-            <Field label="Output folder hint" value={settings.outputFolderHint} onChange={(value) => update('outputFolderHint', value)} />
-            <Field label="Quality checklist" value={settings.qualityChecklist} onChange={(value) => update('qualityChecklist', value)} multiline />
+          <FormCard title={t('HTV export')} note={t('Used the next time you export from the HTV studio.')}>
+            <NumberField
+              label={t('Weed margin (mm)')}
+              hint={t('Empty space kept around the artwork in the exported cut file.')}
+              value={settings.htvWeedMarginMm}
+              {...WORKSPACE_SETTING_LIMITS.htvWeedMarginMm}
+              onCommit={(value) => update('htvWeedMarginMm', value)}
+            />
           </FormCard>
         </section>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              persistSettings({ ...DEFAULT_WORKSPACE_SETTINGS }, vault, setVault);
+              setSavedAt(new Date().toLocaleTimeString());
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+          >
+            {t('Reset to recommended defaults')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetOnboarding(globalThis.localStorage);
+              setGuideReset(true);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+          >
+            {t('Show the quick-start guide again')}
+          </button>
+          {guideReset && <span role="status" className="text-sm text-success-600">The guide will show the next time you open the studio.</span>}
+        </div>
 
         {/* ── Calibration Profiles ──────────────────────────────────────────── */}
         <WorkspaceSurface className="p-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Ruler className="h-5 w-5 text-accent-600" />
-              <h2 className="text-2xl font-semibold text-ink">Calibration Profiles</h2>
+              <h2 className="text-2xl font-semibold text-ink">{t('Calibration Profiles')}</h2>
             </div>
             <Link
               href="/setup"
               className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
             >
-              Full workflow →
+              {t('Full workflow →')}
             </Link>
           </div>
           <p className="mt-2 text-sm leading-7 text-ink-secondary">
-            Switch the active profile here, approve it for production, or go to Setup to run the full calibration workflow.
+            {t('Switch the active profile here, approve it for production, or go to Setup to run the full calibration workflow.')}
           </p>
 
           {vault.calibrationProfiles.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-border bg-surface-raised px-6 py-8 text-center">
-              <p className="text-sm font-medium text-ink">No calibration profiles saved yet.</p>
-              <p className="mt-2 text-xs text-ink-muted">Run the calibration workflow in Setup to create one.</p>
+              <p className="text-sm font-medium text-ink">{t('No calibration profiles saved yet.')}</p>
+              <p className="mt-2 text-xs text-ink-muted">{t('Run the calibration workflow in Setup to create one.')}</p>
               <Link href="/setup" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-ink-inverse transition hover:bg-sand-800">
-                Go to Setup & Calibration
+                {t('Go to Setup & Calibration')}
               </Link>
             </div>
           ) : (
@@ -173,12 +217,12 @@ export default function SettingsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate font-medium text-ink">{profile.name}</span>
                         {isActive && (
-                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Active</span>
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-700">Active</span>
                         )}
                         {isApproved ? (
-                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success-700">Approved</span>
+                          <span className="rounded-full border border-success-300 bg-success-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-700">Approved</span>
                         ) : (
-                          <span className="rounded-full border border-warning-300 bg-warning-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-700">Pending</span>
+                          <span className="rounded-full border border-warning-300 bg-warning-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-warning-700">Pending</span>
                         )}
                       </div>
                       <p className="mt-1 text-xs text-ink-muted">
@@ -192,7 +236,7 @@ export default function SettingsPage() {
                           onClick={() => handleSetActiveProfile(profile.id)}
                           className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink-secondary transition hover:bg-surface hover:text-ink"
                         >
-                          Set active
+                          {t('Set active')}
                         </button>
                       )}
                       <button
@@ -205,7 +249,7 @@ export default function SettingsPage() {
                         onClick={() => handleDeleteProfile(profile.id)}
                         className="rounded-lg border border-danger-200 px-3 py-1.5 text-xs font-medium text-danger-600 transition hover:bg-danger-50"
                       >
-                        Delete
+                        {t('Delete')}
                       </button>
                     </div>
                   </div>
@@ -219,42 +263,94 @@ export default function SettingsPage() {
   );
 }
 
-function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
+function FormCard({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <WorkspaceSurface className="p-6">
       <h2 className="text-2xl font-semibold text-ink">{title}</h2>
+      {note && <p className="mt-1 text-sm text-ink-muted">{note}</p>}
       <div className="mt-5 space-y-4">{children}</div>
     </WorkspaceSurface>
   );
 }
 
-function Field({
+function SelectField({
   label,
+  hint,
   value,
+  options,
   onChange,
-  multiline = false,
 }: {
   label: string;
+  hint?: string;
   value: string;
+  options: { value: string; label: string }[];
   onChange: (value: string) => void;
-  multiline?: boolean;
 }) {
   return (
     <label className="block space-y-2">
       <span className="text-sm font-medium text-ink-secondary">{label}</span>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          rows={4}
-          className={workspaceTextAreaClassName}
-        />
+      <select value={value} onChange={(event) => onChange(event.target.value)} className={workspaceInputClassName}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      {hint && <span className="block text-xs text-ink-muted">{hint}</span>}
+    </label>
+  );
+}
+
+/**
+ * Number input that keeps what the user is typing while it is out of range and
+ * only saves a value that is valid, so a half-typed "1" never becomes a setting.
+ */
+function NumberField({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
+  const parsed = draft.trim() === '' ? NaN : Number(draft);
+  const valid = Number.isFinite(parsed) && parsed >= min && parsed <= max;
+  const shown = editing ? draft : String(value);
+
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-ink-secondary">{label}</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={max}
+        step="any"
+        value={shown}
+        aria-invalid={editing && !valid ? true : undefined}
+        onFocus={() => {
+          setDraft(String(value));
+          setEditing(true);
+        }}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          const next = event.target.value.trim() === '' ? NaN : Number(event.target.value);
+          if (Number.isFinite(next) && next >= min && next <= max) onCommit(next);
+        }}
+        onBlur={() => setEditing(false)}
+        className={workspaceInputClassName}
+      />
+      {editing && !valid ? (
+        <span role="alert" className="block text-xs text-danger-600">Enter a number from {min} to {max}.</span>
       ) : (
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className={workspaceInputClassName}
-        />
+        hint && <span className="block text-xs text-ink-muted">{hint}</span>
       )}
     </label>
   );

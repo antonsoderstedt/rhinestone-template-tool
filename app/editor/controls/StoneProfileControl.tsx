@@ -4,6 +4,7 @@
 
 import type { StoneSizeId } from '@/src/lib/rhinestone-engine/index';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+import { GLOSSARY } from '../editorUi';
 
 interface StoneProfileControlProps {
   value: StoneSizeId;
@@ -20,7 +21,7 @@ export default function StoneProfileControl({
 }: StoneProfileControlProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className={editorFieldLabelClassName}>{label}</span>
+      <span className={`${editorFieldLabelClassName} cursor-help`} title={GLOSSARY.stoneSize}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as StoneSizeId)}

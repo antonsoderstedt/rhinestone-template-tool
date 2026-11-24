@@ -10,6 +10,7 @@ import {
   TRW_CLEAN_STONE_FONT_ID,
   TRW_STONE_SIZE_CALIBRATION,
 } from '../src/lib/rhinestone-engine/index.js';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 // ─── UI Component Behavior ───────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ describe('Rhinestone Font Text Processing', () => {
 // ─── Stone Size Scaling ──────────────────────────────────────────────────────
 
 describe('Rhinestone Font Size Scaling', () => {
-  it('generates differently sized templates for each stone size a font supports', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('generates differently sized templates for each stone size a font supports', async () => {
     // TRW Clean Stone is only digitized at SS10 (see rhinestoneFontRegistry.ts);
     // 'blessed-stone' ships SS6 and SS10 packages, so it exercises real scaling.
     const sizes = [

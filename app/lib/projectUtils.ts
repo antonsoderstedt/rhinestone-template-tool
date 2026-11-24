@@ -10,19 +10,20 @@ import {
   type RhinestoneProjectFile,
 } from '@/src/lib/rhinestone-engine/index';
 
-export function buildProjectFilename(projectName: string, generatorId: string): string {
-  const slug = generatorId
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 24) || 'project';
+/** Extension of the explicit project-file download (backup / sharing). */
+export const PROJECT_FILE_EXTENSION = '.rhinestone.json';
+
+/** Project files are plain JSON of stones and settings; anything this big is not one. */
+export const MAX_PROJECT_FILE_BYTES = 20 * 1024 * 1024;
+
+export function buildProjectFilename(projectName: string): string {
   const name = projectName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 40) || 'untitled';
+    .slice(0, 60) || 'untitled';
 
-  return `rhinestone-project-${slug}-${name}.json`;
+  return `${name}${PROJECT_FILE_EXTENSION}`;
 }
 
 /**
@@ -43,6 +44,9 @@ export function readProjectJson(json: string): RhinestoneProjectFile {
 }
 
 export async function readProjectFile(file: File): Promise<RhinestoneProjectFile> {
+  if (file.size > MAX_PROJECT_FILE_BYTES) {
+    throw new Error('This file is too large to be a project file.');
+  }
   const json = await file.text();
   return readProjectJson(json);
 }
@@ -52,6 +56,6 @@ export async function readProjectFile(file: File): Promise<RhinestoneProjectFile
  * Filename is derived from the projectName and generatorId.
  */
 export function downloadProject(project: RhinestoneProjectFile, filename?: string): void {
-  const finalFilename = filename ?? buildProjectFilename(project.projectName, project.generatorState.generatorId);
+  const finalFilename = filename ?? buildProjectFilename(project.projectName);
   downloadJson(finalFilename, serializeRhinestoneProject(project));
 }

@@ -1,11 +1,11 @@
 /**
  * Material profiles describing cutter + material combinations.
  *
- * Magic Flock hole diameters (holePresets below) are sourced from vendor
- * (TRW) physical stone measurements for SS6, SS8, SS10, SS16, and SS20.
- * SS12 has no verified official value and is marked `status: 'provisional'` —
- * it MUST be treated as a starting point only and calibrated before
- * production use. See each HolePreset's `note`.
+ * Magic Flock HOLE diameters (holePresets below). SS6, SS10, SS16 and SS20 follow The Rhinestone World's Magic Flock
+ * recommendation (0.100, 0.135, 0.173 and 0.208 in). SS8 is recorded as a vendor value in ADR 0004 but could not be found
+ * again in TRW's public list. SS12 has no verified vendor value and is marked `status: 'provisional'`: it MUST be treated
+ * as a starting point only and calibrated before production use. These are holes, not stones: the stone diameters are in
+ * stoneSizes.ts. See each HolePreset's `note`.
  *
  * ⚠️  kerfCompensationMm and scaleCompensationPercent still start at 0 and
  * must be refined from a physical calibration cut. See docs/CALIBRATION_PLAN.md.
@@ -35,6 +35,7 @@ export const MAGIC_FLOCK_HOLE_PRESETS: readonly HolePreset[] = [
     holeDiameterMm: 3.00,
     calibrationValuesMm: [2.90, 2.95, 3.00, 3.05, 3.10],
     status: 'verified',
+    note: 'Recorded as a TRW value in ADR 0004; the figure was not found again in TRW\'s public SS6/SS10/SS16/SS20 list. Calibrate before production.',
   },
   {
     stoneSize: 'SS10',
@@ -57,12 +58,14 @@ export const MAGIC_FLOCK_HOLE_PRESETS: readonly HolePreset[] = [
     holeDiameterMm: 4.39,
     calibrationValuesMm: [4.29, 4.34, 4.39, 4.44, 4.49],
     status: 'verified',
+    note: "TRW's Magic Flock recommendation (0.173 in). Many TRW design pages give 0.176 in (4.47 mm): test both.",
   },
   {
     stoneSize: 'SS20',
     holeDiameterMm: 5.28,
     calibrationValuesMm: [5.18, 5.23, 5.28, 5.33, 5.38],
     status: 'verified',
+    note: "TRW's Magic Flock recommendation (0.208 in). Many TRW design pages give 0.212 in (5.38 mm): the last test value covers it.",
   },
 ];
 

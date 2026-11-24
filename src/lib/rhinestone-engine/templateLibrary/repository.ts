@@ -26,11 +26,19 @@ function normalizeRecord(record: TemplateLibraryRecord | null | undefined): Temp
     };
   }
 
+  // Starters always come from code so browsers that stored an older starter
+  // list still get new ones. Only the user's favourite flag is carried over.
+  const storedFavorites = new Set(
+    (Array.isArray(record.builtInTemplates) ? record.builtInTemplates : [])
+      .filter((entry) => entry.favorite)
+      .map((entry) => entry.templateId),
+  );
+
   return {
     version: 1,
-    builtInTemplates: Array.isArray(record.builtInTemplates) && record.builtInTemplates.length > 0
-      ? record.builtInTemplates
-      : [...STARTER_TEMPLATE_LIBRARY_ENTRIES],
+    builtInTemplates: STARTER_TEMPLATE_LIBRARY_ENTRIES.map((entry) => (
+      storedFavorites.has(entry.templateId) ? { ...entry, favorite: true } : entry
+    )),
     userTemplates: Array.isArray(record.userTemplates) ? record.userTemplates : [],
   };
 }
@@ -65,7 +73,15 @@ export class LocalStorageTemplateLibraryRepository implements TemplateLibraryRep
       throw new Error('Template library storage is unavailable in this environment.');
     }
 
-    storage.setItem(this.storageKey, JSON.stringify(record));
+    try {
+      storage.setItem(this.storageKey, JSON.stringify(record));
+    } catch (error) {
+      const name = (error as { name?: string } | null)?.name;
+      if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        throw new Error("This browser's storage is full. Back up your designs and delete old ones, then try again.");
+      }
+      throw error;
+    }
   }
 
   async list(): Promise<TemplateLibraryRecord> {

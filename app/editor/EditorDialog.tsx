@@ -1,8 +1,9 @@
 'use client';
 
 import { AlertTriangle, Info, Sparkles, X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import Modal from './ui/Modal';
 
+import { useT } from '../lib/i18n';
 interface EditorDialogProps {
   open: boolean;
   title: string;
@@ -34,40 +35,18 @@ export default function EditorDialog({
   icon = 'info',
   tertiaryAction,
 }: EditorDialogProps) {
-  const confirmButtonRef = useRef<HTMLButtonElement>(null);
-  const previousFocusedElementRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    previousFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    confirmButtonRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      previousFocusedElementRef.current?.focus();
-    };
-  }, [open, onCancel]);
-
-  if (!open) return null;
-
+  const t = useT();
   const Icon = icon === 'warning' ? AlertTriangle : icon === 'sparkles' ? Sparkles : Info;
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+    <Modal
+      open={open}
+      onClose={onCancel}
+      titleId="editor-dialog-title"
+      descriptionId="editor-dialog-description"
+      overlayClassName="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+    >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="editor-dialog-title"
-        aria-describedby="editor-dialog-description"
         className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4">
@@ -80,8 +59,8 @@ export default function EditorDialog({
               <p id="editor-dialog-description" className="mt-2 text-sm text-zinc-400">{description}</p>
               {details && details.length > 0 && (
                 <ul className="mt-3 space-y-1.5 text-xs text-zinc-300">
-                  {details.map((detail) => (
-                    <li key={detail} className="flex items-start gap-2">
+                  {details.map((detail, index) => (
+                    <li key={`${index}-${detail}`} className="flex items-start gap-2">
                       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
                       <span>{detail}</span>
                     </li>
@@ -92,9 +71,9 @@ export default function EditorDialog({
           </div>
           <button
             onClick={onCancel}
-            className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            aria-label="Close dialog"
-            title="Close dialog"
+            className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            aria-label={t('Close dialog')}
+            title={t('Close dialog')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -102,7 +81,6 @@ export default function EditorDialog({
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button
-            ref={confirmButtonRef}
             onClick={onConfirm}
             className={`rounded-lg px-3 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 ${tone === 'destructive' ? 'bg-red-600 hover:bg-red-500 focus:ring-red-400' : 'bg-purple-600 hover:bg-purple-500 focus:ring-purple-400'}`}
           >
@@ -124,6 +102,6 @@ export default function EditorDialog({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

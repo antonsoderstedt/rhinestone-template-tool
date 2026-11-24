@@ -1,3 +1,4 @@
+import { applyDesignColour, stoneColourOf } from './stoneColours';
 import type {
   DotMatrixTextProjectState,
   GeneratorId,
@@ -13,6 +14,29 @@ import type {
 import { TRW_STONE_SIZE_CALIBRATION } from '@/src/lib/rhinestone-engine/index';
 import type { RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 import type { EditableStone, EditorState } from './EditorState';
+import { composeDesign } from './designParts';
+import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
+
+export function readRhinestoneAutosave(raw: string | null): TemplateLibraryEntry | null {
+  if (!raw || raw.trim().length === 0) return null;
+  try {
+    const entry = JSON.parse(raw) as TemplateLibraryEntry;
+    if (!entry?.snapshot?.project || typeof entry.templateId !== 'string') return null;
+    return entry;
+  } catch {
+    return null;
+  }
+}
+
+function toSavedPart(part: EditorState['parts'][number]) {
+  return {
+    id: part.id,
+    name: part.name,
+    offsetX: part.offsetX,
+    offsetY: part.offsetY,
+    stones: part.stones.map((stone) => ({ id: stone.id, x: stone.center.x, y: stone.center.y, stoneSize: stone.stoneSize, holeDiameterMm: stone.holeDiameterMm })),
+  };
+}
 
 function toSavedStones(stones: readonly EditableStone[]) {
   return stones.map((stone) => {
@@ -28,12 +52,20 @@ function toSavedStones(stones: readonly EditableStone[]) {
           ? stone.metadata.stroke
           : undefined,
       group: typeof stone.metadata?.group === 'string' ? stone.metadata.group : undefined,
+      stoneColour: stoneColourOf(stone) ?? undefined,
     };
     return saved;
   });
 }
 
-export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
+/** The design as it is exported and checked: the piece being worked on plus every part kept with "Add to design". */
+export function buildEffectiveTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'> & { parts?: EditorState['parts']; designStoneColour?: string | null }): RhinestoneTemplate | null {
+  const working = buildWorkingTemplate(state);
+  const composed = composeDesign(working, state.parts ?? [], state.projectName);
+  return composed && state.designStoneColour ? { ...composed, stones: applyDesignColour(composed.stones, state.designStoneColour) } : composed;
+}
+
+function buildWorkingTemplate(state: Pick<EditorState, 'editableTemplate' | 'template' | 'projectName'>): RhinestoneTemplate | null {
   if (!state.editableTemplate.isEditable) {
     return state.template;
   }
@@ -94,6 +126,9 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         paddingMm: state.paddingMm,
         densityPreset: state.gridTool.densityPreset,
         customSpacingMm: typeof state.gridTool.customSpacingMm === 'number' ? state.gridTool.customSpacingMm : 4.0,
+        ...(state.gridTool.mode === 'area' && typeof state.gridTool.areaWidthMm === 'number' && typeof state.gridTool.areaHeightMm === 'number'
+          ? { area: { widthMm: state.gridTool.areaWidthMm, heightMm: state.gridTool.areaHeightMm, pattern: state.gridTool.areaPattern, seed: state.gridTool.areaSeed } }
+          : {}),
       } satisfies ManualGridProjectState;
     case 'outline-text':
       return {
@@ -160,6 +195,8 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
         placementPattern: state.svgTool.placementPattern,
         contourSettings: state.svgTool.contourSettings,
         radialSettings: state.svgTool.radialSettings,
+        layerRoles: state.svgTool.layerRoles,
+        layerStoneColours: state.svgTool.layerStoneColours,
         densityPreset: state.svgTool.densityPreset,
         customSpacingMm: typeof state.svgTool.customSpacingMm === 'number' ? state.svgTool.customSpacingMm : 4.0,
         imageColorCount: state.svgTool.imageColorCount,
@@ -262,7 +299,11 @@ export function buildGeneratorStateFromEditorState(state: EditorState): Generato
 }
 
 export function buildProjectFileFromEditorState(state: EditorState): RhinestoneProjectFile | null {
-  const generatorState = buildGeneratorStateFromEditorState(state);
+  let generatorState = buildGeneratorStateFromEditorState(state);
+  if (!generatorState && state.parts.length > 0) {
+    // Nothing is being generated right now, but parts were kept: save them with an empty manual design.
+    generatorState = { generatorId: 'manual-editor', stones: [], includeGuideBox: state.includeGuideBox, paddingMm: state.paddingMm } satisfies ManualEditorProjectState;
+  }
   if (!generatorState) {
     return null;
   }
@@ -284,6 +325,9 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
           originalGeneratorState: generatorState.generatorId === 'manual-editor' ? null : generatorState,
         }
       : undefined,
+    parts: state.parts.length > 0 ? state.parts.map(toSavedPart) : undefined,
+    workingOffset: state.workingOffset.x !== 0 || state.workingOffset.y !== 0 ? { ...state.workingOffset } : undefined,
+    designStoneColour: state.designStoneColour ?? undefined,
     activeTool: state.activeTool,
     manualToolState: {
       snapToGrid: state.manualTool.snapToGrid,
@@ -293,10 +337,11 @@ export function buildProjectFileFromEditorState(state: EditorState): RhinestoneP
   };
 }
 
-export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number; color?: string; group?: string }): EditableStone {
+export function savedStoneToEditableStone(stone: { id: string; x: number; y: number; stoneSize: EditableStone['stoneSize']; holeDiameterMm: number; color?: string; group?: string; stoneColour?: string }): EditableStone {
   const metadata: NonNullable<EditableStone['metadata']> = {};
   if (stone.color) metadata.fill = stone.color;
   if (stone.group) metadata.group = stone.group;
+  if (stone.stoneColour) metadata.stoneColour = stone.stoneColour;
   return {
     id: stone.id,
     center: { x: stone.x, y: stone.y },

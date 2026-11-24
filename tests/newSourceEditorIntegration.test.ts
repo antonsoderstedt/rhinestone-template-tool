@@ -22,6 +22,7 @@ import {
   TRW_CLEAN_STONE_FONT_ID,
   TRW_STONE_SIZE_CALIBRATION,
 } from '../src/lib/rhinestone-engine/index';
+import { HAS_LETTER_LIBRARY } from './helpers/letterLibrary';
 
 const TWO_COLOR_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="30mm" height="10mm" viewBox="0 0 30 10">
@@ -48,7 +49,7 @@ function stateWith(overrides: Partial<EditorState>): EditorState {
 }
 
 describe('main editor integration — rhinestone font', () => {
-  it('renders a reachable toolbar entry for the rhinestone font source', () => {
+  it('keeps Text lit while a stone font is the look, and has no separate Stone Font button', () => {
     const html = renderToStaticMarkup(
       createElement(EditorToolbar, {
         activeTool: 'rhinestone-font',
@@ -56,8 +57,8 @@ describe('main editor integration — rhinestone font', () => {
         orientation: 'horizontal',
       }),
     );
-    expect(html).toContain('aria-label="Stone Font"');
-    expect(html).toContain('bg-accent-500');
+    expect(html).not.toContain('aria-label="Stone Font"');
+    expect(html).toContain('bg-purple-600');
   });
 
   it('renders font, text, current registry fonts, and spacing controls', () => {
@@ -71,7 +72,9 @@ describe('main editor integration — rhinestone font', () => {
     expect(html).toContain('Old English');
     expect(html).toContain('Script');
     expect(html).toContain('Gothic');
-    expect(html).toContain('mode stones');
+    // The look is chosen from a gallery of the user's own words, and the chosen one is marked.
+    expect(html).toContain('aria-label="TRW Clean Stone, Script" class="');
+    expect(html).toContain('Fonts with stones already placed');
     expect(html).toContain('Suggested sample: SULAY');
     expect(html).toContain('Use sample');
     expect(html).toContain('SS10');
@@ -92,7 +95,7 @@ describe('main editor integration — rhinestone font', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('mode line');
+    expect(html).toContain('Small Line');
     expect(html).toContain('Suggested sample: SMALL');
     expect(html).toContain('future centerline workflow');
   });
@@ -111,12 +114,12 @@ describe('main editor integration — rhinestone font', () => {
     const html = renderToStaticMarkup(
       createElement(EditorPropertiesPanel, { state, dispatch: vi.fn() as never, mode: 'source' }),
     );
-    expect(html).toContain('mode digits');
+    expect(html).toContain('Huge Digits');
     expect(html).toContain('Suggested sample: 2026');
     expect(html).toContain('optimized for digits');
   });
 
-  it('uses the authoritative requested diameter in generated templates and SVG circles', async () => {
+  it.skipIf(!HAS_LETTER_LIBRARY)('uses the authoritative requested diameter in generated templates and SVG circles', async () => {
     for (const size of ['SS6', 'SS10'] as const) {
       const diameter = TRW_STONE_SIZE_CALIBRATION[size].diameterMm;
       const result = await createRhinestoneFontTemplate({
@@ -312,11 +315,15 @@ describe('main editor integration — raster artwork', () => {
     expect(html).toContain('Upload artwork');
     expect(html).toContain('Drag and drop or paste artwork here.');
     expect(html).toContain('Original image');
-    expect(html).toContain('Number of stone colors');
-    expect(html).toContain('Threshold');
-    expect(html).toContain('Refine details');
-    expect(html).toContain('Invert fill');
+    expect(html).toContain('Number of stone colours');
+    expect(html).toContain('Brightness cutoff');
+    expect(html).toContain('Detail');
+    expect(html).toContain('Stones on the background');
     expect(html).toContain('Lock ratio');
+    // the look and the unit switch are there too, and the chosen colour count is marked
+    expect(html).toContain('aria-label="Look"');
+    expect(html).toContain('aria-label="Unit"');
+    expect(html).toMatch(/aria-pressed="true"[^>]*>3<\/button>/);
     expect(html).toContain('photo.png');
   });
 

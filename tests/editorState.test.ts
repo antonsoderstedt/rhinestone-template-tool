@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_EDITOR_STATE,
   editorReducer,
+  projectNameFromText,
   type EditableStone,
   type EditorState,
 } from '../app/editor/EditorState';
@@ -112,7 +113,7 @@ describe('editorReducer', () => {
     expect(outlineFill.svgTool.fillMode).toBe('outline-fill');
   });
 
-  it('defaults filled uploaded SVG artwork to outline-fill and a larger width', () => {
+  it('defaults filled uploaded SVG artwork to ~100 mm longest side and keeps it within print bounds', () => {
     const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
       type: 'UPDATE_SVG_TOOL',
       updates: { uploadedSvgText: filledSvg },
@@ -121,8 +122,32 @@ describe('editorReducer', () => {
     expect(state.svgTool.coverageMode).toBe('fill');
     expect(state.svgTool.fillMode).toBe('fill');
     expect(state.svgTool.placementPattern).toBe('hexagonal');
-    expect(state.svgTool.densityPreset).toBe('dense');
-    expect(state.svgTool.targetWidthMm).toBe(280);
+    expect(state.svgTool.densityPreset).toBe('standard');
+    expect(state.svgTool.targetWidthMm).toBe(100);
+    expect(state.svgTool.targetHeightMm).toBe(40);
+    expect(Number(state.svgTool.targetWidthMm)).toBeLessThanOrEqual(280);
+    expect(Number(state.svgTool.targetHeightMm)).toBeLessThanOrEqual(280);
+  });
+
+  it('scales a 100x100 uploaded SVG to a 100x100 default target', () => {
+    const squareSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M 0 0 L 100 0 L 100 100 L 0 100 Z" /></svg>';
+    const state = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { uploadedSvgText: squareSvg },
+    });
+    expect(state.svgTool.targetWidthMm).toBe(100);
+    expect(state.svgTool.targetHeightMm).toBe(100);
+  });
+
+  it('a saved coverage mode wins over the render-mode preset when both arrive together (restoring a design)', () => {
+    const restored = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), {
+      type: 'UPDATE_SVG_TOOL',
+      updates: { renderMode: 'vector-layout', coverageMode: 'contour', fillMode: 'outline-fill' },
+    });
+    expect(restored.svgTool.coverageMode).toBe('contour');
+    // while a render mode on its own still applies its preset
+    const preset = editorReducer(structuredClone(DEFAULT_EDITOR_STATE), { type: 'UPDATE_SVG_TOOL', updates: { renderMode: 'vector-layout' } });
+    expect(preset.svgTool.coverageMode).toBe('outline-fill');
   });
 
   it('switches SVG render mode presets cleanly', () => {
@@ -133,7 +158,7 @@ describe('editorReducer', () => {
     expect(artwork.svgTool.coverageMode).toBe('fill');
     expect(artwork.svgTool.fillMode).toBe('fill');
     expect(artwork.svgTool.placementPattern).toBe('hexagonal');
-    expect(artwork.svgTool.densityPreset).toBe('dense');
+    expect(artwork.svgTool.densityPreset).toBe('standard');
 
     const vector = editorReducer(artwork, {
       type: 'UPDATE_SVG_TOOL',
@@ -331,5 +356,40 @@ describe('editorReducer', () => {
   it('returns the desired point when it is already valid', () => {
     const stones = [stone('a', 10, 10)];
     expect(findNearestValidStonePosition(30, 30, 1.5, stones)).toEqual({ x: 30, y: 30 });
+  });
+});
+
+describe('SET_TEMPLATE', () => {
+  it('returns the same state when the template is unchanged, so an empty design does not re-render', () => {
+    expect(editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_TEMPLATE', template: null })).toBe(DEFAULT_EDITOR_STATE);
+    const template = makeTemplate([stone('a', 0, 0)]);
+    const withTemplate = editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_TEMPLATE', template });
+    expect(withTemplate.template).toBe(template);
+    expect(editorReducer(withTemplate, { type: 'SET_TEMPLATE', template })).toBe(withTemplate);
+  });
+});
+
+describe('project name from the text (plan A11)', () => {
+  it('names a new design from its words, and follows the words while the name is automatic', () => {
+    let state = editorReducer(DEFAULT_EDITOR_STATE, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Mia Rose' } });
+    expect(state.projectName).toBe('Mia Rose design');
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Team\nTigers' } });
+    expect(state.projectName).toBe('Team design');
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: '' } });
+    expect(state.projectName).toBe('Untitled Project');
+  });
+
+  it('stops renaming once the user has typed a name, and for a stone font too', () => {
+    let state = editorReducer(DEFAULT_EDITOR_STATE, { type: 'SET_PROJECT_NAME', name: 'Birthday shirt' });
+    state = editorReducer(state, { type: 'UPDATE_TEXT_TOOL', updates: { text: 'Mia' } });
+    expect(state.projectName).toBe('Birthday shirt');
+
+    const fresh = editorReducer(DEFAULT_EDITOR_STATE, { type: 'UPDATE_RHINESTONE_FONT_TOOL', updates: { text: 'Sulay' } });
+    expect(fresh.projectName).toBe('Sulay design');
+  });
+
+  it('shortens long text', () => {
+    expect(projectNameFromText('A very long sentence that goes on and on and on')).toMatch(/^A very long sentence that…? design$|…\s?design$/);
+    expect(projectNameFromText('   \n ')).toBe('Untitled Project');
   });
 });

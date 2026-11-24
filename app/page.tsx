@@ -1,290 +1,134 @@
+'use client';
+
 import Link from 'next/link';
-import { Bebas_Neue, Sora } from 'next/font/google';
-import { ArrowRight, FolderHeart, Gem, LibraryBig, Layers3, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
+import { ArrowRight, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
 import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
+import RecentDesigns from './components/RecentDesigns';
+import StarterGallery from './components/StarterGallery';
+import { buildFontLaunchUrl } from './lib/fontLaunch';
+import { useT } from './lib/i18n';
 
-const display = Bebas_Neue({ subsets: ['latin'], weight: '400' });
-const sora = Sora({ subsets: ['latin'], variable: '--font-sora' });
+const EXAMPLE_FONT_ID = 'archivo-black';
+const EXAMPLE_TEXT = 'YOUR NAME';
+// On two lines the rhinestone example is large enough to look clean and still fits a 12 x 12 in mat.
+const RHINESTONE_EXAMPLE_TEXT = 'YOUR\nNAME';
 
-const toolCards = [
+const goals = [
   {
-    href: '/rhinestone',
-    title: 'Rhinestone Studio',
-    copy: 'Generate templates, tune spacing, preview garments, calibrate output, and export mm-accurate SVG files for production.',
-    icon: Gem,
+    href: buildFontLaunchUrl('rhinestone', EXAMPLE_FONT_ID, RHINESTONE_EXAMPLE_TEXT),
+    title: 'Make a rhinestone template from text',
+    copy: 'Type a name, number or word and get a cut-ready template of stone holes. Opens with an example you can change.',
+    icon: Type,
     tone: 'from-brand-500 to-brand-300',
   },
   {
-    href: '/htv',
-    title: 'HTV Studio',
-    copy: 'Build layered vinyl artwork, trace silhouettes, preview placements, and export clean vector cut files.',
-    icon: SwatchBook,
+    href: '/rhinestone?tool=svg',
+    title: 'Make a rhinestone template from my artwork',
+    copy: 'Upload an SVG logo or drawing and fill it with evenly spaced stones.',
+    icon: ImageUp,
     tone: 'from-accent-500 to-accent-300',
   },
   {
-    href: '/library',
-    title: 'Library',
-    copy: 'Collect assets, bulk upload, tag, filter, sort, and launch the right artwork directly into the right studio.',
-    icon: LibraryBig,
+    href: buildFontLaunchUrl('htv', EXAMPLE_FONT_ID, EXAMPLE_TEXT),
+    title: 'Design an HTV transfer',
+    copy: 'Lay out text and shapes for heat-transfer vinyl, preview them on a garment and export a cut file.',
+    icon: SwatchBook,
     tone: 'from-sand-700 to-sand-500',
-  },
-  {
-    href: '/fonts',
-    title: 'Fonts',
-    copy: 'Preview every typeface on one phrase, compare styles at a glance, and keep your font catalog organized.',
-    icon: Type,
-    tone: 'from-brand-500 to-accent-500',
-  },
-  {
-    href: '/setup',
-    title: 'Setup & Calibration',
-    copy: 'Cut the calibration sheet, measure hole diameters, approve your material profile, and gate production export.',
-    icon: Ruler,
-    tone: 'from-sand-600 to-brand-400',
-  },
-];
-
-const audienceCards = [
-  {
-    title: 'Solo creator',
-    copy: 'Fast launch points for custom tees, competition wear, gifting, and on-demand production.',
-    href: '/rhinestone',
-  },
-  {
-    title: 'Studio workflow',
-    copy: 'Shared assets, repeatable material settings, favorites, previews, and saved designs that stay easy to reopen.',
-    href: '/designs',
-  },
-  {
-    title: 'Sales-ready catalog',
-    copy: 'Build reusable libraries of artwork, fonts, placements, and production defaults so every order starts faster.',
-    href: '/library',
-  },
-];
-
-const workflowSteps = [
-  {
-    title: 'Build',
-    copy: 'Generate rhinestone layouts or layered HTV artwork with tighter defaults and clearer controls.',
-  },
-  {
-    title: 'Organize',
-    copy: 'Keep assets, fonts, and saved designs in one operating system instead of scattered folders.',
-  },
-  {
-    title: 'Produce',
-    copy: 'Move from preview to export with calibrated settings and fewer manual checks.',
   },
 ] as const;
 
-const proofStats = [
-  { value: '2', label: 'Dedicated studios' },
-  { value: '1', label: 'Shared workspace system' },
-  { value: 'MM', label: 'Native production units' },
+const workflow = [
+  { title: 'Design', copy: 'Type text or upload artwork.' },
+  { title: 'Check', copy: 'The tool flags stones that are too close to cut.' },
+  { title: 'Export', copy: 'Preview the file, then download the SVG.' },
+  { title: 'Cut', copy: 'Open it in Cricut Design Space and cut.' },
+] as const;
+
+const moreLinks = [
+  { href: '/designs', label: 'My Designs', icon: FolderHeart },
+  { href: '/fonts', label: 'Fonts', icon: Type },
+  { href: '/library', label: 'Library', icon: LibraryBig },
+  { href: '/setup', label: 'Calibrate your material', icon: Ruler },
+  { href: '/settings', label: 'Settings', icon: Settings2 },
 ] as const;
 
 export default function Home() {
+  const t = useT();
   return (
-    <div className={`${sora.variable}`}>
-      <section className="mx-auto grid w-full max-w-[1560px] gap-6 px-4 py-6 md:px-6 md:py-8 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="overflow-hidden rounded-[2rem] border border-border/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(247,242,236,0.92))] shadow-[0_20px_70px_rgba(36,31,23,0.08)]">
-          <div className="border-b border-border/80 px-6 py-4 md:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/15 bg-brand-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-700">
-              Production workspace
-            </div>
-          </div>
-          <div className="grid gap-8 px-6 py-8 md:px-8 md:py-10 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
-            <div className="max-w-4xl">
-              <h1 className={`${display.className} text-5xl leading-[0.9] tracking-[0.05em] text-ink md:text-7xl xl:text-[7.5rem]`}>
-                Design ops for rhinestone and HTV teams.
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-ink-secondary md:text-lg">
-                A calmer, more serious workspace for building artwork, comparing fonts, organizing assets, and moving designs into production without the usual folder sprawl.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/rhinestone"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-ink px-6 py-3 text-sm font-semibold text-ink-inverse shadow-lg shadow-sand-900/15 transition hover:bg-sand-800"
-                >
-                  Open Rhinestone Studio
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/htv"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border-strong bg-surface-raised px-6 py-3 text-sm font-semibold text-ink transition hover:border-accent-300 hover:text-accent-700"
-                >
-                  Open HTV Studio
-                </Link>
-                <Link
-                  href="/designs"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-6 py-3 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
-                >
-                  Review saved work
-                </Link>
-                <Link
-                  href="/setup"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-6 py-3 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
-                >
-                  <Ruler className="h-4 w-4" />
-                  Calibrate
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="rounded-[1.75rem] border border-border bg-[rgba(255,255,255,0.82)] p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-muted">Operator view</div>
-                    <p className="mt-2 text-sm leading-7 text-ink-secondary">
-                      Move between studios, assets, fonts, and production settings without leaving the same workspace system.
-                    </p>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-50 text-accent-700">
-                    <Layers3 className="h-5 w-5" />
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-                {proofStats.map((item) => (
-                  <div key={item.label} className="rounded-[1.5rem] border border-border bg-surface-raised px-4 py-4 shadow-sm">
-                    <div className="text-2xl font-semibold text-ink">{item.value}</div>
-                    <div className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-ink-muted">{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 md:px-6 md:py-12">
+      <header>
+        <div className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
+          <Gem className="h-4 w-4" aria-hidden="true" />
+          {t('Rhinestone Studio')}
         </div>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink md:text-5xl">{t('What do you want to make?')}</h1>
+        <p className="mt-3 max-w-2xl text-base leading-7 text-ink-secondary">
+          {t('Pick a starting point. Each one opens the studio with an example already made, so you can see how it works and change it.')}
+        </p>
+      </header>
 
-        <div className="grid gap-5">
-          <div className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.85)] p-6 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-700">Why this exists</div>
-            <p className="mt-3 text-sm leading-7 text-ink-secondary">
-              Replace scattered folders, disconnected previews, repeated setup errors, and the feeling that every job starts from scratch.
-            </p>
-          </div>
-          <div className="rounded-[2rem] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(242,237,231,0.9))] p-6 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700">Workflow</div>
-            <div className="mt-4 grid gap-4">
-              {workflowSteps.map((step, index) => (
-                <div key={step.title} className="flex gap-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-raised text-sm font-semibold text-ink">
-                    0{index + 1}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-ink">{step.title}</div>
-                    <p className="mt-1 text-sm leading-7 text-ink-secondary">{step.copy}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-[1560px] px-4 pb-6 md:px-6">
-        <div className="mb-5 rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700">Production gate</div>
-              <h3 className="mt-2 text-2xl font-semibold text-ink">Build, calibrate, approve, then produce.</h3>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 1</div>
-              <div className="mt-2 text-lg font-semibold text-ink">Setup & Calibration</div>
-              <p className="mt-2 text-sm leading-7 text-ink-secondary">Cut the calibration sheet, measure hole diameters, and save a material profile for the job.</p>
-            </div>
-            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 2</div>
-              <div className="mt-2 text-lg font-semibold text-ink">Saved work</div>
-              <p className="mt-2 text-sm leading-7 text-ink-secondary">Resume the latest draft, reopen a favorite design, and continue from the right production context.</p>
-            </div>
-            <div className="rounded-[1.5rem] border border-border bg-surface px-4 py-4">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Step 3</div>
-              <div className="mt-2 text-lg font-semibold text-ink">Approve before export</div>
-              <p className="mt-2 text-sm leading-7 text-ink-secondary">Only approved profiles move into export and production. The gate is kept visible, not hidden in the flow.</p>
-            </div>
-          </div>
-        </div>
-        <WorkspaceRecoveryPanel />
-      </section>
-
-      <section className="mx-auto grid w-full max-w-[1560px] gap-5 px-4 pb-8 md:px-6 xl:grid-cols-4">
-        {toolCards.map((card) => {
-          const Icon = card.icon;
+      <section aria-label={t('Start a new design')} className="grid gap-5 md:grid-cols-3">
+        {goals.map((goal) => {
+          const Icon = goal.icon;
           return (
             <Link
-              key={card.href}
-              href={card.href}
-              className="group overflow-hidden rounded-[1.9rem] border border-border/80 bg-[rgba(255,255,255,0.84)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md"
+              key={goal.title}
+              href={goal.href}
+              className="group overflow-hidden rounded-[1.9rem] border border-border/80 bg-[rgba(255,255,255,0.9)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
-              <div className={`h-1.5 rounded-full bg-gradient-to-r ${card.tone}`} />
+              <div className={`h-1.5 rounded-full bg-gradient-to-r ${goal.tone}`} />
               <div className="mt-5 flex items-center justify-between gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface text-accent-700">
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <ArrowRight className="h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-accent-700" />
+                <ArrowRight className="h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-accent-700" aria-hidden="true" />
               </div>
-              <h2 className="mt-5 text-xl font-semibold text-ink">{card.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">{card.copy}</p>
+              <h2 className="mt-5 text-xl font-semibold text-ink">{t(goal.title)}</h2>
+              <p className="mt-3 text-sm leading-7 text-ink-secondary">{t(goal.copy)}</p>
             </Link>
           );
         })}
       </section>
 
-      <section className="mx-auto grid w-full max-w-[1560px] gap-6 px-4 py-10 md:px-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[2.2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] p-8 shadow-sm md:p-10">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-secondary">Targeted entry points</div>
-          <h2 className="mt-4 text-4xl font-semibold tracking-tight text-ink md:text-5xl">
-            Start from the job in front of you.
-          </h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {audienceCards.map((card) => (
-              <Link
-                key={card.title}
-                href={card.href}
-                className="rounded-[1.6rem] border border-border bg-surface px-5 py-5 transition hover:border-accent-300 hover:bg-accent-50/30"
-              >
-                <div className="text-lg font-semibold text-ink">{card.title}</div>
-                <p className="mt-2 text-sm leading-7 text-ink-secondary">{card.copy}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
+      <WorkspaceRecoveryPanel />
 
-        <div className="grid gap-5">
-          <div className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-ink">
-              <FolderHeart className="h-5 w-5 text-brand-500" />
-              <h3 className="text-xl font-semibold">My Designs</h3>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-ink-secondary">
-              Reopen saved work, favorite the good sellers, archive old variants, rename quickly, and keep rhinestone and HTV work visible in one place.
-            </p>
-            <Link href="/designs" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-600">
-              Go to My Designs
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+      <RecentDesigns />
 
-          <div className="rounded-[2rem] border border-border/80 bg-[rgba(255,255,255,0.88)] p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-ink">
-              <Settings2 className="h-5 w-5 text-brand-500" />
-              <h3 className="text-xl font-semibold">Production Settings</h3>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-ink-secondary">
-              Keep machine, material, flock, stone, and workflow defaults together so the tools can feel smarter and less repetitive over time.
-            </p>
-            <Link href="/settings" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-600">
-              Open settings
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
+      <StarterGallery />
+
+      <section aria-label={t('How it works')} className="rounded-[2rem] border border-border/80 bg-surface-raised p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">{t('How it works')}</h2>
+        <ol className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {workflow.map((step, index) => (
+            <li key={step.title} className="flex gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-ink">{index + 1}</span>
+              <div>
+                <div className="text-sm font-semibold text-ink">{t(step.title)}</div>
+                <p className="mt-0.5 text-sm leading-6 text-ink-secondary">{t(step.copy)}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-sm text-ink-secondary">
+          {t('First time cutting rhinestone templates?')} <Link href="/setup" className="font-semibold text-accent-600 underline-offset-2 hover:underline">{t('Calibrate your material')}</Link> {t('once so holes match your stones.')}
+        </p>
       </section>
+
+      <nav aria-label={t('More')} className="flex flex-wrap gap-3">
+        {moreLinks.map((link) => {
+          const Icon = link.icon;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-ink-secondary transition hover:bg-surface-raised hover:text-ink"
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {t(link.label)}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

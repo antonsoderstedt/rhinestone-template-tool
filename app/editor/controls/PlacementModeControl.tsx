@@ -6,6 +6,7 @@ import type {
   TemplateCoverageMode,
 } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
+import FieldHeader from './FieldHeader';
 import {
   editorFieldLabelClassName,
   editorSegmentActiveClassName,
@@ -14,6 +15,7 @@ import {
   editorSelectClassName,
 } from './controlStyles';
 
+import { useT } from '../../lib/i18n';
 interface PlacementModeControlProps {
   coverageMode: TemplateCoverageMode;
   availableCoverageModes: readonly TemplateCoverageMode[];
@@ -58,6 +60,7 @@ export default function PlacementModeControl({
   onContourSettingsChange,
   onRadialSettingsChange,
 }: PlacementModeControlProps) {
+  const t = useT();
   const visibleCoverage = COVERAGE_OPTIONS.filter((option) => availableCoverageModes.includes(option.value));
   const visiblePatterns = PATTERN_OPTIONS.filter((option) => availablePlacementPatterns.includes(option.value));
   const usesFillPattern = coverageMode === 'fill' || coverageMode === 'outline-fill';
@@ -67,7 +70,10 @@ export default function PlacementModeControl({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <span className={editorFieldLabelClassName}>Coverage</span>
+        <FieldHeader
+          label={t('Coverage')}
+          help="Where the stones go inside your shape: along the outline, inside it, both, or in repeated rings (Contour)."
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           {visibleCoverage.map((option) => (
             <button
@@ -79,7 +85,7 @@ export default function PlacementModeControl({
               title={option.help}
             >
               <div className="text-sm font-medium">{option.label}</div>
-              <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+              <p className="mt-1 text-xs text-ink-muted">{option.help}</p>
             </button>
           ))}
         </div>
@@ -87,8 +93,11 @@ export default function PlacementModeControl({
 
       {usesFillPattern && visiblePatterns.length > 0 && (
         <div className="space-y-2">
-          <span className={editorFieldLabelClassName}>Placement pattern</span>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <FieldHeader
+            label={t('Placement pattern')}
+            help="How the inside is filled: regular rows (Default), staggered honeycomb-style rows (Hexagonal), or concentric rings (Radial)."
+          />
+          <div className="grid gap-2">
             {visiblePatterns.map((option) => (
               <button
                 key={option.value}
@@ -99,7 +108,7 @@ export default function PlacementModeControl({
                 title={option.help}
               >
                 <div className="text-sm font-medium">{option.label}</div>
-                <p className="mt-1 text-[11px] text-ink-muted">{option.help}</p>
+                <p className="mt-1 break-words text-xs text-ink-muted">{option.help}</p>
               </button>
             ))}
           </div>
@@ -108,10 +117,10 @@ export default function PlacementModeControl({
 
       {usesContour && (
         <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
-          <div className={editorFieldLabelClassName}>Contour rows</div>
+          <div className={editorFieldLabelClassName}>{t('Contour rows')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Rows"
+              label={t('Rows')}
               value={contourSettings.rowCount}
               onChange={(value) => onContourSettingsChange({ ...contourSettings, rowCount: typeof value === 'number' ? value : contourSettings.rowCount })}
               min={1}
@@ -119,7 +128,7 @@ export default function PlacementModeControl({
               step={1}
             />
             <NumericInput
-              label="Row spacing"
+              label={t('Row spacing')}
               value={contourSettings.rowSpacingMm}
               onChange={(value) => onContourSettingsChange({ ...contourSettings, rowSpacingMm: typeof value === 'number' ? value : contourSettings.rowSpacingMm })}
               min={0.5}
@@ -129,7 +138,7 @@ export default function PlacementModeControl({
             />
           </div>
           <label className="flex flex-col gap-1.5">
-            <span className={editorFieldLabelClassName}>Direction</span>
+            <span className={editorFieldLabelClassName}>{t('Direction')}</span>
             <select
               value={contourSettings.direction}
               onChange={(event) => onContourSettingsChange({ ...contourSettings, direction: event.target.value as ContourDirection })}
@@ -145,10 +154,10 @@ export default function PlacementModeControl({
 
       {usesRadial && (
         <div className="space-y-3 rounded-xl border border-border/80 bg-surface px-3.5 py-3.5">
-          <div className={editorFieldLabelClassName}>Radial placement</div>
+          <div className={editorFieldLabelClassName}>{t('Radial placement')}</div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Ring spacing"
+              label={t('Ring spacing')}
               value={radialSettings.ringSpacingMm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, ringSpacingMm: typeof value === 'number' ? value : radialSettings.ringSpacingMm })}
               min={0.5}
@@ -163,19 +172,19 @@ export default function PlacementModeControl({
                 onChange={(event) => onRadialSettingsChange({ ...radialSettings, includeCenterStone: event.target.checked })}
                 className="h-4 w-4 rounded border-border bg-surface"
               />
-              Include center stone
+              {t('Include center stone')}
             </label>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <NumericInput
-              label="Center offset X"
+              label={t('Center offset X')}
               value={radialSettings.centerOffsetXmm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, centerOffsetXmm: typeof value === 'number' ? value : radialSettings.centerOffsetXmm })}
               step={0.5}
               unit="mm"
             />
             <NumericInput
-              label="Center offset Y"
+              label={t('Center offset Y')}
               value={radialSettings.centerOffsetYmm}
               onChange={(value) => onRadialSettingsChange({ ...radialSettings, centerOffsetYmm: typeof value === 'number' ? value : radialSettings.centerOffsetYmm })}
               step={0.5}

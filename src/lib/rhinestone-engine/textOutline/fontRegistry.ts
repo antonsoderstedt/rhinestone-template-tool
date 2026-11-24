@@ -12,6 +12,7 @@ export type OutlineFontCategory =
   | 'Uploads';
 
 import type { TemplateCoverageMode, TemplateFillMode } from '../fill/fillTemplate';
+import { withBasePath } from '../deploy/basePath';
 
 export type OutlineFontId =
   | 'legacy-original'
@@ -49,14 +50,20 @@ export const LEGACY_OUTLINE_FONT_ID: OutlineFontId = 'legacy-original';
 export const DEFAULT_OUTLINE_FONT_ID: OutlineFontId = LEGACY_OUTLINE_FONT_ID;
 const WORKSPACE_VAULT_STORAGE_KEY = 'rhinestone-workspace-vault';
 
+/**
+ * Bump the version when the served bytes change: the route sends
+ * `immutable` caching, so browsers keep an older (possibly rejected) copy otherwise.
+ */
+const FONT_ASSET_VERSION = 2;
+
 function localFontAssetUrl(fontId: Exclude<OutlineFontId, 'legacy-original'>): string {
-  return `/api/outline-fonts/${fontId}`;
+  return withBasePath(`/api/outline-fonts/${fontId}?v=${FONT_ASSET_VERSION}`);
 }
 
 export const OUTLINE_FONT_REGISTRY: readonly OutlineFontDefinition[] = [
   {
     fontId: 'legacy-original',
-    displayName: 'Legacy / Original',
+    displayName: 'Simple block (built-in)',
     category: 'Legacy',
     fontFamily: 'Built-in Vector Outline v1',
     previewFontFamily: 'system-ui',
@@ -336,8 +343,7 @@ export function getOutlineFontDefinition(fontId: string | undefined | null): Out
   if (!fontId) {
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
-  return FONT_MAP.get(fontId as OutlineFontId)
-    ?? listUploadedOutlineFonts().find((font) => font.fontId === fontId)
+  return listOutlineFonts().find((font) => font.fontId === fontId)
     ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
 }
 
@@ -350,7 +356,8 @@ export function getSupportedTextCoverageModes(fontId: string | undefined | null)
 }
 
 export function isKnownOutlineFontId(fontId: string | undefined | null): fontId is OutlineFontId {
-  return typeof fontId === 'string' && FONT_MAP.has(fontId as OutlineFontId);
+  if (typeof fontId !== 'string') return false;
+  return FONT_MAP.has(fontId as OutlineFontId) || listUploadedOutlineFonts().some((font) => font.fontId === fontId);
 }
 
 export function isAvailableOutlineFontId(fontId: string | undefined | null): boolean {

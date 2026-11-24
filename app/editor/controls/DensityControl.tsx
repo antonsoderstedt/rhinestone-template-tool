@@ -2,10 +2,14 @@
  * Reusable density preset + custom spacing control
  */
 
+import { useId } from 'react';
 import type { DensityPreset } from '@/src/lib/rhinestone-engine/index';
 import NumericInput from './NumericInput';
-import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
+import { editorSelectClassName } from './controlStyles';
+import { GLOSSARY } from '../editorUi';
+import FieldHeader from './FieldHeader';
 
+import { useT } from '../../lib/i18n';
 interface DensityControlProps {
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
@@ -14,6 +18,7 @@ interface DensityControlProps {
 }
 
 const DENSITY_OPTIONS: { value: DensityPreset; label: string }[] = [
+  { value: 'airy', label: 'Airy' },
   { value: 'loose', label: 'Loose' },
   { value: 'safe', label: 'Safe' },
   { value: 'standard', label: 'Standard' },
@@ -27,11 +32,18 @@ export default function DensityControl({
   onDensityChange,
   onCustomSpacingChange,
 }: DensityControlProps) {
+  const t = useT();
+  const selectId = useId();
   return (
     <div className="space-y-3">
-      <label className="flex flex-col gap-1.5">
-        <span className={editorFieldLabelClassName}>Density</span>
+      <div className="flex flex-col gap-1.5">
+        <FieldHeader
+          label={t('Spacing')}
+          htmlFor={selectId}
+          help={`${GLOSSARY.spacing} Safe and Loose leave more room, Dense packs stones tighter, Custom lets you type a distance.`}
+        />
         <select
+          id={selectId}
           value={densityPreset}
           onChange={(e) => onDensityChange(e.target.value as DensityPreset)}
           className={editorSelectClassName}
@@ -42,11 +54,11 @@ export default function DensityControl({
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
       {densityPreset === 'custom' && (
         <NumericInput
-          label="Custom Spacing"
+          label={t('Custom Spacing')}
           value={customSpacingMm}
           onChange={onCustomSpacingChange}
           unit="mm"

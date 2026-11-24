@@ -5,6 +5,8 @@
  * with a unified state model for the entire editor.
  */
 
+import type { AllOverPattern } from '@/src/lib/rhinestone-engine/index';
+import { withStoneColour } from './stoneColours';
 import {
   RhinestoneTemplate,
   StoneSizeId,
@@ -18,7 +20,6 @@ import {
   TextAlign as OutlineTextAlign,
   Stone,
   type GeneratorId,
-  LEGACY_OUTLINE_FONT_ID,
   DEFAULT_SVG_ALPHABET_ID,
   suggestSvgUploadMode,
   getPreferredTextCoverageMode,
@@ -27,10 +28,16 @@ import {
   getSupportedRhinestoneFontStoneSizes,
   getRhinestoneFontDefinition,
   isKnownRhinestoneFontId,
+  svgStringToPolylines,
+  calculatePolylineBounds,
 } from '@/src/lib/rhinestone-engine/index';
 import { wouldCollide, wouldMoveCauseCollision } from './collisionDetection';
+import { applyWorkspaceDefaults } from './newProjectDefaults';
+import type { WorkspaceSettings } from '../lib/workspaceSettings';
 
 // ─── Tool Types ───────────────────────────────────────────────────────────────
+
+import { alignDelta, alignDeltaY, isVerticalAlign, rotateStonesBy, spreadStones, type PartAlign, boundsOfStones, offsetBelow, partsStones, transformStones, translateStones, translateTemplate, nextPartId, type DesignPart, type PartTransform } from './designParts';
 
 export type EditorTool =
   | 'select'          // Select and move stones
@@ -89,6 +96,8 @@ export type SvgRenderMode = 'vector-layout' | 'artwork-dots';
 export type SvgDimensionUnit = 'mm' | 'in';
 
 export interface SvgToolState {
+  /** Longest side (mm) an uploaded SVG is scaled to; falls back to DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM. */
+  uploadLongestSideMm?: number;
   uploadedSvgText: string | null;
   svgFileName: string | null;
   assetKind: SvgAssetKind;
@@ -122,9 +131,17 @@ export interface SvgToolState {
   placementPattern: FillPlacementPattern;
   contourSettings: ContourCoverageSettings;
   radialSettings: RadialPlacementSettings;
+  /** Colours (`#rrggbb`) the user turned on or off, overriding what the importer decided (e.g. a white background). */
+  layerRoles: Record<string, 'stones' | 'ignore'>;
+  /** The colour the stones of each artwork colour are (`#rrggbb`); absent = the artwork's own colour. */
+  layerStoneColours: Record<string, string>;
+  /** Show the artwork as drawn, faintly, behind the stones. A view setting: not part of the design, not saved. */
+  showSourceBehind: boolean;
 }
 
 // ─── Grid Tool State ──────────────────────────────────────────────────────────
+
+export type GridToolMode = 'rows' | 'area';
 
 export interface GridToolState {
   stoneSize: StoneSizeId;
@@ -132,6 +149,13 @@ export interface GridToolState {
   rows: number;
   densityPreset: DensityPreset;
   customSpacingMm: number | '';
+  /** `rows`: a block of rows and columns. `area`: cover a whole area (jeans, a pocket) in a pattern. */
+  mode: GridToolMode;
+  areaWidthMm: number | '';
+  areaHeightMm: number | '';
+  areaPattern: AllOverPattern;
+  /** Which "random" the scatter pattern uses. */
+  areaSeed: number;
 }
 
 // ─── Manual Tool State ────────────────────────────────────────────────────────
@@ -240,6 +264,8 @@ export interface CanvasState {
   panX: number;               // px offset
   panY: number;               // px offset
   showGrid: boolean;
+  /** Draw the stones as shiny stones instead of flat holes. A view setting. */
+  realisticStones: boolean;
   gridSizeMm: number;         // mm per grid square
   showRulers: boolean;
 }
@@ -249,6 +275,8 @@ export interface CanvasState {
 export interface EditorState {
   // Project
   projectName: string;
+  /** True while the name was made from the text, so changing the text renames the design. Typing a name turns it off. */
+  projectNameIsAuto: boolean;
   
   // Active tool & tool states
   activeTool: EditorTool;
@@ -266,6 +294,14 @@ export interface EditorState {
   
   // Editable template (when in manual/select mode)
   editableTemplate: EditableTemplateState;
+
+  // Pieces kept with "Add to design", and where the piece being worked on sits.
+  parts: DesignPart[];
+  workingOffset: { x: number; y: number };
+  /** One colour for every stone that has none of its own; null = no colour (the plain purple). */
+  designStoneColour: string | null;
+  /** Undo and redo for changes to the parts (adding, moving, turning, removing). */
+  partsHistory: { past: DesignPart[][]; future: DesignPart[][]; lastKey: string | null };
   
   // Canvas
   canvas: CanvasState;
@@ -285,17 +321,56 @@ export interface EditorState {
   history: EditHistory;
 }
 
+export const DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM = 100;
+export const MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM = 280;
+
+function getDefaultSvgUploadTargetDimensions(
+  svgText: string,
+  longestSideMm: number = DEFAULT_SVG_UPLOAD_LONGEST_SIDE_MM,
+): { widthMm: number; heightMm: number } {
+  const targetLongestSideMm = Math.min(longestSideMm, MAX_EDITOR_PRINT_AREA_LONGEST_SIDE_MM);
+
+  try {
+    const polylines = svgStringToPolylines(svgText, { cleanup: false });
+    const bounds = calculatePolylineBounds(polylines);
+    const sourceWidthMm = Math.max(bounds.width, 1e-6);
+    const sourceHeightMm = Math.max(bounds.height, 1e-6);
+
+    if (sourceWidthMm >= sourceHeightMm) {
+      return {
+        widthMm: targetLongestSideMm,
+        heightMm: Number(((sourceHeightMm / sourceWidthMm) * targetLongestSideMm).toFixed(2)),
+      };
+    }
+
+    return {
+      widthMm: Number(((sourceWidthMm / sourceHeightMm) * targetLongestSideMm).toFixed(2)),
+      heightMm: targetLongestSideMm,
+    };
+  } catch {
+    return {
+      widthMm: targetLongestSideMm,
+      heightMm: targetLongestSideMm,
+    };
+  }
+}
+
 // ─── Default States ───────────────────────────────────────────────────────────
+
+export const DEFAULT_TEXT_FONT_ID = 'archivo-black';
 
 export const DEFAULT_TEXT_TOOL_STATE: TextToolState = {
   mode: 'outline',
   outlineTextStyle: 'outline',
-  text: 'SMOOCH',
+  // The first thing a new user sees has to look good right away: a heavy bundled font, large enough that each
+  // letter gets two clean rows of stones (at 25 mm the rows touch and the letters turn to mush), on two lines so
+  // it still fits a 12 x 12 in mat (about 207 x 118 mm).
+  text: 'YOUR\nNAME',
   stoneSize: 'SS10',
-  fontId: LEGACY_OUTLINE_FONT_ID,
+  fontId: DEFAULT_TEXT_FONT_ID,
   unsupportedCharacters: [],
   warnings: [],
-  fontSizeMm: 25,
+  fontSizeMm: 60,
   align: 'left',
   letterSpacingMm: 2,
   lineSpacingMm: 8,
@@ -397,13 +472,19 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     next.coverageMode = 'fill';
     next.fillMode = 'fill';
     next.placementPattern = 'hexagonal';
-    next.densityPreset = 'dense';
+    // Standard, not Dense: dense is tighter than the recommended distance and needs calibration first. A caller that says which
+    // spacing it wants (a ready-made shape asks for Airy) keeps it.
+    next.densityPreset = updates.densityPreset ?? 'standard';
   };
 
-  if (updates.renderMode === 'vector-layout') {
-    applyVectorLayoutPreset();
-  } else if (updates.renderMode === 'artwork-dots') {
-    applyArtworkDotsPreset();
+  // A render mode brings its preset along unless the same update says how to cover the shape: restoring a saved design
+  // passes both, and the saved choice (for example Rows) must win.
+  if (updates.coverageMode === undefined) {
+    if (updates.renderMode === 'vector-layout') {
+      applyVectorLayoutPreset();
+    } else if (updates.renderMode === 'artwork-dots') {
+      applyArtworkDotsPreset();
+    }
   }
 
   if (
@@ -415,8 +496,21 @@ function normalizeSvgToolUpdate(current: SvgToolState, updates: Partial<SvgToolS
     if (suggestSvgUploadMode(updates.uploadedSvgText) === 'outline-fill') {
       next.renderMode = 'artwork-dots';
       applyArtworkDotsPreset();
-      next.targetWidthMm = 280;
     }
+    const defaults = getDefaultSvgUploadTargetDimensions(updates.uploadedSvgText, next.uploadLongestSideMm);
+    next.targetWidthMm = defaults.widthMm;
+    next.targetHeightMm = defaults.heightMm;
+  }
+
+  // A picture is usually a logo to fill, so a newly chosen image starts as Solid (a restored design brings its own mode).
+  if (
+    typeof updates.uploadedImageDataUrl === 'string'
+    && updates.uploadedImageDataUrl.length > 0
+    && updates.renderMode === undefined
+    && updates.coverageMode === undefined
+  ) {
+    next.renderMode = 'artwork-dots';
+    applyArtworkDotsPreset();
   }
 
   if (updates.coverageMode !== undefined && updates.coverageMode !== 'contour' && updates.fillMode === undefined) {
@@ -468,6 +562,9 @@ export const DEFAULT_SVG_TOOL_STATE: SvgToolState = {
     centerOffsetYmm: 0,
     includeCenterStone: true,
   },
+  layerRoles: {},
+  layerStoneColours: {},
+  showSourceBehind: false,
 };
 
 export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
@@ -476,6 +573,11 @@ export const DEFAULT_GRID_TOOL_STATE: GridToolState = {
   rows: 3,
   densityPreset: 'standard',
   customSpacingMm: 4.0,
+  mode: 'rows',
+  areaWidthMm: 130,
+  areaHeightMm: 140,
+  areaPattern: 'hex',
+  areaSeed: 1,
 };
 
 export const DEFAULT_MANUAL_TOOL_STATE: ManualToolState = {
@@ -558,12 +660,14 @@ export const DEFAULT_CANVAS_STATE: CanvasState = {
   panX: 0,
   panY: 0,
   showGrid: true,
+  realisticStones: false,
   gridSizeMm: 10,
   showRulers: false,
 };
 
 export const DEFAULT_EDITOR_STATE: EditorState = {
   projectName: 'Untitled Project',
+  projectNameIsAuto: true,
   activeTool: 'text',
   textTool: { ...DEFAULT_TEXT_TOOL_STATE },
   clipboard: { ...DEFAULT_CLIPBOARD },
@@ -574,6 +678,10 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
   svgAlphabetTool: { ...DEFAULT_SVG_ALPHABET_TOOL_STATE },
   letterStencilTool: { ...DEFAULT_LETTER_STENCIL_TOOL_STATE },
   templateImportTool: { ...DEFAULT_TEMPLATE_IMPORT_TOOL_STATE },
+  parts: [],
+  workingOffset: { x: 0, y: 0 },
+  designStoneColour: null,
+  partsHistory: { past: [], future: [], lastKey: null },
   template: null,
   editableTemplate: { ...DEFAULT_EDITABLE_TEMPLATE_STATE },
   canvas: { ...DEFAULT_CANVAS_STATE },
@@ -588,7 +696,7 @@ export const DEFAULT_EDITOR_STATE: EditorState = {
 
 export type EditorAction =
   | { type: 'SET_ACTIVE_TOOL'; tool: EditorTool }
-  | { type: 'SET_PROJECT_NAME'; name: string }
+  | { type: 'SET_PROJECT_NAME'; name: string; auto?: boolean }
   | { type: 'UPDATE_TEXT_TOOL'; updates: Partial<TextToolState> }
   | { type: 'UPDATE_SVG_TOOL'; updates: Partial<SvgToolState> }
   | { type: 'UPDATE_GRID_TOOL'; updates: Partial<GridToolState> }
@@ -598,6 +706,24 @@ export type EditorAction =
   | { type: 'UPDATE_LETTER_STENCIL_TOOL'; updates: Partial<LetterStencilToolState> }
   | { type: 'UPDATE_TEMPLATE_IMPORT_TOOL'; updates: Partial<TemplateImportToolState> }
   | { type: 'SET_TEMPLATE'; template: RhinestoneTemplate | null }
+  | { type: 'ADD_PART'; part: DesignPart }
+  | { type: 'REMOVE_PART'; id: string }
+  | { type: 'UPDATE_PART'; id: string; updates: Partial<Pick<DesignPart, 'name' | 'offsetX' | 'offsetY'>> }
+  | { type: 'SET_WORKING_OFFSET'; x: number; y: number }
+  | { type: 'SET_PARTS'; parts: DesignPart[]; workingOffset: { x: number; y: number } }
+  | { type: 'TRANSFORM_PART'; id: string; op: PartTransform }
+  | { type: 'DUPLICATE_PART'; id: string }
+  | { type: 'ALIGN_PART'; id: string; align: PartAlign }
+  | { type: 'ALIGN_WORKING'; align: PartAlign }
+  | { type: 'TURN_PART_BY'; id: string; degrees: number }
+  | { type: 'SPREAD_PART'; id: string; factor: number }
+  /** Takes a kept part back into the piece being worked on, to edit its stones. Only when there is no piece now. */
+  | { type: 'EDIT_PART'; id: string }
+  | { type: 'SET_DESIGN_STONE_COLOUR'; colour: string | null }
+  | { type: 'SET_STONES_COLOUR'; ids: string[]; colour: string | null }
+  | { type: 'END_PARTS_STEP' }
+  | { type: 'UNDO_PARTS' }
+  | { type: 'REDO_PARTS' }
   | { type: 'UPDATE_CANVAS'; updates: Partial<CanvasState> }
   | { type: 'UPDATE_EXPORT_SETTINGS'; updates: { includeGuideBox?: boolean; includeLabels?: boolean; paddingMm?: number } }
   | { type: 'SET_SELECTED_STONES'; ids: Set<string> }
@@ -606,6 +732,8 @@ export type EditorAction =
   | { type: 'DISCARD_EDITABLE_CHANGES' }
   | { type: 'ADD_STONES'; stones: EditableStone[] }
   | { type: 'DELETE_STONES'; stoneIds: string[] }
+  /** Replaces every stone at once (auto-fix). Converts a generated design to editable first. One undo step. */
+  | { type: 'REPLACE_STONES'; stones: EditableStone[] }
   | { type: 'MOVE_STONES'; moves: Array<{ id: string; toX: number; toY: number }> }
   | { type: 'UPDATE_STONE'; id: string; updates: Partial<EditableStone> }
   | { type: 'DUPLICATE_STONES'; stoneIds: string[] }
@@ -616,6 +744,7 @@ export type EditorAction =
   | { type: 'UNDO' }
   | { type: 'REDO' }
   | { type: 'LOAD_PROJECT_STATE'; state: Partial<EditorState> }
+  | { type: 'APPLY_WORKSPACE_DEFAULTS'; settings: WorkspaceSettings } // new-project defaults from Settings; keeps everything else
   | { type: 'RESET_EDITOR' };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -682,16 +811,67 @@ function normalizeRhinestoneFontToolUpdate(
   return next;
 }
 
+const PARTS_HISTORY_LIMIT = 50;
+
+/** New parts with the old ones kept for undo. The same `key` twice in a row (typing a position) is one step. */
+function withPartsHistory(state: EditorState, parts: DesignPart[], key: string | null): EditorState {
+  const { past, lastKey } = state.partsHistory;
+  const merge = key !== null && key === lastKey;
+  return {
+    ...state,
+    parts,
+    partsHistory: {
+      past: merge ? past : [...past, state.parts].slice(-PARTS_HISTORY_LIMIT),
+      future: [],
+      lastKey: key,
+    },
+  };
+}
+
+/** "YOUR NAME design": the words of the first line, so a design is never "Untitled Project" once it has text. */
+export function projectNameFromText(text: string): string {
+  const firstLine = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).find((line) => line.length > 0);
+  if (!firstLine) return 'Untitled Project';
+  const words = firstLine.length > 28 ? `${firstLine.slice(0, 27).trimEnd()}…` : firstLine;
+  return `${words} design`;
+}
+
+function withAutoName(state: EditorState, text: string): EditorState {
+  if (!state.projectNameIsAuto) return state;
+  const name = projectNameFromText(text);
+  return name === state.projectName ? state : { ...state, projectName: name };
+}
+
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
       return { ...state, activeTool: action.tool };
     
+    case 'SET_DESIGN_STONE_COLOUR':
+      return { ...state, designStoneColour: action.colour };
+
+    case 'SET_STONES_COLOUR': {
+      if (!state.editableTemplate.isEditable || action.ids.length === 0) return state;
+      const ids = new Set(action.ids);
+      const historyEntry: HistoryEntry = { stones: state.editableTemplate.stones, selectedIds: new Set(state.selectedStoneIds) };
+      return {
+        ...state,
+        editableTemplate: {
+          ...state.editableTemplate,
+          stones: state.editableTemplate.stones.map((stone) => (ids.has(stone.id) ? withStoneColour(stone, action.colour) : stone)),
+        },
+        history: { past: [...state.history.past, historyEntry], future: [] },
+      };
+    }
+
     case 'SET_PROJECT_NAME':
-      return { ...state, projectName: action.name };
+      return { ...state, projectName: action.name, projectNameIsAuto: action.auto === true };
     
     case 'UPDATE_TEXT_TOOL':
-      return { ...state, textTool: normalizeTextToolUpdate(state.textTool, action.updates) };
+      return withAutoName(
+        { ...state, textTool: normalizeTextToolUpdate(state.textTool, action.updates) },
+        action.updates.text ?? state.textTool.text,
+      );
     
     case 'UPDATE_SVG_TOOL':
       return { ...state, svgTool: normalizeSvgToolUpdate(state.svgTool, action.updates) };
@@ -703,10 +883,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, manualTool: { ...state.manualTool, ...action.updates } };
     
     case 'UPDATE_RHINESTONE_FONT_TOOL':
-      return {
-        ...state,
-        rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates),
-      };
+      return withAutoName(
+        {
+          ...state,
+          rhinestoneFontTool: normalizeRhinestoneFontToolUpdate(state.rhinestoneFontTool, action.updates),
+        },
+        action.updates.text ?? state.rhinestoneFontTool.text,
+      );
     
     case 'UPDATE_SVG_ALPHABET_TOOL':
       return { ...state, svgAlphabetTool: { ...state.svgAlphabetTool, ...action.updates } };
@@ -717,8 +900,160 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'UPDATE_TEMPLATE_IMPORT_TOOL':
       return { ...state, templateImportTool: { ...state.templateImportTool, ...action.updates } };
     
-    case 'SET_TEMPLATE':
-      return { ...state, template: action.template };
+    case 'SET_TEMPLATE': {
+      // Generation sets `null` again for every settings change on an empty design; no new state, no render.
+      if (state.template === action.template) return state;
+      // The generator always draws at its own origin; the piece's place in the design is applied here.
+      const placed = action.template ? translateTemplate(action.template, state.workingOffset.x, state.workingOffset.y) : null;
+      return { ...state, template: placed };
+    }
+
+    case 'ADD_PART':
+      return withPartsHistory(state, [...state.parts, action.part], null);
+
+    case 'REMOVE_PART':
+      return withPartsHistory(state, state.parts.filter((part) => part.id !== action.id), null);
+
+    case 'UPDATE_PART': {
+      const moving = action.updates.offsetX !== undefined || action.updates.offsetY !== undefined;
+      const parts = state.parts.map((part) => (part.id === action.id ? { ...part, ...action.updates } : part));
+      // Renaming is not worth an undo step; typing a position is one step, not one per key.
+      if (!moving) return { ...state, parts };
+      return withPartsHistory(state, parts, `move:${action.id}`);
+    }
+
+    case 'TRANSFORM_PART':
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: transformStones(part.stones, action.op) } : part)),
+        null,
+      );
+
+    case 'DUPLICATE_PART': {
+      const source = state.parts.find((part) => part.id === action.id);
+      if (!source) return state;
+      // The copy goes below everything kept, left edges aligned, so it never lands on top of the original.
+      const own = boundsOfStones(source.stones);
+      const below = offsetBelow(partsStones(state.parts), own?.minY ?? 0, own?.minX ?? 0);
+      const copy: DesignPart = {
+        ...source,
+        id: nextPartId(state.parts),
+        name: `${source.name} copy`,
+        offsetX: below.x,
+        offsetY: below.y,
+        stones: source.stones.map((stone) => ({ ...stone, center: { ...stone.center } })),
+      };
+      return withPartsHistory(state, [...state.parts, copy], null);
+    }
+
+    case 'END_PARTS_STEP':
+      // The next move of a part starts a new undo step.
+      return state.partsHistory.lastKey === null ? state : { ...state, partsHistory: { ...state.partsHistory, lastKey: null } };
+
+    case 'ALIGN_PART': {
+      const target = state.parts.find((part) => part.id === action.id);
+      if (!target) return state;
+      const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      const others = boundsOfStones([...workingStones, ...partsStones(state.parts.filter((part) => part.id !== action.id))]);
+      const own = boundsOfStones(partsStones([target]));
+      const dx = isVerticalAlign(action.align) ? 0 : alignDelta(own, others, action.align);
+      const dy = isVerticalAlign(action.align) ? alignDeltaY(own, others, action.align) : 0;
+      if (dx === 0 && dy === 0) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, offsetX: Math.round((part.offsetX + dx) * 1e4) / 1e4, offsetY: Math.round((part.offsetY + dy) * 1e4) / 1e4 } : part)),
+        null,
+      );
+    }
+
+    case 'ALIGN_WORKING': {
+      const workingStones = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      const own = boundsOfStones(workingStones);
+      const others = boundsOfStones(partsStones(state.parts));
+      const dx = isVerticalAlign(action.align) ? 0 : alignDelta(own, others, action.align);
+      const dy = isVerticalAlign(action.align) ? alignDeltaY(own, others, action.align) : 0;
+      if (dx === 0 && dy === 0) return state;
+      return editorReducer(state, { type: 'SET_WORKING_OFFSET', x: Math.round((state.workingOffset.x + dx) * 1e4) / 1e4, y: Math.round((state.workingOffset.y + dy) * 1e4) / 1e4 });
+    }
+
+    case 'TURN_PART_BY':
+      if (!Number.isFinite(action.degrees) || action.degrees % 360 === 0) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: rotateStonesBy(part.stones, action.degrees) } : part)),
+        null,
+      );
+
+    case 'SPREAD_PART':
+      if (!Number.isFinite(action.factor) || action.factor <= 1) return state;
+      return withPartsHistory(
+        state,
+        state.parts.map((part) => (part.id === action.id ? { ...part, stones: spreadStones(part.stones, action.factor) } : part)),
+        null,
+      );
+
+    case 'EDIT_PART': {
+      const part = state.parts.find((candidate) => candidate.id === action.id);
+      if (!part) return state;
+      const working = state.editableTemplate.isEditable ? state.editableTemplate.stones : state.template?.stones ?? [];
+      if (working.length > 0) return state; // there is a piece in progress: it has to be added to the design first
+      const stones = part.stones.map((stone) => ({
+        ...stone,
+        center: { x: Math.round((stone.center.x + part.offsetX) * 1e4) / 1e4, y: Math.round((stone.center.y + part.offsetY) * 1e4) / 1e4 },
+      }));
+      const next = withPartsHistory(state, state.parts.filter((candidate) => candidate.id !== action.id), null);
+      return {
+        ...next,
+        activeTool: 'select',
+        workingOffset: { x: 0, y: 0 },
+        selectedStoneIds: new Set(),
+        editableTemplate: { isEditable: true, stones, originalTemplate: null, sourceGenerator: 'manual-editor' },
+        history: { past: [], future: [] },
+      };
+    }
+
+    case 'UNDO_PARTS': {
+      const past = state.partsHistory.past;
+      if (past.length === 0) return state;
+      return {
+        ...state,
+        parts: past[past.length - 1]!,
+        partsHistory: { past: past.slice(0, -1), future: [state.parts, ...state.partsHistory.future], lastKey: null },
+      };
+    }
+
+    case 'REDO_PARTS': {
+      const future = state.partsHistory.future;
+      if (future.length === 0) return state;
+      return {
+        ...state,
+        parts: future[0]!,
+        partsHistory: { past: [...state.partsHistory.past, state.parts], future: future.slice(1), lastKey: null },
+      };
+    }
+
+    case 'SET_PARTS':
+      return { ...state, parts: action.parts, workingOffset: action.workingOffset, partsHistory: { past: [], future: [], lastKey: null } };
+
+    case 'SET_WORKING_OFFSET': {
+      // Move the piece being worked on by the difference, wherever its stones are (generated or already editable).
+      const dx = action.x - state.workingOffset.x;
+      const dy = action.y - state.workingOffset.y;
+      if (dx === 0 && dy === 0) return state;
+      const editable = state.editableTemplate;
+      return {
+        ...state,
+        workingOffset: { x: action.x, y: action.y },
+        template: state.template ? translateTemplate(state.template, dx, dy) : null,
+        editableTemplate: editable.isEditable
+          ? {
+              ...editable,
+              stones: translateStones(editable.stones, dx, dy),
+              originalTemplate: editable.originalTemplate ? translateTemplate(editable.originalTemplate, dx, dy) : null,
+            }
+          : editable,
+      };
+    }
     
     case 'UPDATE_CANVAS':
       return { ...state, canvas: { ...state.canvas, ...action.updates } };
@@ -823,6 +1158,39 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
     }
     
+    case 'REPLACE_STONES': {
+      if (!state.template && !state.editableTemplate.isEditable) return state;
+
+      const wasEditable = state.editableTemplate.isEditable;
+      // Undo must bring back the stones as they were before the fix, also when the design was generated.
+      const stonesBefore = wasEditable
+        ? state.editableTemplate.stones
+        : (state.template?.stones ?? []).map((stone) => ({ ...stone }));
+      const historyEntry: HistoryEntry = {
+        stones: stonesBefore,
+        selectedIds: new Set(state.selectedStoneIds),
+      };
+
+      return {
+        ...state,
+        editableTemplate: wasEditable
+          ? { ...state.editableTemplate, stones: action.stones }
+          : {
+              isEditable: true,
+              stones: action.stones,
+              originalTemplate: state.template,
+              sourceGenerator: inferEditableSourceGenerator(state),
+            },
+        selectedStoneIds: new Set(
+          [...state.selectedStoneIds].filter((id) => action.stones.some((stone) => stone.id === id)),
+        ),
+        history: {
+          past: [...state.history.past, historyEntry],
+          future: [],
+        },
+      };
+    }
+
     case 'DELETE_STONES': {
       if (!state.editableTemplate.isEditable) return state;
       
@@ -1175,6 +1543,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'LOAD_PROJECT_STATE':
       return { ...state, ...action.state };
     
+    case 'APPLY_WORKSPACE_DEFAULTS':
+      return applyWorkspaceDefaults(state, action.settings);
+
     case 'RESET_EDITOR':
       return { ...DEFAULT_EDITOR_STATE };
     

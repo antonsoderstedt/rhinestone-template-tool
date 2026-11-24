@@ -16,6 +16,7 @@ import TemplateStatsCard from './TemplateStatsCard';
 import ExportReadinessPanel from './ExportReadinessPanel';
 import Badge from '@/app/editor/ui/Badge';
 
+import { useT } from '../lib/i18n';
 function formatMm(value: number): string {
   return value.toFixed(2);
 }
@@ -23,6 +24,7 @@ function formatMm(value: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CalibrationSheetGenerator() {
+  const t = useT();
   // Calibration sheet generation is deterministic — no user inputs needed.
   const { svgString, stoneCount, readiness, sizeRows } = useMemo(() => {
     const sheet = createDefaultMagicFlockCalibrationSheet();
@@ -74,13 +76,11 @@ export default function CalibrationSheetGenerator() {
           verified default hole diameter for that stone size.
         </p>
         <p>
-          Cut the sheet on Magic Flock with your Cricut Maker 3. Place stones in each
-          hole. The column where the stone snaps in firmly without tearing is the
-          correct diameter for your specific machine and material batch.
+          {t('Cut the sheet on Magic Flock with your Cricut Maker 3. Place stones in each hole. The column where the stone snaps in firmly without tearing is the correct diameter for your specific machine and material batch.')}
         </p>
         <p>
-          Record that offset as the <span className="font-mono text-xs">kerfCompensationMm</span> for
-          your material profile.
+          Use that hole diameter in the next step. The difference from the standard value is your
+          <strong> blade cut offset</strong> — how much larger or smaller than designed your machine actually cuts.
         </p>
       </div>
 
@@ -89,10 +89,10 @@ export default function CalibrationSheetGenerator() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-sand-50 text-left text-ink-muted">
-              <th className="px-3 py-2 font-medium">Stone size</th>
-              <th className="px-3 py-2 font-medium">Test values (mm)</th>
-              <th className="px-3 py-2 font-medium">Standard</th>
-              <th className="px-3 py-2 font-medium" />
+              <th className="px-3 py-2 font-medium">{t('Stone size')}</th>
+              <th className="px-3 py-2 font-medium">{t('Test values (mm)')}</th>
+              <th className="px-3 py-2 font-medium">{t('Standard')}</th>
+              <th className="px-3 py-2 font-medium"><span className="sr-only">{t('Status')}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -104,7 +104,7 @@ export default function CalibrationSheetGenerator() {
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-ink-primary">{formatMm(recommended)}</td>
                 <td className="px-3 py-2">
-                  {provisional && <Badge tone="warning">Provisional</Badge>}
+                  {provisional && <Badge tone="warning">{t('Provisional')}</Badge>}
                 </td>
               </tr>
             ))}
@@ -115,10 +115,8 @@ export default function CalibrationSheetGenerator() {
       {/* SS12 is preliminary only — no verified vendor value exists yet. */}
       {sizeRows.some((row) => row.provisional) && (
         <div className="rounded border border-warning-500/40 bg-warning-50 p-3 text-sm text-warning-600">
-          <strong>SS12 has no verified official value yet.</strong> The values above
-          are a preliminary starting point only. Cut the calibration sheet and choose
-          the smallest hole where the stone brushes in easily and seats/turns correctly,
-          then treat that as your own calibrated value — never as an official default.
+          <strong>{t('SS12 has no verified official value yet.')}</strong>{' '}
+          {t('The values above are a preliminary starting point only. Cut the calibration sheet and choose the smallest hole where the stone brushes in easily and seats/turns correctly, then treat that as your own calibrated value — never as an official default.')}
         </div>
       )}
 
@@ -129,9 +127,9 @@ export default function CalibrationSheetGenerator() {
         extraStats={[{ label: 'Stone sizes', value: sizeRows.map((r) => r.stoneSize).join(', ') }]}
       />
 
-      <ExportReadinessPanel result={readiness} />
+      <ExportReadinessPanel result={readiness} showCalibrationStep={false} />
 
-      <SvgPreview svg={svgString} title="Calibration sheet preview" />
+      <SvgPreview svg={svgString} title={t('Calibration sheet preview')} />
 
       {/* Calibration sheet download is never blocked by calibration warnings alone —
           warnings are expected on a sheet whose purpose is to find the correct values. */}
