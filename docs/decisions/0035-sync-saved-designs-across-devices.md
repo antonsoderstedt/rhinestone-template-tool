@@ -50,3 +50,6 @@ deletion on `settings:workspace`. Therefore:
   in the saved state is kept as it was. Adding a kind later therefore cannot make an older tab delete it.
 - Deleting real items (designs, files, profiles) is unchanged. The tab that did the damage here ran old code; it stops once reloaded.
 
+## Addendum 2026-11-26: Papercraft models
+
+Saved Papercraft models are a sync kind, `papercraft` (ADR 0041), stored in the workspace vault like the HTV designs. A design from another device is accepted only if the studio can open it.

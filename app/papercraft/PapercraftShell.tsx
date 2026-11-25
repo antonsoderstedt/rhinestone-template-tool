@@ -3,6 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Download, Pause, Play, SlidersHorizontal, Shapes } from 'lucide-react';
+import { buildPapercraftDesignEntry, readWorkspaceVault, writeWorkspaceVault } from '../lib/workspaceVault';
 import { fillHoles, flipFaces, reportSolid } from '@/src/lib/papercraft-engine';
 import { useStudioTheme } from '../lib/studioTheme';
 import MobileStudioBar from '../components/MobileStudioBar';
@@ -16,7 +17,12 @@ import { computePapercraft, MAX_FACES } from './papercraftCompute';
 import { buildCoverContent, coverPageSize } from './papercraftCover';
 import { buildCricutDownload, buildPdfDownload, downloadExportFile } from './papercraftExport';
 import { ModelFileError, readModelFile } from './papercraftFiles';
-import { initialPapercraftState, papercraftReducer } from './papercraftState';
+import { bootPapercraft } from './papercraftBoot';
+import { readPapercraftDraft, writePapercraftDraft } from './papercraftDraft';
+import { buildPapercraftShareLink, readSharedPapercraft } from './papercraftShare';
+import { canSavePapercraft, deserializePapercraft, snapshotText } from './papercraftSnapshot';
+import { papercraftReducer, type PapercraftAction } from './papercraftState';
+import { readPapercraftVersions, recordPapercraftVersion, type PapercraftVersion } from './papercraftVersions';
 
 // three.js is loaded when the 3D view is first opened.
 const Model3D = dynamic(() => import('./Model3D'), { ssr: false });
@@ -24,10 +30,21 @@ const Model3D = dynamic(() => import('./Model3D'), { ssr: false });
 export default function PapercraftShell() {
   const t = useT();
   const { theme, toggleTheme } = useStudioTheme();
-  const [state, dispatch] = useReducer(papercraftReducer, undefined, initialPapercraftState);
+  // What the studio opens with: a saved design from the address, else the work in progress from the last visit, else the test cube.
+  const [boot] = useState(() => bootPapercraft(window.location.search, readWorkspaceVault(), readPapercraftDraft()));
+  const [state, dispatch] = useReducer(papercraftReducer, boot.state);
+  const [activeId, setActiveId] = useState<string | null>(boot.activeId);
+  const [savedText, setSavedText] = useState<string | null>(() => {
+    if (!boot.activeId) return null;
+    const entry = readWorkspaceVault().papercraftDesigns.find((d) => d.designId === boot.activeId);
+    return entry ? JSON.stringify(entry.snapshot) : null;
+  });
+  const [savedAt, setSavedAt] = useState<string | null>(() => readWorkspaceVault().papercraftDesigns.find((d) => d.designId === boot.activeId)?.updatedAt ?? null);
+  const [versions, setVersions] = useState<PapercraftVersion[]>(() => (boot.activeId ? readPapercraftVersions(window.localStorage, boot.activeId) : []));
   const [mobilePanel, setMobilePanel] = useState<'none' | 'model' | 'settings'>('none');
   const [importError, setImportError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  // A saved design named in the address that is not there (deleted here or on another device) says so.
+  const [toast, setToast] = useState<string | null>(() => (boot.from === 'missing-design' ? t('That saved model was not found. It may have been deleted.') : null));
   const [playing, setPlaying] = useState(false);
 
   // Only the things that decide the pattern: turning the 3D view or the fold slider never recomputes it.
@@ -45,11 +62,123 @@ export default function PapercraftShell() {
     [run, state.cover, state.projectName, state.paper.preset, t],
   );
 
+  // Choosing another model or importing a file starts a new design (saving it does not overwrite the one that was open).
+  const dispatchModelChange: React.Dispatch<PapercraftAction> = useCallback((action) => {
+    dispatch(action);
+    if (action.type === 'USE_BUILT_IN' || action.type === 'USE_FILE') {
+      setActiveId(null);
+      setSavedText(null);
+      setSavedAt(null);
+      setVersions([]);
+    }
+  }, []);
+
+  // The design as text: what is saved, compared, kept as a version and put in a link. (The view and the fold amount are not part of it.)
+  const currentText = useMemo(
+    () => snapshotText({ ...state, view: 'pattern', selectedPartId: null, fold: 1 }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.projectName, state.source, state.size, state.paper, state.pattern, state.cover, state.edits],
+  );
+  const dirty = activeId === null || currentText !== savedText;
+  const canSave = canSavePapercraft(state);
+
+  // The work in progress is kept for the next visit (not a saved design, and not synced).
+  useEffect(() => {
+    const id = window.setTimeout(() => writePapercraftDraft({ activeId, snapshotText: currentText }), 800);
+    return () => window.clearTimeout(id);
+  }, [activeId, currentText]);
+
+  const saveDesign = useCallback(() => {
+    if (!canSavePapercraft(state)) {
+      setToast(t('This model is too big to save in the browser. Keep the model file.'));
+      return;
+    }
+    const vault = readWorkspaceVault();
+    const existing = activeId ? vault.papercraftDesigns.find((d) => d.designId === activeId) ?? null : null;
+    // The version that is about to be replaced is kept, so a save can be undone.
+    if (existing) recordPapercraftVersion(window.localStorage, existing.designId, { savedAt: existing.updatedAt, name: existing.name, snapshotText: JSON.stringify(existing.snapshot) });
+    const entry = buildPapercraftDesignEntry(state, existing);
+    const ok = writeWorkspaceVault({
+      ...vault,
+      papercraftDesigns: existing ? vault.papercraftDesigns.map((d) => (d.designId === entry.designId ? entry : d)) : [entry, ...vault.papercraftDesigns],
+    });
+    if (!ok) {
+      setToast(t('Could not save: the browser has no room left. Delete a saved design or a file in the Library, then try again.'));
+      return;
+    }
+    setActiveId(entry.designId);
+    setSavedText(JSON.stringify(entry.snapshot));
+    setSavedAt(entry.updatedAt);
+    setVersions(readPapercraftVersions(window.localStorage, entry.designId));
+    setToast(t('Saved to My Designs.'));
+  }, [state, activeId, t]);
+
+  const shareLink = useCallback(async () => {
+    const result = await buildPapercraftShareLink(state, window.location.origin);
+    if (!result.ok) {
+      setToast(t('This model is too big for a link. Save it instead: it follows you to your other devices.'));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(result.url);
+      setToast(t('Link copied. Anyone who opens it gets their own copy of this model.'));
+    } catch {
+      window.prompt(t('Copy this link:'), result.url);
+    }
+  }, [state, t]);
+
+  const restoreVersion = useCallback(
+    (version: PapercraftVersion) => {
+      let parsed: unknown = null;
+      try {
+        parsed = JSON.parse(version.snapshotText);
+      } catch {
+        parsed = null;
+      }
+      const restored = parsed ? deserializePapercraft(parsed) : null;
+      if (!restored) {
+        setToast(t('That version could not be opened.'));
+        return;
+      }
+      // What is open now is kept as a version too, so nothing is lost by looking back.
+      if (activeId) recordPapercraftVersion(window.localStorage, activeId, { savedAt: new Date().toISOString(), name: state.projectName, snapshotText: currentText });
+      dispatch({ type: 'LOAD_STATE', state: restored });
+      if (activeId) setVersions(readPapercraftVersions(window.localStorage, activeId));
+      setToast(t('Opened the earlier version. Press Save to keep it.'));
+    },
+    [activeId, currentText, state.projectName, t],
+  );
+
+  // A link someone shared (`#share=...`): their model opens as a new, unsaved one.
+  useEffect(() => {
+    if (!window.location.hash.startsWith('#share=')) return;
+    let cancelled = false;
+    readSharedPapercraft(window.location.hash)
+      .then((shared) => {
+        if (cancelled || !shared) return;
+        dispatch({ type: 'LOAD_STATE', state: shared });
+        setActiveId(null);
+        setSavedText(null);
+        setSavedAt(null);
+        setVersions([]);
+        setToast(t('Opened the model from the link. Save it to keep it.'));
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setToast(error instanceof Error ? error.message : t('That link could not be opened.'));
+      })
+      .finally(() => window.history.replaceState(null, '', window.location.pathname + window.location.search));
+    return () => {
+      cancelled = true;
+    };
+    // Once, when the studio opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const importFile = useCallback(async (file: File) => {
     setImportError(null);
     try {
       const { fileName, mesh } = await readModelFile(file);
-      dispatch({ type: 'USE_FILE', fileName, mesh });
+      dispatchModelChange({ type: 'USE_FILE', fileName, mesh });
       setMobilePanel('none');
     } catch (error) {
       if (error instanceof ModelFileError) {
@@ -66,7 +195,7 @@ export default function PapercraftShell() {
         setImportError(t('The file could not be read. Is it a broken or an empty model?'));
       }
     }
-  }, [t]);
+  }, [t, dispatchModelChange]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -141,6 +270,9 @@ export default function PapercraftShell() {
         projectName={state.projectName}
         view={state.view}
         canExport={Boolean(run)}
+        canSave={canSave}
+        dirty={dirty}
+        onSave={saveDesign}
         dispatch={dispatch}
         onExportPdf={exportPdf}
         onExportCricut={exportCricut}
@@ -150,7 +282,7 @@ export default function PapercraftShell() {
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'model' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[272px] lg:border-t-0`}>
-          <ModelPanel state={state} dispatch={dispatch} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} />
+          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} />
         </div>
 
         <main
@@ -214,7 +346,7 @@ export default function PapercraftShell() {
         </main>
 
         <div className={`order-3 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'settings' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[288px] lg:border-t-0`}>
-          <SettingsPanel state={state} dispatch={dispatch} run={run} onExportPdf={exportPdf} onExportCricut={exportCricut} />
+          <SettingsPanel state={state} dispatch={dispatch} run={run} save={{ activeId, dirty, savedAt, versions, canSave }} onSave={saveDesign} onShare={shareLink} onRestoreVersion={restoreVersion} onExportPdf={exportPdf} onExportCricut={exportCricut} />
         </div>
       </div>
 

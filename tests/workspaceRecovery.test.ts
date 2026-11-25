@@ -34,6 +34,7 @@ const baseVault: WorkspaceVault = {
       },
     },
   ],
+  papercraftDesigns: [],
   designPreferences: [
     { designKey: 'rhinestone-1', archived: false },
     { designKey: 'rhinestone-2', archived: false },

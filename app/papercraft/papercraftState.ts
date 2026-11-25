@@ -48,6 +48,8 @@ export function initialPapercraftState(): PapercraftState {
 }
 
 export type PapercraftAction =
+  /** Replace everything: a saved design, a shared link, an old version. */
+  | { type: 'LOAD_STATE'; state: PapercraftState }
   | { type: 'SET_NAME'; name: string }
   | { type: 'USE_BUILT_IN'; id: string }
   | { type: 'USE_FILE'; fileName: string; mesh: RawMesh }
@@ -68,6 +70,9 @@ const without = (list: readonly number[], id: number) => list.filter((x) => x !=
 
 export function papercraftReducer(state: PapercraftState, action: PapercraftAction): PapercraftState {
   switch (action.type) {
+    case 'LOAD_STATE':
+      // The view stays the one the person is in; the rest is the loaded design.
+      return { ...action.state, view: state.view, selectedPartId: null, fold: 1 };
     case 'SET_NAME':
       return { ...state, projectName: action.name };
     case 'USE_BUILT_IN': {

@@ -12,7 +12,7 @@
 import { checkAccess } from './access';
 import type { D1Database, SyncEnv } from './types';
 
-export const SYNC_KINDS = ['template', 'asset', 'htv', 'calibration', 'settings', 'fontpref', 'designpref', 'font'] as const;
+export const SYNC_KINDS = ['template', 'asset', 'htv', 'papercraft', 'calibration', 'settings', 'fontpref', 'designpref', 'font'] as const;
 const KIND_SET: ReadonlySet<string> = new Set(SYNC_KINDS);
 const ID_PATTERN = /^[A-Za-z0-9._:~-]{1,160}$/;
 const CHUNK_CHARS = 300_000;

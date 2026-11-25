@@ -44,14 +44,14 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
 
   const refreshBackupState = async () => {
     const record = await new LocalStorageTemplateLibraryRepository().list();
-    const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length;
+    const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length + readWorkspaceVault().papercraftDesigns.length;
     setBackupState({ lastBackupAt: readLastBackupAt(window.localStorage), designCount, now: new Date() });
   };
   useEffect(() => {
     let cancelled = false;
     void new LocalStorageTemplateLibraryRepository().list().then((record) => {
       if (cancelled) return;
-      const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length;
+      const designCount = record.userTemplates.length + readWorkspaceVault().htvDesigns.length + readWorkspaceVault().papercraftDesigns.length;
       setBackupState({ lastBackupAt: readLastBackupAt(window.localStorage), designCount, now: new Date() });
     });
     return () => {
@@ -64,13 +64,13 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
     try {
       const record = await new LocalStorageTemplateLibraryRepository().list();
       const vault = readWorkspaceVault();
-      const total = record.userTemplates.length + vault.htvDesigns.length;
+      const total = record.userTemplates.length + vault.htvDesigns.length + vault.papercraftDesigns.length;
       if (total === 0) {
         setNotice({ tone: 'info', text: 'There is nothing to back up yet. Save a design in a studio first.' });
         return;
       }
       const createdAt = new Date().toISOString();
-      const backup = createWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, calibrationProfiles: vault.calibrationProfiles, createdAt });
+      const backup = createWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, papercraftDesigns: vault.papercraftDesigns, calibrationProfiles: vault.calibrationProfiles, createdAt });
       downloadJson(buildBackupFilename(createdAt), serializeWorkspaceBackup(backup));
       writeLastBackupAt(window.localStorage, createdAt);
       await refreshBackupState();
@@ -95,15 +95,15 @@ export default function BackupPanel({ onRestored }: BackupPanelProps) {
       const repository = new LocalStorageTemplateLibraryRepository();
       const record = await repository.list();
       const vault = readWorkspaceVault();
-      const merged = mergeWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, calibrationProfiles: vault.calibrationProfiles }, backup);
+      const merged = mergeWorkspaceBackup({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, papercraftDesigns: vault.papercraftDesigns, calibrationProfiles: vault.calibrationProfiles }, backup);
 
       for (const entry of merged.rhinestoneToSave) {
         await repository.save(entry);
       }
       // Read the vault again right before writing so nothing saved in another tab meanwhile is lost.
       const latest = readWorkspaceVault();
-      const latestMerged = mergeWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: latest.htvDesigns, calibrationProfiles: latest.calibrationProfiles }, { ...backup, rhinestoneDesigns: [] });
-      writeWorkspaceVault({ ...latest, htvDesigns: latestMerged.htvDesigns, calibrationProfiles: latestMerged.calibrationProfiles });
+      const latestMerged = mergeWorkspaceBackup({ rhinestoneDesigns: [], htvDesigns: latest.htvDesigns, papercraftDesigns: latest.papercraftDesigns, calibrationProfiles: latest.calibrationProfiles }, { ...backup, rhinestoneDesigns: [] });
+      writeWorkspaceVault({ ...latest, htvDesigns: latestMerged.htvDesigns, papercraftDesigns: latestMerged.papercraftDesigns, calibrationProfiles: latestMerged.calibrationProfiles });
 
       setNotice({ tone: 'success', text: describeMergeSummary(merged.summary, skippedCount) });
       onRestored();
