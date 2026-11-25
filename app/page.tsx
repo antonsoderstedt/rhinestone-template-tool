@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
+import { ArrowRight, Box, FolderHeart, Gem, ImageUp, LibraryBig, Ruler, Settings2, SwatchBook, Type } from 'lucide-react';
 import WorkspaceRecoveryPanel from './components/WorkspaceRecoveryPanel';
 import RecentDesigns from './components/RecentDesigns';
 import StarterGallery from './components/StarterGallery';
@@ -35,6 +35,13 @@ const goals = [
     icon: SwatchBook,
     tone: 'from-sand-700 to-sand-500',
   },
+  {
+    href: '/papercraft',
+    title: 'Build a 3D paper model',
+    copy: 'Turn a low-poly 3D model into a pattern with glue tabs and numbers. Print it, or cut and score it with a Cricut.',
+    icon: Box,
+    tone: 'from-accent-500 to-sand-500',
+  },
 ] as const;
 
 const workflow = [
@@ -67,7 +74,7 @@ export default function Home() {
         </p>
       </header>
 
-      <section aria-label={t('Start a new design')} className="grid gap-5 md:grid-cols-3">
+      <section aria-label={t('Start a new design')} className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {goals.map((goal) => {
           const Icon = goal.icon;
           return (

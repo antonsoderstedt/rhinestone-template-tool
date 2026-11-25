@@ -1,6 +1,6 @@
 # Papercraft studio: plan
 
-**Status:** Phase 0 and 1 done (ADR 0037, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine and its tests); the studio (Phase 2 onward) is not built · **Date:** 2026-11-25
+**Status:** Phases 0, 1 and 2 done (ADR 0037 and 0038, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine and the studio at `/papercraft`); phase 3 onward is not built · **Date:** 2026-11-25
 
 A third studio next to Rhinestone and HTV: make 3D paper models from low-poly meshes, then **print** the patterns or **cut and score**
 them with a cutting machine, and fold and glue.

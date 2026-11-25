@@ -8,7 +8,7 @@ import DomTranslator from './DomTranslator';
 import { useT } from '../lib/i18n';
 
 function isStudioRoute(pathname: string): boolean {
-  return pathname.startsWith('/rhinestone') || pathname.startsWith('/htv');
+  return pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') || pathname.startsWith('/papercraft');
 }
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {

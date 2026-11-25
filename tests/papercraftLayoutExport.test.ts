@@ -89,6 +89,32 @@ describe('page layout', () => {
   });
 });
 
+describe('turning parts on the page', () => {
+  const angles = (rotation: 'none' | 'quarter' | 'free') =>
+    createPapercraft({ mesh: shapes.dodecahedron(30), page: { ...A4, rotation } }).layout.pages.flatMap((p) => p.placements.map((pl) => pl.rotation));
+  const isQuarter = (a: number) => Math.abs(Math.sin(2 * a)) < 1e-9;
+
+  it('none keeps every part as unfolded', () => {
+    expect(angles('none').every((a) => a === 0)).toBe(true);
+  });
+
+  it('quarter (the default) only turns parts by 90 degrees when they fit that way', () => {
+    expect(angles('quarter').every(isQuarter)).toBe(true);
+    expect(angles(undefined as never)).toEqual(angles('quarter'));
+  });
+
+  it('free turns a part to its smallest box, which is not a quarter turn for a dodecahedron net', () => {
+    expect(angles('free').some((a) => !isQuarter(a))).toBe(true);
+  });
+
+  it('quarter still turns a part freely when it fits no other way', () => {
+    // A long thin diagonal part: the cube net of 150 mm on A4 is split, a strip of faces too long for the page in
+    // both quarter turns fits only when turned.
+    const run = createPapercraft({ mesh: shapes.box(10, 10, 300), page: { ...A4, rotation: 'quarter' } });
+    expect(run.layout.warnings).toEqual([]);
+  });
+});
+
 describe('stroke font', () => {
   it('draws digits as lines centred on the point', () => {
     const lines = strokeText('8', 100, 50, 5, 0);

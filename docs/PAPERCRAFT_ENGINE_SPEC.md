@@ -1,6 +1,6 @@
 # Papercraft engine specification
 
-**Status:** implemented (engine only, no studio yet) · **Date:** 2026-11-25 · **Decision:** ADR 0037 · **Plan:** `docs/PAPERCRAFT_PLAN.md`
+**Status:** implemented · **Date:** 2026-11-25 (studio: ADR 0038) · **Decision:** ADR 0037 · **Plan:** `docs/PAPERCRAFT_PLAN.md`
 
 Code: `src/lib/papercraft-engine/`. Tests: `tests/papercraft*.test.ts`. All lengths are millimetres. 2D coordinates have y up; SVG export
 flips y so the picture is not mirrored. Everything is deterministic.
@@ -62,10 +62,25 @@ joined part fits the limit in some rotation. Otherwise the edge stays cut. Joine
 
 ## Pages (`layoutPages`)
 
-For each part the candidate rotations are the ones that align a convex hull edge with the x axis, plus 90 degrees; the smallest box wins and
-the unrotated one wins near-ties. Parts are placed largest first with MaxRects (best short side fit), first on existing pages then on a new
+`PageSettings.rotation` decides how parts may be turned. `none`: as unfolded. `quarter` (default): 0 and 90 degrees, and the free turns
+below only for a part that fits no other way. `free`: for each part the candidate rotations are the ones that align a convex hull edge
+with the x axis, plus 90 degrees; the smallest box wins and the unrotated one wins near-ties. Parts are placed largest first with MaxRects (best short side fit), first on existing pages then on a new
 one. A gap is kept between parts and a margin around the page. A part that does not fit an empty page in any rotation gets its own page and
-`part-too-large`. Presets: A4, Letter, Cricut 12x12 and 12x24 inch (nominal; the cuttable area is smaller and is to be measured).
+`part-too-large`. Presets: A4, Letter, and the usable area of the Cricut 12x12 and 12x24 inch mats (292.1 x 292.1 and 292.1 x 596.9 mm, the figures the Rhinestone studio uses; to be confirmed on the machine).
+
+## Fold animation (`buildFoldTree`, `foldPoses`)
+
+`buildFoldTree(solid, pattern.joinedEdgeIds, partFaceIds)` gives, for every face, its parent (the first face of the part is the root, the
+others hang from it along folded edges), the hinge line in the finished model and `flatAngle`: the signed angle about the hinge that
+lays the face flat with its parent, both facing outward. `foldPoses(tree, folded)` returns one 4x4 matrix per face for a fold amount from 1
+(the finished model: identity) to 0 (each part flat): the face's pose is its parent's pose times a rotation about the hinge by `flatAngle * (1 - folded)`.
+Faces stay rigid at every step, and at 0 the corner distances equal the pattern's. `faceTriangles` triangulates a face for drawing.
+
+## Edges for editing
+
+Every part lists `edgeSegments`: each face edge with the edge id of the solid, its two points in the part's frame, a state (`joined`,
+`cut` with its glue number, or `open`) (joined edges once). `Pattern.joinedEdgeIds` lists the folded edges. The studio uses them to let the
+owner cut or join an edge and to build the hinge tree.
 
 ## Export
 

@@ -7,13 +7,14 @@ import UnitSwitch from './UnitSwitch';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FolderOpen, Gem, LibraryBig, Menu, Ruler, Settings2, ShieldAlert, Sparkles, SwatchBook, Type, X } from 'lucide-react';
+import { AlertTriangle, Box, CheckCircle2, FolderOpen, Gem, LibraryBig, Menu, Ruler, Settings2, ShieldAlert, Sparkles, SwatchBook, Type, X } from 'lucide-react';
 import { readActiveCalibrationProfile } from '@/app/lib/workspaceVault';
 
 export const NAV_ITEMS = [
   { href: '/', label: 'Start page', shortLabel: 'Start', icon: Sparkles },
   { href: '/rhinestone', label: 'Rhinestone Studio', shortLabel: 'Stone', icon: Gem },
   { href: '/htv', label: 'HTV Studio', shortLabel: 'HTV', icon: SwatchBook },
+  { href: '/papercraft', label: 'Papercraft Studio', shortLabel: 'Paper', icon: Box },
   { href: '/library', label: 'Library', shortLabel: 'Library', icon: LibraryBig },
   { href: '/fonts', label: 'Fonts', shortLabel: 'Fonts', icon: Type },
   { href: '/designs', label: 'My Designs', shortLabel: 'Designs', icon: FolderOpen },
@@ -68,6 +69,16 @@ export function getModeMeta(pathname: string, activeCalibrationProfile: ReturnTy
       studioLabel: 'HTV Studio',
       status: 'Ready',
       statusText: `Production ready: ${activeCalibrationProfile.name}`,
+      statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+    };
+  }
+
+  if (pathname.startsWith('/papercraft')) {
+    return {
+      studioLabel: 'Papercraft Studio',
+      status: 'Ready',
+      statusText: 'Paper models need no calibration',
       statusClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       icon: CheckCircle2,
     };
@@ -169,7 +180,7 @@ export default function GlobalTopNav() {
   // The menu is open only for the page it was opened on, so navigating closes it without an effect.
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
   const menuOpen = menuOpenFor === pathname;
-  const studioRoute = pathname.startsWith('/rhinestone') || pathname.startsWith('/htv');
+  const studioRoute = pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') || pathname.startsWith('/papercraft');
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -210,7 +221,7 @@ export default function GlobalTopNav() {
           </div>
         </Link>
 
-        <nav aria-label={t('Main')} className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${pathname.startsWith('/rhinestone') || pathname.startsWith('/htv') ? '!hidden' : ''}`}>
+        <nav aria-label={t('Main')} className={`hidden items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1 shadow-sm xl:flex ${studioRoute ? '!hidden' : ''}`}>
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
