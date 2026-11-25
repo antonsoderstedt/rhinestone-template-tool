@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPattern, buildSolid, shapes, unfold } from '../src/lib/papercraft-engine';
+import { applyMat4, buildFoldTree, buildPattern, buildSolid, faceTriangles, foldPoses, IDENTITY, shapes, unfold } from '../src/lib/papercraft-engine';
 import type { RawMesh, Solid, Vec2 } from '../src/lib/papercraft-engine';
 import { convexOverlap, triangulate } from '../src/lib/papercraft-engine/geometry/polygon';
 
@@ -232,5 +232,84 @@ describe('tab settings', () => {
     const solid = buildSolid(shapes.icosahedron(2));
     const p = buildPattern(solid, { tabWidthMm: 8, minTabWidthMm: 8 });
     expect(p.stats.tabCount + (p.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0)).toBe(p.edgePairCount);
+  });
+});
+
+describe('fold animation', () => {
+  const MODEL_SET: [string, RawMesh][] = MODELS.filter(([name]) => ['cube', 'icosahedron', 'dodecahedron', 'L block (non-convex)', 'sphere (96 faces)'].includes(name));
+
+  it.each(MODEL_SET)('%s: folded is the finished model, flat is the net', (_name, mesh) => {
+    const solid = buildSolid(mesh);
+    const pattern = buildPattern(solid);
+    const parts = pattern.parts.map((p) => p.faces.map((f) => f.faceId));
+    const tree = buildFoldTree(solid, pattern.joinedEdgeIds, parts);
+    expect(tree.nodes).toHaveLength(solid.faces.length);
+
+    const folded = foldPoses(tree, 1);
+    for (const m of folded) expect(m).toEqual(IDENTITY);
+
+    const flat = foldPoses(tree, 0);
+    const pointsOf = (f: number) => solid.faces[f].vertices.map((v) => applyMat4(flat[f], solid.vertices[v]));
+    pattern.parts.forEach((part, pi) => {
+      const root = Math.min(...parts[pi]);
+      const n = solid.faces[root].normal;
+      const o = solid.vertices[solid.faces[root].vertices[0]];
+      const net = new Map(part.faces.map((f) => [f.faceId, f.points]));
+      for (const f of parts[pi]) {
+        const pts = pointsOf(f);
+        // Every corner lies in the plane of the first face...
+        for (const p of pts) expect(Math.abs((p[0] - o[0]) * n[0] + (p[1] - o[1]) * n[1] + (p[2] - o[2]) * n[2])).toBeLessThan(1e-6);
+        // ... facing the same way ...
+        const fn = [0, 1, 2].map((i) => applyMat4(flat[f], [solid.vertices[solid.faces[f].vertices[0]][0] + solid.faces[f].normal[0], solid.vertices[solid.faces[f].vertices[0]][1] + solid.faces[f].normal[1], solid.vertices[solid.faces[f].vertices[0]][2] + solid.faces[f].normal[2]])[i] - pts[0][i]);
+        expect(fn[0] * n[0] + fn[1] * n[1] + fn[2] * n[2]).toBeGreaterThan(0.999);
+      }
+      // ... and the distances between corners of different faces are the pattern's.
+      const ids = parts[pi];
+      for (let a = 0; a < ids.length; a++) {
+        for (let b = a + 1; b < ids.length; b++) {
+          const pa = pointsOf(ids[a]);
+          const pb = pointsOf(ids[b]);
+          const na = net.get(ids[a])!;
+          const nb = net.get(ids[b])!;
+          for (let i = 0; i < pa.length; i++) {
+            for (let j = 0; j < pb.length; j++) {
+              expect(dist3(pa[i], pb[j])).toBeCloseTo(Math.hypot(na[i][0] - nb[j][0], na[i][1] - nb[j][1]), 5);
+            }
+          }
+        }
+      }
+    });
+  });
+
+  it('keeps every face rigid half way', () => {
+    const solid = buildSolid(shapes.icosahedron(40));
+    const pattern = buildPattern(solid);
+    const tree = buildFoldTree(solid, pattern.joinedEdgeIds, pattern.parts.map((p) => p.faces.map((f) => f.faceId)));
+    const half = foldPoses(tree, 0.5);
+    solid.faces.forEach((face, f) => {
+      const pts = face.vertices.map((v) => applyMat4(half[f], solid.vertices[v]));
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) expect(dist3(pts[i], pts[j])).toBeCloseTo(dist3(solid.vertices[face.vertices[i]], solid.vertices[face.vertices[j]]), 6);
+    });
+  });
+
+  it('triangulates faces (also non-convex ones) with the full area', () => {
+    const solid = buildSolid(shapes.lBlock(60));
+    for (const face of solid.faces) {
+      const area = faceTriangles(solid, face.id).reduce((s, [a, b, c]) => {
+        const u = solid.vertices[b].map((v, i) => v - solid.vertices[a][i]);
+        const w = solid.vertices[c].map((v, i) => v - solid.vertices[a][i]);
+        return s + Math.hypot(u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]) / 2;
+      }, 0);
+      expect(area).toBeCloseTo(face.area, 6);
+    }
+  });
+
+  it('gives edge segments for every face edge, with the cut ones numbered', () => {
+    const solid = buildSolid(shapes.cube(50));
+    const pattern = buildPattern(solid);
+    const segments = pattern.parts.flatMap((p) => p.edgeSegments);
+    expect(segments.filter((s) => s.state === 'joined')).toHaveLength(pattern.stats.foldCount);
+    expect(segments.filter((s) => s.state === 'cut')).toHaveLength(pattern.edgePairCount * 2);
+    expect(segments.every((s) => s.state !== 'cut' || s.number !== undefined)).toBe(true);
   });
 });

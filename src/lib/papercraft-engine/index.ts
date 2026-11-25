@@ -6,6 +6,7 @@ export { BUILT_IN_SHAPES } from './mesh/shapes';
 export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarget } from './mesh/inspect';
 export { unfold, type UnfoldOptions, type UnfoldResult } from './unfold/unfold';
 export { buildPattern, foldKindOfEdge } from './unfold/pattern';
+export { buildFoldTree, foldPoses, faceTriangles, applyMat4, multiplyMat4, rotationAboutLine, IDENTITY, type FoldTree, type FoldNode, type Mat4 } from './unfold/folding';
 export { layoutPages, transformPoint } from './layout/pack';
 export { renderPage, renderPages, type PageDrawing, type RenderOptions } from './export/render';
 export { exportPageSvg, type SvgPurpose } from './export/svg';

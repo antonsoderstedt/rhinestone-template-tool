@@ -1,6 +1,7 @@
 import {
   DEFAULT_PATTERN_SETTINGS,
   type FoldKind,
+  type EdgeSegment,
   type FoldLine,
   type Label,
   type Part,
@@ -178,6 +179,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
 
     const foldLines: FoldLine[] = [];
     const labels: Label[] = [];
+    const edgeSegments: EdgeSegment[] = [];
     const segments: Vec2[][] = [];
 
     for (const f of island) {
@@ -187,9 +189,13 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
         const P = pts[k];
         const Q = pts[(k + 1) % pts.length];
         if (result.joined.has(eid)) {
-          if (solid.edges[eid].faces[0] === f) foldLines.push({ a: P, b: Q, kind: foldKindOfEdge(solid, eid, settings.printedSide) });
+          if (solid.edges[eid].faces[0] === f) {
+            foldLines.push({ a: P, b: Q, kind: foldKindOfEdge(solid, eid, settings.printedSide) });
+            edgeSegments.push({ edgeId: eid, a: P, b: Q, state: 'joined' });
+          }
           return;
         }
+        edgeSegments.push({ edgeId: eid, a: P, b: Q, state: pairNumber.has(eid) ? 'cut' : 'open', number: pairNumber.get(eid) });
         const tab = tabOfEdge.get(eid);
         if (tab && tab.faceId === f) {
           const [, , q1, p1] = tab.points;
@@ -251,6 +257,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
       cutPaths: cutPaths.map((c) => ({ closed: c.closed, points: c.points.map(shift) })),
       foldLines: foldLines.map((l) => ({ ...l, a: shift(l.a), b: shift(l.b) })),
       labels: labels.map((l) => ({ ...l, x: l.x - b.minX, y: l.y - b.minY })),
+      edgeSegments: edgeSegments.map((e) => ({ ...e, a: shift(e.a), b: shift(e.b) })),
     };
     const hull = convexHull(allPoints.map(shift));
     const faceArea = island.reduce((s, f) => s + solid.faces[f].area, 0);
@@ -271,6 +278,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
 
   return {
     parts,
+    joinedEdgeIds: [...result.joined].sort((a, b) => a - b),
     edgePairCount: pairNumber.size,
     warnings,
     stats: {

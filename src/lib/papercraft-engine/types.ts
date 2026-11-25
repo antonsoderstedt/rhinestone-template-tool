@@ -97,6 +97,17 @@ export interface Tab {
   widthMm: number;
 }
 
+/** One edge of a face in a part, for drawing and for clicking (cut it, join it). */
+export interface EdgeSegment {
+  edgeId: number;
+  a: Vec2;
+  b: Vec2;
+  /** `joined`: folded; `cut`: cut and glued to a partner; `open`: cut with no partner (a hole in the model). */
+  state: 'joined' | 'cut' | 'open';
+  /** The glue number, for a cut edge with a partner. */
+  number?: number;
+}
+
 export interface Part {
   /** 1-based, stable. */
   id: number;
@@ -106,6 +117,8 @@ export interface Part {
   cutPaths: { points: Vec2[]; closed: boolean }[];
   foldLines: FoldLine[];
   labels: Label[];
+  /** Every edge of every face (joined edges once), with the edge id of the solid. */
+  edgeSegments: EdgeSegment[];
   /** Convex hull of faces and tabs. */
   hull: Vec2[];
   widthMm: number;
@@ -128,6 +141,8 @@ export interface PatternWarning {
 
 export interface Pattern {
   parts: Part[];
+  /** Edge ids of the solid that are folded rather than cut. */
+  joinedEdgeIds: number[];
   /** Number of glued edge pairs. */
   edgePairCount: number;
   warnings: PatternWarning[];
@@ -173,14 +188,19 @@ export interface PageSettings {
   marginMm: number;
   /** Gap between parts. */
   gapMm: number;
+  /**
+   * How parts may be turned: `none` keeps them as unfolded, `quarter` (the default) only turns them by 90 degrees (and by any angle
+   * only when a part would not fit otherwise), `free` turns each part to its smallest box.
+   */
+  rotation?: 'none' | 'quarter' | 'free';
 }
 
 export const PAGE_PRESETS = {
   a4: { pageWidthMm: 210, pageHeightMm: 297 },
   letter: { pageWidthMm: 215.9, pageHeightMm: 279.4 },
-  /** Nominal Cricut mats; the usable cutting area is smaller (to be verified on the machine). */
-  cricut12x12: { pageWidthMm: 304.8, pageHeightMm: 304.8 },
-  cricut12x24: { pageWidthMm: 304.8, pageHeightMm: 609.6 },
+  /** The usable cutting area of the Cricut mats (the same figures the Rhinestone studio uses); to be confirmed on the machine. */
+  cricut12x12: { pageWidthMm: 292.1, pageHeightMm: 292.1 },
+  cricut12x24: { pageWidthMm: 292.1, pageHeightMm: 596.9 },
 } as const;
 
 export interface Placement {

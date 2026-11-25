@@ -38,6 +38,24 @@ Spec: `docs/PAPERCRAFT_ENGINE_SPEC.md` · ADR 0037 · Tests: `tests/papercraftMe
 
 ---
 
+## Papercraft — Phase 2: the studio (Implemented 2026-11-25)
+
+ADR 0038 · Tests: `tests/papercraftStudio.test.ts` (state, computation, downloads, files, texts), the fold animation in `tests/papercraftUnfold.test.ts`.
+
+- [x] `/papercraft` opens with the test cube, in the shared navigation and on the home page; light/dark theme, English/Swedish, mm/inches
+- [x] Choose a built-in model, or import OBJ, STL, GLB or glTF (also by dropping a file); wrong, broken, empty or oversize files give a readable message
+- [x] Set the size by height, width, depth or longest side; the built size and the shortest edge are shown
+- [x] Three views of one pattern: 3D model (orbit, fold slider and play, parts coloured), Pattern (pan, zoom, numbers, mountain and valley colours), Pages (the sheets)
+- [x] Clicking an edge in the pattern cuts a fold or folds a cut and the pattern is rebuilt; a join that cannot be made is refused with a warning; "undo my edge changes" resets
+- [x] The 3D fold animation keeps every face rigid and lies flat exactly like the pattern at 0
+- [x] Paper (A4, Letter, Cricut mats), margin and spacing, tab width and angle, which side is printed, number height are settings
+- [x] Warnings from the engine are shown in plain language (by code, translated)
+- [x] Download a PDF, and a Cricut SVG (a zip for several pages); a model over 3 000 faces is refused with a message instead of freezing
+- [x] Works on a phone-sized screen (bottom bar with Model, Settings, PDF)
+- [ ] Checked by the owner on a real phone and with a real print and cut (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

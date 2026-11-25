@@ -50,17 +50,25 @@ interface Orientation {
   minY: number;
 }
 
-function orientations(part: Part): Orientation[] {
+function orientations(part: Part, mode: 'none' | 'quarter' | 'free'): Orientation[] {
   const out: Orientation[] = [];
   const seen = new Set<string>();
-  for (const box of candidateBoxes(part.hull)) {
-    for (const extra of [0, Math.PI / 2]) {
-      const angle = box.angle + extra;
-      const b = boundsOf(part.hull.map((p) => rotatePoint(p, angle)));
-      const key = `${(b.maxX - b.minX).toFixed(3)}x${(b.maxY - b.minY).toFixed(3)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ angle, w: b.maxX - b.minX, h: b.maxY - b.minY, minX: b.minX, minY: b.minY });
+  const add = (angle: number) => {
+    const b = boundsOf(part.hull.map((p) => rotatePoint(p, angle)));
+    const key = `${(b.maxX - b.minX).toFixed(3)}x${(b.maxY - b.minY).toFixed(3)}@${((angle % Math.PI) + Math.PI).toFixed(3)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ angle, w: b.maxX - b.minX, h: b.maxY - b.minY, minX: b.minX, minY: b.minY });
+  };
+  if (mode !== 'free') {
+    add(0);
+    if (mode === 'quarter') add(Math.PI / 2);
+  }
+  // Free turning: the first choices when asked for, the way out for a part that fits no other way.
+  if (mode !== 'none') {
+    for (const box of candidateBoxes(part.hull)) {
+      add(box.angle);
+      add(box.angle + Math.PI / 2);
     }
   }
   return out;
@@ -86,7 +94,7 @@ export function layoutPages(parts: readonly Part[], settings: PageSettings): Pag
   };
 
   const order = parts
-    .map((part) => ({ part, ori: orientations(part) }))
+    .map((part) => ({ part, ori: orientations(part, settings.rotation ?? 'quarter') }))
     .sort((a, b) => b.ori[0].w * b.ori[0].h - a.ori[0].w * a.ori[0].h || a.part.id - b.part.id);
 
   let tooLarge = 0;
