@@ -51,6 +51,8 @@ export type PapercraftAction =
   | { type: 'SET_NAME'; name: string }
   | { type: 'USE_BUILT_IN'; id: string }
   | { type: 'USE_FILE'; fileName: string; mesh: RawMesh }
+  /** A repaired version of the imported mesh (holes closed, turned inside out). Ignored for a built-in model. */
+  | { type: 'REPAIR_MESH'; mesh: RawMesh }
   | { type: 'SET_SIZE'; size: Partial<PapercraftState['size']> }
   | { type: 'SET_PAPER'; paper: Partial<PapercraftState['paper']> }
   | { type: 'SET_PATTERN'; pattern: Partial<PapercraftState['pattern']> }
@@ -91,6 +93,9 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         selectedPartId: null,
         fold: 1,
       };
+    case 'REPAIR_MESH':
+      if (state.source.kind !== 'file') return state;
+      return { ...state, source: { ...state.source, mesh: action.mesh }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
     case 'SET_SIZE': {
       const size = { ...state.size, ...action.size };
       if (!(size.mm > 0) || !Number.isFinite(size.mm)) return state;

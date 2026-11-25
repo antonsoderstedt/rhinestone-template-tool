@@ -3,6 +3,7 @@ export { buildSolid, planarCoordinates, type BuildOptions } from './mesh/build';
 export { parseObj, parseStl, readMeshFile, MeshReadError } from './mesh/readers';
 export * as shapes from './mesh/shapes';
 export { BUILT_IN_SHAPES } from './mesh/shapes';
+export { fillHoles, flipFaces, boundaryLoops, type FillHolesResult } from './mesh/repair';
 export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarget } from './mesh/inspect';
 export { unfold, type UnfoldOptions, type UnfoldResult } from './unfold/unfold';
 export { buildPattern, foldKindOfEdge } from './unfold/pattern';
@@ -10,7 +11,7 @@ export { buildFoldTree, foldPoses, faceTriangles, applyMat4, multiplyMat4, rotat
 export { layoutPages, transformPoint } from './layout/pack';
 export { renderPage, renderPages, type PageDrawing, type RenderOptions, type FilledShape, type TextRun } from './export/render';
 export { renderCover, type CoverContent } from './export/cover';
-export { projectModel, type PreviewPolygon } from './export/preview';
+export { projectModel, projectSolid, type PreviewPolygon } from './export/preview';
 export { assessBuild, type BuildAssessment, type Difficulty } from './unfold/assessment';
 export { textWidthMm, wrapText, toWinAnsi } from './export/helvetica';
 export { partHue, partRgb } from './export/colors';

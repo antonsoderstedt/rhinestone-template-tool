@@ -93,6 +93,8 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
   // Side angles to try, from the chosen one down to sharper ones (a tab in a narrow gap between faces needs sharper sides).
   const baseAngle = Math.min(89.9, Math.max(10, settings.tabAngleDeg));
   const tabAngles = [...new Set([baseAngle, 30, 20, 12].filter((a) => a <= baseAngle + 1e-9))].map((a) => Math.tan((a * Math.PI) / 180));
+  // The last resort: a triangle that comes to a point in the middle of the edge (0 stands for it below).
+  tabAngles.push(0);
   const tabsByFace = new Map<number, Tab[]>();
   let tabMissing = 0;
   let tabNarrowed = 0;
@@ -113,7 +115,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
     const o: Vec2 = [d[1], -d[0]];
     for (let w = settings.tabWidthMm; w >= settings.minTabWidthMm - 1e-9; w *= 0.75) {
       for (const tan of tabAngles) {
-        const inset = Math.min(w / tan, 0.4 * L);
+        const inset = tan === 0 ? 0.49 * L : Math.min(w / tan, 0.4 * L);
         const p1: Vec2 = [P[0] + o[0] * w + d[0] * inset, P[1] + o[1] * w + d[1] * inset];
         const q1: Vec2 = [Q[0] + o[0] * w - d[0] * inset, Q[1] + o[1] * w - d[1] * inset];
         const quad: Vec2[] = [P, Q, q1, p1];
@@ -130,44 +132,61 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
     return null;
   };
 
-  const rawParts = result.islands.map((island, pi) => {
-    // Tabs for the pairs whose first face is in this part (the second face may be in another part).
+  // Every glued pair, with the two places its tab could go.
+  interface Side {
+    face: number;
+    k: number;
+    island: number;
+  }
+  const pairs: { eid: number; number: number; sides: [Side, Side] }[] = [];
+  result.islands.forEach((island, pi) => {
     for (const f of island) {
-      const face = solid.faces[f];
-      face.edgeIds.forEach((eid, k) => {
+      solid.faces[f].edgeIds.forEach((eid, k) => {
         const number = pairNumber.get(eid);
         if (number === undefined) return;
         const edge = solid.edges[eid];
         const other = edge.faces[0] === f ? edge.faces[1] : edge.faces[0];
         // The pair is handled once, from its lower face.
         if (other < f) return;
-        const otherFace = solid.faces[other];
-        const otherK = otherFace.edgeIds.indexOf(eid);
-        const sides = [
-          { face: f, k, island: pi },
-          { face: other, k: otherK, island: result.islandOf[other] },
-        ].sort((a, b) => tabsInIsland[a.island] - tabsInIsland[b.island] || a.face - b.face);
-        let chosen: { side: (typeof sides)[number]; tab: { points: Vec2[]; width: number } } | null = null;
-        for (const side of sides) {
-          const tab = tryTab(side.face, side.k, side.island);
-          if (tab && (!chosen || tab.width > chosen.tab.width + 1e-9)) chosen = { side, tab };
-          if (tab && tab.width >= settings.tabWidthMm - 1e-9) break;
-        }
-        if (!chosen) {
-          tabMissing++;
-          return;
-        }
-        if (chosen.tab.width < settings.tabWidthMm - 1e-9) tabNarrowed++;
-        const [P, Q, q1, p1] = chosen.tab.points;
-        obstacles[chosen.side.island].push([P, Q, q1], [P, q1, p1]);
-        tabsInIsland[chosen.side.island]++;
-        const list = tabsByFace.get(chosen.side.face) ?? [];
-        list.push({ edgeNumber: number, edgeId: eid, faceId: chosen.side.face, points: chosen.tab.points, widthMm: chosen.tab.width });
-        tabsByFace.set(chosen.side.face, list);
+        pairs.push({
+          eid,
+          number,
+          sides: [
+            { face: f, k, island: pi },
+            { face: other, k: solid.faces[other].edgeIds.indexOf(eid), island: result.islandOf[other] },
+          ],
+        });
       });
     }
-    return island;
   });
+
+  // The tightest places first: an edge with little room gets it before the roomy ones fill it up. How much room an edge has is
+  // measured with the faces only, before any tab is placed (-1: no room at all).
+  const room = new Map<number, number>();
+  for (const pair of pairs) room.set(pair.eid, Math.max(...pair.sides.map((side) => tryTab(side.face, side.k, side.island)?.width ?? -1)));
+  pairs.sort((a, b) => room.get(a.eid)! - room.get(b.eid)! || a.number - b.number);
+
+  for (const pair of pairs) {
+    const sides = [...pair.sides].sort((a, b) => tabsInIsland[a.island] - tabsInIsland[b.island] || a.face - b.face);
+    let chosen: { side: Side; tab: { points: Vec2[]; width: number } } | null = null;
+    for (const side of sides) {
+      const tab = tryTab(side.face, side.k, side.island);
+      if (tab && (!chosen || tab.width > chosen.tab.width + 1e-9)) chosen = { side, tab };
+      if (tab && tab.width >= settings.tabWidthMm - 1e-9) break;
+    }
+    if (!chosen) {
+      tabMissing++;
+      continue;
+    }
+    if (chosen.tab.width < settings.tabWidthMm - 1e-9) tabNarrowed++;
+    const [P, Q, q1, p1] = chosen.tab.points;
+    obstacles[chosen.side.island].push([P, Q, q1], [P, q1, p1]);
+    tabsInIsland[chosen.side.island]++;
+    const list = tabsByFace.get(chosen.side.face) ?? [];
+    list.push({ edgeNumber: pair.number, edgeId: pair.eid, faceId: chosen.side.face, points: chosen.tab.points, widthMm: chosen.tab.width });
+    tabsByFace.set(chosen.side.face, list);
+  }
+  const rawParts = result.islands;
   if (tabMissing > 0) warnings.push({ code: 'tab-missing', count: tabMissing, message: `${tabMissing} edges have no room for a glue tab. Glue those edges edge to edge.` });
   if (tabNarrowed > 0) warnings.push({ code: 'tab-narrowed', count: tabNarrowed, message: `${tabNarrowed} glue tabs are narrower than asked to fit.` });
 

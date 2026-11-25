@@ -3,7 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Download, Pause, Play, SlidersHorizontal, Shapes } from 'lucide-react';
-import { reportSolid } from '@/src/lib/papercraft-engine';
+import { fillHoles, flipFaces, reportSolid } from '@/src/lib/papercraft-engine';
 import { useStudioTheme } from '../lib/studioTheme';
 import MobileStudioBar from '../components/MobileStudioBar';
 import { useT } from '../lib/i18n';
@@ -106,6 +106,23 @@ export default function PapercraftShell() {
     setToast(t('Cricut SVG made: {name}', { name: file.fileName }));
   }, [run, state.projectName, t]);
 
+  const closeHoles = useCallback(() => {
+    if (state.source.kind !== 'file') return;
+    const result = fillHoles(state.source.mesh);
+    if (result.filled === 0) {
+      setToast(t('No hole could be closed: they are too big or not a clean loop.'));
+      return;
+    }
+    dispatch({ type: 'REPAIR_MESH', mesh: result.mesh });
+    setToast(result.skipped > 0 ? t('Holes closed: {count}. Some openings are left: they are too big to be holes.', { count: result.filled }) : t('Holes closed: {count}.', { count: result.filled }));
+  }, [state.source, t]);
+
+  const turnInsideOut = useCallback(() => {
+    if (state.source.kind !== 'file') return;
+    dispatch({ type: 'REPAIR_MESH', mesh: flipFaces(state.source.mesh) });
+    setToast(t('Turned the model inside out.'));
+  }, [state.source, t]);
+
   const toggleEdge = useCallback((edgeId: number, joined: boolean) => dispatch({ type: 'TOGGLE_EDGE', edgeId, joined }), []);
   const selectPart = useCallback((partId: number | null) => dispatch({ type: 'SELECT_PART', partId }), []);
 
@@ -133,7 +150,7 @@ export default function PapercraftShell() {
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'model' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[272px] lg:border-t-0`}>
-          <ModelPanel state={state} dispatch={dispatch} report={report} importError={importError} onImportFile={importFile} />
+          <ModelPanel state={state} dispatch={dispatch} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} />
         </div>
 
         <main

@@ -13,6 +13,18 @@ export interface PreviewPolygon {
  * y points up.
  */
 export function projectModel(solid: Solid, pattern: Pattern, azimuthDeg = 35, elevationDeg = 28): PreviewPolygon[] {
+  const partOfFace = new Map<number, number>();
+  for (const part of pattern.parts) for (const f of part.faces) partOfFace.set(f.faceId, part.id);
+  return projectSolid(solid, (faceId) => partRgb(partOfFace.get(faceId) ?? 1, 70), azimuthDeg, elevationDeg);
+}
+
+/** The same picture for a solid that has not been unfolded (a small picture of a model in a list): `colourOf` gives each face's colour. */
+export function projectSolid(
+  solid: Solid,
+  colourOf: (faceId: number) => [number, number, number],
+  azimuthDeg = 35,
+  elevationDeg = 28,
+): PreviewPolygon[] {
   const az = (azimuthDeg * Math.PI) / 180;
   const el = (elevationDeg * Math.PI) / 180;
   // The direction from the model to the eye.
@@ -20,9 +32,6 @@ export function projectModel(solid: Solid, pattern: Pattern, azimuthDeg = 35, el
   const right = norm3(cross3([0, 0, 1], toEye));
   const up = cross3(toEye, right);
   const light = norm3([0.4, -0.5, 0.8]);
-
-  const partOfFace = new Map<number, number>();
-  for (const part of pattern.parts) for (const f of part.faces) partOfFace.set(f.faceId, part.id);
 
   const visible = solid.faces
     .filter((f) => dot3(f.normal, toEye) > 1e-9)
@@ -35,7 +44,7 @@ export function projectModel(solid: Solid, pattern: Pattern, azimuthDeg = 35, el
 
   return visible.map(({ f }) => {
     const shade = 0.55 + 0.45 * Math.max(0, dot3(f.normal, light));
-    const base = partRgb(partOfFace.get(f.id) ?? 1, 70);
+    const base = colourOf(f.id);
     return {
       points: f.vertices.map((v): Vec2 => {
         const p = solid.vertices[v];

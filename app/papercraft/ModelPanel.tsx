@@ -1,24 +1,30 @@
 'use client';
 
 import { useRef } from 'react';
-import { FileUp } from 'lucide-react';
-import type { SolidReport } from '@/src/lib/papercraft-engine';
+import { FileUp, FlipHorizontal2, PackageCheck } from 'lucide-react';
+import type { Solid, SolidReport } from '@/src/lib/papercraft-engine';
 import { formatLength, useUnit } from '../lib/units';
 import { useT } from '../lib/i18n';
 import { LengthField, SelectField, Section } from './fields';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
-import { BUILT_IN_MODELS } from './papercraftModels';
+import ModelThumb from './ModelThumb';
+import { BUILT_IN_MODELS, MODEL_GROUPS } from './papercraftModels';
+import { describeMeshWarning } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, SizeBy } from './papercraftState';
 
 interface ModelPanelProps {
   state: PapercraftState;
   dispatch: React.Dispatch<PapercraftAction>;
   report: SolidReport | null;
+  /** The cleaned model, for the check of an imported file. */
+  solid: Solid | null;
   importError: string | null;
   onImportFile: (file: File) => void;
+  onFillHoles: () => void;
+  onFlipFaces: () => void;
 }
 
-export default function ModelPanel({ state, dispatch, report, importError, onImportFile }: ModelPanelProps) {
+export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onFillHoles, onFlipFaces }: ModelPanelProps) {
   const t = useT();
   const unit = useUnit();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -31,23 +37,29 @@ export default function ModelPanel({ state, dispatch, report, importError, onImp
   return (
     <aside aria-label={t('Model')} className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
       <Section title={t('Choose a model')}>
-        <div className="grid grid-cols-2 gap-2">
-          {BUILT_IN_MODELS.map((model) => {
-            const active = state.source.kind === 'builtin' && state.source.id === model.id;
-            return (
-              <button
-                key={model.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => dispatch({ type: 'USE_BUILT_IN', id: model.id })}
-                title={t(model.description)}
-                className={`min-w-0 break-words rounded-lg border px-2.5 py-2 text-left text-sm font-medium transition ${active ? 'border-violet-400/70 bg-violet-500/20 text-[var(--studio-ink)]' : 'border-[var(--studio-border)] bg-[var(--studio-well)] text-[var(--studio-ink-secondary)] hover:border-[var(--studio-border-strong)] hover:bg-[var(--studio-surface-hover)]'}`}
-              >
-                {t(model.name)}
-              </button>
-            );
-          })}
-        </div>
+        {MODEL_GROUPS.map((group) => (
+          <div key={group.id}>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--studio-ink-subtle)]">{t(group.label)}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {BUILT_IN_MODELS.filter((m) => m.group === group.id).map((model) => {
+                const active = state.source.kind === 'builtin' && state.source.id === model.id;
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => dispatch({ type: 'USE_BUILT_IN', id: model.id })}
+                    title={t(model.description)}
+                    className={`flex min-w-0 flex-col items-center gap-1 rounded-lg border px-1.5 py-2 text-center text-xs font-medium transition ${active ? 'border-violet-400/70 bg-violet-500/20 text-[var(--studio-ink)]' : 'border-[var(--studio-border)] bg-[var(--studio-well)] text-[var(--studio-ink-secondary)] hover:border-[var(--studio-border-strong)] hover:bg-[var(--studio-surface-hover)]'}`}
+                  >
+                    <ModelThumb model={model} index={BUILT_IN_MODELS.indexOf(model)} />
+                    <span className="min-w-0 max-w-full break-words leading-tight">{t(model.name)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
         <input
           ref={fileRef}
           type="file"
@@ -78,6 +90,48 @@ export default function ModelPanel({ state, dispatch, report, importError, onImp
           </p>
         )}
       </Section>
+
+      {state.source.kind === 'file' && solid && (
+        <Section title={t('Check your model')}>
+          {(() => {
+            const problems = solid.warnings.filter((w) => w.code === 'open-edges' || w.code === 'non-orientable' || w.code === 'multiple-shells' || w.code === 'non-manifold-edges');
+            return problems.length === 0 ? (
+              <p className="flex items-center gap-2 text-xs text-[var(--studio-ink-secondary)]">
+                <PackageCheck className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+                {t('No problems found: the model is closed and in one piece.')}
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {problems.map((w) => (
+                  <li key={w.code} className="rounded-md border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-[var(--studio-ink)]">
+                    {describeMeshWarning(t, w).text}
+                    {w.code === 'open-edges' && (
+                      <button
+                        type="button"
+                        onClick={onFillHoles}
+                        className="mt-2 flex items-center gap-1.5 rounded-md bg-violet-600 px-2.5 py-1.5 font-medium text-white hover:bg-violet-500"
+                      >
+                        {t('Close the holes')}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+          <button
+            type="button"
+            onClick={onFlipFaces}
+            className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-2 text-left text-xs font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)]"
+          >
+            <FlipHorizontal2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>
+              {t('Turn the model inside out')}
+              <span className="block font-normal text-[var(--studio-ink-subtle)]">{t('Use this if mountain and valley folds come out the wrong way round.')}</span>
+            </span>
+          </button>
+        </Section>
+      )}
 
       <Section title={t('Size')}>
         <SelectField label={t('Set the size by')} value={state.size.by} options={sizeOptions} onChange={(by) => dispatch({ type: 'SET_SIZE', size: { by } })} />

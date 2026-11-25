@@ -46,10 +46,10 @@ joined part fits the limit in some rotation. Otherwise the edge stays cut. Joine
 ## Tabs, numbers and lines (`buildPattern`)
 
 - **Numbers.** Every cut edge with two faces is a pair and gets a number 1..N in part order (faces by id, edges in face order).
-- **Tab.** For a pair, the side in the part with fewer tabs so far is tried first (ties by face id), then the other. A tab on edge P-Q
+- **Tab.** The pairs are placed from the tightest to the roomiest (room measured per pair with the faces only, before any tab is placed). For a pair, the side in the part with fewer tabs so far is tried first (ties by face id), then the other. A tab on edge P-Q
   (outward normal to the right of P to Q) is the quadrilateral P, Q, Q + w*o - d*i, P + w*o + d*i where w is the width and i = min(w / tan(a),
   0.4 * |PQ|). Tried in order: width from `tabWidthMm` down by factors of 0.75 to `minTabWidthMm`; for each width the side angle from `tabAngleDeg`
-  then 30, 20 and 12 degrees. A tab is accepted when it overlaps no face triangle and no earlier tab of the part. The first full-width
+  then 30, 20 and 12 degrees, then a triangle that comes to a point in the middle of the edge. A tab is accepted when it overlaps no face triangle and no earlier tab of the part. The first full-width
   tab wins; otherwise the widest found on either side; if none, `tab-missing`. Narrowed tabs give `tab-narrowed`.
 - **Folds.** Each joined edge is a fold line: `flat` when the faces differ by less than 0.5 degrees; otherwise mountain or valley. Seen from
   the printed side a convex corner (ridge toward the viewer) is a mountain fold, a concave corner a valley fold; `printedSide: 'inside'`
@@ -93,6 +93,16 @@ owner cut or join an edge and to build the hinge tree.
   cover page (`TextRun`), in the built-in Helvetica and Helvetica-Bold with WinAnsi encoding; the two font objects are added only when
   some page has text.
 - **Numbers** are drawn with a seven-segment stroke font (`strokeText`): digits, `-`, `/`, `.`, `x`.
+
+## Built-in shapes and repair
+
+Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,
+sides)`: a ring of `sides` corners at every section of a curve in the x-z plane (x forward, z up), the ring standing across the curve with the sideways direction fixed
+as y; `top` and `bottom` stretch the top or bottom corner of a section (a fin; needs a multiple of 4 sides); both ends are a point (width and height 0) or a flat cap; four-sided
+rings of triangles where the corners are not flat. Named models: `vase`, `bottle`, `lantern`, `egg`, `rocket`, `house`, `heartBox`, `starBox`, `fish`, `swan`, `gem`, and the solids of ADR 0037.
+`fillHoles(mesh, maxLoopSize = 400)` cleans the mesh, follows each loop of open edges in the direction the faces run along it, and caps it with the loop reversed: one polygon when the
+loop is flat (deviation under 2 % of the square root of its area) and triangles around its centre otherwise; it returns the new mesh with the number of holes `filled` and `skipped`.
+`flipFaces(mesh)` reverses every face. `boundaryLoops(solid)` lists the loops. `projectSolid(solid, colourOf)` draws a solid without unfolding it (for the pictures in the model list).
 
 ## Cover page (`renderCover`, `projectModel`, `assessBuild`)
 

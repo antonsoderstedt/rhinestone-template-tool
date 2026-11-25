@@ -6,6 +6,8 @@ import { translate } from '../app/lib/i18n';
 import { BUILT_IN_MODELS } from '../app/papercraft/papercraftModels';
 import { initialPapercraftState, papercraftReducer, type PapercraftState } from '../app/papercraft/papercraftState';
 import { computePapercraft, MAX_FACES } from '../app/papercraft/papercraftCompute';
+import { BUILT_IN_MODELS as MODELS, MODEL_GROUPS } from '../app/papercraft/papercraftModels';
+import { describeSizeWarnings, MIN_COMFORTABLE_EDGE_MM } from '../app/papercraft/papercraftWarnings';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning } from '../app/papercraft/papercraftWarnings';
 import { buildCricutDownload, buildCricutSvgs, buildPdfDownload, exportBaseName } from '../app/papercraft/papercraftExport';
 import { buildCoverContent, coverPageSize, difficultyLabel, formatMinutes, paperPresetLabel } from '../app/papercraft/papercraftCover';
@@ -121,6 +123,28 @@ describe('papercraft studio computation', () => {
     const b = computePapercraft(start());
     if (!a.ok || !b.ok) throw new Error('no run');
     expect(JSON.stringify(a.run.layout)).toBe(JSON.stringify(b.run.layout));
+  });
+});
+
+describe('built-in models are good first models', () => {
+  it('has a group for every model and no empty group', () => {
+    const groups = new Set(MODEL_GROUPS.map((g) => g.id));
+    for (const m of MODELS) expect(groups.has(m.group), m.id).toBe(true);
+    for (const g of MODEL_GROUPS) expect(MODELS.some((m) => m.group === g.id), g.id).toBe(true);
+    expect(new Set(MODELS.map((m) => m.id)).size).toBe(MODELS.length);
+  });
+
+  it.each(MODELS.map((m) => [m.id, m] as const))('%s at its default size: a clean mesh, edges big enough to fold, most glue tabs fit, few enough faces', (_id, model) => {
+    const r = computePapercraft({ ...start(), source: { kind: 'builtin', id: model.id }, size: { by: 'largest', mm: model.defaultSizeMm } });
+    if (!r.ok) throw new Error('no run');
+    expect(r.run.solid.warnings).toEqual([]);
+    // A few edges of a curved model have no room for a tab (the studio says to glue them edge to edge); nothing else is wrong.
+    expect(r.run.pattern.warnings.filter((w) => w.code !== 'tab-missing' && w.code !== 'tab-narrowed')).toEqual([]);
+    const missing = r.run.pattern.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0;
+    expect(missing / Math.max(1, r.run.pattern.edgePairCount)).toBeLessThanOrEqual(0.4);
+    expect(describeSizeWarnings(t, r.run.solid, (mm) => `${mm} mm`)).toEqual([]);
+    expect(Math.min(...r.run.solid.edges.map((e) => e.length))).toBeGreaterThanOrEqual(MIN_COMFORTABLE_EDGE_MM);
+    expect(r.run.solid.faces.length).toBeLessThanOrEqual(100);
   });
 });
 
@@ -340,6 +364,52 @@ describe('cover page content', () => {
     expect(pages(withCover)).toBe(pages(without) + 1);
     expect(new TextDecoder('latin1').decode(withCover.data as Uint8Array)).toContain('/Helvetica');
     expect(new TextDecoder('latin1').decode(without.data as Uint8Array)).not.toContain('/Helvetica');
+  });
+});
+
+describe('size warning', () => {
+  it('warns when an edge is too small to fold and glue, in both languages, naming the edge', () => {
+    const r = computePapercraft({ ...start(), size: { by: 'largest', mm: 5 } });
+    if (!r.ok) throw new Error('no run');
+    const lines = describeSizeWarnings(t, r.run.solid, (mm) => `${mm.toFixed(1)} mm`);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].tone).toBe('warning');
+    expect(lines[0].text).toContain('5.0 mm');
+    expect(describeSizeWarnings(sv, r.run.solid, (mm) => `${mm.toFixed(1)} mm`)[0].text).toContain('Kortaste kanten är bara 5.0 mm');
+  });
+});
+
+describe('repairing an imported model', () => {
+  const cubeWithoutTop = () => {
+    const m = shapes.cube(1);
+    return { positions: m.positions, faces: m.faces.filter((_, i) => i !== 1) };
+  };
+
+  it('repairs only an imported model', () => {
+    const builtIn = start();
+    expect(papercraftReducer(builtIn, { type: 'REPAIR_MESH', mesh: shapes.cube(1) })).toBe(builtIn);
+    let s = papercraftReducer(start(), { type: 'USE_FILE', fileName: 'box.obj', mesh: cubeWithoutTop() });
+    s = papercraftReducer(s, { type: 'TOGGLE_EDGE', edgeId: 2, joined: true });
+    const fixed = papercraftReducer(s, { type: 'REPAIR_MESH', mesh: shapes.cube(1) });
+    expect(fixed.source.kind === 'file' && fixed.source.fileName).toBe('box.obj');
+    expect(fixed.edits).toEqual({ forceCut: [], forceJoin: [] });
+    expect(fixed.size).toEqual(s.size);
+  });
+
+  it('an imported box with a hole warns about it, closing the hole makes it a closed model', async () => {
+    const { fillHoles } = await import('../src/lib/papercraft-engine');
+    const open = computePapercraft({ ...start(), source: { kind: 'file', fileName: 'box.obj', mesh: cubeWithoutTop() }, size: { by: 'largest', mm: 60 } });
+    if (!open.ok) throw new Error('no run');
+    expect(open.run.solid.closed).toBe(false);
+    expect(open.run.solid.warnings.map((w) => w.code)).toContain('open-edges');
+    const repaired = papercraftReducer(
+      { ...start(), source: { kind: 'file', fileName: 'box.obj', mesh: cubeWithoutTop() }, size: { by: 'largest', mm: 60 } },
+      { type: 'REPAIR_MESH', mesh: fillHoles(cubeWithoutTop()).mesh },
+    );
+    const closed = computePapercraft(repaired);
+    if (!closed.ok) throw new Error('no run');
+    expect(closed.run.solid.closed).toBe(true);
+    expect(closed.run.solid.warnings).toEqual([]);
   });
 });
 
