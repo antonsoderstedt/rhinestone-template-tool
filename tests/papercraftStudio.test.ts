@@ -8,6 +8,7 @@ import { initialPapercraftState, papercraftReducer, type PapercraftState } from 
 import { computePapercraft, MAX_FACES } from '../app/papercraft/papercraftCompute';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning } from '../app/papercraft/papercraftWarnings';
 import { buildCricutDownload, buildCricutSvgs, buildPdfDownload, exportBaseName } from '../app/papercraft/papercraftExport';
+import { buildCoverContent, coverPageSize, difficultyLabel, formatMinutes, paperPresetLabel } from '../app/papercraft/papercraftCover';
 import { MAX_MODEL_FILE_BYTES, ModelFileError, object3dToRawMesh, readModelFile } from '../app/papercraft/papercraftFiles';
 
 const start = (): PapercraftState => initialPapercraftState();
@@ -276,6 +277,69 @@ describe('GLB files', () => {
       [1, -5, 0],
       [0, -5, 1],
     ]);
+  });
+});
+
+describe('cover page content', () => {
+  const run = (() => {
+    const r = computePapercraft(start());
+    if (!r.ok) throw new Error('no run');
+    return r.run;
+  })();
+
+  it('the cover is on by default and can be turned off', () => {
+    expect(start().cover).toBe(true);
+    expect(papercraftReducer(start(), { type: 'SET_COVER', cover: false }).cover).toBe(false);
+  });
+
+  it('is printed on A4, or on Letter when the pages are Letter, also for a cutting mat', () => {
+    expect(coverPageSize('a4')).toEqual({ widthMm: 210, heightMm: 297 });
+    expect(coverPageSize('letter')).toEqual({ widthMm: 215.9, heightMm: 279.4 });
+    expect(coverPageSize('cricut12x12')).toEqual({ widthMm: 210, heightMm: 297 });
+  });
+
+  it('tells size in mm and inches, the counts, the paper, the difficulty and the time (English)', () => {
+    const c = buildCoverContent(run, 'Test cube', 'a4', t);
+    const facts = Object.fromEntries(c.facts.map((f) => [f.label, f.value]));
+    expect(c.title).toBe('Test cube');
+    expect(facts['Finished size']).toBe('40.0 × 40.0 × 40.0 mm (1.6 × 1.6 × 1.6 in)');
+    expect(facts['Parts']).toBe('1');
+    expect(facts['Faces']).toBe('6');
+    expect(facts['Edges to glue']).toBe('7');
+    expect(facts['Pages']).toBe('1');
+    expect(facts['Paper']).toBe('A4 sheet, 160-250 g/m² cardstock');
+    expect(facts['Difficulty']).toBe('Easy'); // 7 glued edges and no edge under 15 mm
+    expect(facts['Time']).toMatch(/^about \d+ minutes$/);
+    expect(c.steps).toHaveLength(7);
+    expect(c.legend.map((l) => l.kind)).toEqual(['cut', 'mountain', 'valley', 'tab', 'number']);
+    expect(c.pageMapMore(3)).toBe('+3 more pages');
+  });
+
+  it('is in Swedish when the language is Swedish, and only with characters a PDF can show', () => {
+    const c = buildCoverContent(run, '', 'cricut12x12', sv);
+    expect(c.title).toBe('Namnlös modell');
+    expect(c.subtitle).toBe('En pappersmodell att skriva ut, klippa och vika');
+    expect(c.facts.find((f) => f.label === 'Papper')?.value).toBe('Cricut-matta 12 × 12 tum, kartong 160-250 g/m²');
+    const everything = [c.title, c.subtitle, c.legendTitle, c.pageMapTitle, c.pageMapMore(2), c.stepsTitle, c.footer ?? '', ...c.facts.flatMap((f) => [f.label, f.value]), ...c.legend.map((l) => l.label), ...c.steps].join(' ');
+    for (const ch of everything) expect(ch.charCodeAt(0), ch).toBeLessThanOrEqual(255);
+  });
+
+  it('formats minutes and names difficulties and papers in both languages', () => {
+    expect(formatMinutes(t, 25)).toBe('25 minutes');
+    expect(formatMinutes(t, 60)).toBe('1 h');
+    expect(formatMinutes(t, 130)).toBe('2 h 10 min');
+    expect(formatMinutes(sv, 130)).toBe('2 tim 10 min');
+    expect(difficultyLabel(sv, 'expert')).toBe('Expert');
+    expect(paperPresetLabel(t, 'letter')).toBe('US Letter sheet');
+  });
+
+  it('a PDF with the cover has one page more than one without', () => {
+    const withCover = buildPdfDownload(run, 'Cube', { content: buildCoverContent(run, 'Cube', 'a4', t), size: coverPageSize('a4') });
+    const without = buildPdfDownload(run, 'Cube');
+    const pages = (f: { data: string | Uint8Array }) => (new TextDecoder('latin1').decode(f.data as Uint8Array).match(/\/Type \/Page /g) ?? []).length;
+    expect(pages(withCover)).toBe(pages(without) + 1);
+    expect(new TextDecoder('latin1').decode(withCover.data as Uint8Array)).toContain('/Helvetica');
+    expect(new TextDecoder('latin1').decode(without.data as Uint8Array)).not.toContain('/Helvetica');
   });
 });
 

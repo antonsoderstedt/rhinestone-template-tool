@@ -19,6 +19,8 @@ export interface PapercraftState {
     numberHeightMm: number;
     partLabels: boolean;
   };
+  /** A cover page first in the PDF. */
+  cover: boolean;
   /** Edge ids the user has cut or joined by hand (ids belong to the current model). */
   edits: { forceCut: number[]; forceJoin: number[] };
   view: PapercraftView;
@@ -37,6 +39,7 @@ export function initialPapercraftState(): PapercraftState {
     size: { by: 'largest', mm: model.defaultSizeMm },
     paper: { preset: 'a4', marginMm: 10, gapMm: 3 },
     pattern: { tabWidthMm: 8, tabAngleDeg: 45, printedSide: 'outside', numberHeightMm: 3, partLabels: true },
+    cover: true,
     edits: { forceCut: [], forceJoin: [] },
     view: 'pattern',
     selectedPartId: null,
@@ -51,6 +54,7 @@ export type PapercraftAction =
   | { type: 'SET_SIZE'; size: Partial<PapercraftState['size']> }
   | { type: 'SET_PAPER'; paper: Partial<PapercraftState['paper']> }
   | { type: 'SET_PATTERN'; pattern: Partial<PapercraftState['pattern']> }
+  | { type: 'SET_COVER'; cover: boolean }
   /** Click on an edge: a folded edge is cut, a cut edge is folded. `joined` is what it is now. */
   | { type: 'TOGGLE_EDGE'; edgeId: number; joined: boolean }
   | { type: 'RESET_EDITS' }
@@ -96,6 +100,8 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
       return { ...state, paper: { ...state.paper, ...action.paper }, selectedPartId: null };
     case 'SET_PATTERN':
       return { ...state, pattern: { ...state.pattern, ...action.pattern }, selectedPartId: null };
+    case 'SET_COVER':
+      return { ...state, cover: action.cover };
     case 'TOGGLE_EDGE': {
       const { forceCut, forceJoin } = state.edits;
       const edits = action.joined

@@ -22,7 +22,7 @@ records the engine decisions; the algorithm is in `docs/PAPERCRAFT_ENGINE_SPEC.m
 - **Tabs are chosen, not drawn blindly.** A tab is accepted only if it does not overlap any face or tab of its part; width is reduced,
   then side angles sharpened, then the other side of the pair tried. An edge with no room is reported, not hidden.
 - **Exact overlap tests with a touching tolerance** (0.1 µm): faces that only touch along an edge or at a corner are not overlapping.
-- **Output: PDF (vector, lines only, no fonts, no dates) and SVG in mm.** Numbers are drawn with a built-in stroke font (lines), so
+- **Output: PDF (vector, no embedded fonts, no dates; the cover page's text uses the built-in Helvetica, ADR 0039) and SVG in mm.** Numbers are drawn with a built-in stroke font (lines), so
   Cricut Design Space and printers need no font. The SVG has `cut`, `score` and `numbers` groups in three colours for Cricut, and dashed
   mountain/valley groups for print. No raster, no `<use>`, no nested `<svg>`, no opacity.
 - **Models**: OBJ and STL are read in the engine; GLB is read in the app with three.js and handed over as vertices and faces. Built-in

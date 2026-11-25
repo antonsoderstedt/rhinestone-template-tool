@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { renderPages, type PageDrawing, type PapercraftResult, type Vec2 } from '@/src/lib/papercraft-engine';
+import { renderCover, renderPages, type CoverContent, type PageDrawing, type PapercraftResult, type Vec2 } from '@/src/lib/papercraft-engine';
 import { formatSize, useUnit } from '../lib/units';
 import { useT } from '../lib/i18n';
 
@@ -17,6 +17,15 @@ function PageSheet({ drawing }: { drawing: PageDrawing }) {
       className="h-auto w-full rounded-sm bg-white shadow-lg ring-1 ring-black/10"
     >
       <g transform="scale(1,-1)" fill="none" strokeLinecap="round" strokeLinejoin="round" stroke="#000">
+        {drawing.fills.map((f, i) => (
+          <path
+            key={`fill${i}`}
+            d={pathOf(f.points, true)}
+            fill={`rgb(${f.rgb.map((c) => Math.round(c * 255)).join(',')})`}
+            stroke={f.strokeRgb ? `rgb(${f.strokeRgb.map((c) => Math.round(c * 255)).join(',')})` : 'none'}
+            strokeWidth={f.strokeMm ?? 0}
+          />
+        ))}
         {drawing.cut.map((c, i) => (
           <path key={`c${i}`} d={pathOf(c.points, c.closed)} strokeWidth={0.25} />
         ))}
@@ -36,15 +45,31 @@ function PageSheet({ drawing }: { drawing: PageDrawing }) {
           <path key={`t${i}`} d={pathOf(line, false)} strokeWidth={0.2} />
         ))}
       </g>
+      {/* Text is set the right way up, outside the flipped group (the view box runs from -height to 0). */}
+      {drawing.texts.map((r, i) => (
+        <text
+          key={`x${i}`}
+          x={r.x}
+          y={-r.y}
+          fontSize={r.sizeMm}
+          fontWeight={r.bold ? 700 : 400}
+          textAnchor={r.align === 'middle' ? 'middle' : 'start'}
+          fontFamily="Helvetica, Arial, sans-serif"
+          fill={r.rgb ? `rgb(${r.rgb.map((c) => Math.round(c * 255)).join(',')})` : '#000'}
+        >
+          {r.text}
+        </text>
+      ))}
     </svg>
   );
 }
 
 /** The sheets as they will be printed or cut: every part placed on a page. */
-export default function PagesView({ run }: { run: PapercraftResult }) {
+export default function PagesView({ run, cover }: { run: PapercraftResult; cover: { content: CoverContent; size: { widthMm: number; heightMm: number } } | null }) {
   const t = useT();
   const unit = useUnit();
   const drawings = useMemo(() => renderPages(run.layout.pages, run.pattern.parts, { pageNumbers: true }), [run]);
+  const coverDrawing = useMemo(() => (cover ? renderCover(cover.content, run.solid, run.pattern, run.layout, cover.size) : null), [cover, run]);
   return (
     <div className="h-full overflow-y-auto bg-[var(--studio-bg)] p-4">
       <p className="mb-4 text-sm text-[var(--studio-ink-secondary)]">
@@ -54,6 +79,12 @@ export default function PagesView({ run }: { run: PapercraftResult }) {
         })}
       </p>
       <div className="mx-auto grid max-w-[1400px] gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {coverDrawing && (
+          <figure className="min-w-0 sm:col-span-2 sm:row-span-2">
+            <PageSheet drawing={coverDrawing} />
+            <figcaption className="mt-2 text-center text-xs text-[var(--studio-ink-muted)]">{t('Cover page (PDF only)')}</figcaption>
+          </figure>
+        )}
         {drawings.map((d, i) => (
           <figure key={i} className="min-w-0">
             <PageSheet drawing={d} />
