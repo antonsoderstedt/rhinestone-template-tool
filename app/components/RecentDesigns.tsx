@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Gem, SwatchBook } from 'lucide-react';
+import { ArrowRight, Box, Gem, SwatchBook } from 'lucide-react';
 import { LocalStorageTemplateLibraryRepository } from '@/src/lib/rhinestone-engine/index';
 import { getDesignArchived, readWorkspaceVault } from '../lib/workspaceVault';
 import { buildRecentDesigns, type RecentDesign } from '../lib/recentDesigns';
@@ -25,7 +25,7 @@ export default function RecentDesigns() {
           .filter((entry) => getDesignArchived(vault, `rhinestone:${entry.templateId}`))
           .map((entry) => `rhinestone:${entry.templateId}`),
       );
-      const next = buildRecentDesigns({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, archivedKeys });
+      const next = buildRecentDesigns({ rhinestoneDesigns: record.userTemplates, htvDesigns: vault.htvDesigns, papercraftDesigns: vault.papercraftDesigns, archivedKeys });
       if (!cancelled) {
         setDesigns(next);
         setNow(new Date());
@@ -52,7 +52,7 @@ export default function RecentDesigns() {
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {designs.map((design) => {
-          const StudioIcon = design.studio === 'rhinestone' ? Gem : SwatchBook;
+          const StudioIcon = design.studio === 'rhinestone' ? Gem : design.studio === 'papercraft' ? Box : SwatchBook;
           return (
             <li key={design.key}>
               <Link

@@ -1,22 +1,40 @@
 'use client';
 
-import { Download, FileText, RotateCcw, Scissors } from 'lucide-react';
+import Link from 'next/link';
+import { Download, FileText, FolderHeart, History, Link2, RotateCcw, Save, Scissors } from 'lucide-react';
 import type { PapercraftResult } from '@/src/lib/papercraft-engine';
 import { useT } from '../lib/i18n';
 import { CheckField, LengthField, NumberField, Section, SelectField } from './fields';
+import { formatRelativeTime } from '../lib/relativeTime';
 import { formatLength, useUnit } from '../lib/units';
+import type { PapercraftVersion } from './papercraftVersions';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning, describeSizeWarnings, type WarningLine } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, PaperPreset } from './papercraftState';
+
+export interface SaveInfo {
+  /** The saved design this one is, if it has been saved. */
+  activeId: string | null;
+  /** There are changes that are not saved. */
+  dirty: boolean;
+  /** When the saved copy was made. */
+  savedAt: string | null;
+  versions: PapercraftVersion[];
+  canSave: boolean;
+}
 
 interface SettingsPanelProps {
   state: PapercraftState;
   dispatch: React.Dispatch<PapercraftAction>;
   run: PapercraftResult | null;
+  save: SaveInfo;
+  onSave: () => void;
+  onShare: () => void;
+  onRestoreVersion: (version: PapercraftVersion) => void;
   onExportPdf: () => void;
   onExportCricut: () => void;
 }
 
-export default function SettingsPanel({ state, dispatch, run, onExportPdf, onExportCricut }: SettingsPanelProps) {
+export default function SettingsPanel({ state, dispatch, run, save, onSave, onShare, onRestoreVersion, onExportPdf, onExportCricut }: SettingsPanelProps) {
   const t = useT();
   const unit = useUnit();
   const presetOptions: { value: PaperPreset; label: string }[] = [
@@ -38,6 +56,56 @@ export default function SettingsPanel({ state, dispatch, run, onExportPdf, onExp
 
   return (
     <aside aria-label={t('Settings')} className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
+      <Section title={t('Save')}>
+        <p className="text-xs text-[var(--studio-ink-secondary)]" role="status">
+          {!save.activeId
+            ? t('Not saved yet.')
+            : save.dirty
+              ? t('Changes since the last save.')
+              : t('Saved to My Designs. Last save: {time}.', { time: save.savedAt ? formatRelativeTime(save.savedAt, new Date()) : '' })}
+        </p>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!save.canSave}
+          className="flex w-full items-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Save className="h-4 w-4" aria-hidden="true" />
+          {t('Save to My Designs')}
+        </button>
+        {!save.canSave && <p className="text-xs text-[var(--studio-ink-subtle)]">{t('This model is too big to save in the browser. Keep the model file.')}</p>}
+        <button
+          type="button"
+          onClick={onShare}
+          className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)]"
+        >
+          <Link2 className="h-4 w-4" aria-hidden="true" />
+          {t('Copy a link to this model')}
+        </button>
+        <Link href="/designs" className="flex items-center gap-2 text-xs font-medium text-violet-300 underline-offset-2 hover:underline">
+          <FolderHeart className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('All my designs')}
+        </Link>
+        {save.versions.length > 0 && (
+          <div>
+            <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--studio-ink-subtle)]">
+              <History className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('Earlier versions')}
+            </h3>
+            <ul className="space-y-1.5">
+              {save.versions.map((v) => (
+                <li key={v.savedAt} className="flex items-center justify-between gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-1.5 text-xs text-[var(--studio-ink-secondary)]">
+                  <span className="min-w-0 truncate">{formatRelativeTime(v.savedAt, new Date())}</span>
+                  <button type="button" onClick={() => onRestoreVersion(v)} className="shrink-0 rounded px-2 py-1 font-medium text-violet-300 hover:bg-[var(--studio-hover-overlay)]">
+                    {t('Open this version')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Section>
+
       <Section title={t('Result')}>
         {stats && run ? (
           <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-sm text-[var(--studio-ink-secondary)]">

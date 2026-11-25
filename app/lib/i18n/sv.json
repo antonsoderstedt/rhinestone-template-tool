@@ -1323,5 +1323,21 @@
   "Use this if mountain and valley folds come out the wrong way round.": "Använd det här om berg- och dalvikningarna blir åt fel håll.",
   "Vase": "Vas",
   "Holes closed: {count}.": "Hål täckta: {count}.",
-  "Holes closed: {count}. Some openings are left: they are too big to be holes.": "Hål täckta: {count}. Några öppningar finns kvar: de är för stora för att vara hål."
+  "Holes closed: {count}. Some openings are left: they are too big to be holes.": "Hål täckta: {count}. Några öppningar finns kvar: de är för stora för att vara hål.",
+  "Changes since the last save.": "Ändringar sedan senaste sparningen.",
+  "Copy a link to this model": "Kopiera en länk till den här modellen",
+  "Copy this link:": "Kopiera den här länken:",
+  "Could not save: the browser has no room left. Delete a saved design or a file in the Library, then try again.": "Kunde inte spara: webbläsaren har inget utrymme kvar. Ta bort en sparad design eller en fil i biblioteket och försök igen.",
+  "Link copied. Anyone who opens it gets their own copy of this model.": "Länken är kopierad. Den som öppnar den får en egen kopia av modellen.",
+  "Not saved yet.": "Inte sparad än.",
+  "Open this version": "Öppna den här versionen",
+  "Opened the earlier version. Press Save to keep it.": "Öppnade den tidigare versionen. Tryck Spara för att behålla den.",
+  "Opened the model from the link. Save it to keep it.": "Öppnade modellen från länken. Spara den för att behålla den.",
+  "Papercraft": "Papercraft",
+  "Press Save in the Rhinestone, HTV or Papercraft studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed.": "Tryck Spara i Rhinestone-, HTV- eller Papercraft-studion för att behålla en design i den här webbläsaren. Den dyker upp här. Autospar skyddar bara din pågående session, så den visas inte.",
+  "That link could not be opened.": "Länken kunde inte öppnas.",
+  "That saved model was not found. It may have been deleted.": "Den sparade modellen hittades inte. Den kan ha tagits bort.",
+  "This model is too big for a link. Save it instead: it follows you to your other devices.": "Den här modellen är för stor för en länk. Spara den i stället: den följer med till dina andra enheter.",
+  "This model is too big to save in the browser. Keep the model file.": "Den här modellen är för stor för att sparas i webbläsaren. Behåll modellfilen.",
+  "Saved to My Designs. Last save: {time}.": "Sparad i Mina designer. Senaste sparning: {time}."
 }

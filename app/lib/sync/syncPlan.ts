@@ -9,7 +9,7 @@
  * The newer `updatedAt` wins. A deletion wins over an older edit, an edit made after a deletion wins over the deletion.
  */
 
-export type SyncKind = 'template' | 'asset' | 'htv' | 'calibration' | 'settings' | 'fontpref' | 'designpref' | 'font';
+export type SyncKind = 'template' | 'asset' | 'htv' | 'papercraft' | 'calibration' | 'settings' | 'fontpref' | 'designpref' | 'font';
 
 export interface ItemRef {
   kind: SyncKind;
@@ -30,7 +30,7 @@ export type SyncAction =
 export const itemKey = (kind: string, id: string) => `${kind}:${id}`;
 
 /** The kinds this build knows how to read and write. Anything else on the server or in the saved state belongs to another version. */
-export const KNOWN_KINDS: readonly SyncKind[] = ['template', 'asset', 'htv', 'calibration', 'settings', 'fontpref', 'designpref', 'font'];
+export const KNOWN_KINDS: readonly SyncKind[] = ['template', 'asset', 'htv', 'papercraft', 'calibration', 'settings', 'fontpref', 'designpref', 'font'];
 export const isKnownKind = (kind: string): kind is SyncKind => (KNOWN_KINDS as readonly string[]).includes(kind);
 
 /**

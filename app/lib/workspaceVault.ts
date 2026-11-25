@@ -4,6 +4,9 @@ import { writeStorageItem } from './storageQuota';
 import { normalizeGarmentType } from '../components/garmentPreview/garmentCatalog';
 import { DEFAULT_PREVIEW_TEXT } from './fontLaunch';
 import type { HtvHistoryEntry, HtvState } from '../htv/HtvState';
+import { findBuiltInModel } from '../papercraft/papercraftModels';
+import { deserializePapercraft, serializePapercraft, type SerializedPapercraft } from '../papercraft/papercraftSnapshot';
+import type { PapercraftState } from '../papercraft/papercraftState';
 import {
   DEFAULT_WORKSPACE_SETTINGS,
   sanitizeWorkspaceSettings,
@@ -103,6 +106,21 @@ export interface HtvDesignEntry {
   snapshot: SerializedHtvState;
 }
 
+export interface PapercraftDesignEntry {
+  designId: string;
+  name: string;
+  tags: string[];
+  favorite: boolean;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  /** What the model is: the built-in model's name or the imported file's name. */
+  sourceLabel: string;
+  /** The size the model is built at, as text such as "100 mm (longest side)". */
+  sizeLabel: string;
+  snapshot: SerializedPapercraft;
+}
+
 export interface CalibrationProfileOverride {
   stoneSize: string;
   holeDiameterMm: number;
@@ -125,6 +143,8 @@ export interface WorkspaceVault {
   uploadedFonts: UploadedWorkspaceFont[];
   fontPreferences: FontPreference[];
   htvDesigns: HtvDesignEntry[];
+  /** Saved Papercraft models (missing in a vault written by an older version). */
+  papercraftDesigns: PapercraftDesignEntry[];
   designPreferences: DesignPreference[];
   settings: WorkspaceSettings;
   calibrationProfiles: CalibrationProfile[];
@@ -136,6 +156,7 @@ export const EMPTY_WORKSPACE_VAULT: WorkspaceVault = {
   uploadedFonts: [],
   fontPreferences: [],
   htvDesigns: [],
+  papercraftDesigns: [],
   designPreferences: [],
   settings: { ...DEFAULT_WORKSPACE_SETTINGS },
   calibrationProfiles: [],
@@ -149,6 +170,13 @@ function getStorage(): Storage | null {
     && typeof candidate.setItem === 'function'
     ? candidate as Storage
     : null;
+}
+
+/** A saved Papercraft model that can be opened: the right shape, and a design the studio can read. */
+export function isPapercraftEntry(value: unknown): value is PapercraftDesignEntry {
+  if (typeof value !== 'object' || value === null) return false;
+  const e = value as Partial<PapercraftDesignEntry>;
+  return typeof e.designId === 'string' && e.designId.length > 0 && typeof e.name === 'string' && typeof e.updatedAt === 'string' && typeof e.createdAt === 'string' && deserializePapercraft(e.snapshot) !== null;
 }
 
 function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): WorkspaceVault {
@@ -208,6 +236,7 @@ function normalizeVault(raw: Partial<WorkspaceVault> | null | undefined): Worksp
     uploadedFonts,
     fontPreferences: Array.isArray(raw?.fontPreferences) ? raw.fontPreferences : [],
     htvDesigns: Array.isArray(raw?.htvDesigns) ? raw.htvDesigns : [],
+    papercraftDesigns: Array.isArray(raw?.papercraftDesigns) ? raw.papercraftDesigns.filter(isPapercraftEntry) : [],
     designPreferences: Array.isArray(raw?.designPreferences) ? raw.designPreferences : [],
     settings: sanitizeWorkspaceSettings(raw?.settings),
     calibrationProfiles,
@@ -408,6 +437,29 @@ export function buildHtvDesignEntry(state: HtvState, existing?: HtvDesignEntry |
     garmentLabel: `${state.garment.type} · ${state.garment.size} · ${state.garment.activePlacementZones.length} placement${state.garment.activePlacementZones.length === 1 ? '' : 's'}`,
     snapshot: serializeHtvState(state),
   };
+}
+
+const SIZE_BY_LABEL = { largest: 'longest side', height: 'height', width: 'width', depth: 'depth' } as const;
+
+export function buildPapercraftDesignEntry(state: PapercraftState, existing?: PapercraftDesignEntry | null): PapercraftDesignEntry {
+  const now = new Date().toISOString();
+  const builtIn = state.source.kind === 'builtin' ? findBuiltInModel(state.source.id) : null;
+  return {
+    designId: existing?.designId ?? makeWorkspaceId('papercraft-design'),
+    name: state.projectName.trim() || existing?.name || 'Untitled model',
+    tags: existing?.tags ?? [],
+    favorite: existing?.favorite ?? false,
+    archived: existing?.archived ?? false,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    sourceLabel: builtIn ? builtIn.name : state.source.kind === 'file' ? state.source.fileName : 'Model',
+    sizeLabel: `${Math.round(state.size.mm * 10) / 10} mm (${SIZE_BY_LABEL[state.size.by]})`,
+    snapshot: serializePapercraft(state),
+  };
+}
+
+export function findPapercraftDesignById(designId: string): PapercraftDesignEntry | null {
+  return readWorkspaceVault().papercraftDesigns.find((design) => design.designId === designId) ?? null;
 }
 
 export function findAssetById(assetId: string): WorkspaceAsset | null {

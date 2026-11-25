@@ -85,6 +85,22 @@ ADR 0040 · Tests: `tests/papercraftMesh.test.ts` ("more built-in shapes", "repa
 
 ---
 
+## Papercraft — Phase 5: save, share and sync (Implemented 2026-11-26)
+
+ADR 0041 · Tests: `tests/papercraftSave.test.ts` (snapshot, vault, opening, draft, versions, share link, sync, backup, My Designs and the home page).
+
+- [x] "Save to My Designs" keeps the model, size, paper, tab settings, hand edits, cover choice and name; a dot and a line say there are unsaved changes; choosing another model starts a new design instead of overwriting
+- [x] Saved models are listed in My Designs (filter, a picture of the model, rename, favourite, archive, delete with undo, open) and under "Pick up where you left off" on the start page
+- [x] `/papercraft?designId=` opens a saved design; a design that is gone opens the test cube and says so; the work in progress comes back after a reload (a draft, not synced)
+- [x] The version a save replaces is kept (five per design) and can be opened again as unsaved changes
+- [x] A link carries a model in the part after `#` (nothing uploaded) and opens as a new unsaved copy; a damaged link or one from another tool gives a readable message; a link that would be too long is refused
+- [x] Saved models are a sync kind: the app and the Worker know `papercraft`; a design from another device is accepted only if it can be opened (unknown model, damaged mesh and wrong id are refused)
+- [x] The backup file holds saved models (older backups still read; damaged entries are skipped and counted) and a restore adds, updates or keeps the newer copy
+- [x] A browser with no room left says so when saving
+- [ ] Opened on a real second device and a phone (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, FileText, Layers, Scissors, Shapes } from 'lucide-react';
+import { Box, FileText, Layers, Save, Scissors, Shapes } from 'lucide-react';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
 import { useT } from '../lib/i18n';
@@ -10,6 +10,10 @@ interface PapercraftTopbarProps {
   projectName: string;
   view: PapercraftView;
   canExport: boolean;
+  canSave: boolean;
+  /** There are changes that are not saved. */
+  dirty: boolean;
+  onSave: () => void;
   dispatch: React.Dispatch<PapercraftAction>;
   onExportPdf: () => void;
   onExportCricut: () => void;
@@ -17,7 +21,7 @@ interface PapercraftTopbarProps {
   onToggleTheme: () => void;
 }
 
-export default function PapercraftTopbar({ projectName, view, canExport, dispatch, onExportPdf, onExportCricut, theme, onToggleTheme }: PapercraftTopbarProps) {
+export default function PapercraftTopbar({ projectName, view, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, theme, onToggleTheme }: PapercraftTopbarProps) {
   const t = useT();
   const views: { id: PapercraftView; label: string; icon: typeof Box }[] = [
     { id: 'model', label: t('3D model'), icon: Box },
@@ -57,6 +61,16 @@ export default function PapercraftTopbar({ projectName, view, canExport, dispatc
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!canSave}
+            className="hidden items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-[var(--studio-surface-hover)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
+          >
+            <Save className="h-4 w-4" aria-hidden="true" />
+            {t('Save')}
+            {dirty && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-amber-400" />}
+          </button>
           <button
             type="button"
             onClick={onExportPdf}

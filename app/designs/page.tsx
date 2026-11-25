@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Archive, FolderHeart, Gem, Pencil, Search, Star, SwatchBook, Trash2 } from 'lucide-react';
+import { Archive, Box, FolderHeart, Gem, Pencil, Search, Star, SwatchBook, Trash2 } from 'lucide-react';
 import { LocalStorageTemplateLibraryRepository, type TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
 import {
   type DesignPreference,
   type HtvDesignEntry,
+  type PapercraftDesignEntry,
   type WorkspaceVault,
   EMPTY_WORKSPACE_VAULT,
   getDesignArchived,
@@ -34,12 +35,13 @@ import {
 } from '../lib/workspaceRecovery';
 import { readActiveCalibrationProfileId } from '../lib/workspaceVault';
 
+import { savedDesignThumbnail } from '../papercraft/papercraftThumbnail';
 import { useT } from '../lib/i18n';
-type StudioFilter = 'all' | 'rhinestone' | 'htv';
+type StudioFilter = 'all' | 'rhinestone' | 'htv' | 'papercraft';
 type SortMode = 'recent' | 'name' | 'favorites';
 
 interface RenameTarget {
-  studio: 'rhinestone' | 'htv';
+  studio: 'rhinestone' | 'htv' | 'papercraft';
   id: string;
   name: string;
 }
@@ -69,7 +71,7 @@ export default function DesignsPage() {
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [now, setNow] = useState<Date | null>(null);
 
-  const savedCount = rhinestoneDesigns.length + vault.htvDesigns.length;
+  const savedCount = rhinestoneDesigns.length + vault.htvDesigns.length + vault.papercraftDesigns.length;
   const calibrationGate = useMemo(
     () => getCalibrationGateSummary(vault, activeProfileId),
     [activeProfileId, vault],
@@ -104,6 +106,17 @@ export default function DesignsPage() {
       ...vault.htvDesigns.map((design) => ({
         id: design.designId,
         studio: 'htv' as const,
+        name: design.name,
+        tags: design.tags,
+        favorite: design.favorite,
+        archived: design.archived,
+        updatedAt: design.updatedAt,
+        createdAt: design.createdAt,
+        meta: design,
+      })),
+      ...vault.papercraftDesigns.map((design) => ({
+        id: design.designId,
+        studio: 'papercraft' as const,
         name: design.name,
         tags: design.tags,
         favorite: design.favorite,
@@ -148,6 +161,8 @@ export default function DesignsPage() {
       await repository.rename(target.id, nextName);
       const record = await repository.list();
       setRhinestoneDesigns(record.userTemplates);
+    } else if (target.studio === 'papercraft') {
+      updatePapercraftDesign(target.id, (current) => ({ ...current, name: nextName, snapshot: { ...current.snapshot, projectName: nextName }, updatedAt: new Date().toISOString() }));
     } else {
       updateHtvDesign(target.id, (current) => ({ ...current, name: nextName, updatedAt: new Date().toISOString() }));
     }
@@ -188,6 +203,23 @@ export default function DesignsPage() {
     });
   };
 
+  const deletePapercraftDesign = (entry: PapercraftDesignEntry) => {
+    persistVault({ ...vault, papercraftDesigns: vault.papercraftDesigns.filter((item) => item.designId !== entry.designId) }, setVault);
+    showUndo(`Deleted “${entry.name}”.`, () => {
+      // Restore from the latest stored vault so changes made meanwhile are kept.
+      const latest = readWorkspaceVault();
+      if (latest.papercraftDesigns.some((item) => item.designId === entry.designId)) return;
+      persistVault({ ...latest, papercraftDesigns: [entry, ...latest.papercraftDesigns] }, setVault);
+    });
+  };
+
+  const updatePapercraftDesign = (designId: string, updater: (design: PapercraftDesignEntry) => PapercraftDesignEntry) => {
+    persistVault({
+      ...vault,
+      papercraftDesigns: vault.papercraftDesigns.map((design) => (design.designId === designId ? updater(design) : design)),
+    }, setVault);
+  };
+
   const updateHtvDesign = (designId: string, updater: (design: HtvDesignEntry) => HtvDesignEntry) => {
     persistVault({
       ...vault,
@@ -222,6 +254,13 @@ export default function DesignsPage() {
               tone: 'neutral',
             },
             {
+              label: 'Papercraft studio',
+              description: 'Open a 3D paper model, or start one from a built-in shape or your own file.',
+              href: '/papercraft',
+              icon: Box,
+              tone: 'neutral',
+            },
+            {
               label: 'Production settings',
               description: 'Tune material defaults and quality checks before export.',
               href: '/settings',
@@ -249,10 +288,11 @@ export default function DesignsPage() {
           tone="neutral"
         />
 
-        <section className="grid gap-4 md:grid-cols-4">
-          <WorkspaceMetricCard label={t('Total saved')} value={rhinestoneDesigns.length + vault.htvDesigns.length} />
+        <section className="grid gap-4 md:grid-cols-5">
+          <WorkspaceMetricCard label={t('Total saved')} value={savedCount} />
           <WorkspaceMetricCard label={t('Rhinestone')} value={rhinestoneDesigns.length} />
           <WorkspaceMetricCard label={t('HTV')} value={vault.htvDesigns.length} />
+          <WorkspaceMetricCard label={t('Papercraft')} value={vault.papercraftDesigns.length} />
           <WorkspaceMetricCard label={t('Calibration')} value={calibrationGate.approvedCalibrationCount > 0 ? `${calibrationGate.approvedCalibrationCount} approved` : 'Pending'} />
         </section>
 
@@ -278,6 +318,7 @@ export default function DesignsPage() {
               <option value="all">{t('All studios')}</option>
               <option value="rhinestone">{t('Rhinestone')}</option>
               <option value="htv">{t('HTV')}</option>
+              <option value="papercraft">{t('Papercraft')}</option>
             </select>
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className={workspaceSelectClassName} aria-label={t('Filter by status')}>
               <option value="active">{t('Active')}</option>
@@ -298,7 +339,7 @@ export default function DesignsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">
-                    {design.studio === 'rhinestone' ? <Gem className="h-3.5 w-3.5" /> : <SwatchBook className="h-3.5 w-3.5" />}
+                    {design.studio === 'rhinestone' ? <Gem className="h-3.5 w-3.5" /> : design.studio === 'papercraft' ? <Box className="h-3.5 w-3.5" /> : <SwatchBook className="h-3.5 w-3.5" />}
                     {design.studio}
                   </div>
                   <h2 className="mt-4 text-2xl font-semibold text-ink">{design.name}</h2>
@@ -307,6 +348,8 @@ export default function DesignsPage() {
                   onClick={() => {
                     if (design.studio === 'rhinestone') {
                       void favoriteRhinestoneDesign(design.id, !design.favorite);
+                    } else if (design.studio === 'papercraft') {
+                      updatePapercraftDesign(design.id, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }));
                     } else {
                       updateHtvDesign(design.id, (current) => ({ ...current, favorite: !current.favorite, updatedAt: new Date().toISOString() }));
                     }
@@ -327,6 +370,13 @@ export default function DesignsPage() {
                     alt={`Preview of ${design.name}`}
                     className="h-36 w-full bg-white object-contain p-2"
                   />
+                ) : design.studio === 'papercraft' && savedDesignThumbnail(design.meta as PapercraftDesignEntry) ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- picture of the model made in the browser (a data: SVG)
+                  <img
+                    src={savedDesignThumbnail(design.meta as PapercraftDesignEntry) ?? undefined}
+                    alt={`Preview of ${design.name}`}
+                    className="h-36 w-full bg-white object-contain p-2"
+                  />
                 ) : (
                   <div className="flex h-36 items-center justify-center bg-white px-4 text-center text-lg font-semibold text-ink-secondary">
                     {design.studio === 'htv' ? (design.meta as HtvDesignEntry).previewText || design.name : design.name}
@@ -337,6 +387,11 @@ export default function DesignsPage() {
                     <>
                       <div className="text-sm font-medium text-ink">{(design.meta as TemplateLibraryEntry).stoneCount} stones</div>
                       <div className="mt-1 text-xs text-ink-secondary">Sizes: {(design.meta as TemplateLibraryEntry).stoneSizes.join(', ') || '—'}</div>
+                    </>
+                  ) : design.studio === 'papercraft' ? (
+                    <>
+                      <div className="text-sm font-medium text-ink">{(design.meta as PapercraftDesignEntry).sourceLabel}</div>
+                      <div className="mt-1 text-xs text-ink-secondary">{(design.meta as PapercraftDesignEntry).sizeLabel}</div>
                     </>
                   ) : (
                     <>
@@ -355,7 +410,7 @@ export default function DesignsPage() {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <button
-                  onClick={() => router.push(design.studio === 'rhinestone' ? `/rhinestone?designId=${design.id}` : `/htv?designId=${design.id}`)}
+                  onClick={() => router.push(`/${design.studio}?designId=${design.id}`)}
                   className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--color-brand-600),var(--color-accent-600))] px-4 py-3 text-sm font-semibold text-ink-inverse"
                 >
                   <FolderHeart className="h-4 w-4" />
@@ -372,6 +427,8 @@ export default function DesignsPage() {
                   onClick={() => {
                     if (design.studio === 'rhinestone') {
                       updateDesignArchived(`rhinestone:${design.id}`, !design.archived);
+                    } else if (design.studio === 'papercraft') {
+                      updatePapercraftDesign(design.id, (current) => ({ ...current, archived: !current.archived, updatedAt: new Date().toISOString() }));
                     } else {
                       updateHtvDesign(design.id, (current) => ({ ...current, archived: !current.archived, updatedAt: new Date().toISOString() }));
                     }
@@ -385,6 +442,8 @@ export default function DesignsPage() {
                   onClick={() => {
                     if (design.studio === 'rhinestone') {
                       void deleteRhinestoneDesign(design.meta as TemplateLibraryEntry);
+                    } else if (design.studio === 'papercraft') {
+                      deletePapercraftDesign(design.meta as PapercraftDesignEntry);
                     } else {
                       deleteHtvDesign(design.meta as HtvDesignEntry);
                     }
@@ -404,10 +463,10 @@ export default function DesignsPage() {
         </section>
 
         {visibleDesigns.length === 0 && (
-          rhinestoneDesigns.length + vault.htvDesigns.length === 0 ? (
+          savedCount === 0 ? (
             <WorkspaceEmptyState
               title={t('No saved designs yet')}
-              description={t('Press Save in the Rhinestone or HTV studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed.')}
+              description={t('Press Save in the Rhinestone, HTV or Papercraft studio to keep a design in this browser. It will appear here. Autosave only protects your current session, so it is not listed.')}
             />
           ) : (
             <WorkspaceEmptyState

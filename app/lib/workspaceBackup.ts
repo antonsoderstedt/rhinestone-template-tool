@@ -7,13 +7,13 @@
  * handed `Date` strings, so the same input always gives the same output.
  *
  * Calibration profiles are included (they take minutes to measure and are lost with the browser's data too).
- * Not included: uploaded fonts, uploaded assets and settings. Those are large or
+ * Papercraft models are included too (an imported model's mesh is inside the design). Not included: uploaded fonts, uploaded assets and settings. Those are large or
  * machine-specific; HTV designs that use an uploaded font fall back to a default one when restored on a
  * computer that does not have it (ADR 0010).
  */
 
 import { parseRhinestoneProject, type TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
-import type { CalibrationProfile, HtvDesignEntry } from './workspaceVault';
+import { isPapercraftEntry, type CalibrationProfile, type HtvDesignEntry, type PapercraftDesignEntry } from './workspaceVault';
 
 export const WORKSPACE_BACKUP_KIND = 'rhinestone-studio-backup';
 export const WORKSPACE_BACKUP_VERSION = 1;
@@ -28,6 +28,8 @@ export interface WorkspaceBackup {
   createdAt: string;
   rhinestoneDesigns: TemplateLibraryEntry[];
   htvDesigns: HtvDesignEntry[];
+  /** Optional: backups made before the Papercraft studio have none. */
+  papercraftDesigns?: PapercraftDesignEntry[];
   /** Optional: older backups have none. */
   calibrationProfiles?: CalibrationProfile[];
 }
@@ -41,9 +43,11 @@ export interface ParsedWorkspaceBackup {
 export interface BackupMergeSummary {
   addedRhinestone: number;
   addedHtv: number;
+  addedPapercraft: number;
   /** Designs replaced because the backup copy is newer. */
   updatedRhinestone: number;
   updatedHtv: number;
+  updatedPapercraft: number;
   /** Designs left alone because the copy already here is the same age or newer. */
   keptNewer: number;
   addedCalibration: number;
@@ -53,6 +57,7 @@ export interface BackupMergeSummary {
 export interface BackupMergeResult {
   rhinestoneDesigns: TemplateLibraryEntry[];
   htvDesigns: HtvDesignEntry[];
+  papercraftDesigns: PapercraftDesignEntry[];
   calibrationProfiles: CalibrationProfile[];
   summary: BackupMergeSummary;
   /** Only the rhinestone designs that must be written (added or replaced). */
@@ -62,6 +67,7 @@ export interface BackupMergeResult {
 export function createWorkspaceBackup(input: {
   rhinestoneDesigns: readonly TemplateLibraryEntry[];
   htvDesigns: readonly HtvDesignEntry[];
+  papercraftDesigns?: readonly PapercraftDesignEntry[];
   calibrationProfiles?: readonly CalibrationProfile[];
   createdAt: string;
 }): WorkspaceBackup {
@@ -71,6 +77,7 @@ export function createWorkspaceBackup(input: {
     createdAt: input.createdAt,
     rhinestoneDesigns: structuredClone([...input.rhinestoneDesigns]),
     htvDesigns: structuredClone([...input.htvDesigns]),
+    ...(input.papercraftDesigns && input.papercraftDesigns.length > 0 ? { papercraftDesigns: structuredClone([...input.papercraftDesigns]) } : {}),
     ...(input.calibrationProfiles && input.calibrationProfiles.length > 0 ? { calibrationProfiles: structuredClone([...input.calibrationProfiles]) } : {}),
   };
 }
@@ -144,6 +151,16 @@ function readHtvEntry(value: unknown): HtvDesignEntry | null {
   };
 }
 
+function readPapercraftEntry(value: unknown): PapercraftDesignEntry | null {
+  if (!isRecord(value) || !isPapercraftEntry(value)) return null;
+  return {
+    ...(value as unknown as PapercraftDesignEntry),
+    tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+    favorite: value.favorite === true,
+    archived: value.archived === true,
+  };
+}
+
 function readCalibrationProfile(value: unknown): CalibrationProfile | null {
   if (!isRecord(value)) return null;
   if (!isNonEmptyString(value.id) || !isNonEmptyString(value.name) || !isNonEmptyString(value.materialProfileId)) return null;
@@ -188,8 +205,9 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
 
   const rhinestoneDesigns = data.rhinestoneDesigns.map(readRhinestoneEntry);
   const htvDesigns = data.htvDesigns.map(readHtvEntry);
+  const papercraftDesigns = Array.isArray(data.papercraftDesigns) ? data.papercraftDesigns.map(readPapercraftEntry) : [];
   const calibrationProfiles = Array.isArray(data.calibrationProfiles) ? data.calibrationProfiles.map(readCalibrationProfile) : [];
-  const skippedCount = [...rhinestoneDesigns, ...htvDesigns, ...calibrationProfiles].filter((entry) => entry === null).length;
+  const skippedCount = [...rhinestoneDesigns, ...htvDesigns, ...papercraftDesigns, ...calibrationProfiles].filter((entry) => entry === null).length;
 
   return {
     backup: {
@@ -198,6 +216,7 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : '',
       rhinestoneDesigns: rhinestoneDesigns.filter((entry): entry is TemplateLibraryEntry => entry !== null),
       htvDesigns: htvDesigns.filter((entry): entry is HtvDesignEntry => entry !== null),
+      ...(papercraftDesigns.length > 0 ? { papercraftDesigns: papercraftDesigns.filter((entry): entry is PapercraftDesignEntry => entry !== null) } : {}),
       ...(calibrationProfiles.length > 0 ? { calibrationProfiles: calibrationProfiles.filter((entry): entry is CalibrationProfile => entry !== null) } : {}),
     },
     skippedCount,
@@ -209,10 +228,10 @@ export function parseWorkspaceBackup(json: string): ParsedWorkspaceBackup {
  * places is replaced only when the backup's copy is newer; everything else in the backup is added.
  */
 export function mergeWorkspaceBackup(
-  existing: { rhinestoneDesigns: readonly TemplateLibraryEntry[]; htvDesigns: readonly HtvDesignEntry[]; calibrationProfiles?: readonly CalibrationProfile[] },
+  existing: { rhinestoneDesigns: readonly TemplateLibraryEntry[]; htvDesigns: readonly HtvDesignEntry[]; papercraftDesigns?: readonly PapercraftDesignEntry[]; calibrationProfiles?: readonly CalibrationProfile[] },
   backup: WorkspaceBackup,
 ): BackupMergeResult {
-  const summary: BackupMergeSummary = { addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 };
+  const summary: BackupMergeSummary = { addedRhinestone: 0, addedHtv: 0, addedPapercraft: 0, updatedRhinestone: 0, updatedHtv: 0, updatedPapercraft: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 };
 
   const rhinestoneById = new Map(existing.rhinestoneDesigns.map((entry) => [entry.templateId, entry]));
   const rhinestoneToSave: TemplateLibraryEntry[] = [];
@@ -245,6 +264,20 @@ export function mergeWorkspaceBackup(
     }
   }
 
+  const papercraftById = new Map((existing.papercraftDesigns ?? []).map((entry) => [entry.designId, entry]));
+  for (const incoming of backup.papercraftDesigns ?? []) {
+    const current = papercraftById.get(incoming.designId);
+    if (!current) {
+      papercraftById.set(incoming.designId, incoming);
+      summary.addedPapercraft += 1;
+    } else if (incoming.updatedAt > current.updatedAt) {
+      papercraftById.set(incoming.designId, incoming);
+      summary.updatedPapercraft += 1;
+    } else {
+      summary.keptNewer += 1;
+    }
+  }
+
   const profilesById = new Map((existing.calibrationProfiles ?? []).map((profile) => [profile.id, profile]));
   for (const incoming of backup.calibrationProfiles ?? []) {
     const current = profilesById.get(incoming.id);
@@ -260,6 +293,7 @@ export function mergeWorkspaceBackup(
   return {
     rhinestoneDesigns: [...rhinestoneById.values()],
     htvDesigns: [...htvById.values()],
+    papercraftDesigns: [...papercraftById.values()],
     calibrationProfiles: [...profilesById.values()],
     summary,
     rhinestoneToSave,
@@ -269,8 +303,8 @@ export function mergeWorkspaceBackup(
 /** One sentence describing what a restore did. */
 export function describeMergeSummary(summary: BackupMergeSummary, skippedCount: number): string {
   const parts: string[] = [];
-  const added = summary.addedRhinestone + summary.addedHtv;
-  const updated = summary.updatedRhinestone + summary.updatedHtv;
+  const added = summary.addedRhinestone + summary.addedHtv + summary.addedPapercraft;
+  const updated = summary.updatedRhinestone + summary.updatedHtv + summary.updatedPapercraft;
   if (added > 0) parts.push(`added ${added} ${added === 1 ? 'design' : 'designs'}`);
   if (updated > 0) parts.push(`updated ${updated} to the newer copy`);
   const profiles = summary.addedCalibration + summary.updatedCalibration;

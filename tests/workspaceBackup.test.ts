@@ -129,7 +129,7 @@ describe('mergeWorkspaceBackup', () => {
     const byId = Object.fromEntries(result.rhinestoneDesigns.map((d) => [d.templateId, d.name]));
     expect(byId).toEqual({ new: 'New', newer: 'Newer in backup', older: 'Newer here', 'only-here': 'Only here' });
     expect(result.htvDesigns.map((d) => d.designId).sort()).toEqual(['h-new', 'h-same']);
-    expect(result.summary).toEqual({ addedRhinestone: 1, addedHtv: 1, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 2, addedCalibration: 0, updatedCalibration: 0 });
+    expect(result.summary).toEqual({ addedRhinestone: 1, addedHtv: 1, addedPapercraft: 0, updatedRhinestone: 1, updatedHtv: 0, updatedPapercraft: 0, keptNewer: 2, addedCalibration: 0, updatedCalibration: 0 });
     expect(result.rhinestoneToSave.map((d) => d.templateId).sort()).toEqual(['new', 'newer']);
   });
 
@@ -141,9 +141,9 @@ describe('mergeWorkspaceBackup', () => {
   });
 
   it('describes what happened in one sentence', () => {
-    expect(describeMergeSummary({ addedRhinestone: 2, addedHtv: 1, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 1, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('Restored: added 3 designs, kept 1 that is already up to date here.');
-    expect(describeMergeSummary({ addedRhinestone: 0, addedHtv: 0, updatedRhinestone: 0, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('The backup had no designs in it.');
-    expect(describeMergeSummary({ addedRhinestone: 1, addedHtv: 0, updatedRhinestone: 1, updatedHtv: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 2)).toContain('skipped 2');
+    expect(describeMergeSummary({ addedRhinestone: 2, addedHtv: 1, addedPapercraft: 0, updatedRhinestone: 0, updatedHtv: 0, updatedPapercraft: 0, keptNewer: 1, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('Restored: added 3 designs, kept 1 that is already up to date here.');
+    expect(describeMergeSummary({ addedRhinestone: 0, addedHtv: 0, addedPapercraft: 0, updatedRhinestone: 0, updatedHtv: 0, updatedPapercraft: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 0)).toBe('The backup had no designs in it.');
+    expect(describeMergeSummary({ addedRhinestone: 1, addedHtv: 0, addedPapercraft: 0, updatedRhinestone: 1, updatedHtv: 0, updatedPapercraft: 0, keptNewer: 0, addedCalibration: 0, updatedCalibration: 0 }, 2)).toContain('skipped 2');
   });
 
   it('carries calibration profiles in the backup, merges them by age, and skips a damaged one (plan F7)', () => {

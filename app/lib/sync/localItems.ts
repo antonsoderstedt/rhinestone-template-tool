@@ -5,6 +5,7 @@
  *   template     My Designs (the user's saved templates)         localStorage "rhinestone-template-library"
  *   asset        files in the Library                            the workspace vault
  *   htv          saved HTV designs                               the workspace vault
+ *   papercraft   saved Papercraft models                         the workspace vault
  *   calibration  calibration profiles                            the workspace vault
  *   font         fonts the user uploaded                         the workspace vault
  *   fontpref     favourite / archived / tags of one font         the workspace vault
@@ -27,6 +28,8 @@ import {
   type DesignPreference,
   type FontPreference,
   type HtvDesignEntry,
+  type PapercraftDesignEntry,
+  isPapercraftEntry,
   type UploadedWorkspaceFont,
   type WorkspaceAsset,
 } from '../workspaceVault';
@@ -192,6 +195,7 @@ export function listLocalItems(): ItemRef[] {
   const vault = readWorkspaceVault();
   for (const asset of vault.assets) items.push({ kind: 'asset', id: asset.assetId, updatedAt: asset.updatedAt });
   for (const design of vault.htvDesigns) items.push({ kind: 'htv', id: design.designId, updatedAt: design.updatedAt });
+  for (const design of vault.papercraftDesigns) items.push({ kind: 'papercraft', id: design.designId, updatedAt: design.updatedAt });
   for (const profile of vault.calibrationProfiles) items.push({ kind: 'calibration', id: profile.id, updatedAt: profile.updatedAt });
   for (const font of vault.uploadedFonts) {
     if (font.sourceKind !== 'workspace-installed') items.push({ kind: 'font', id: font.fontId, updatedAt: font.updatedAt });
@@ -213,6 +217,7 @@ export function readLocalItemData(kind: SyncKind, id: string): string | null {
   const found =
     kind === 'asset' ? vault.assets.find((item) => item.assetId === id)
     : kind === 'htv' ? vault.htvDesigns.find((item) => item.designId === id)
+    : kind === 'papercraft' ? vault.papercraftDesigns.find((item) => item.designId === id)
     : kind === 'font' ? vault.uploadedFonts.find((item) => item.fontId === id)
     : vault.calibrationProfiles.find((item) => item.id === id);
   return found ? JSON.stringify(found) : null;
@@ -311,6 +316,11 @@ export function applyRemoteItem(kind: SyncKind, id: string, data: string, update
     if (parsed.designId !== id || typeof parsed.updatedAt !== 'string' || !isRecord(parsed.snapshot)) return false;
     return writeWorkspaceVault({ ...vault, htvDesigns: upsert(vault.htvDesigns, (item) => item.designId, parsed as unknown as HtvDesignEntry) });
   }
+  if (kind === 'papercraft') {
+    // The design must be one this build can open: the same check the vault applies when it reads.
+    if (parsed.designId !== id || !isPapercraftEntry(parsed)) return false;
+    return writeWorkspaceVault({ ...vault, papercraftDesigns: upsert(vault.papercraftDesigns, (item) => item.designId, parsed as unknown as PapercraftDesignEntry) });
+  }
   if (parsed.id !== id || typeof parsed.updatedAt !== 'string') return false;
   return writeWorkspaceVault({ ...vault, calibrationProfiles: upsert(vault.calibrationProfiles, (item) => item.id, parsed as unknown as CalibrationProfile) });
 }
@@ -343,5 +353,6 @@ export function deleteLocalItem(kind: SyncKind, id: string): boolean {
   if (kind === 'font') return writeWorkspaceVault({ ...vault, uploadedFonts: vault.uploadedFonts.filter((item) => item.fontId !== id) });
   if (kind === 'asset') return writeWorkspaceVault({ ...vault, assets: vault.assets.filter((item) => item.assetId !== id) });
   if (kind === 'htv') return writeWorkspaceVault({ ...vault, htvDesigns: vault.htvDesigns.filter((item) => item.designId !== id) });
+  if (kind === 'papercraft') return writeWorkspaceVault({ ...vault, papercraftDesigns: vault.papercraftDesigns.filter((item) => item.designId !== id) });
   return writeWorkspaceVault({ ...vault, calibrationProfiles: vault.calibrationProfiles.filter((item) => item.id !== id) });
 }

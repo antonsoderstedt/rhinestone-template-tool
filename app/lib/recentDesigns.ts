@@ -4,7 +4,8 @@
  */
 
 import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
-import type { HtvDesignEntry } from './workspaceVault';
+import type { HtvDesignEntry, PapercraftDesignEntry } from './workspaceVault';
+import { savedDesignThumbnail } from '../papercraft/papercraftThumbnail';
 import { sanitizePreviewRef } from './workspaceBackup';
 
 export const DEFAULT_RECENT_DESIGN_LIMIT = 4;
@@ -12,7 +13,7 @@ export const DEFAULT_RECENT_DESIGN_LIMIT = 4;
 export interface RecentDesign {
   /** Unique across both studios. */
   key: string;
-  studio: 'rhinestone' | 'htv';
+  studio: 'rhinestone' | 'htv' | 'papercraft';
   id: string;
   name: string;
   updatedAt: string;
@@ -30,6 +31,7 @@ export function buildRecentDesigns(
   input: {
     rhinestoneDesigns: readonly TemplateLibraryEntry[];
     htvDesigns: readonly HtvDesignEntry[];
+    papercraftDesigns?: readonly PapercraftDesignEntry[];
     /** Keys like `rhinestone:<id>` the user archived. HTV designs carry their own `archived` flag. */
     archivedKeys?: ReadonlySet<string>;
   },
@@ -65,7 +67,21 @@ export function buildRecentDesigns(
       details: `${entry.layerCount} ${entry.layerCount === 1 ? 'layer' : 'layers'}${entry.garmentLabel ? ` · ${entry.garmentLabel}` : ''}`,
     }));
 
-  return [...rhinestone, ...htv]
+  const papercraft: RecentDesign[] = (input.papercraftDesigns ?? [])
+    .filter((entry) => !entry.archived)
+    .map((entry) => ({
+      key: `papercraft:${entry.designId}`,
+      studio: 'papercraft' as const,
+      id: entry.designId,
+      name: entry.name,
+      updatedAt: entry.updatedAt,
+      href: `/papercraft?designId=${encodeURIComponent(entry.designId)}`,
+      thumbnail: savedDesignThumbnail(entry),
+      placeholderText: entry.name,
+      details: `${entry.sourceLabel} · ${entry.sizeLabel}`,
+    }));
+
+  return [...rhinestone, ...htv, ...papercraft]
     // Newest first; the key breaks ties so the order never depends on how the lists were stored.
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.key.localeCompare(b.key))
     .slice(0, Math.max(0, limit));
