@@ -1,4 +1,4 @@
-import type { MeshWarning, PatternWarning } from '@/src/lib/papercraft-engine';
+import type { MeshWarning, PatternWarning, Solid } from '@/src/lib/papercraft-engine';
 import type { TranslateVars } from '../lib/i18n';
 
 type T = (text: string, vars?: TranslateVars) => string;
@@ -57,4 +57,15 @@ export function describePatternWarning(t: T, w: PatternWarning): WarningLine | n
 
 export function describeLayoutWarning(t: T, w: PatternWarning): WarningLine {
   return { tone: 'warning', text: t('{count} parts do not fit on a page and were put on pages of their own.', { count: w.count ?? 0 }) };
+}
+
+/** Under this an edge is hard to fold and glue by hand. */
+export const MIN_COMFORTABLE_EDGE_MM = 8;
+
+/** Warnings that come from the size of the model, not from its shape. `formatLength` writes a length in the unit in use. */
+export function describeSizeWarnings(t: T, solid: Solid, formatLength: (mm: number) => string): WarningLine[] {
+  if (solid.edges.length === 0) return [];
+  const shortest = solid.edges.reduce((m, e) => Math.min(m, e.length), Infinity);
+  if (shortest >= MIN_COMFORTABLE_EDGE_MM) return [];
+  return [{ tone: 'warning', text: t('The shortest edge is only {size}: too small to fold and glue well. Make the model bigger, or use one with fewer faces.', { size: formatLength(shortest) }) }];
 }

@@ -4,7 +4,8 @@ import { Download, FileText, RotateCcw, Scissors } from 'lucide-react';
 import type { PapercraftResult } from '@/src/lib/papercraft-engine';
 import { useT } from '../lib/i18n';
 import { CheckField, LengthField, NumberField, Section, SelectField } from './fields';
-import { describeLayoutWarning, describeMeshWarning, describePatternWarning, type WarningLine } from './papercraftWarnings';
+import { formatLength, useUnit } from '../lib/units';
+import { describeLayoutWarning, describeMeshWarning, describePatternWarning, describeSizeWarnings, type WarningLine } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, PaperPreset } from './papercraftState';
 
 interface SettingsPanelProps {
@@ -17,6 +18,7 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ state, dispatch, run, onExportPdf, onExportCricut }: SettingsPanelProps) {
   const t = useT();
+  const unit = useUnit();
   const presetOptions: { value: PaperPreset; label: string }[] = [
     { value: 'a4', label: t('A4 sheet') },
     { value: 'letter', label: t('US Letter sheet') },
@@ -28,6 +30,7 @@ export default function SettingsPanel({ state, dispatch, run, onExportPdf, onExp
         ...run.solid.warnings.map((w) => describeMeshWarning(t, w)),
         ...run.pattern.warnings.map((w) => describePatternWarning(t, w)).filter((l): l is WarningLine => l !== null),
         ...run.layout.warnings.map((w) => describeLayoutWarning(t, w)),
+        ...describeSizeWarnings(t, run.solid, (mm) => formatLength(mm, unit)),
       ]
     : [];
   const edited = state.edits.forceCut.length + state.edits.forceJoin.length;

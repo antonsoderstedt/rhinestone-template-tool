@@ -170,12 +170,9 @@ export function lathe(profile: readonly [number, number][], segments: number): R
   return { positions, faces };
 }
 
-/** A low-poly gem (brilliant-style: a crown, a flat table and a pointed pavilion). */
+/** A low-poly gem: a pointed bottom, a wide middle and a flat top (table). */
 export function gem(radius: number, segments = 8): RawMesh {
-  return lathe(
-    [[0, 0], [radius * 0.95, radius * 0.9], [radius, radius * 1.05], [radius * 0.5, radius * 1.35]],
-    segments,
-  );
+  return lathe([[0, 0], [radius * 0.98, radius * 0.9], [radius * 0.55, radius * 1.35]], segments);
 }
 
 /** A non-convex block: an L-shaped prism (tests concave edges and non-convex faces). */
@@ -188,6 +185,156 @@ export function lBlock(size: number): RawMesh {
   for (let i = 0; i < n; i++) faces.push([i, (i + 1) % n, n + ((i + 1) % n), n + i]);
   return { positions, faces };
 }
+
+/** A prism: `outline` (counter-clockwise or not) in the x-y plane, extruded up to `depth` in z. */
+export function extrude(outlineIn: readonly [number, number][], depth: number): RawMesh {
+  // Counter-clockwise, so the top faces up and the bottom faces down.
+  let area = 0;
+  outlineIn.forEach((p, i) => {
+    const q = outlineIn[(i + 1) % outlineIn.length];
+    area += p[0] * q[1] - q[0] * p[1];
+  });
+  const outline = area < 0 ? [...outlineIn].reverse() : outlineIn;
+  const n = outline.length;
+  const positions: Vec3[] = [...outline.map(([x, y]): Vec3 => [x, y, 0]), ...outline.map(([x, y]): Vec3 => [x, y, depth])];
+  const faces: number[][] = [Array.from({ length: n }, (_, i) => n - 1 - i), Array.from({ length: n }, (_, i) => n + i)];
+  for (let i = 0; i < n; i++) faces.push([i, (i + 1) % n, n + ((i + 1) % n), n + i]);
+  return { positions, faces };
+}
+
+/** Turns a mesh a quarter turn so that what was z (up) is y: an outline in x-y becomes a front view in x-z. */
+function standUp(mesh: RawMesh): RawMesh {
+  // Swapping two axes mirrors the mesh, so the faces are turned over to keep them facing outward.
+  return { positions: mesh.positions.map(([x, y, z]): Vec3 => [x, z, y]), faces: mesh.faces.map((f) => [...f].reverse()) };
+}
+
+export interface SweepSection {
+  /** Where the section is, in the front view (x forward, z up); the sections run along a line or curve in the x-z plane. */
+  x: number;
+  z: number;
+  /** Half width (sideways) and half height of the section; both 0 at an end makes a point. */
+  width: number;
+  height: number;
+  /** Stretch the top / bottom corner of the section (a fin, a crest); 1 is none. Needs a multiple of 4 sides. */
+  top?: number;
+  bottom?: number;
+}
+
+/**
+ * A body swept along a curve in the x-z plane: a ring of `sides` corners at every section, standing across the curve. Gives
+ * fish, birds, bottles. Both ends are a point (width and height 0) or a flat cap.
+ */
+export function sweep(sections: readonly SweepSection[], sides = 8): RawMesh {
+  const positions: Vec3[] = [];
+  const rings: number[][] = [];
+  const m = sections.length;
+  sections.forEach((s, k) => {
+    if (s.width === 0 && s.height === 0 && (k === 0 || k === m - 1)) {
+      rings.push([positions.length]);
+      positions.push([s.x, 0, s.z]);
+      return;
+    }
+    const a = sections[Math.max(0, k - 1)];
+    const b = sections[Math.min(m - 1, k + 1)];
+    const tx = b.x - a.x;
+    const tz = b.z - a.z;
+    const len = Math.hypot(tx, tz) || 1;
+    // The tangent and the "up" across it (the sideways direction is always y).
+    const ux = tx / len;
+    const uz = tz / len;
+    const vx = -uz;
+    const vz = ux;
+    const ring: number[] = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = (2 * Math.PI * i) / sides;
+      const sin = Math.sin(angle);
+      const boost = sin > 0.99 ? s.top ?? 1 : sin < -0.99 ? s.bottom ?? 1 : 1;
+      const h = s.height * sin * boost;
+      ring.push(positions.length);
+      positions.push([s.x + vx * h, s.width * Math.cos(angle), s.z + vz * h]);
+    }
+    rings.push(ring);
+  });
+  const faces: number[][] = [];
+  for (let p = 0; p + 1 < m; p++) {
+    const lo = rings[p];
+    const hi = rings[p + 1];
+    for (let i = 0; i < sides; i++) {
+      const j = (i + 1) % sides;
+      if (lo.length === 1) faces.push([lo[0], hi[j], hi[i]]);
+      else if (hi.length === 1) faces.push([lo[i], lo[j], hi[0]]);
+      else {
+        // Two triangles: the four corners are not always flat. Neighbours that turn out flat are merged again when the mesh is cleaned.
+        faces.push([lo[i], lo[j], hi[j]], [lo[i], hi[j], hi[i]]);
+      }
+    }
+  }
+  if (rings[0].length > 1) faces.push([...rings[0]].reverse());
+  if (rings[m - 1].length > 1) faces.push([...rings[m - 1]]);
+  return { positions, faces };
+}
+
+/** A heart, a point at the bottom and a notch at the top, `size` wide, as an outline. */
+export function heartOutline(size: number, points = 16): [number, number][] {
+  const out: [number, number][] = [];
+  for (let i = 0; i < points; i++) {
+    const t = (2 * Math.PI * i) / points;
+    const x = 16 * Math.sin(t) ** 3;
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    out.push([(x * size) / 32, (y * size) / 32]);
+  }
+  return out;
+}
+
+export function starOutline(radius: number, points = 5): [number, number][] {
+  const out: [number, number][] = [];
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? radius : radius * 0.45;
+    const a = Math.PI / 2 + (Math.PI * i) / points;
+    out.push([r * Math.cos(a), r * Math.sin(a)]);
+  }
+  return out;
+}
+
+export const vase = (): RawMesh => lathe([[22, 0], [34, 18], [40, 40], [28, 70], [16, 90], [14, 100], [22, 116]], 8);
+export const bottle = (): RawMesh => lathe([[30, 0], [30, 68], [22, 88], [13, 102], [13, 134]], 8);
+export const lantern = (): RawMesh => lathe([[24, 0], [34, 20], [34, 70], [24, 90], [12, 100]], 6);
+export const egg = (): RawMesh => lathe([[0, 0], [18, 8], [27, 26], [30, 48], [24, 72], [12, 90], [0, 98]], 8);
+export const rocket = (): RawMesh => lathe([[14, 0], [16, 70], [10, 90], [0, 106]], 8);
+export const house = (): RawMesh => standUp(extrude([[0, 0], [40, 0], [40, 30], [20, 48], [0, 30]], 40));
+export const heartBox = (): RawMesh => extrude(heartOutline(60, 14), 25);
+export const starBox = (): RawMesh => extrude(starOutline(40), 20);
+
+export const fish = (): RawMesh =>
+  sweep(
+    [
+      { x: -44, z: 0, width: 2, height: 14 },
+      { x: -30, z: 0, width: 8, height: 11 },
+      { x: -8, z: 0, width: 12, height: 20, top: 1.5, bottom: 1.1 },
+      { x: 14, z: 0, width: 11, height: 18, top: 1.6, bottom: 1.1 },
+      { x: 36, z: 0, width: 6, height: 9 },
+      { x: 52, z: 0, width: 0, height: 0 },
+    ],
+    4,
+  );
+
+export const swan = (): RawMesh =>
+  sweep(
+    [
+      { x: -52, z: 14, width: 0, height: 0 },
+      { x: -40, z: 14, width: 8, height: 6 },
+      { x: -18, z: 12, width: 22, height: 16 },
+      { x: 6, z: 13, width: 24, height: 18 },
+      { x: 24, z: 20, width: 15, height: 12 },
+      { x: 31, z: 36, width: 8.5, height: 8.5 },
+      { x: 34, z: 52, width: 7.5, height: 7.5 },
+      { x: 35, z: 68, width: 7.5, height: 7.5 },
+      { x: 35, z: 82, width: 7.5, height: 7.5 },
+      { x: 40, z: 93, width: 7.5, height: 7 },
+      { x: 52, z: 98, width: 0, height: 0 },
+    ],
+    5,
+  );
 
 export const BUILT_IN_SHAPES = {
   cube: (size = 50) => cube(size),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSolid, parseObj, parseStl, readMeshFile, reportSolid, scaleMesh, shapes, MeshReadError } from '../src/lib/papercraft-engine';
+import { boundaryLoops, buildSolid, fillHoles, flipFaces, parseObj, parseStl, projectSolid, readMeshFile, reportSolid, scaleMesh, shapes, MeshReadError } from '../src/lib/papercraft-engine';
 import type { RawMesh, Solid } from '../src/lib/papercraft-engine';
 
 /** Triangulate every face of a mesh (the way an STL file stores it). */
@@ -203,5 +203,133 @@ describe('built-in shapes', () => {
   it('builds a gem and a lathe vase as closed solids', () => {
     expect(buildSolid(shapes.gem(20)).closed).toBe(true);
     expect(buildSolid(shapes.lathe([[10, 0], [15, 20], [8, 40]], 12)).closed).toBe(true);
+  });
+});
+
+describe('more built-in shapes', () => {
+  const NEW: [string, RawMesh][] = [
+    ['vase', shapes.vase()],
+    ['bottle', shapes.bottle()],
+    ['lantern', shapes.lantern()],
+    ['egg', shapes.egg()],
+    ['rocket', shapes.rocket()],
+    ['house', shapes.house()],
+    ['heart box', shapes.heartBox()],
+    ['star box', shapes.starBox()],
+    ['fish', shapes.fish()],
+    ['swan', shapes.swan()],
+  ];
+
+  it.each(NEW)('%s is a closed solid with nothing to warn about, Euler number 2, and a body of its own', (_name, mesh) => {
+    const s = buildSolid(mesh);
+    expect(s.warnings).toEqual([]);
+    expect(s.closed).toBe(true);
+    expect(s.vertices.length - s.edges.length + s.faces.length).toBe(2);
+    expect(volume(s)).toBeGreaterThan(0);
+    const size = reportSolid(s).size;
+    expect(Math.min(...size)).toBeGreaterThan(1);
+  });
+
+  it('the house stands up (front view in x and z, depth in y)', () => {
+    const size = reportSolid(buildSolid(shapes.house())).size;
+    expect(size[0]).toBeCloseTo(40, 6);
+    expect(size[1]).toBeCloseTo(40, 6);
+    expect(size[2]).toBeCloseTo(48, 6);
+  });
+
+  it('the heart is wider than the star is deep and has a notch (a non-convex face)', () => {
+    const heart = buildSolid(shapes.heartBox());
+    const top = heart.faces.find((f) => f.vertices.length > 8)!;
+    expect(top).toBeDefined();
+    expect(reportSolid(heart).size[2]).toBeCloseTo(25, 6);
+  });
+
+  it('a sweep keeps both ends: a point or a flat cap', () => {
+    const capped = buildSolid(shapes.sweep([{ x: 0, z: 0, width: 5, height: 5 }, { x: 20, z: 0, width: 5, height: 5 }], 8));
+    expect(capped.closed).toBe(true);
+    expect(capped.faces).toHaveLength(10);
+    const pointed = buildSolid(shapes.sweep([{ x: 0, z: 0, width: 0, height: 0 }, { x: 10, z: 0, width: 5, height: 5 }, { x: 20, z: 0, width: 0, height: 0 }], 8));
+    expect(pointed.faces).toHaveLength(16);
+  });
+
+  it('a little picture of a solid can be drawn without unfolding it', () => {
+    const solid = buildSolid(shapes.house());
+    const polys = projectSolid(solid, () => [0.5, 0.6, 0.7]);
+    expect(polys.length).toBeGreaterThanOrEqual(3);
+    for (const p of polys) for (const c of p.rgb) expect(c >= 0 && c <= 1).toBe(true);
+  });
+});
+
+describe('repairing a mesh', () => {
+  const cubeWithoutTop = (): RawMesh => {
+    const m = shapes.cube(10);
+    return { positions: m.positions, faces: m.faces.filter((_, i) => i !== 1) };
+  };
+
+  it('finds the loop of open edges', () => {
+    const solid = buildSolid(cubeWithoutTop());
+    const loops = boundaryLoops(solid);
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toHaveLength(4);
+  });
+
+  it('closes a flat hole with one polygon, and the result is a closed cube', () => {
+    const r = fillHoles(cubeWithoutTop());
+    expect(r.filled).toBe(1);
+    expect(r.skipped).toBe(0);
+    const solid = buildSolid(r.mesh);
+    expect(solid.closed).toBe(true);
+    expect(solid.faces).toHaveLength(6);
+    expect(solid.warnings).toEqual([]);
+    expect(reportSolid(solid).surfaceAreaMm2).toBeCloseTo(600, 6);
+  });
+
+  it('closes two holes at once (a tube with both ends open)', () => {
+    const tube = shapes.prism(8, 10, 30);
+    const open: RawMesh = { positions: tube.positions, faces: tube.faces.slice(2) };
+    const r = fillHoles(open);
+    expect(r.filled).toBe(2);
+    expect(buildSolid(r.mesh).closed).toBe(true);
+  });
+
+  it('closes a hole that is not flat with triangles around its middle', () => {
+    const m = shapes.cube(10);
+    const bent: RawMesh = { positions: m.positions.map((p, i) => (i === 6 ? ([p[0], p[1], p[2] + 3] as [number, number, number]) : p)), faces: m.faces.filter((_, i) => i !== 1) };
+    const r = fillHoles(bent);
+    expect(r.filled).toBe(1);
+    const solid = buildSolid(r.mesh);
+    expect(solid.closed).toBe(true);
+    expect(solid.vertices.length - solid.edges.length + solid.faces.length).toBe(2);
+  });
+
+  it('leaves a very big hole open and says so', () => {
+    const r = fillHoles(cubeWithoutTop(), 3);
+    expect(r.filled).toBe(0);
+    expect(r.skipped).toBe(1);
+    expect(buildSolid(r.mesh).closed).toBe(false);
+  });
+
+  it('does nothing to a closed model', () => {
+    const r = fillHoles(shapes.icosahedron(10));
+    expect(r.filled).toBe(0);
+    expect(r.skipped).toBe(0);
+    expect(buildSolid(r.mesh).faces).toHaveLength(20);
+  });
+
+  it('is deterministic', () => {
+    expect(JSON.stringify(fillHoles(cubeWithoutTop()))).toBe(JSON.stringify(fillHoles(cubeWithoutTop())));
+  });
+
+  it('turning an open model inside out turns every face, and twice gives the model back', () => {
+    const open = cubeWithoutTop();
+    const flipped = flipFaces(open);
+    const a = buildSolid(open);
+    const b = buildSolid(flipped);
+    // Open models are not turned outward by the cleaning, so the normals really do end up opposite.
+    const normalOf = (s: ReturnType<typeof buildSolid>, i: number) => s.faces.find((f) => f.vertices.every((v) => open.faces[i].includes(v)))?.normal;
+    const n1 = normalOf(a, 0)!;
+    const n2 = normalOf(b, 0)!;
+    expect(n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2]).toBeCloseTo(-1, 6);
+    expect(flipFaces(flipped).faces).toEqual(open.faces);
   });
 });

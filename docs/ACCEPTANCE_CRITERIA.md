@@ -71,6 +71,20 @@ ADR 0039 · Tests: `tests/papercraftCover.test.ts` (engine), `tests/papercraftSt
 
 ---
 
+## Papercraft — Phase 4: models and repair (Implemented 2026-11-25)
+
+ADR 0040 · Tests: `tests/papercraftMesh.test.ts` ("more built-in shapes", "repairing a mesh"), `tests/papercraftStudio.test.ts` ("built-in models are good first models", "size warning", "repairing an imported model"), the new models in `tests/papercraftUnfold.test.ts`.
+
+- [x] Twenty built-in models in four groups with a picture of each; every one is a closed solid with nothing to warn about, no edge under 8 mm, at most 100 faces at its default size, and unfolds with every invariant of the engine
+- [x] An imported model with holes shows the problem and "Close the holes" makes it a closed model (flat holes as one polygon, others as triangles around the middle); big openings are left alone and the studio says so
+- [x] "Turn the model inside out" turns every face of an imported model; both fixes reset the hand edits and say what they did, and only work on an imported model
+- [x] A shortest edge under 8 mm is warned about for every model, in both languages
+- [x] Glue tabs are placed from the tightest edge first and a triangular tab is the last resort; edges with no room are reported
+- [ ] Every edge gets a tab on curved models (a few edges of the vase, bottle, egg, rocket, fish and swan do not: the studio says to glue them edge to edge)
+- [ ] The built-in models built and glued on paper (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
