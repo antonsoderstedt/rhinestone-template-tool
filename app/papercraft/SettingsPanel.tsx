@@ -118,6 +118,7 @@ export default function SettingsPanel({ state, dispatch, run, onExportPdf, onExp
           <Scissors className="h-4 w-4" aria-hidden="true" />
           {t('Download SVG for Cricut')}
         </button>
+        <CheckField label={t('Cover page in the PDF (picture, facts, steps)')} checked={state.cover} onChange={(cover) => dispatch({ type: 'SET_COVER', cover })} />
         <p className="flex gap-2 text-xs leading-5 text-[var(--studio-ink-subtle)]">
           <Download className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>{t('In Cricut Design Space each colour is its own layer: set black to Cut, red to Score and blue (the numbers) to Draw, or delete it. Try the Test cube on your paper first.')}</span>

@@ -1,7 +1,9 @@
 import {
   exportPageSvg,
   exportPdf,
+  renderCover,
   renderPages,
+  type CoverContent,
   type PapercraftResult,
 } from '@/src/lib/papercraft-engine';
 import { createZip } from '../lib/zip';
@@ -17,8 +19,10 @@ export function exportBaseName(projectName: string): string {
   return cleaned.length > 0 ? cleaned : 'papercraft';
 }
 
-export function buildPatternPdf(run: PapercraftResult): Uint8Array {
-  return exportPdf(renderPages(run.layout.pages, run.pattern.parts, { pageNumbers: true }));
+/** The pages as a PDF, with a cover page first when `cover` is given. */
+export function buildPatternPdf(run: PapercraftResult, cover?: { content: CoverContent; size: { widthMm: number; heightMm: number } } | null): Uint8Array {
+  const pages = renderPages(run.layout.pages, run.pattern.parts, { pageNumbers: true });
+  return exportPdf(cover ? [renderCover(cover.content, run.solid, run.pattern, run.layout, cover.size), ...pages] : pages);
 }
 
 /** One Cricut SVG per page (cut, score and draw layers), named `<base>-page-<n>.svg`. */
@@ -44,8 +48,12 @@ export function buildCricutDownload(run: PapercraftResult, projectName: string):
   return { fileName: `${base}-cricut.zip`, mime: 'application/zip', data: createZip(files.map((f) => ({ name: f.name, data: f.svg }))) };
 }
 
-export function buildPdfDownload(run: PapercraftResult, projectName: string): ExportFile {
-  return { fileName: `${exportBaseName(projectName)}.pdf`, mime: 'application/pdf', data: buildPatternPdf(run) };
+export function buildPdfDownload(
+  run: PapercraftResult,
+  projectName: string,
+  cover?: { content: CoverContent; size: { widthMm: number; heightMm: number } } | null,
+): ExportFile {
+  return { fileName: `${exportBaseName(projectName)}.pdf`, mime: 'application/pdf', data: buildPatternPdf(run, cover) };
 }
 
 export function downloadExportFile(file: ExportFile): void {

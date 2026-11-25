@@ -88,11 +88,26 @@ owner cut or join an edge and to build the hinge tree.
   groups. Cricut: `cut` black, `score` red (all folds except `flat`), `numbers` blue, all solid, 0.1 mm. Print: `cut` black, `fold-mountain`
   dash-dot, `fold-valley` and `fold-tab` dashed, `fold-flat` thin grey, `numbers` black. No `<use>`, no nested `<svg>`, no opacity, no
   `<text>`, no raster.
-- **PDF** (`exportPdf`): PDF 1.4, one page per drawing, size in points from mm, lines only, dash patterns for folds, no fonts, no
-  images, no dates; correct cross-reference table; same drawings always give the same bytes.
+- **PDF** (`exportPdf`): PDF 1.4, one page per drawing, size in points from mm, lines and filled shapes, dash patterns for folds, no
+  embedded fonts, no images, no dates; correct cross-reference table; same drawings always give the same bytes. Text is only on a
+  cover page (`TextRun`), in the built-in Helvetica and Helvetica-Bold with WinAnsi encoding; the two font objects are added only when
+  some page has text.
 - **Numbers** are drawn with a seven-segment stroke font (`strokeText`): digits, `-`, `/`, `.`, `x`.
+
+## Cover page (`renderCover`, `projectModel`, `assessBuild`)
+
+`renderCover(content, solid, pattern, layout, {widthMm, heightMm})` returns a `PageDrawing` with `fills`, `texts` (Helvetica runs), cut
+and fold lines (the legend samples) and stroke text (numbers). Layout, top to bottom, inside 15 mm margins: title (shrunk to fit, at most
+two lines) and subtitle; the facts on the left (label and wrapped value) and the picture of the model on the right; the legend (left)
+and the page map (right); the steps at the bottom (shrunk down to 2.8 mm if they are many). Text width is measured with the Helvetica
+metrics (`textWidthMm`) and wrapped (`wrapText`); `toWinAnsi` encodes it. `CoverContent` holds only strings, written by the app.
+`projectModel` gives the polygons of the finished model seen from azimuth 35 and elevation 28 degrees (z up), back faces left out, sorted
+back to front, coloured by part and shaded. The page map draws each page as a sheet with the hulls and numbers of its parts, with
+4 columns or fewer to start with and up to 8 when there are many pages; pages that do not fit are counted in `pageMapMore`.
+`assessBuild(pattern, solid)` gives a difficulty and minutes: glued edges up to 15 easy, 45 medium, 120 hard, more expert, one step
+harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 glued edges, rounded to 5 (at least 5).
 
 ## Not in this version
 
-Cover page and instructions, page map, parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
+Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
 reading in the engine (done in the app), import of finished PDF patterns, Silhouette DXF, mesh simplification, true polygon nesting.

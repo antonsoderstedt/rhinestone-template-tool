@@ -10,6 +10,31 @@ export interface PageDrawing {
   folds: { a: Vec2; b: Vec2; kind: FoldKind }[];
   /** Numbers as line strokes. */
   text: Vec2[][];
+  /** Filled shapes, drawn first (the cover page's picture of the model and page map). */
+  fills: FilledShape[];
+  /** Real text set in Helvetica (the cover page only). */
+  texts: TextRun[];
+}
+
+export interface FilledShape {
+  points: Vec2[];
+  /** Red, green, blue between 0 and 1. */
+  rgb: [number, number, number];
+  /** A thin outline in this colour, if any. */
+  strokeRgb?: [number, number, number];
+  strokeMm?: number;
+}
+
+export interface TextRun {
+  /** Where the text starts (or its middle when `align` is `middle`), on the baseline. */
+  x: number;
+  y: number;
+  text: string;
+  /** Font size: the height of the em square in millimetres. */
+  sizeMm: number;
+  bold?: boolean;
+  align?: 'start' | 'middle';
+  rgb?: [number, number, number];
 }
 
 export interface RenderOptions {
@@ -20,7 +45,7 @@ export interface RenderOptions {
 /** Everything that is drawn on one page, in page coordinates (millimetres, y up). */
 export function renderPage(page: Page, parts: readonly Part[], pageCount: number, options: RenderOptions = {}): PageDrawing {
   const byId = new Map(parts.map((p) => [p.id, p]));
-  const drawing: PageDrawing = { widthMm: page.widthMm, heightMm: page.heightMm, cut: [], folds: [], text: [] };
+  const drawing: PageDrawing = { widthMm: page.widthMm, heightMm: page.heightMm, cut: [], folds: [], text: [], fills: [], texts: [] };
   for (const pl of page.placements) {
     const part = byId.get(pl.partId);
     if (!part) continue;

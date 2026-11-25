@@ -56,6 +56,21 @@ ADR 0038 · Tests: `tests/papercraftStudio.test.ts` (state, computation, downloa
 
 ---
 
+## Papercraft — Phase 3: the cover page (Implemented 2026-11-25)
+
+ADR 0039 · Tests: `tests/papercraftCover.test.ts` (engine), `tests/papercraftStudio.test.ts` ("cover page content").
+
+- [x] The PDF starts with a cover page (on by default, can be turned off): title, picture of the finished model, finished size in mm and inches, parts, faces, edges to glue, pages, paper, difficulty, time
+- [x] The cover explains the lines (cut, mountain, valley, tab fold, numbers) with real samples of the line styles, shows a map of what is on each page, and gives seven build steps
+- [x] Everything on the cover is inside the margins on A4 and Letter, for one page and for many; long titles and long steps are shrunk to fit; pages that do not fit on the map are counted
+- [x] The words come from the app in the language in use; Swedish å, ä and ö come out right in the PDF; text uses only characters a PDF can show
+- [x] Text is Helvetica built into the PDF reader (no font file, no image, no date), the cross-reference table and stream lengths are right, and the same input gives the same bytes
+- [x] The Pages view shows the cover first
+- [x] Rendered with a real PDF renderer (macOS Quick Look): the cover reads cleanly in English and Swedish with 3 and 18 pages
+- [ ] Difficulty and time tuned against real builds (needs the owner to build a few models)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

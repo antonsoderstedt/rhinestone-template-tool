@@ -13,6 +13,7 @@ import PapercraftTopbar from './PapercraftTopbar';
 import PatternView from './PatternView';
 import SettingsPanel from './SettingsPanel';
 import { computePapercraft, MAX_FACES } from './papercraftCompute';
+import { buildCoverContent, coverPageSize } from './papercraftCover';
 import { buildCricutDownload, buildPdfDownload, downloadExportFile } from './papercraftExport';
 import { ModelFileError, readModelFile } from './papercraftFiles';
 import { initialPapercraftState, papercraftReducer } from './papercraftState';
@@ -37,6 +38,12 @@ export default function PapercraftShell() {
   const result = useMemo(() => computePapercraft(deferred), [deferred]);
   const run = result.ok ? result.run : null;
   const report = useMemo(() => (run ? reportSolid(run.solid) : null), [run]);
+
+  // The cover page's words, in the language in use (also shown first in the Pages view).
+  const cover = useMemo(
+    () => (run && state.cover ? { content: buildCoverContent(run, state.projectName, state.paper.preset, t), size: coverPageSize(state.paper.preset) } : null),
+    [run, state.cover, state.projectName, state.paper.preset, t],
+  );
 
   const importFile = useCallback(async (file: File) => {
     setImportError(null);
@@ -88,9 +95,9 @@ export default function PapercraftShell() {
 
   const exportPdf = useCallback(() => {
     if (!run) return;
-    downloadExportFile(buildPdfDownload(run, state.projectName));
+    downloadExportFile(buildPdfDownload(run, state.projectName, cover));
     setToast(t('PDF made: print it at 100 % scale.'));
-  }, [run, state.projectName, t]);
+  }, [run, state.projectName, cover, t]);
 
   const exportCricut = useCallback(() => {
     if (!run) return;
@@ -143,7 +150,7 @@ export default function PapercraftShell() {
         >
           <h1 className="sr-only">{t('Papercraft Studio')}</h1>
           {run && state.view === 'pattern' && <PatternView run={run} selectedPartId={state.selectedPartId} onSelectPart={selectPart} onToggleEdge={toggleEdge} />}
-          {run && state.view === 'pages' && <PagesView run={run} />}
+          {run && state.view === 'pages' && <PagesView run={run} cover={cover} />}
           {run && state.view === 'model' && (
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
