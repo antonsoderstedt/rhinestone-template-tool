@@ -1,0 +1,210 @@
+/**
+ * Papercraft engine types. Everything is pure data in millimetres (the mesh may be in any unit until it is
+ * scaled). 2D coordinates have y pointing up; exporters flip y when a format has y pointing down.
+ */
+
+export type Vec2 = readonly [number, number];
+export type Vec3 = readonly [number, number, number];
+
+/** A mesh as read from a file or generated: positions and faces (3 or more vertex indices, any winding). */
+export interface RawMesh {
+  positions: Vec3[];
+  faces: number[][];
+}
+
+export type MeshWarningCode =
+  | 'degenerate-faces-removed'
+  | 'duplicate-faces-removed'
+  | 'unused-vertices'
+  | 'nonplanar-face-split'
+  | 'orientation-fixed'
+  | 'non-orientable'
+  | 'inverted-normals-fixed'
+  | 'open-edges'
+  | 'non-manifold-edges'
+  | 'multiple-shells'
+  | 'tiny-faces'
+  | 'empty';
+
+export interface MeshWarning {
+  code: MeshWarningCode;
+  /** Plain-language default text (the app translates by code). */
+  message: string;
+  count?: number;
+}
+
+export interface SolidFace {
+  id: number;
+  /** Vertex indices, counter-clockwise seen from outside. */
+  vertices: number[];
+  /** Edge ids; edgeIds[k] joins vertices[k] and vertices[k + 1]. */
+  edgeIds: number[];
+  normal: Vec3;
+  area: number;
+}
+
+export interface SolidEdge {
+  id: number;
+  /** a < b. */
+  a: number;
+  b: number;
+  /** Faces on this edge (2 for a normal edge, 1 for an open edge, more for a non-manifold edge). */
+  faces: number[];
+  length: number;
+}
+
+export interface Solid {
+  vertices: Vec3[];
+  faces: SolidFace[];
+  edges: SolidEdge[];
+  /** True when every edge has exactly two faces. */
+  closed: boolean;
+  warnings: MeshWarning[];
+}
+
+export type FoldKind = 'mountain' | 'valley' | 'flat' | 'tab';
+
+export interface FoldLine {
+  a: Vec2;
+  b: Vec2;
+  kind: FoldKind;
+}
+
+export interface Label {
+  text: string;
+  /** Centre of the text. */
+  x: number;
+  y: number;
+  /** Radians, counter-clockwise. */
+  angle: number;
+  height: number;
+  role: 'edge' | 'part';
+}
+
+export interface PartFace {
+  faceId: number;
+  /** Corners in the same order as the solid's face. */
+  points: Vec2[];
+}
+
+export interface Tab {
+  /** The number shared with the matching edge. */
+  edgeNumber: number;
+  edgeId: number;
+  faceId: number;
+  /** Base edge first (a to b), then the two outer corners. */
+  points: Vec2[];
+  widthMm: number;
+}
+
+export interface Part {
+  /** 1-based, stable. */
+  id: number;
+  faces: PartFace[];
+  tabs: Tab[];
+  /** Cut outline: closed loops (first point repeated is not stored; `closed` says it closes). */
+  cutPaths: { points: Vec2[]; closed: boolean }[];
+  foldLines: FoldLine[];
+  labels: Label[];
+  /** Convex hull of faces and tabs. */
+  hull: Vec2[];
+  widthMm: number;
+  heightMm: number;
+  areaMm2: number;
+}
+
+export type PatternWarningCode =
+  | 'tab-missing'
+  | 'tab-narrowed'
+  | 'forced-join-overlaps'
+  | 'part-too-large'
+  | 'non-manifold-edge-cut';
+
+export interface PatternWarning {
+  code: PatternWarningCode;
+  message: string;
+  count?: number;
+}
+
+export interface Pattern {
+  parts: Part[];
+  /** Number of glued edge pairs. */
+  edgePairCount: number;
+  warnings: PatternWarning[];
+  stats: {
+    partCount: number;
+    faceCount: number;
+    surfaceAreaMm2: number;
+    tabCount: number;
+    foldCount: number;
+  };
+}
+
+export interface PatternSettings {
+  /** Glue tab depth. */
+  tabWidthMm: number;
+  /** Narrowest tab accepted when a tab has to be narrowed to fit. */
+  minTabWidthMm: number;
+  /** Angle of the tab's sides to the edge, in degrees. 90 gives a rectangle. */
+  tabAngleDeg: number;
+  /** Which side of the paper carries the print: decides which folds are mountain and which are valley. */
+  printedSide: 'outside' | 'inside';
+  numberHeightMm: number;
+  partLabels: boolean;
+  /** Largest allowed part (including tabs); parts are split to stay inside. Omit for no limit. */
+  maxPartSize?: { widthMm: number; heightMm: number };
+  /** Edge ids that must be cut / joined (a join is dropped if it makes a part overlap itself). */
+  forceCutEdges?: number[];
+  forceJoinEdges?: number[];
+}
+
+export const DEFAULT_PATTERN_SETTINGS: PatternSettings = {
+  tabWidthMm: 8,
+  minTabWidthMm: 3,
+  tabAngleDeg: 45,
+  printedSide: 'outside',
+  numberHeightMm: 3,
+  partLabels: true,
+};
+
+export interface PageSettings {
+  pageWidthMm: number;
+  pageHeightMm: number;
+  marginMm: number;
+  /** Gap between parts. */
+  gapMm: number;
+}
+
+export const PAGE_PRESETS = {
+  a4: { pageWidthMm: 210, pageHeightMm: 297 },
+  letter: { pageWidthMm: 215.9, pageHeightMm: 279.4 },
+  /** Nominal Cricut mats; the usable cutting area is smaller (to be verified on the machine). */
+  cricut12x12: { pageWidthMm: 304.8, pageHeightMm: 304.8 },
+  cricut12x24: { pageWidthMm: 304.8, pageHeightMm: 609.6 },
+} as const;
+
+export interface Placement {
+  partId: number;
+  /** Rotation applied to the part (radians, about its own origin) before translating. */
+  rotation: number;
+  /** After rotating the part, its bounding box's lower-left corner is moved to (x, y). */
+  x: number;
+  y: number;
+  /** Rotated and translated to page coordinates: p' = R*p + t. */
+  cos: number;
+  sin: number;
+  tx: number;
+  ty: number;
+}
+
+export interface Page {
+  index: number;
+  widthMm: number;
+  heightMm: number;
+  placements: Placement[];
+}
+
+export interface PageLayout {
+  pages: Page[];
+  warnings: PatternWarning[];
+}

@@ -18,6 +18,26 @@ These criteria define what "done" means for each phase. A phase is not complete 
 
 ---
 
+## Papercraft — Phase 1: the engine (Implemented 2026-11-25)
+
+Spec: `docs/PAPERCRAFT_ENGINE_SPEC.md` · ADR 0037 · Tests: `tests/papercraftMesh.test.ts`, `tests/papercraftUnfold.test.ts`,
+`tests/papercraftLayoutExport.test.ts`.
+
+- [x] OBJ (quads, `v/vt/vn`, negative indices) and STL (ASCII and binary) are read; other files and broken files give a readable error
+- [x] A mesh is cleaned: vertices welded, degenerate and duplicate faces removed, winding made consistent and outward, flat neighbours merged (cube from 12 triangles gives 6 faces), with a warning per problem
+- [x] Built-in shapes (cube, tetrahedron, octahedron, icosahedron, dodecahedron, prism, pyramid, lathe/gem, L block) are closed, have Euler number 2 and the asked edge length
+- [x] A model can be scaled to a width, depth, height or largest side in mm; smallest edge and face are reported
+- [x] After unfolding every face has the same corner distances as in 3D, joined faces share their edge on opposite sides, no part overlaps itself, joined edges = faces - parts
+- [x] Every cut edge pair has one number shown twice, exactly one tab (or a `tab-missing` warning), and a tab never overlaps a face or another tab
+- [x] Convex folds are mountain and concave folds valley with the print outside, swapped with the print inside
+- [x] Parts are packed on pages inside the margins without overlap; a model bigger than the page is split; a face bigger than the page is reported
+- [x] SVG export is in mm, vector only, no `<use>`, nested `<svg>`, opacity or raster; Cricut and print variants
+- [x] PDF export is vector only with a valid cross-reference table and the right page size
+- [x] All of it is deterministic (same input gives the same JSON, SVG and PDF bytes)
+- [ ] Physical test: print the cube test sheet, cut and score it on the Cricut Maker 3 and build it; confirm mountain/valley, tab tolerance, scoring and the usable mat area (needs the owner's machine)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
