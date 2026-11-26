@@ -53,6 +53,8 @@ export const BUILT_IN_MODELS: readonly BuiltInModel[] = [
   { id: 'duck', name: 'Duck', description: 'A duck on two legs, with a bill and folded wings.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.duck() },
   { id: 'chicken', name: 'Chicken', description: 'A chicken with a comb and a tail that points up.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.chicken() },
   { id: 'flamingo', name: 'Flamingo', description: 'A flamingo with long legs and a long neck.', group: 'animals', defaultSizeMm: 350, mesh: () => shapes.flamingo() },
+  { id: 'penguin', name: 'Penguin', description: 'A penguin standing upright, with flippers, a beak and little feet.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.penguin() },
+  { id: 'owl', name: 'Owl', description: 'An owl with tufts on its head, folded wings and a small beak.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.owl() },
 ];
 
 export function findBuiltInModel(id: string): BuiltInModel | undefined {

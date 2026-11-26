@@ -44,7 +44,7 @@ export interface AnimalSpec {
   /** Where the pads for the legs begin and end, as a share of the half width (default 0.3 and 0.9). */
   pad?: readonly [inner: number, outer: number];
   /** A pair of legs (left and right) at the faces between section `pair` and `pair + 1`. The `fall` of the steps adds up to 1. */
-  legs: readonly { pair: number; steps: readonly LegStep[] }[];
+  legs?: readonly { pair: number; steps: readonly LegStep[] }[];
   /** Make the rear / front section a box, so a tail or a trunk has four sides instead of eight. */
   boxRear?: boolean;
   boxFront?: boolean;
@@ -52,6 +52,12 @@ export interface AnimalSpec {
   tail?: readonly LimbStep[];
   /** Steps out of the front end: a trunk, a snout. */
   nose?: readonly LimbStep[];
+  /**
+   * For a body that stands upright (the sections run up, tilt 90): the underside of the section is the front. A pair of feet (left and right) out of the
+   * pads of the front between section `pair` and `pair + 1`, and a beak out of the flat belly of the front. The body then stands on its flat base.
+   */
+  feet?: { pair: number; steps: readonly LimbStep[] };
+  beak?: { pair: number; steps: readonly LimbStep[] };
   /** One limb out of the flat top between section `pair` and `pair + 1`: a comb, a crest. */
   crest?: { pair: number; steps: readonly LimbStep[] };
   /** A pair of ears at the shoulder faces (`edge: 'shoulder'`) or the side faces (`'side'`) between section `pair` and `pair + 1`. */
@@ -83,7 +89,7 @@ export function buildAnimal(spec: AnimalSpec): RawMesh {
   };
 
   const ops: LimbOp[] = [];
-  for (const leg of spec.legs) {
+  for (const leg of spec.legs ?? []) {
     for (const [edge, side] of [[EDGE.padRight, 1], [EDGE.padLeft, -1]] as const) {
       const face = faceAt(leg.pair, edge);
       const drop = centreZ(face);
@@ -101,6 +107,8 @@ export function buildAnimal(spec: AnimalSpec): RawMesh {
     const [right, left] = ear.edge === 'side' ? [EDGE.sideRight, EDGE.sideLeft] : [EDGE.shoulderRight, EDGE.shoulderLeft];
     ops.push({ face: faceAt(ear.pair, right), steps: ear.steps }, { face: faceAt(ear.pair, left), steps: mirrored(ear.steps) });
   }
+  if (spec.feet) ops.push({ face: faceAt(spec.feet.pair, EDGE.padRight), steps: spec.feet.steps }, { face: faceAt(spec.feet.pair, EDGE.padLeft), steps: mirrored(spec.feet.steps) });
+  if (spec.beak) ops.push({ face: faceAt(spec.beak.pair, EDGE.belly), steps: spec.beak.steps });
   if (spec.crest) ops.push({ face: faceAt(spec.crest.pair, EDGE.top), steps: spec.crest.steps });
   if (spec.tail) ops.push({ face: body.startCap, steps: spec.tail });
   if (spec.nose) ops.push({ face: body.endCap, steps: spec.nose });
@@ -314,4 +322,42 @@ export const flamingo = (): RawMesh =>
     tail: [{ by: [-5, 0, -2], scale: 0.9 }],
     nose: [{ by: [7, 0, -5], scale: 0.8 }],
     ears: [{ pair: 1, edge: 'side', steps: [{ by: [-6, 3, -2], scale: 0.8 }] }],
+  });
+
+/** Birds that stand upright: the body runs up (tilt 90 degrees), stands on its flat base, and has little feet and a beak at the front. */
+export const penguin = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 0, 14, 11, 90],
+      [0, 8, 15, 12, 90],
+      [0, 30, 19, 15, 90],
+      [0, 50, 19, 15, 90],
+      [0, 64, 12, 11, 90],
+      [0, 78, 12, 11, 90],
+      [0, 92, 9, 8, 90],
+    ],
+    boxFront: true,
+    feet: { pair: 0, steps: [{ by: [9, 0, 0], scale: 1 }] },
+    beak: { pair: 4, steps: [{ by: [8, 0, -1], scale: 0.55 }] },
+    ears: [{ pair: 2, edge: 'side', steps: [{ by: [-2, 8, -6], scale: 0.7 }, { by: [-2, 5, -8], scale: 0.5 }] }],
+  });
+
+export const owl = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 0, 14, 11, 90],
+      [0, 8, 16, 13, 90],
+      [0, 24, 19, 15, 90],
+      [0, 40, 19, 15, 90],
+      [0, 48, 13, 11, 90],
+      [0, 56, 17, 13, 90],
+      [0, 70, 17, 13, 90],
+      [0, 76, 17, 13, 90],
+    ],
+    feet: { pair: 0, steps: [{ by: [7, 0, 0], scale: 1 }] },
+    beak: { pair: 5, steps: [{ by: [5, 0, -1], scale: 0.45 }] },
+    ears: [
+      { pair: 2, edge: 'side', steps: [{ by: [-3, 5, -3], scale: 0.8 }, { by: [-3, 2, -10], scale: 0.5 }] },
+      { pair: 6, edge: 'side', steps: [{ by: [0, 3, 8], scale: 0.6 }] },
+    ],
   });

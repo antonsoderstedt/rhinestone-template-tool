@@ -138,6 +138,7 @@ ADR 0044 and 0045 · Tests: `tests/papercraftAnimals.test.ts`, "built-in models 
 - [x] At its default size each animal has at most 100 faces, no edge under 8 mm and at most one glued edge with no room for a tab
 - [x] A cut edge whose two faces already lie edge to edge in the same part becomes a fold (no tab, no number); a model with no such corner unfolds as before; no part overlaps itself; an edge cut by hand stays cut; the net lies flat when unfolded and folds up to the finished model
 - [x] Duck, chicken and flamingo (ADR 0046) stand on two flat feet (8 corners on the ground) and pass the same checks
+- [x] Penguin and owl (ADR 0047) stand upright on a flat base with two feet at the front and pass the same checks
 - [ ] An animal built on real paper stands, holds its weight and looks like the animal (needs the owner)
 
 ---
