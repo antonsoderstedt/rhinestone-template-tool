@@ -20,6 +20,8 @@ export { textWidthMm, wrapText, toWinAnsi } from './export/helvetica';
 export { partHue, partRgb } from './export/colors';
 export { exportPageSvg, type SvgPurpose } from './export/svg';
 export { exportPageDxf } from './export/dxf';
+export { readPdf, PdfReadError, MAX_PDF_BYTES, type PdfDocument, type PdfPage, type PdfStroke } from './pdf/read';
+export { lineStyles, defaultRoles, patternDrawing, styleIdOf, DEFAULT_PATTERN_OPTIONS, type LineRole, type LineStyle, type PatternOptions } from './pdf/pattern';
 export { exportPdf } from './export/pdf';
 export { strokeText } from './export/strokeFont';
 export { createPapercraft, DEFAULT_PAGE_SETTINGS, type PapercraftInput, type PapercraftResult } from './pipeline';

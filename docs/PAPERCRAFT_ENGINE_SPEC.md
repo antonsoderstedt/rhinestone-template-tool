@@ -109,6 +109,13 @@ owner cut or join an edge and to build the hinge tree.
 `exportPageDxf(drawing)` (ADR 0049): a DXF, release 12, ASCII with CRLF, millimetres. Header with `$ACADVER AC1009`, `$INSUNITS 4`, `$MEASUREMENT 1`; tables with the line type `CONTINUOUS` and the layers `CUT` (colour 7), `SCORE` (1) and `NUMBERS` (5);
 entities: a `POLYLINE` (closed flag 1 when closed, `VERTEX` per point, `SEQEND`) for each cut outline and each number stroke, a `LINE` on `SCORE` for each mountain, valley and tab line (flat folds are left out). Numbers are rounded to 0.0001; a polyline with fewer than two points is skipped.
 
+## Cutting files from PDF patterns (`readPdf`, `lineStyles`, `patternDrawing`)
+
+ADR 0051. `readPdf(bytes)` (async) returns `{ pages: PdfPage[], warnings }` and throws `PdfReadError` (`not-a-pdf`, `encrypted`, `too-big` over 60 MB, `no-pages`, `broken`). Objects are found by scanning for `N G obj` (a later one replaces an earlier one), object streams are unpacked, the page tree is walked from the last `/Root`
+(or every `/Type /Page` object when it is broken). A page's size is its CropBox or MediaBox with `Rotate` applied (multiples of 90), origin at the lower left. The content streams are joined with a newline and tokenized once; operators run as they come (operands of a dictionary or an inline image are skipped). `PdfStroke` is
+`{ points, closed, rgb, width, dash }` in points. At most 400 000 strokes per page. `lineStyles(page)`: key `#rrggbb/solid` or `#rrggbb/dash`, count and length in mm, longest first (ties by id), strokes that span 96 % of the page in both directions are left out as a frame.
+`defaultRoles`: dashed `score`, solid `cut`, all three channels over 0.93 `ignore`. `patternDrawing(page, roles, options)`: scale = 25.4 / 72 times `scalePct` / 100; a stroke under `minLengthMm` is skipped; an open stroke whose ends are within 0.01 mm is closed; a score stroke becomes one fold line per piece (kind `valley`); with `crop` the drawing is moved so its lower left corner is `marginMm` from the corner and the sheet is the pattern plus the margin.
+
 ## Built-in shapes and repair
 
 Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,
@@ -164,4 +171,4 @@ harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 g
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
-reading in the engine (done in the app), import of finished PDF patterns, true polygon nesting.
+reading in the engine (done in the app), patterns made of pictures (tracing), true polygon nesting.
