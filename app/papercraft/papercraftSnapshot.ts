@@ -16,8 +16,8 @@ export interface SerializedPapercraft {
   paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm?: number; customHeightMm?: number };
   detailPct?: number;
   colourParts?: boolean;
-  layout?: { pins?: Record<string, PagePin>; maxPartsPerPage?: number; tight?: boolean };
-  pattern: { tabWidthMm: number; tabAngleDeg: number; printedSide: 'outside' | 'inside'; numberHeightMm: number; partLabels: boolean };
+  layout?: { pins?: Record<string, PagePin>; maxPartsPerPage?: number; tight?: boolean; calibrationMm?: number };
+  pattern: { tabWidthMm: number; tabAngleDeg: number; printedSide: 'outside' | 'inside'; numberHeightMm: number; partLabels: boolean; numberPartsBy?: 'size' | 'build' };
   cover: boolean;
   edits: { forceCut: number[]; forceJoin: number[] };
 }
@@ -50,12 +50,13 @@ export function serializePapercraft(state: PapercraftState): SerializedPapercraf
     paper: { ...state.paper },
     ...(state.detailPct < 100 ? { detailPct: state.detailPct } : {}),
     ...(state.colourParts ? { colourParts: true } : {}),
-    ...(Object.keys(state.layout.pins).length > 0 || state.layout.maxPartsPerPage !== null || !state.layout.tight
+    ...(Object.keys(state.layout.pins).length > 0 || state.layout.maxPartsPerPage !== null || !state.layout.tight || state.layout.calibrationMm !== null
       ? {
           layout: {
             ...(Object.keys(state.layout.pins).length > 0 ? { pins: Object.fromEntries(Object.entries(state.layout.pins).map(([id, p]) => [id, { ...p }])) } : {}),
             ...(state.layout.maxPartsPerPage !== null ? { maxPartsPerPage: state.layout.maxPartsPerPage } : {}),
             ...(!state.layout.tight ? { tight: false } : {}),
+            ...(state.layout.calibrationMm !== null ? { calibrationMm: state.layout.calibrationMm } : {}),
           },
         }
       : {}),
@@ -137,6 +138,8 @@ export function deserializePapercraft(data: unknown): PapercraftState | null {
       printedSide: pattern.printedSide,
       numberHeightMm: clamp(pattern.numberHeightMm, 1.5, 15),
       partLabels: pattern.partLabels,
+      // A design saved before there was a choice was numbered by size.
+      numberPartsBy: pattern.numberPartsBy === 'build' ? 'build' : 'size',
     },
     cover: data.cover,
     edits: { forceCut: edits.forceCut, forceJoin: edits.forceJoin },
@@ -164,6 +167,7 @@ function readLayout(value: unknown): PapercraftState['layout'] {
     pins,
     maxPartsPerPage: isNum(value.maxPartsPerPage) && value.maxPartsPerPage >= 1 ? Math.min(50, Math.floor(value.maxPartsPerPage)) : null,
     tight: value.tight !== false,
+    calibrationMm: isNum(value.calibrationMm) && value.calibrationMm >= 10 ? Math.min(500, value.calibrationMm) : null,
   };
 }
 

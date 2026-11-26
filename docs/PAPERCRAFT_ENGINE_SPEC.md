@@ -122,6 +122,10 @@ and one-bit, raw or Flate, 8 bits or 1) and returns strokes: one picture of at l
 not white, and the blocks next to it, is a photo and has no ink. Components of 8-connected ink; a component of at least `minCutPx` is thinned and followed (crossing number 1 end, 2 line, 3 or more junction; a step never cuts a corner of a thick junction), short paths and small components are dash candidates
 (a thin straight piece at least 4 px long and at most 4.5 px wide, or a dot of at most 12 pixels). Dashes join when their directions are within 7 degrees, one lies within 3 px of the other's line and the gap is at most `maxGapPx`; three or more make a fold line, dots within 3 px of it join, and an end within `maxGapPx` of a cut line, ahead of it, runs to it.
 
+Test square and build order (ADR 0056). `LayoutOptions.calibrationMm` (10 or more, fitting the usable area): the first page gets `marks: [{ kind: 'square', x: margin, y: margin, sizeMm }]` and the bin is filled over `sizeMm + gap` in that corner before anything is placed; pages with marks are kept even without parts. `renderPage` draws the square as a closed cut path and its size as `NxN` in the number font (height min(6, size/8)).
+`buildOrderOf(parts, pairs)`: pairs are `{ number, a, b }` (the printed edge number and the two parts; a = b is a seam). The first part has the most distinct neighbouring parts (then the larger area, then the lower id); after that the part with the most pairs to built parts (then area, then id); with no pair to what is built, the biggest part left. A step is `{ step, partId, seams, joins: [{ partId, edges }] }` with sorted edge numbers, joins only to parts built earlier.
+`PatternSettings.numberPartsBy` (`'size'` default, or `'build'`) sets the text of the part label. `renderBuildOrderPages({ title, steps, footer }, size)`: 7 mm title, steps in 3.6 mm text with a hanging indent and the step number in bold, as many pages as it takes (15 mm margin).
+
 ## Built-in shapes and repair
 
 Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,

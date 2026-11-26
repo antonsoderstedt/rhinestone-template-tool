@@ -51,7 +51,7 @@ export function computePapercraft(state: PapercraftInputState): ComputeResult {
       mesh,
       scale: { by: state.size.by, mm: state.size.mm },
       page: { ...preset, marginMm: state.paper.marginMm, gapMm: state.paper.gapMm },
-      layout: { pins: state.layout.pins, maxPartsPerPage: state.layout.maxPartsPerPage ?? undefined, tight: state.layout.tight },
+      layout: { pins: state.layout.pins, maxPartsPerPage: state.layout.maxPartsPerPage ?? undefined, tight: state.layout.tight, calibrationMm: state.layout.calibrationMm ?? undefined },
       pattern: {
         ...state.pattern,
         forceCutEdges: state.edits.forceCut,

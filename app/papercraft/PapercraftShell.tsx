@@ -59,8 +59,8 @@ export default function PapercraftShell() {
 
   // The cover page's words, in the language in use (also shown first in the Pages view).
   const cover = useMemo(
-    () => (run && state.cover ? { content: buildCoverContent(run, state.projectName, state.paper.preset, t), size: coverPageSize(state.paper.preset) } : null),
-    [run, state.cover, state.projectName, state.paper.preset, t],
+    () => (run && state.cover ? { content: buildCoverContent(run, state.projectName, state.paper.preset, t, state.pattern.numberPartsBy === 'build'), size: coverPageSize(state.paper.preset) } : null),
+    [run, state.cover, state.projectName, state.paper.preset, state.pattern.numberPartsBy, t],
   );
 
   // Choosing another model or importing a file starts a new design (saving it does not overwrite the one that was open).

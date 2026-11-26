@@ -140,12 +140,23 @@ export interface PatternWarning {
   count?: number;
 }
 
+/** One step of building: a part, the edges that are glued together on the part itself (a seam), and the parts built before it that it is glued to, with the edge numbers. */
+export interface BuildStep {
+  /** 1-based. */
+  step: number;
+  partId: number;
+  seams: number[];
+  joins: { partId: number; edges: number[] }[];
+}
+
 export interface Pattern {
   /** The rule for ordering the edges that gave this net (see `weightVariant`). */
   rule: number;
   /** Edge ids of the glued edges that have no room for a tab (glue them edge to edge). */
   missingTabEdgeIds: number[];
   parts: Part[];
+  /** The order to build in (see `buildOrderOf`). */
+  buildOrder: BuildStep[];
   /** Edge ids of the solid that are folded rather than cut. */
   joinedEdgeIds: number[];
   /** Number of glued edge pairs. */
@@ -171,6 +182,8 @@ export interface PatternSettings {
   printedSide: 'outside' | 'inside';
   numberHeightMm: number;
   partLabels: boolean;
+  /** What the number on a part is: its place in the order of size (the default), or its step in the order of building. */
+  numberPartsBy?: 'size' | 'build';
   /** Largest allowed part (including tabs); parts are split to stay inside. Omit for no limit. */
   maxPartSize?: { widthMm: number; heightMm: number };
   /** Edge ids that must be cut / joined (a join is dropped if it makes a part overlap itself). */
@@ -249,10 +262,22 @@ export interface LayoutOptions {
   maxPartsPerPage?: number;
   /** Try several orders, turns and rules and keep the layout with the fewest pages. */
   tight?: boolean;
+  /** A square of this size in the lower left corner of the first page, to measure after printing or cutting. */
+  calibrationMm?: number;
+}
+
+/** Something that is on the page but is not a part: a square to measure (`square`: lower left corner at x, y, sides `sizeMm`). */
+export interface PageMark {
+  kind: 'square';
+  x: number;
+  y: number;
+  sizeMm: number;
 }
 
 export interface Page {
   index: number;
+  /** The test square, on the first page when it is asked for. */
+  marks?: PageMark[];
   widthMm: number;
   heightMm: number;
   placements: Placement[];

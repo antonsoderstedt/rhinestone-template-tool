@@ -1536,5 +1536,22 @@
   "Makes one DXF for every page that has lines, and puts them in one zip file.": "Gör en DXF för varje sida som har linjer och lägger dem i en zip-fil.",
   "All pages as SVG (zip)": "Alla sidor som SVG (zip)",
   "All pages as DXF (zip)": "Alla sidor som DXF (zip)",
-  "Check the size against a ruler before you cut: a PDF can be scaled when it was made.": "Kontrollera storleken mot en linjal innan du skär: en PDF kan ha skalats när den gjordes."
+  "Check the size against a ruler before you cut: a PDF can be scaled when it was made.": "Kontrollera storleken mot en linjal innan du skär: en PDF kan ha skalats när den gjordes.",
+  "Test square on the first page": "Testruta på första sidan",
+  "Adds a square of 100 × 100 mm to the lower left corner of the first page. Print or cut it and measure it with a ruler: if it is not 100 mm, the size is wrong somewhere (the printer scaling, or the cutting machine).": "Lägger en ruta på 100 × 100 mm i nedre vänstra hörnet av första sidan. Skriv ut eller skär den och mät med linjal: är den inte 100 mm är storleken fel någonstans (skrivarens skalning eller skärmaskinen).",
+  "The numbers on the parts are": "Numren på delarna är",
+  "Build order: part 1 is the first to build, then 2, 3 and so on, each glued to the ones before. Size: part 1 is the biggest part.": "Byggordning: del 1 byggs först, sedan 2, 3 och så vidare, var och en limmad mot de före. Storlek: del 1 är den största delen.",
+  "The build order": "Byggordningen",
+  "In order of size": "I storleksordning",
+  "Build order": "Byggordning",
+  "The order to glue the parts in. Click a step to see the part.": "Ordningen att limma delarna i. Klicka på ett steg för att se delen.",
+  "Show this part": "Visa den här delen",
+  "Start with part {part}. Fold it along the dashed lines.": "Börja med del {part}. Vik den längs de streckade linjerna.",
+  "Take part {part}. Fold it along the dashed lines.": "Ta del {part}. Vik den längs de streckade linjerna.",
+  "Glue the edge {edges} to the edge with the same number on the same part.": "Limma kant {edges} mot kanten med samma nummer på samma del.",
+  "Glue the edges {edges} to the edges with the same numbers on the same part.": "Limma kanterna {edges} mot kanterna med samma nummer på samma del.",
+  "Glue edge {edges} to part {other}.": "Limma kant {edges} mot del {other}.",
+  "Glue edges {edges} to part {other}.": "Limma kanterna {edges} mot del {other}.",
+  "Start with part 1 and follow the build order on the next pages. Put glue on a tab and press it to the edge with the same number. Hold it for a few seconds.": "Börja med del 1 och följ byggordningen på nästa sidor. Stryk lim på en flik och tryck den mot kanten med samma nummer. Håll fast den några sekunder.",
+  "The numbers on the parts are the steps. Close the last edges last. Tweezers help with small parts.": "Numren på delarna är stegen. Stäng de sista kanterna sist. Pincett hjälper med små delar."
 }

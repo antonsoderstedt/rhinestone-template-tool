@@ -9,11 +9,12 @@ export { simplifyMesh, type SimplifyOptions, type SimplifyResult } from './mesh/
 export { fillHoles, flipFaces, boundaryLoops, type FillHolesResult } from './mesh/repair';
 export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarget } from './mesh/inspect';
 export { unfold, type UnfoldOptions, type UnfoldResult } from './unfold/unfold';
+export { buildOrderOf } from './unfold/buildOrder';
 export { buildPattern, buildPatternWithRule, foldKindOfEdge, patternScore, rulesToTry, UNFOLD_RULES } from './unfold/pattern';
 export { buildFoldTree, foldPoses, faceTriangles, applyMat4, multiplyMat4, rotationAboutLine, IDENTITY, type FoldTree, type FoldNode, type Mat4 } from './unfold/folding';
 export { layoutPages, layoutProblems, partBox, transformPoint, type LayoutProblem } from './layout/pack';
 export { renderPage, renderPages, type PageDrawing, type RenderOptions, type FilledShape, type TextRun } from './export/render';
-export { renderCover, type CoverContent } from './export/cover';
+export { renderCover, renderBuildOrderPages, type CoverContent } from './export/cover';
 export { projectModel, projectSolid, type PreviewPolygon } from './export/preview';
 export { assessBuild, type BuildAssessment, type Difficulty } from './unfold/assessment';
 export { textWidthMm, wrapText, toWinAnsi } from './export/helvetica';
@@ -25,4 +26,5 @@ export { traceLineArt, type PixelImage, type TraceOptions, type TraceResult, typ
 export { lineStyles, defaultRoles, patternDrawing, styleIdOf, DEFAULT_PATTERN_OPTIONS, type LineRole, type LineStyle, type PatternOptions } from './pdf/pattern';
 export { exportPdf } from './export/pdf';
 export { strokeText } from './export/strokeFont';
+export type { BuildStep } from './types';
 export { createPapercraft, DEFAULT_PAGE_SETTINGS, type PapercraftInput, type PapercraftResult } from './pipeline';

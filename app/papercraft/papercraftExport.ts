@@ -2,6 +2,7 @@ import {
   exportPageDxf,
   exportPageSvg,
   exportPdf,
+  renderBuildOrderPages,
   renderCover,
   renderPages,
   type CoverContent,
@@ -23,7 +24,10 @@ export function exportBaseName(projectName: string): string {
 /** The pages as a PDF, with a cover page first when `cover` is given. */
 export function buildPatternPdf(run: PapercraftResult, cover?: { content: CoverContent; size: { widthMm: number; heightMm: number } } | null): Uint8Array {
   const pages = renderPages(run.layout.pages, run.pattern.parts, { pageNumbers: true });
-  return exportPdf(cover ? [renderCover(cover.content, run.solid, run.pattern, run.layout, cover.size), ...pages] : pages);
+  if (!cover) return exportPdf(pages);
+  // The cover, then the build order (when there is more than one part), then the pages.
+  const order = cover.content.buildOrder ? renderBuildOrderPages({ ...cover.content.buildOrder, footer: cover.content.footer }, cover.size) : [];
+  return exportPdf([renderCover(cover.content, run.solid, run.pattern, run.layout, cover.size), ...order, ...pages]);
 }
 
 /** One Cricut SVG per page (cut, score and draw layers), named `<base>-page-<n>.svg`. */

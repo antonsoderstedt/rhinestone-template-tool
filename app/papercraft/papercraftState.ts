@@ -22,7 +22,7 @@ export interface PapercraftState {
   /** How much of a built-in model's detail is kept, in percent (100 is as it is made). An imported model is simplified by its face count instead. */
   detailPct: number;
   /** Where the person has put parts on the pages (by part id), how many parts to a page at most, and whether to pack tightly. */
-  layout: { pins: Record<number, PagePin>; maxPartsPerPage: number | null; tight: boolean };
+  layout: { pins: Record<number, PagePin>; maxPartsPerPage: number | null; tight: boolean; /** The size of a square to measure on the first page, or none. */ calibrationMm: number | null };
   /** Each part in its own colour on the screen (it only tells parts apart; print and cut are not coloured). */
   colourParts: boolean;
   pattern: {
@@ -31,6 +31,8 @@ export interface PapercraftState {
     printedSide: 'outside' | 'inside';
     numberHeightMm: number;
     partLabels: boolean;
+    /** The number on a part: its step in the order of building, or its place in the order of size. */
+    numberPartsBy: 'size' | 'build';
   };
   /** A cover page first in the PDF. */
   cover: boolean;
@@ -56,8 +58,8 @@ export function initialPapercraftState(): PapercraftState {
     paper: { preset: 'a4', marginMm: 10, gapMm: 3, customWidthMm: 300, customHeightMm: 400 },
     detailPct: 100,
     colourParts: false,
-    layout: { pins: {}, maxPartsPerPage: null, tight: true },
-    pattern: { tabWidthMm: 8, tabAngleDeg: 45, printedSide: 'outside', numberHeightMm: 3, partLabels: true },
+    layout: { pins: {}, maxPartsPerPage: null, tight: true, calibrationMm: null },
+    pattern: { tabWidthMm: 8, tabAngleDeg: 45, printedSide: 'outside', numberHeightMm: 3, partLabels: true, numberPartsBy: 'build' },
     cover: true,
     edits: { forceCut: [], forceJoin: [] },
     view: 'pattern',
@@ -88,6 +90,7 @@ export type PapercraftAction =
   | { type: 'RESET_LAYOUT' }
   | { type: 'SET_PAGE_LIMIT'; limit: number | null }
   | { type: 'SET_TIGHT'; on: boolean }
+  | { type: 'SET_CALIBRATION'; mm: number | null }
   | { type: 'SET_PATTERN'; pattern: Partial<PapercraftState['pattern']> }
   | { type: 'SET_COVER'; cover: boolean }
   /** Click on an edge: a folded edge is cut, a cut edge is folded. `joined` is what it is now. */
@@ -166,6 +169,9 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
       return { ...state, layout: { ...state.layout, pins: {}, maxPartsPerPage: action.limit === null || !(action.limit >= 1) ? null : Math.min(50, Math.floor(action.limit)) } };
     case 'SET_TIGHT':
       return { ...state, layout: { ...state.layout, pins: {}, tight: action.on } };
+    case 'SET_CALIBRATION':
+      // The first page changes: the parts are placed again.
+      return { ...state, layout: { ...state.layout, pins: {}, calibrationMm: action.mm !== null && action.mm >= 10 ? Math.min(500, action.mm) : null } };
     case 'SET_COLOURS':
       return { ...state, colourParts: action.on };
     case 'SET_PAPER':

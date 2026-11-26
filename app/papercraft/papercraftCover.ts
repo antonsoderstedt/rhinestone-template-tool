@@ -1,4 +1,5 @@
 import { assessBuild, type CoverContent, type PapercraftResult } from '@/src/lib/papercraft-engine';
+import { buildOrderText } from './papercraftBuild';
 import { MM_PER_INCH } from '../lib/units';
 import type { TranslateVars } from '../lib/i18n';
 import type { PaperPreset } from './papercraftState';
@@ -55,7 +56,7 @@ export function formatMinutes(t: T, minutes: number): string {
 const mm1 = (v: number) => v.toFixed(1);
 
 /** What the cover page says, in the reader's language. */
-export function buildCoverContent(run: PapercraftResult, projectName: string, preset: PaperPreset, t: T): CoverContent {
+export function buildCoverContent(run: PapercraftResult, projectName: string, preset: PaperPreset, t: T, numberedByStep = false): CoverContent {
   const { solid, pattern, layout } = run;
   const size = solid.vertices.length
     ? [0, 1, 2].map((i) => Math.max(...solid.vertices.map((v) => v[i])) - Math.min(...solid.vertices.map((v) => v[i])))
@@ -94,10 +95,13 @@ export function buildCoverContent(run: PapercraftResult, projectName: string, pr
       t('Cut out each part along the solid lines. With a Cricut, use the Cricut SVG instead: black is Cut and red is Score.'),
       t('Crease along the dashed lines with a ruler and a blunt tool such as an empty ballpoint pen.'),
       t('Fold every crease the way it is marked, looking at the printed side.'),
-      t('Start with part 1. Put glue on a tab and press it to the edge with the same number. Hold it for a few seconds.'),
-      t('Continue in number order, and close the last edges last. Tweezers help with small parts.'),
+      numberedByStep
+        ? t('Start with part 1 and follow the build order on the next pages. Put glue on a tab and press it to the edge with the same number. Hold it for a few seconds.')
+        : t('Start with part 1. Put glue on a tab and press it to the edge with the same number. Hold it for a few seconds.'),
+      numberedByStep ? t('The numbers on the parts are the steps. Close the last edges last. Tweezers help with small parts.') : t('Continue in number order, and close the last edges last. Tweezers help with small parts.'),
       t('Let it dry before you handle it.'),
     ],
+    buildOrder: pattern.buildOrder.length > 1 ? buildOrderText(t, pattern.buildOrder, numberedByStep) : undefined,
     footer: t('Made with Papercraft Studio'),
   };
 }
