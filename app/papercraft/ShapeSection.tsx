@@ -101,6 +101,7 @@ export default function ShapeSection({ source, dispatch }: { source: PapercraftS
       </button>
       <SelectField<ShapeMode>
         label={t('Make it')}
+        tip={t('A box has the outline of the shape and a depth. Spun means the shape is turned round like a vase.')}
         value={settings.mode}
         options={[
           { value: 'box', label: t('A box in the shape') },
@@ -110,13 +111,13 @@ export default function ShapeSection({ source, dispatch }: { source: PapercraftS
       />
       {settings.mode === 'box' ? (
         <>
-          <NumberField label={t('Corners')} value={settings.corners} min={l.corners.min} max={l.corners.max} onChange={(corners) => change({ corners })} />
-          <NumberField label={t('Depth')} suffix="%" value={settings.depthPct} min={l.depthPct.min} max={l.depthPct.max} step={5} onChange={(depthPct) => change({ depthPct })} />
+          <NumberField label={t('Corners')} tip={t('How many corners the outline has. More corners follow the shape closer but make more faces.')} value={settings.corners} min={l.corners.min} max={l.corners.max} onChange={(corners) => change({ corners })} />
+          <NumberField label={t('Depth')} tip={t('How deep the box is, as a share of the longer side of the shape.')} suffix="%" value={settings.depthPct} min={l.depthPct.min} max={l.depthPct.max} step={5} onChange={(depthPct) => change({ depthPct })} />
         </>
       ) : (
         <>
-          <NumberField label={t('Rings')} value={settings.rings} min={l.rings.min} max={l.rings.max} onChange={(rings) => change({ rings })} />
-          <NumberField label={t('Sides')} value={settings.sides} min={l.sides.min} max={l.sides.max} onChange={(sides) => change({ sides })} />
+          <NumberField label={t('Rings')} tip={t('How many rings the spun shape has from bottom to top. More rings follow the shape closer.')} value={settings.rings} min={l.rings.min} max={l.rings.max} onChange={(rings) => change({ rings })} />
+          <NumberField label={t('Sides')} tip={t('How many sides the spun shape has round. More sides are rounder.')} value={settings.sides} min={l.sides.min} max={l.sides.max} onChange={(sides) => change({ sides })} />
         </>
       )}
       {note && <p className="text-xs text-[var(--studio-ink-subtle)]">{note}</p>}

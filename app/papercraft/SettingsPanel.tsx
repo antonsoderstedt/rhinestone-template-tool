@@ -6,7 +6,7 @@ import type { PapercraftResult } from '@/src/lib/papercraft-engine';
 import { useT } from '../lib/i18n';
 import { CheckField, LengthField, NumberField, Section, SelectField } from './fields';
 import { formatRelativeTime } from '../lib/relativeTime';
-import { formatLength, useUnit } from '../lib/units';
+import { formatLength, formatSize, useUnit } from '../lib/units';
 import type { PapercraftVersion } from './papercraftVersions';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning, describeSizeWarnings, type WarningLine } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, PaperPreset } from './papercraftState';
@@ -39,10 +39,14 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
   const t = useT();
   const unit = useUnit();
   const presetOptions: { value: PaperPreset; label: string }[] = [
+    { value: 'a3', label: t('A3 sheet') },
     { value: 'a4', label: t('A4 sheet') },
+    { value: 'a5', label: t('A5 sheet') },
     { value: 'letter', label: t('US Letter sheet') },
+    { value: 'tabloid', label: t('US Tabloid sheet (11 × 17 in)') },
     { value: 'cricut12x12', label: t('Cricut mat 12 × 12 in') },
     { value: 'cricut12x24', label: t('Cricut mat 12 × 24 in') },
+    { value: 'custom', label: t('Your own size') },
   ];
   const lines: WarningLine[] = run
     ? [
@@ -68,6 +72,7 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         <button
           type="button"
           onClick={onSave}
+          title={t('Save this model in My Designs in this browser.')}
           disabled={!save.canSave}
           className="flex w-full items-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -78,6 +83,7 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         <button
           type="button"
           onClick={onShare}
+          title={t('Copy a link that opens this model, with its size and settings, on another device.')}
           className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)]"
         >
           <Link2 className="h-4 w-4" aria-hidden="true" />
@@ -126,6 +132,7 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
           <button
             type="button"
             onClick={() => dispatch({ type: 'RESET_EDITS' })}
+          title={t('Put back the folds and cuts the program chose.')}
             className="inline-flex items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-1.5 text-xs font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)]"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -150,16 +157,39 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
       )}
 
       <Section title={t('Paper')}>
-        <SelectField label={t('Page')} value={state.paper.preset} options={presetOptions} onChange={(preset) => dispatch({ type: 'SET_PAPER', paper: { preset } })} />
-        <LengthField label={t('Margin')} valueMm={state.paper.marginMm} minMm={0} maxMm={50} onChange={(marginMm) => dispatch({ type: 'SET_PAPER', paper: { marginMm } })} />
-        <LengthField label={t('Space between parts')} valueMm={state.paper.gapMm} minMm={0} maxMm={30} onChange={(gapMm) => dispatch({ type: 'SET_PAPER', paper: { gapMm } })} />
+        <SelectField
+          label={t('Page')}
+          tip={t('The sheet of paper or the cutting mat the parts are placed on. The number of pages follows from it.')}
+          value={state.paper.preset}
+          options={presetOptions}
+          onChange={(preset) => dispatch({ type: 'SET_PAPER', paper: { preset } })}
+        />
+        {state.paper.preset === 'custom' && (
+          <>
+            <LengthField label={t('Sheet width')} tip={t('The width of your own sheet or mat.')} valueMm={state.paper.customWidthMm} minMm={50} maxMm={2000} onChange={(customWidthMm) => dispatch({ type: 'SET_PAPER', paper: { customWidthMm } })} />
+            <LengthField label={t('Sheet height')} tip={t('The height of your own sheet or mat.')} valueMm={state.paper.customHeightMm} minMm={50} maxMm={2000} onChange={(customHeightMm) => dispatch({ type: 'SET_PAPER', paper: { customHeightMm } })} />
+          </>
+        )}
+        {run && <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Sheet: {size}', { size: formatSize(run.pageSettings.pageWidthMm, run.pageSettings.pageHeightMm, unit) })}</p>}
+        <LengthField label={t('Margin')} tip={t('The empty edge of every page. Printers cannot print to the very edge, and a cutting mat has an edge that cannot be cut.')} valueMm={state.paper.marginMm} minMm={0} maxMm={50} onChange={(marginMm) => dispatch({ type: 'SET_PAPER', paper: { marginMm } })} />
+        <LengthField label={t('Space between parts')} tip={t('The gap left between two parts on a page. A small gap fits more on a page; leave room for the blade.')} valueMm={state.paper.gapMm} minMm={0} maxMm={30} onChange={(gapMm) => dispatch({ type: 'SET_PAPER', paper: { gapMm } })} />
+      </Section>
+
+      <Section title={t('View')}>
+        <CheckField
+          label={t('Colour the parts')}
+          tip={t('Gives every part its own colour on the screen so you can tell the parts apart. It does not change the pattern: nothing is printed or cut in colour.')}
+          checked={state.colourParts}
+          onChange={(on) => dispatch({ type: 'SET_COLOURS', on })}
+        />
       </Section>
 
       <Section title={t('Folds and glue tabs')}>
-        <LengthField label={t('Glue tab width')} valueMm={state.pattern.tabWidthMm} minMm={3} maxMm={30} onChange={(tabWidthMm) => dispatch({ type: 'SET_PATTERN', pattern: { tabWidthMm } })} />
-        <NumberField label={t('Tab side angle')} suffix="°" value={state.pattern.tabAngleDeg} min={10} max={90} onChange={(tabAngleDeg) => dispatch({ type: 'SET_PATTERN', pattern: { tabAngleDeg } })} />
+        <LengthField label={t('Glue tab width')} tip={t('How deep the flaps are that you spread glue on. Wider is easier to glue but needs more room on the page.')} valueMm={state.pattern.tabWidthMm} minMm={3} maxMm={30} onChange={(tabWidthMm) => dispatch({ type: 'SET_PATTERN', pattern: { tabWidthMm } })} />
+        <NumberField label={t('Tab side angle')} tip={t('How slanted the sides of a glue flap are. 90 degrees is a rectangle; 45 degrees is easier to fit into a corner.')} suffix="°" value={state.pattern.tabAngleDeg} min={10} max={90} onChange={(tabAngleDeg) => dispatch({ type: 'SET_PATTERN', pattern: { tabAngleDeg } })} />
         <SelectField
           label={t('Which side is printed')}
+          tip={t('Decides which folds are mountain and which are valley. Choose where the printed side ends up when the model is built.')}
           value={state.pattern.printedSide}
           options={[
             { value: 'outside', label: t('The print ends up outside') },
@@ -167,14 +197,15 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
           ]}
           onChange={(printedSide) => dispatch({ type: 'SET_PATTERN', pattern: { printedSide } })}
         />
-        <LengthField label={t('Number height')} valueMm={state.pattern.numberHeightMm} minMm={1.5} maxMm={15} onChange={(numberHeightMm) => dispatch({ type: 'SET_PATTERN', pattern: { numberHeightMm } })} />
-        <CheckField label={t('Number the parts')} checked={state.pattern.partLabels} onChange={(partLabels) => dispatch({ type: 'SET_PATTERN', pattern: { partLabels } })} />
+        <LengthField label={t('Number height')} tip={t('The height of the numbers that show which edges are glued together.')} valueMm={state.pattern.numberHeightMm} minMm={1.5} maxMm={15} onChange={(numberHeightMm) => dispatch({ type: 'SET_PATTERN', pattern: { numberHeightMm } })} />
+        <CheckField label={t('Number the parts')} tip={t('Writes a number on every part so you can find them in the right order.')} checked={state.pattern.partLabels} onChange={(partLabels) => dispatch({ type: 'SET_PATTERN', pattern: { partLabels } })} />
       </Section>
 
       <Section title={t('Print or cut')}>
         <button
           type="button"
           onClick={onExportPdf}
+          title={t('Download a PDF to print at 100 % scale. Turn off any \'fit to page\' in the print dialog.')}
           disabled={!run}
           className="flex w-full items-center gap-2 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -184,6 +215,7 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         <button
           type="button"
           onClick={onExportCricut}
+          title={t('Download SVG files for Cricut Design Space: black is cut, red is score, blue is the numbers.')}
           disabled={!run}
           className="flex w-full items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-2 text-sm font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -193,13 +225,14 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         <button
           type="button"
           onClick={onExportSilhouette}
+          title={t('Download DXF files for Silhouette Studio: black is cut, red is score, blue is the numbers.')}
           disabled={!run}
           className="flex w-full items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-2 text-sm font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Scissors className="h-4 w-4" aria-hidden="true" />
           {t('Download DXF for Silhouette')}
         </button>
-        <CheckField label={t('Cover page in the PDF (picture, facts, steps)')} checked={state.cover} onChange={(cover) => dispatch({ type: 'SET_COVER', cover })} />
+        <CheckField label={t('Cover page in the PDF (picture, facts, steps)')} tip={t('Adds a first page to the PDF with a picture of the model, how hard it is and the steps. It is not in the cutting files.')} checked={state.cover} onChange={(cover) => dispatch({ type: 'SET_COVER', cover })} />
         <p className="flex gap-2 text-xs leading-5 text-[var(--studio-ink-subtle)]">
           <Download className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>{t('In Cricut Design Space each colour is its own layer: set black to Cut, red to Score and blue (the numbers) to Draw, or delete it. Try the Test cube on your paper first.')}</span>

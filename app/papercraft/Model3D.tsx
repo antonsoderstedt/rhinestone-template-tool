@@ -15,6 +15,8 @@ interface Model3DProps {
   fold: number;
   selectedPartId: number | null;
   onSelectPart: (partId: number | null) => void;
+  /** Each part in its own colour. */
+  colourParts: boolean;
 }
 
 interface FaceData {
@@ -34,7 +36,7 @@ function lineGeometry(points: Vec3[], pairs: [number, number][]): THREE.BufferGe
   return g;
 }
 
-function Scene({ run, fold, selectedPartId, onSelectPart }: Model3DProps) {
+function Scene({ run, fold, selectedPartId, onSelectPart, colourParts }: Model3DProps) {
   const invalidate = useThree((s) => s.invalidate);
   const groups = useRef<(THREE.Group | null)[]>([]);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -103,7 +105,7 @@ function Scene({ run, fold, selectedPartId, onSelectPart }: Model3DProps) {
     invalidate();
   }, [model, fold, invalidate]);
 
-  useEffect(() => invalidate(), [selectedPartId, invalidate]);
+  useEffect(() => invalidate(), [selectedPartId, colourParts, invalidate]);
 
   const distance = model.radius * 4.4;
   // The flat net is much bigger than the folded model: the camera backs away along its line of sight as the model unfolds.
@@ -152,7 +154,7 @@ function Scene({ run, fold, selectedPartId, onSelectPart }: Model3DProps) {
                     onSelectPart(f.partId);
                   }}
                 >
-                  <meshStandardMaterial color={partColor(f.partId, selected ? 72 : 58)} emissive={selected ? '#553300' : '#000000'} side={THREE.DoubleSide} flatShading polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
+                  <meshStandardMaterial color={colourParts ? partColor(f.partId, selected ? 72 : 58) : selected ? '#f2e2a0' : '#d9d3c4'} emissive={selected ? '#553300' : '#000000'} side={THREE.DoubleSide} flatShading polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
                 </mesh>
                 <lineSegments geometry={f.foldLines}>
                   <lineBasicMaterial color="#444444" />

@@ -203,8 +203,12 @@ export interface PageSettings {
 }
 
 export const PAGE_PRESETS = {
+  a3: { pageWidthMm: 297, pageHeightMm: 420 },
   a4: { pageWidthMm: 210, pageHeightMm: 297 },
+  a5: { pageWidthMm: 148, pageHeightMm: 210 },
   letter: { pageWidthMm: 215.9, pageHeightMm: 279.4 },
+  /** US Tabloid / Ledger (11 x 17 in). */
+  tabloid: { pageWidthMm: 279.4, pageHeightMm: 431.8 },
   /** The usable cutting area of the Cricut mats (the same figures the Rhinestone studio uses); to be confirmed on the machine. */
   cricut12x12: { pageWidthMm: 292.1, pageHeightMm: 292.1 },
   cricut12x24: { pageWidthMm: 292.1, pageHeightMm: 596.9 },

@@ -49,8 +49,8 @@ export default function PapercraftShell() {
   const [playing, setPlaying] = useState(false);
 
   // Only the things that decide the pattern: turning the 3D view or the fold slider never recomputes it.
-  const { source, size, paper, pattern, edits } = state;
-  const input = useMemo(() => ({ source, size, paper, pattern, edits }), [source, size, paper, pattern, edits]);
+  const { source, size, paper, pattern, edits, detailPct } = state;
+  const input = useMemo(() => ({ source, size, paper, pattern, edits, detailPct }), [source, size, paper, pattern, edits, detailPct]);
   const deferred = useDeferredValue(input);
   const working = deferred !== input;
   const result = useMemo(() => computePapercraft(deferred), [deferred]);
@@ -341,12 +341,12 @@ export default function PapercraftShell() {
           }}
         >
           <h1 className="sr-only">{t('Papercraft Studio')}</h1>
-          {run && state.view === 'pattern' && <PatternView run={run} selectedPartId={state.selectedPartId} onSelectPart={selectPart} onToggleEdge={toggleEdge} />}
+          {run && state.view === 'pattern' && <PatternView run={run} selectedPartId={state.selectedPartId} onSelectPart={selectPart} onToggleEdge={toggleEdge} colourParts={state.colourParts} />}
           {run && state.view === 'pages' && <PagesView run={run} cover={cover} />}
           {run && state.view === 'model' && (
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
-                <Model3D run={run} fold={state.fold} selectedPartId={state.selectedPartId} onSelectPart={selectPart} />
+                <Model3D run={run} fold={state.fold} selectedPartId={state.selectedPartId} onSelectPart={selectPart} colourParts={state.colourParts} />
               </div>
               <div className="flex items-center gap-3 border-t border-[var(--studio-border)] bg-[var(--studio-surface)] px-4 py-2">
                 <button

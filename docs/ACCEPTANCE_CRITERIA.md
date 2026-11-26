@@ -181,6 +181,18 @@ ADR 0051 · Tests: `tests/papercraftPdfImport.test.ts`.
 
 ---
 
+## Papercraft — paper sizes, detail, colours, tooltips (Implemented 2026-11-26)
+
+ADR 0053 · Tests: `tests/papercraftSizesDetail.test.ts`.
+
+- [x] A3, A5, US Tabloid and a sheet of your own size make pages of that size; a bigger sheet makes the same or fewer pages
+- [x] A built-in model can be made with less detail (30 to 100 %): fewer faces at each step, still closed; a new model starts at 100 %; the edge edits start over
+- [x] Parts are one colour until Colour the parts is turned on; the pattern view says what the colours mean
+- [x] The size, detail and colour settings are saved and shared; an older design opens with the defaults
+- [x] Settings and buttons have tooltips in both languages (checked in the dev server)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

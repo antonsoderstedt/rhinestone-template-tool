@@ -1,11 +1,17 @@
 import {
   createPapercraft,
   PAGE_PRESETS,
+  simplifyMesh,
   type PapercraftResult,
   type RawMesh,
 } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 import type { PapercraftState } from './papercraftState';
+
+/** The size of the sheet or mat: a preset, or the one the person typed. */
+export function pageSizeOf(paper: PapercraftState['paper']): { pageWidthMm: number; pageHeightMm: number } {
+  return paper.preset === 'custom' ? { pageWidthMm: paper.customWidthMm, pageHeightMm: paper.customHeightMm } : PAGE_PRESETS[paper.preset];
+}
 
 /** More faces than this are not unfolded (the unfolding checks every join for overlap and would freeze the page): the studio simplifies the model first. */
 export const MAX_FACES = 3000;
@@ -19,13 +25,20 @@ export type ComputeResult =
   | { ok: true; run: PapercraftResult }
   | { ok: false; reason: 'unknown-model' | 'too-many-faces' | 'empty' | 'error'; faceCount?: number; detail?: string };
 
-export function meshOfSource(state: Pick<PapercraftState, 'source'>): RawMesh | null {
+export function meshOfSource(state: Pick<PapercraftState, 'source'> & Partial<Pick<PapercraftState, 'detailPct'>>): RawMesh | null {
   if (state.source.kind === 'file') return state.source.mesh;
-  return findBuiltInModel(state.source.id)?.mesh() ?? null;
+  const mesh = findBuiltInModel(state.source.id)?.mesh() ?? null;
+  const pct = state.detailPct ?? 100;
+  if (!mesh || pct >= 100) return mesh;
+  // Less detail on a built-in model: fewer faces, by the share asked for. 100 % is what the model is made of once the triangles that only split
+  // a flat face are taken away (the simplifier does that first, for free); the share is counted from there.
+  const triangles = mesh.faces.reduce((sum, f) => sum + Math.max(1, f.length - 2), 0);
+  const base = simplifyMesh(mesh, { targetFaces: triangles });
+  return simplifyMesh(base.mesh, { targetFaces: Math.max(MIN_SIMPLIFY_FACES, Math.round((base.outputFaces * pct) / 100)) }).mesh;
 }
 
 /** The part of the studio state that decides the pattern (the view, selection and fold amount do not). */
-export type PapercraftInputState = Pick<PapercraftState, 'source' | 'size' | 'paper' | 'pattern' | 'edits'>;
+export type PapercraftInputState = Pick<PapercraftState, 'source' | 'size' | 'paper' | 'pattern' | 'edits' | 'detailPct'>;
 
 /** Mesh and settings in, pattern and pages out; never throws (a problem comes back as a reason). */
 export function computePapercraft(state: PapercraftInputState): ComputeResult {
@@ -33,7 +46,7 @@ export function computePapercraft(state: PapercraftInputState): ComputeResult {
   if (!mesh) return { ok: false, reason: 'unknown-model' };
   if (mesh.faces.length > MAX_FACES * 2) return { ok: false, reason: 'too-many-faces', faceCount: mesh.faces.length };
   try {
-    const preset = PAGE_PRESETS[state.paper.preset];
+    const preset = pageSizeOf(state.paper);
     const run = createPapercraft({
       mesh,
       scale: { by: state.size.by, mm: state.size.mm },

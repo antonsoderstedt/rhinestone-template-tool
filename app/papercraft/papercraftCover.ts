@@ -7,13 +7,21 @@ type T = (text: string, vars?: TranslateVars) => string;
 
 /** The cover is printed on A4, or on Letter when the pages are Letter. (A cutting mat is not a printer page.) */
 export function coverPageSize(preset: PaperPreset): { widthMm: number; heightMm: number } {
-  return preset === 'letter' ? { widthMm: 215.9, heightMm: 279.4 } : { widthMm: 210, heightMm: 297 };
+  return preset === 'letter' || preset === 'tabloid' ? { widthMm: 215.9, heightMm: 279.4 } : { widthMm: 210, heightMm: 297 };
 }
 
 export function paperPresetLabel(t: T, preset: PaperPreset): string {
   switch (preset) {
+    case 'a3':
+      return t('A3 sheet');
     case 'a4':
       return t('A4 sheet');
+    case 'a5':
+      return t('A5 sheet');
+    case 'tabloid':
+      return t('US Tabloid sheet (11 × 17 in)');
+    case 'custom':
+      return t('Your own size');
     case 'letter':
       return t('US Letter sheet');
     case 'cricut12x12':
