@@ -1,3 +1,4 @@
+import { buildOrderOf } from './buildOrder';
 import {
   DEFAULT_PATTERN_SETTINGS,
   type FoldKind,
@@ -242,6 +243,18 @@ export function buildPatternWithRule(solid: Solid, userSettings: Partial<Pattern
   if (tabVeryNarrow > 0) warnings.push({ code: 'tab-very-narrow', count: tabVeryNarrow, message: `${tabVeryNarrow} glue tabs are under ${settings.minTabWidthMm} mm wide: there is little room there. Use a thin line of glue.` });
   if (tabNarrowed > 0) warnings.push({ code: 'tab-narrowed', count: tabNarrowed, message: `${tabNarrowed} glue tabs are narrower than asked to fit.` });
 
+  // The order to build in: from the glued pairs and the parts they are on.
+  const partOfFace = (f: number) => result.islandOf[f] + 1;
+  const gluedPairs = [...pairNumber].map(([eid, number]) => {
+    const [fa, fb] = solid.edges[eid].faces;
+    return { number, a: partOfFace(fa), b: partOfFace(fb) };
+  });
+  const buildOrder = buildOrderOf(
+    rawParts.map((island, pi) => ({ id: pi + 1, areaMm2: island.reduce((s, f) => s + solid.faces[f].area, 0) })),
+    gluedPairs,
+  );
+  const stepOfPart = new Map(buildOrder.map((b) => [b.partId, b.step]));
+
   const parts: Part[] = rawParts.map((island, pi) => {
     const faces = island.map((f) => ({ faceId: f, points: result.placed[f] }));
     const tabs: Tab[] = island.flatMap((f) => tabsByFace.get(f) ?? []);
@@ -312,7 +325,7 @@ export function buildPatternWithRule(solid: Solid, userSettings: Partial<Pattern
       const biggest = [...island].sort((a, b) => solid.faces[b].area - solid.faces[a].area || a - b)[0];
       if (solid.faces[biggest].area > (3 * h) ** 2) {
         const c = polygonCentroid(result.placed[biggest]);
-        labels.push({ text: String(pi + 1), x: c[0], y: c[1], angle: 0, height: h * 1.6, role: 'part' });
+        labels.push({ text: String(settings.numberPartsBy === 'build' ? stepOfPart.get(pi + 1) ?? pi + 1 : pi + 1), x: c[0], y: c[1], angle: 0, height: h * 1.6, role: 'part' });
       }
     }
 
@@ -351,6 +364,7 @@ export function buildPatternWithRule(solid: Solid, userSettings: Partial<Pattern
     rule: settings.weightVariant ?? 0,
     missingTabEdgeIds: missingTabEdgeIds.sort((a, b) => a - b),
     parts,
+    buildOrder,
     joinedEdgeIds: [...result.joined].sort((a, b) => a - b),
     edgePairCount: pairNumber.size,
     warnings,

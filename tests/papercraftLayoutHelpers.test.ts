@@ -92,7 +92,7 @@ describe('the layout in the studio state', () => {
   const horse = () => papercraftReducer(initialPapercraftState(), { type: 'USE_BUILT_IN', id: 'horse' });
 
   it('starts with no pins, no limit and tight packing, and the pages follow the limit', () => {
-    expect(horse().layout).toEqual({ pins: {}, maxPartsPerPage: null, tight: true });
+    expect(horse().layout).toEqual({ pins: {}, maxPartsPerPage: null, tight: true, calibrationMm: null });
     const limited = papercraftReducer(horse(), { type: 'SET_PAGE_LIMIT', limit: 2 });
     expect(limited.layout.maxPartsPerPage).toBe(2);
     const r = computePapercraft(limited);
@@ -118,12 +118,12 @@ describe('the layout in the studio state', () => {
   it('is saved and opened again, and a design from before has no layout (the defaults)', () => {
     const r = computePapercraft(horse());
     if (!r.ok) throw new Error('no run');
-    const s = { ...horse(), layout: { pins: pinsOf(boxesOf(r.run.layout, r.run.pattern.parts)), maxPartsPerPage: 4, tight: false } };
+    const s = { ...horse(), layout: { pins: pinsOf(boxesOf(r.run.layout, r.run.pattern.parts)), maxPartsPerPage: 4, tight: false, calibrationMm: 100 } };
     const back = deserializePapercraft(JSON.parse(snapshotText(s)))!;
     expect(back.layout).toEqual(s.layout);
     const plain = serializePapercraft(horse()) as unknown as Record<string, unknown>;
     expect('layout' in plain).toBe(false);
-    expect(deserializePapercraft(JSON.parse(JSON.stringify(plain)))!.layout).toEqual({ pins: {}, maxPartsPerPage: null, tight: true });
+    expect(deserializePapercraft(JSON.parse(JSON.stringify(plain)))!.layout).toEqual({ pins: {}, maxPartsPerPage: null, tight: true, calibrationMm: null });
   });
 
   it('opens a layout with damaged pins without them: not numbers, a page that is far out, a part number that is not one', () => {

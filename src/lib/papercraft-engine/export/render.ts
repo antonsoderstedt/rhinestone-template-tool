@@ -59,6 +59,14 @@ export function renderPage(page: Page, parts: readonly Part[], pageCount: number
       drawing.text.push(...strokeText(l.text, c[0], c[1], l.height, angle));
     }
   }
+  // The square to measure, with its size written inside: cut like a part, so it is on the cutting file too.
+  for (const mark of page.marks ?? []) {
+    const { x, y, sizeMm: size } = mark;
+    drawing.cut.push({ closed: true, points: [[x, y], [x + size, y], [x + size, y + size], [x, y + size]] });
+    // The number font has digits and x: 100x100 (in millimetres).
+    const label = `${Math.round(size)}x${Math.round(size)}`;
+    drawing.text.push(...strokeText(label, x + size / 2, y + size / 2, Math.min(6, size / 8), 0));
+  }
   if (options.pageNumbers) {
     drawing.text.push(...strokeText(`${page.index + 1}/${pageCount}`, page.widthMm / 2, 4, 3, 0));
   }

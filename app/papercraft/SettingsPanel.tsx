@@ -7,6 +7,7 @@ import { useT } from '../lib/i18n';
 import { CheckField, LengthField, NumberField, Section, SelectField } from './fields';
 import { formatRelativeTime } from '../lib/relativeTime';
 import { formatLength, formatSize, useUnit } from '../lib/units';
+import { describeBuildStep } from './papercraftBuild';
 import type { PapercraftVersion } from './papercraftVersions';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning, describeSizeWarnings, type WarningLine } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, PaperPreset } from './papercraftState';
@@ -141,6 +142,33 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         )}
       </Section>
 
+      {run && run.pattern.buildOrder.length > 1 && (
+        <Section title={t('Build order')} defaultOpen={false}>
+          <p className="text-xs text-[var(--studio-ink-subtle)]">{t('The order to glue the parts in. Click a step to see the part.')}</p>
+          <ol className="space-y-1.5">
+            {run.pattern.buildOrder.map((step) => {
+              const byStep = state.pattern.numberPartsBy === 'build';
+              const stepOf = new Map(run.pattern.buildOrder.map((b) => [b.partId, b.step]));
+              const name = (id: number) => String(byStep ? stepOf.get(id) ?? id : id);
+              return (
+                <li key={step.partId}>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'SELECT_PART', partId: step.partId })}
+                    aria-pressed={state.selectedPartId === step.partId}
+                    title={t('Show this part')}
+                    className={`flex w-full gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition ${state.selectedPartId === step.partId ? 'border-violet-500 bg-violet-500/15' : 'border-[var(--studio-border)] bg-[var(--studio-well)] hover:bg-[var(--studio-surface-hover)]'}`}
+                  >
+                    <span className="shrink-0 font-semibold text-[var(--studio-ink)]">{step.step}.</span>
+                    <span className="text-[var(--studio-ink-secondary)]">{describeBuildStep(t, step, name)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </Section>
+      )}
+
       {lines.length > 0 && (
         <Section title={t('Checks')}>
           <ul className="space-y-2">
@@ -173,6 +201,12 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         {run && <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Sheet: {size}', { size: formatSize(run.pageSettings.pageWidthMm, run.pageSettings.pageHeightMm, unit) })}</p>}
         <LengthField label={t('Margin')} tip={t('The empty edge of every page. Printers cannot print to the very edge, and a cutting mat has an edge that cannot be cut.')} valueMm={state.paper.marginMm} minMm={0} maxMm={50} onChange={(marginMm) => dispatch({ type: 'SET_PAPER', paper: { marginMm } })} />
         <LengthField label={t('Space between parts')} tip={t('The gap left between two parts on a page. A small gap fits more on a page; leave room for the blade.')} valueMm={state.paper.gapMm} minMm={0} maxMm={30} onChange={(gapMm) => dispatch({ type: 'SET_PAPER', paper: { gapMm } })} />
+        <CheckField
+          label={t('Test square on the first page')}
+          tip={t('Adds a square of 100 × 100 mm to the lower left corner of the first page. Print or cut it and measure it with a ruler: if it is not 100 mm, the size is wrong somewhere (the printer scaling, or the cutting machine).')}
+          checked={state.layout.calibrationMm !== null}
+          onChange={(on) => dispatch({ type: 'SET_CALIBRATION', mm: on ? 100 : null })}
+        />
       </Section>
 
       <Section title={t('View')}>
@@ -199,6 +233,16 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
         />
         <LengthField label={t('Number height')} tip={t('The height of the numbers that show which edges are glued together.')} valueMm={state.pattern.numberHeightMm} minMm={1.5} maxMm={15} onChange={(numberHeightMm) => dispatch({ type: 'SET_PATTERN', pattern: { numberHeightMm } })} />
         <CheckField label={t('Number the parts')} tip={t('Writes a number on every part so you can find them in the right order.')} checked={state.pattern.partLabels} onChange={(partLabels) => dispatch({ type: 'SET_PATTERN', pattern: { partLabels } })} />
+        <SelectField
+          label={t('The numbers on the parts are')}
+          tip={t('Build order: part 1 is the first to build, then 2, 3 and so on, each glued to the ones before. Size: part 1 is the biggest part.')}
+          value={state.pattern.numberPartsBy}
+          options={[
+            { value: 'build', label: t('The build order') },
+            { value: 'size', label: t('In order of size') },
+          ]}
+          onChange={(numberPartsBy) => dispatch({ type: 'SET_PATTERN', pattern: { numberPartsBy } })}
+        />
       </Section>
 
       <Section title={t('Print or cut')}>

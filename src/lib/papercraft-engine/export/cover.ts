@@ -20,6 +20,8 @@ export interface CoverContent {
   pageMapMore: (hidden: number) => string;
   stepsTitle: string;
   steps: string[];
+  /** The pages that say in what order to build and what to glue to what (after the cover), when given. */
+  buildOrder?: { title: string; steps: string[] };
   footer?: string;
 }
 
@@ -197,4 +199,37 @@ export function renderCover(
     b.text({ x: mapX, y: mapTop - rows * (thumbH + 4 + gap) - 1, text: content.pageMapMore(pages.length - shown), sizeMm: 3, rgb: GREY });
   }
   return b.d;
+}
+
+/**
+ * The build order as pages of numbered steps (more than one page when there are many). Each step is a line of text that may wrap; the page size is a parameter.
+ */
+export function renderBuildOrderPages(content: { title: string; steps: readonly string[]; footer?: string }, size: { widthMm: number; heightMm: number }): PageDrawing[] {
+  const W = size.widthMm;
+  const H = size.heightMm;
+  const inner = W - 2 * MARGIN;
+  const bodySize = 3.6;
+  const lead = bodySize * 1.4;
+  const indent = bodySize * 2.2;
+  const pages: PageDrawing[] = [];
+  let b = newBuilder(W, H);
+  let y = H - MARGIN - 8;
+  const start = (first: boolean) => {
+    b = newBuilder(W, H);
+    pages.push(b.d);
+    b.text({ x: MARGIN, y: H - MARGIN - 6, text: content.title, sizeMm: 7, bold: true });
+    y = H - MARGIN - 18;
+    if (!first) y = H - MARGIN - 18;
+  };
+  start(true);
+  content.steps.forEach((step, i) => {
+    const lines = wrapText(step, inner - indent, bodySize);
+    const height = lines.length * lead + lead * 0.5;
+    if (y - height < MARGIN + 6) start(false);
+    b.text({ x: MARGIN, y, text: `${i + 1}`, sizeMm: bodySize, bold: true });
+    lines.forEach((line, k) => b.text({ x: MARGIN + indent, y: y - k * lead, text: line, sizeMm: bodySize }));
+    y -= height;
+  });
+  if (content.footer) for (const page of pages) page.texts.push({ x: W / 2, y: MARGIN - 4, text: content.footer, sizeMm: 3, align: 'middle', rgb: GREY });
+  return pages;
 }

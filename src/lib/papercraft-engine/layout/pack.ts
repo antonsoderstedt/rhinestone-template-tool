@@ -122,6 +122,14 @@ function pack(parts: readonly Part[], settings: PageSettings, options: LayoutOpt
     pages[pi].placements.push({ partId: part.id, rotation: o.angle, x: px, y: py, cos: Math.cos(o.angle), sin: Math.sin(o.angle), tx: px - o.minX, ty: py - o.minY });
   }
 
+  // The square to measure: the lower left corner of the first page, where no part is put.
+  const square = options.calibrationMm !== undefined && Number.isFinite(options.calibrationMm) && options.calibrationMm >= 10 ? options.calibrationMm : 0;
+  if (square > 0 && square <= usableW + 1e-6 && square <= usableH + 1e-6) {
+    const pi = newPage();
+    bins[pi].place(0, 0, square + gap, square + gap);
+    pages[pi].marks = [{ kind: 'square', x: settings.marginMm, y: settings.marginMm, sizeMm: square }];
+  }
+
   // The parts the person has placed stay where they are (as long as they still are the part they were placed as).
   const pinned = new Set<number>();
   for (const part of parts) {
@@ -204,7 +212,7 @@ export function layoutPages(parts: readonly Part[], settings: PageSettings, opti
       if (packed.tooLarge <= best.tooLarge && score(packed) < score(best)) best = packed;
     }
   }
-  const pages = best.pages.filter((p) => p.placements.length > 0).map((p, i) => ({ ...p, index: i, placements: [...p.placements].sort((a, b) => a.partId - b.partId) }));
+  const pages = best.pages.filter((p) => p.placements.length > 0 || (p.marks?.length ?? 0) > 0).map((p, i) => ({ ...p, index: i, placements: [...p.placements].sort((a, b) => a.partId - b.partId) }));
   if (best.tooLarge > 0) warnings.push({ code: 'part-too-large', count: best.tooLarge, message: `${best.tooLarge} parts do not fit on a page and were put on pages of their own.` });
   return { pages, warnings };
 }

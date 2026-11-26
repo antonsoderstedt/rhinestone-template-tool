@@ -207,6 +207,18 @@ ADR 0054 and `docs/decisions/0055-papercraft-page-layout.md` · Tests: `tests/pa
 
 ---
 
+## Papercraft — a square to measure, and the build order (Implemented 2026-11-26)
+
+ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
+
+- [x] A square of 100 mm can be added to the lower left corner of the first page: no part is put on it, it is cut and printed with its size written, it is on the Cricut and Silhouette files; too small, too big or not asked for gives none; a page with only the square is kept
+- [x] The build order starts with the part glued to the most others and takes the part with the most glued edges to what is built; a separate piece starts again; every glued edge is in exactly one step for every built-in model; a join names only parts built before
+- [x] The parts can be numbered by the build order (new designs) or by size (older designs); the choice is saved
+- [x] The settings list the steps in both languages (a click shows the part); the PDF gets the build order as pages after the cover, wrapped and on more pages when needed
+- [ ] The build order is easy to follow on a real build (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
