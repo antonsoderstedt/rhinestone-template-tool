@@ -33,3 +33,9 @@ export { exportPdf } from './export/pdf';
 export { strokeText } from './export/strokeFont';
 export type { BuildStep } from './types';
 export { createPapercraft, DEFAULT_PAGE_SETTINGS, type PapercraftInput, type PapercraftResult } from './pipeline';
+export {
+  DRAW_LIMITS, DEFAULT_TAB, TEXT_CHARACTERS, newDoc, addItem, removeItems, moveItems, setItemPoint, rotateItems, mirrorItems, scaleItems, duplicateItems, flipFolds,
+  setText, addTab, cleanItem, hitTest, snapPoint, drawProblems, drawingOf, serializeDoc, parseDoc, rectanglePoints, regularPolygonPoints, signedArea,
+  distanceToSegment, pointInPolygon, selfIntersects, boundsOf,
+  type DrawDoc, type DrawItem, type DrawKind, type DrawProblem, type DrawProblemCode, type DrawingOptions, type Hit, type SerializedDrawing, type TabOptions,
+} from './draw/doc';
