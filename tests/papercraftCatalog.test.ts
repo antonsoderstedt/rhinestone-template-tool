@@ -65,7 +65,7 @@ describe('saved templates', () => {
     const fetcher = (async (url: string, init: RequestInit) => { calls.push({ url, method: String(init.method), body: String(init.body) }); return new Response(JSON.stringify({ ok: true }), { headers: { 'content-type': 'application/json' } }); }) as unknown as typeof fetch;
     const state = { ...initialPapercraftState(), projectName: 'Old name', size: { by: 'largest' as const, mm: 123 } };
     const result = await saveDesignAsTemplate(state, { name: ' My box ', category: ' Boxes ', published: false }, ['my-box'], fetcher);
-    expect(result).toEqual({ ok: true, value: { id: 'my-box-2' } });
+    expect(result).toEqual({ ok: true, value: { id: 'my-box-2', previewSaved: true } });
     expect(calls).toHaveLength(3);
     const details = JSON.parse(calls[0]!.body);
     expect(details).toMatchObject({ id: 'my-box-2', studio: 'papercraft', format: 'json', name: 'My box', category: 'Boxes', published: false });
@@ -76,6 +76,14 @@ describe('saved templates', () => {
     expect(calls[2]!.url).toContain('part=preview&name=my-box-2.svg');
     expect(calls[2]!.body.startsWith('<svg')).toBe(true);
     expect(calls[2]!.body).not.toMatch(/<use|<image|opacity=/);
+  });
+
+  it('still saves the template when only the picture fails, and says the picture is missing', async () => {
+    const fetcher = (async (url: string) => (String(url).includes('part=preview')
+      ? new Response(JSON.stringify({ error: 'Too large.' }), { status: 413, headers: { 'content-type': 'application/json' } })
+      : new Response(JSON.stringify({ ok: true }), { headers: { 'content-type': 'application/json' } }))) as unknown as typeof fetch;
+    const result = await saveDesignAsTemplate(initialPapercraftState(), { name: 'X', category: '', published: true }, [], fetcher);
+    expect(result).toEqual({ ok: true, value: { id: 'x', previewSaved: false } });
   });
 
   it('opens a saved design from its file, and says no to a file that is not one', async () => {

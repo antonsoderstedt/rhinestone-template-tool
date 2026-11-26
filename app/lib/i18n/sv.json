@@ -1707,5 +1707,6 @@
   "Save as a template": "Spara som mall",
   "Keep this model, with its size and settings (and how it is built, if you built it here), in your catalog so you can start from it again.": "Spara den här modellen med storlek och inställningar (och hur den är byggd, om du byggde den här) i din katalog så att du kan börja från den igen.",
   "Template name": "Mallens namn",
-  "Show it under “From the catalog”": "Visa den under ”Från katalogen”"
+  "Show it under “From the catalog”": "Visa den under ”Från katalogen”",
+  "Saved “{name}” in the catalog, but its picture could not be saved. It opens as usual; you can add a picture in the admin panel.": "Sparade ”{name}” i katalogen, men bilden gick inte att spara. Mallen öppnas som vanligt; du kan lägga till en bild i adminpanelen."
 }

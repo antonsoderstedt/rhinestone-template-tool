@@ -63,7 +63,8 @@ export interface SaveTemplateOptions {
   published: boolean;
 }
 
-export type SaveTemplateResult = CatalogResult<{ id: string }> | { ok: false; reason: 'too-big' | 'no-name' };
+/** `previewSaved` is false when the template was saved but its picture could not be: the template works, it just has no picture. */
+export type SaveTemplateResult = CatalogResult<{ id: string; previewSaved: boolean }> | { ok: false; reason: 'too-big' | 'no-name' };
 
 /**
  * Saves the design (model, size, paper, tab settings and, for a model built in the studio, how it is built) as a template in the
@@ -84,6 +85,7 @@ export async function saveDesignAsTemplate(state: PapercraftState, options: Save
   if (!file.ok) return file;
   const mesh = meshOfSource(state);
   const svg = mesh ? thumbnailSvg(thumbnailPolygons(mesh, 0)) : null;
-  if (svg) await uploadCatalogFile(id, 'preview', { name: `${id}.svg`, bytes: new TextEncoder().encode(svg) }, fetcher);
-  return { ok: true, value: { id } };
+  // The picture is only for the list: a template without one still opens, so a failed upload does not fail the save, but it is reported.
+  const preview = svg ? await uploadCatalogFile(id, 'preview', { name: `${id}.svg`, bytes: new TextEncoder().encode(svg) }, fetcher) : null;
+  return { ok: true, value: { id, previewSaved: preview === null ? true : preview.ok } };
 }

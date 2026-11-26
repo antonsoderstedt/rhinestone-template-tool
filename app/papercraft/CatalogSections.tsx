@@ -78,7 +78,11 @@ export default function CatalogSections({ state, onImportFile, onLoadState }: { 
     const result = await saveDesignAsTemplate(state, { name: chosen, category, published }, templates.map((tpl) => tpl.id));
     setSaving(false);
     if (result.ok) {
-      setNote({ kind: 'ok', text: t('Saved “{name}” in the catalog.', { name: chosen }) });
+      setNote(
+        result.value.previewSaved
+          ? { kind: 'ok', text: t('Saved “{name}” in the catalog.', { name: chosen }) }
+          : { kind: 'error', text: t('Saved “{name}” in the catalog, but its picture could not be saved. It opens as usual; you can add a picture in the admin panel.', { name: chosen }) },
+      );
       setName('');
       await refresh();
     } else if (result.reason === 'too-big') {
