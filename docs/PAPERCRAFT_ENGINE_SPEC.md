@@ -129,6 +129,14 @@ the index of the flat face between section p and p + 1 at profile edge i. The tw
 a side and a shoulder on each side, a flat top; pads from `pad[0]` to `pad[1]` of the half width), then grows the legs from the pads of a pair of sections (left and right, the last step reaching z = 0), the ears from the shoulder or side faces, a
 tail from the rear end and a nose or trunk from the front end; `boxRear` and `boxFront` make the end sections boxes. `crest` (one entry `{ pair, steps }` or a list) grows limbs from the flat top (a comb, a horn, a mane); two limbs may not share a corner (ADR 0048). Named animals: `dog`, `cat`, `pig`, `horse`, `elephant`, `giraffe`, and the birds on two legs (ADR 0046) `duck`, `chicken`, `flamingo`, and with horns, a mane or tufts (ADR 0048) `unicorn`, `deer`, `lion`, `rhino`, `bull`; a leg can end in a flat foot (a last step with a scale above 1). Upright birds (ADR 0047) `penguin`, `owl`: sections with a tilt of 90 degrees (the body runs up, the underside of the profile is the front); `feet: { pair, steps }` (left and right out of the pads of the front) and `beak: { pair, steps }` (out of the belly of the front); `legs` is optional.
 
+## Models from flat shapes (`extrudeShape`, `latheShape`, `shapeOutline`)
+
+ADR 0050, `mesh/outline.ts`. The artwork is `ShapeRegion[]` (`{ contours, fillRule }`, y up, any units; contours with a point that is not a number are left out). `rasterizeShape` draws it on a 256-cell grid with 24 empty cells all round (each region by its fill rule, all added).
+Pieces (cells that touch along an edge) are counted; when there is more than one, the shape is grown one cell at a time (up to 20) until it is one piece and then shrunk the same number of cells (`joinPieces`). The biggest piece is kept; `omittedPieces` counts the others.
+`shapeOutline(regions, count)`: one region with one contour is used as it is (a repeated closing point dropped), anything else is the corners of the outer edge of the biggest piece followed along the cells; then `simplifyOutline` takes away the corner with the smallest triangle (with its neighbours) until
+`count` (at least 3) are left. The result is counter-clockwise. `extrudeShape(regions, { corners, depthRatio })` pulls the outline up in z by `depthRatio` times its longer side (`extrude`, so corners + 2 faces). `latheShape(regions, { rings, segments })`: the width of the biggest piece in every grid row, half of it is the radius;
+`rings` heights from the bottom to the top (the row nearest each), a radius under 12 % of the widest at either end becomes a point, then `lathe`. All three return null when there is nothing to build from.
+
 ## Simplifying (`simplifyMesh`)
 
 `simplifyMesh(mesh, { targetFaces, minNormalCosine = 0.2 })` returns `{ mesh, inputFaces, outputFaces, reached }`. Steps: weld corners (1e-6 of the diagonal), cut polygons into triangles (ear

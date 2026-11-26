@@ -154,6 +154,18 @@ ADR 0049 · Tests: `tests/papercraftDxf.test.ts`.
 
 ---
 
+## Papercraft — models from 2D shapes (Implemented 2026-11-26)
+
+ADR 0050 · Tests: `tests/papercraftShapes.test.ts`.
+
+- [x] The outline of a shape keeps the corners that matter, is counter-clockwise, and is the union when regions overlap; a hole is filled; pieces that are close are joined and far small ones are left out and counted; nothing to draw gives nothing
+- [x] A box in the shape is a closed prism as deep as asked; a spun shape keeps its way up, a rectangle becomes a cylinder and a tip becomes a point
+- [x] Every gallery shape makes a closed box and a closed spun model that unfold; an SVG with scripts, too big, not an SVG or empty is refused; settings stay in range
+- [x] The studio makes the model at once and again on every change without starting a new design
+- [ ] A shape model built on real paper (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
