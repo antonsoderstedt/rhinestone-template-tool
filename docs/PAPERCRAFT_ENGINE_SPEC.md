@@ -190,6 +190,15 @@ every number into range (size 1–1000 mm, sides 3–32, 3–12 for a pyramid, t
 A `ParametricTemplate` maps clamped values to parts (`box-with-lid`, `pencil-cup`, `house`, `tower`, `cake`); a `ModelRecipe` is a template with
 values or a list of parts, and `meshOfRecipe` builds it. Everything is deterministic.
 
+## Flat drawings (`draw/doc.ts`)
+
+A `DrawDoc` is a sheet and items (`cut`, `mountain`, `valley`, `text`), y up, millimetres, coordinates clamped to ±5000 and rounded to 0.001.
+`addTab(doc, id, edge, {widthMm, angleDeg})` inserts two corners into a closed cut shape on edge `edge` (corner `edge` to the next), outward
+(right of the edge for a counter-clockwise shape, left for a clockwise one): `a' = a + n·w + d·i`, `b' = b + n·w − d·i` with `i = min(w / tan(angle), 0.4·length)`,
+and adds a valley line `a`–`b` unless one is there. `hitTest` tries corners, then edges and lines, then the inside of closed shapes (smallest area). `drawProblems`
+reports nothing-to-cut, outside-sheet, self-intersecting (proper crossings of non-adjacent edges), open-outline and tiny. `drawingOf(doc, {crop, marginMm})` gives a `PageDrawing`:
+cut paths, folds with their kind, numbers as `strokeText` lines; with `crop` the content is moved to the margin and the sheet is its size plus the margin.
+
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB

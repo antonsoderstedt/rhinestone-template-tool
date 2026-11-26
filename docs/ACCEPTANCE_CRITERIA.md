@@ -696,7 +696,9 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] The recipe is saved with the design and comes back; a damaged recipe or a design from before recipes still opens (tested)
 - [x] “Build your own model” in the Model panel: templates, values, part editor (checked in the running studio)
 - [x] Save the model as a template in the catalog (JSON design + picture); it opens again from “From the catalog” with its recipe, size and settings (checked on the local Worker)
-- [ ] Draw the pattern flat in 2D
+- [x] Draw the pattern flat in 2D (`/papercraft/draw`, ADR 0059): outlines, fold lines, glue tabs, numbers; Cricut SVG, Silhouette DXF, PDF and JSON download (checked with synthetic pointer events in the running page)
+- [ ] A drawing cut on a real machine
+- [ ] Save a drawing in the catalog
 - [ ] A real model built from one of the templates has been folded and glued
 
 ---

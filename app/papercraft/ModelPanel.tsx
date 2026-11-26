@@ -144,6 +144,9 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
             </span>
           </span>
         </button>
+        <Link href="/papercraft/draw" className="block text-xs font-medium text-violet-300 underline-offset-2 hover:underline">
+          {t('Want to draw your own pattern flat? Open the drawing tool')}
+        </Link>
         <Link href="/papercraft/pdf" className="block text-xs font-medium text-violet-300 underline-offset-2 hover:underline">
           {t('Have a finished PDF pattern? Make a cutting file from it')}
         </Link>
