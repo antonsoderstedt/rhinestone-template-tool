@@ -1,4 +1,4 @@
-import type { PageLayout, PageSettings, Pattern, PatternSettings, RawMesh, Solid } from './types';
+import type { LayoutOptions, PageLayout, PageSettings, Pattern, PatternSettings, RawMesh, Solid } from './types';
 import { PAGE_PRESETS } from './types';
 import { buildSolid, type BuildOptions } from './mesh/build';
 import { scaleMesh, type ScaleTarget } from './mesh/inspect';
@@ -11,6 +11,8 @@ export interface PapercraftInput {
   build?: BuildOptions;
   pattern?: Partial<PatternSettings>;
   page?: Partial<PageSettings>;
+  /** Where the person has put parts, how many to a page, and whether to pack tightly. */
+  layout?: LayoutOptions;
 }
 
 export interface PapercraftResult {
@@ -34,6 +36,6 @@ export function createPapercraft(input: PapercraftInput): PapercraftResult {
     },
     ...input.pattern,
   });
-  const layout = layoutPages(pattern.parts, pageSettings);
+  const layout = layoutPages(pattern.parts, pageSettings, input.layout);
   return { solid, pattern, layout, pageSettings };
 }

@@ -1,6 +1,6 @@
 # Papercraft studio: plan
 
-**Status:** Phases 0 to 5 done (Silhouette DXF: ADR 0049; models from 2D shapes: ADR 0050; PDF patterns as cutting files: ADR 0051) (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); animals with legs (ADR 0044) and folds that close by themselves (ADR 0045); what is left is under "Later" below · **Date:** 2026-11-25
+**Status:** Phases 0 to 5 done (Silhouette DXF: ADR 0049; models from 2D shapes: ADR 0050; PDF patterns as cutting files: ADR 0051; tracing pictures: ADR 0054; what a pattern file should be: `docs/PAPERCRAFT_TEMPLATE_SPEC.md`) (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); animals with legs (ADR 0044) and folds that close by themselves (ADR 0045); what is left is under "Later" below · **Date:** 2026-11-25
 
 A third studio next to Rhinestone and HTV: make 3D paper models from low-poly meshes, then **print** the patterns or **cut and score**
 them with a cutting machine, and fold and glue.
@@ -78,7 +78,7 @@ Built-in generated shapes (cube, gem, icosahedron, vase, low-poly animals) and i
 Saved models in My Designs and sync, Swedish, phone layout, share link, version history.
 
 ### Later
-Tracing patterns that are made of pictures, coloured faces with print-then-cut,
+Coloured faces with print-then-cut,
 slot-together models (no glue), curled horns and branching antlers. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044; birds on two legs: ADR 0046; upright birds: ADR 0047; horns, manes and tufts: ADR 0048.)
 
 ## Risks and open points

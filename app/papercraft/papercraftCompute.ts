@@ -38,7 +38,7 @@ export function meshOfSource(state: Pick<PapercraftState, 'source'> & Partial<Pi
 }
 
 /** The part of the studio state that decides the pattern (the view, selection and fold amount do not). */
-export type PapercraftInputState = Pick<PapercraftState, 'source' | 'size' | 'paper' | 'pattern' | 'edits' | 'detailPct'>;
+export type PapercraftInputState = Pick<PapercraftState, 'source' | 'size' | 'paper' | 'pattern' | 'edits' | 'detailPct' | 'layout'>;
 
 /** Mesh and settings in, pattern and pages out; never throws (a problem comes back as a reason). */
 export function computePapercraft(state: PapercraftInputState): ComputeResult {
@@ -51,6 +51,7 @@ export function computePapercraft(state: PapercraftInputState): ComputeResult {
       mesh,
       scale: { by: state.size.by, mm: state.size.mm },
       page: { ...preset, marginMm: state.paper.marginMm, gapMm: state.paper.gapMm },
+      layout: { pins: state.layout.pins, maxPartsPerPage: state.layout.maxPartsPerPage ?? undefined, tight: state.layout.tight },
       pattern: {
         ...state.pattern,
         forceCutEdges: state.edits.forceCut,

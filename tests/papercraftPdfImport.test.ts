@@ -233,6 +233,7 @@ describe('from lines to a cutting drawing', () => {
     number: 1,
     widthPt: 600,
     heightPt: 800,
+    pictureShare: 0,
     strokes: [
       stroke([[100, 100], [300, 100], [300, 300], [100, 300]], [0, 0, 0], [], true),
       stroke([[100, 200], [300, 200]], [0, 0, 0], [4, 2]),
@@ -278,7 +279,7 @@ describe('from lines to a cutting drawing', () => {
   });
 
   it('a line that comes back to its start is closed, and a polyline drawn as a score gives one line per piece', () => {
-    const p: PdfPage = { number: 1, widthPt: 100, heightPt: 100, strokes: [stroke([[10, 10], [50, 10], [50, 50], [10, 10]], [0, 0, 0]), stroke([[10, 60], [40, 60], [40, 90]], [0, 0, 1], [2, 2])] };
+    const p: PdfPage = { number: 1, widthPt: 100, heightPt: 100, pictureShare: 0, strokes: [stroke([[10, 10], [50, 10], [50, 50], [10, 10]], [0, 0, 0]), stroke([[10, 60], [40, 60], [40, 90]], [0, 0, 1], [2, 2])] };
     const d = patternDrawing(p, { '#000000/solid': 'cut', '#0000ff/dash': 'score' });
     expect(d.cut[0].closed).toBe(true);
     expect(d.cut[0].points).toHaveLength(3);

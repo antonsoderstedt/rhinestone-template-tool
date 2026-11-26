@@ -116,6 +116,12 @@ ADR 0051. `readPdf(bytes)` (async) returns `{ pages: PdfPage[], warnings }` and 
 `{ points, closed, rgb, width, dash }` in points. At most 400 000 strokes per page. `lineStyles(page)`: key `#rrggbb/solid` or `#rrggbb/dash`, count and length in mm, longest first (ties by id), strokes that span 96 % of the page in both directions are left out as a frame.
 `defaultRoles`: dashed `score`, solid `cut`, all three channels over 0.93 `ignore`. `patternDrawing(page, roles, options)`: scale = 25.4 / 72 times `scalePct` / 100; a stroke under `minLengthMm` is skipped; an open stroke whose ends are within 0.01 mm is closed; a score stroke becomes one fold line per piece (kind `valley`); with `crop` the drawing is moved so its lower left corner is `marginMm` from the corner and the sheet is the pattern plus the margin.
 
+Pictures (ADR 0054, `pdf/trace.ts`). `PdfPage.pictureShare` is the area the pictures drawn on the page cover (the unit square of each under its matrix) over the page area. `PdfDocument.tracePage(i, options?)` decodes the pictures of page i (`ReadOptions.decodeJpeg` for JPEG; grey, RGB, CMYK, Indexed
+and one-bit, raw or Flate, 8 bits or 1) and returns strokes: one picture of at least half the page is traced as it is; otherwise the pictures are placed on a bitmap of the page (finest density, at most 3600 px on the longest side, nearest pixel) and that is traced; pictures under a fifth of the page alone give nothing.
+`traceLineArt(image, { minCutPx = 24, maxGapPx = 30, tolerancePx = 1.4, onBitmap })` returns `{ cut: { points, closed, rgb }[], folds: { a, b, rgb }[], skippedPhotoPixels }` in pixels, y down. Ink: lightness under a threshold that is the darkest 5 % of what is not white plus 55 % of the way to 250 (110 to 235), or a thin coloured line; a 16-pixel block with more than half of its pixels
+not white, and the blocks next to it, is a photo and has no ink. Components of 8-connected ink; a component of at least `minCutPx` is thinned and followed (crossing number 1 end, 2 line, 3 or more junction; a step never cuts a corner of a thick junction), short paths and small components are dash candidates
+(a thin straight piece at least 4 px long and at most 4.5 px wide, or a dot of at most 12 pixels). Dashes join when their directions are within 7 degrees, one lies within 3 px of the other's line and the gap is at most `maxGapPx`; three or more make a fold line, dots within 3 px of it join, and an end within `maxGapPx` of a cut line, ahead of it, runs to it.
+
 ## Built-in shapes and repair
 
 Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,
@@ -171,4 +177,4 @@ harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 g
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
-reading in the engine (done in the app), patterns made of pictures (tracing), true polygon nesting.
+reading in the engine (done in the app), true polygon nesting.

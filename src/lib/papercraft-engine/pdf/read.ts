@@ -1,4 +1,5 @@
 import type { Vec2 } from '../types';
+import { traceLineArt, type PixelImage, type TraceOptions } from './trace';
 
 /**
  * Reading the lines out of a finished PDF pattern: where the paper is cut and where it is folded, as drawn by the pattern's maker. Only what
@@ -410,11 +411,23 @@ export interface PdfPage {
   widthPt: number;
   heightPt: number;
   strokes: PdfStroke[];
+  /** The share of the page (0 to 1) that pictures cover. A pattern that is a picture has a high share and few strokes (see `PdfDocument.tracePage`). */
+  pictureShare: number;
 }
 
 export interface PdfDocument {
   pages: PdfPage[];
   warnings: string[];
+  /**
+   * The lines of the pictures on a page, found by tracing: black outlines as solid lines, dashed lines as dashed ones, in the same form as the
+   * strokes of the page. Takes a moment for a big picture. A picture that cannot be read (a kind of image that is not supported) gives no lines.
+   */
+  tracePage: (pageIndex: number, options?: TraceOptions) => Promise<PdfStroke[]>;
+}
+
+export interface ReadOptions {
+  /** Turns the bytes of a JPEG into pixels (the browser can; the engine cannot). Without it a page made of JPEG pictures cannot be traced. */
+  decodeJpeg?: (bytes: Uint8Array) => Promise<PixelImage | null>;
 }
 
 type Matrix = [number, number, number, number, number, number];
@@ -445,6 +458,8 @@ interface Interpreter {
   doc: Doc;
   strokes: PdfStroke[];
   budget: number;
+  /** Pictures drawn, with where the unit square of each ended up on the page. */
+  images: { ref: number; ctm: Matrix }[];
 }
 
 async function interpret(it: Interpreter, content: string, resources: Dict | undefined, start: GState, depth: number): Promise<void> {
@@ -560,6 +575,10 @@ async function interpret(it: Interpreter, content: string, resources: Dict | und
         const name = typeof operands[0] === 'string' ? operands[0] : '';
         const ref = isDict(xobjs) ? xobjs.d[name] : undefined;
         const entry = isRef(ref) ? doc.objects.get(ref.r) : undefined;
+        if (entry && isRef(ref) && isDict(entry.value) && nameOf(doc, entry.value.d.Subtype) === 'Image') {
+          if (it.images.length < 64) it.images.push({ ref: ref.r, ctm: [...gs.ctm] as Matrix });
+          break;
+        }
         if (!entry || !isDict(entry.value) || nameOf(doc, entry.value.d.Subtype) !== 'Form') break;
         const data = await decodeStream(doc, entry);
         if (!data) break;
@@ -641,8 +660,113 @@ function pageMatrix(info: PageInfo): { m: Matrix; width: number; height: number 
 
 const MAX_STROKES_PER_PAGE = 400_000;
 
+function jpegBytes(doc: Doc, entry: Entry): Uint8Array | null {
+  if (!entry.stream || !isDict(entry.value)) return null;
+  const f = get(doc, entry.value, 'Filter');
+  const names = (Array.isArray(f) ? f : f === undefined ? [] : [f]).map((x) => nameOf(doc, x));
+  // Only a picture that is a JPEG and nothing else.
+  if (names.length !== 1 || (names[0] !== 'DCTDecode' && names[0] !== 'DCT')) return null;
+  return bytesOf(doc.text, entry.stream.start, entry.stream.end);
+}
+
+/** A picture as pixels: 8-bit grey, RGB or CMYK, or 1-bit grey, uncompressed or Flate (a JPEG through `decodeJpeg`). Null for what is not supported. */
+async function pictureOf(doc: Doc, entry: Entry, options: ReadOptions): Promise<PixelImage | null> {
+  if (!isDict(entry.value)) return null;
+  const w = num(doc, entry.value.d.Width) ?? 0;
+  const h = num(doc, entry.value.d.Height) ?? 0;
+  if (!(w > 0 && h > 0) || w * h > 40_000_000) return null;
+  const jpeg = jpegBytes(doc, entry);
+  if (jpeg) return options.decodeJpeg ? options.decodeJpeg(jpeg) : null;
+  const data = await decodeStream(doc, entry);
+  if (!data) return null;
+  const bpc = num(doc, entry.value.d.BitsPerComponent) ?? 8;
+  let cs = get(doc, entry.value, 'ColorSpace');
+  const rgb = new Uint8Array(w * h * 3);
+  let components = 0;
+  const csName = (v: Obj | undefined) => (Array.isArray(v) ? nameOf(doc, v[0]) : nameOf(doc, v));
+  const kind = csName(cs);
+  if (kind === 'DeviceGray' || kind === 'CalGray' || kind === 'G') components = 1;
+  else if (kind === 'DeviceRGB' || kind === 'CalRGB' || kind === 'RGB') components = 3;
+  else if (kind === 'DeviceCMYK' || kind === 'CMYK') components = 4;
+  else if (kind === 'Indexed' && Array.isArray(cs)) {
+    // A palette: each sample is a number that stands for a colour.
+    const hival = num(doc, cs[2]) ?? 255;
+    const baseKind = csName(resolve(doc, cs[1]));
+    let baseN = baseKind === 'DeviceRGB' || baseKind === 'CalRGB' ? 3 : baseKind === 'DeviceGray' || baseKind === 'CalGray' ? 1 : baseKind === 'DeviceCMYK' ? 4 : 0;
+    const baseObj = resolve(doc, cs[1]);
+    if (baseN === 0 && Array.isArray(baseObj) && nameOf(doc, baseObj[0]) === 'ICCBased' && isRef(baseObj[1])) {
+      const prof = doc.objects.get(baseObj[1].r);
+      const n = prof && isDict(prof.value) ? num(doc, prof.value.d.N) : undefined;
+      baseN = n === 1 || n === 3 || n === 4 ? n : 0;
+    }
+    const lookupRaw = resolve(doc, cs[3]);
+    let table: Uint8Array | null = null;
+    if (lookupRaw && typeof lookupRaw === 'object' && !Array.isArray(lookupRaw) && 's' in lookupRaw) table = Uint8Array.from(lookupRaw.s, (c) => c.charCodeAt(0) & 255);
+    else if (isRef(cs[3])) {
+      const e = doc.objects.get(cs[3].r);
+      table = e ? await decodeStream(doc, e) : null;
+    }
+    if (!table || baseN === 0 || bpc !== 8 || data.length < w * h) return null;
+    const colourAt = (k: number): [number, number, number] => {
+      const o = Math.min(k, hival) * baseN;
+      if (baseN === 1) return [table![o] ?? 0, table![o] ?? 0, table![o] ?? 0];
+      if (baseN === 3) return [table![o] ?? 0, table![o + 1] ?? 0, table![o + 2] ?? 0];
+      const kk = 1 - (table![o + 3] ?? 0) / 255;
+      return [255 * (1 - (table![o] ?? 0) / 255) * kk, 255 * (1 - (table![o + 1] ?? 0) / 255) * kk, 255 * (1 - (table![o + 2] ?? 0) / 255) * kk];
+    };
+    const palette = Array.from({ length: Math.min(256, hival + 1) }, (_, k) => colourAt(k));
+    for (let i = 0; i < w * h; i++) {
+      const c = palette[Math.min(data[i], palette.length - 1)];
+      rgb[i * 3] = c[0];
+      rgb[i * 3 + 1] = c[1];
+      rgb[i * 3 + 2] = c[2];
+    }
+    return { width: w, height: h, rgb };
+  } else if (kind === 'ICCBased' && Array.isArray(cs)) {
+    const profile = resolve(doc, cs[1]);
+    const entryP = isRef(cs[1]) ? doc.objects.get(cs[1].r) : undefined;
+    const n = entryP && isDict(entryP.value) ? num(doc, entryP.value.d.N) : isDict(profile) ? num(doc, profile.d.N) : undefined;
+    components = n === 1 || n === 3 || n === 4 ? n : 0;
+  }
+  cs = undefined;
+  if (components === 0 && kind !== 'Indexed') return null;
+  if (bpc === 8) {
+    if (data.length < w * h * components) return null;
+    for (let i = 0; i < w * h; i++) {
+      if (components === 1) rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = data[i];
+      else if (components === 3) {
+        rgb[i * 3] = data[i * 3];
+        rgb[i * 3 + 1] = data[i * 3 + 1];
+        rgb[i * 3 + 2] = data[i * 3 + 2];
+      } else {
+        const k = 1 - data[i * 4 + 3] / 255;
+        rgb[i * 3] = 255 * (1 - data[i * 4] / 255) * k;
+        rgb[i * 3 + 1] = 255 * (1 - data[i * 4 + 1] / 255) * k;
+        rgb[i * 3 + 2] = 255 * (1 - data[i * 4 + 2] / 255) * k;
+      }
+    }
+    return { width: w, height: h, rgb };
+  }
+  if (bpc === 1 && components === 1) {
+    const rowBytes = Math.ceil(w / 8);
+    if (data.length < rowBytes * h) return null;
+    const decode = get(doc, entry.value, 'Decode');
+    const inverted = Array.isArray(decode) && num(doc, decode[0]) === 1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const bit = (data[y * rowBytes + (x >> 3)] >> (7 - (x & 7))) & 1;
+        const v = (inverted ? 1 - bit : bit) ? 255 : 0;
+        const o = (y * w + x) * 3;
+        rgb[o] = rgb[o + 1] = rgb[o + 2] = v;
+      }
+    }
+    return { width: w, height: h, rgb };
+  }
+  return null;
+}
+
 /** Reads every page of a PDF. Throws a `PdfReadError` for a file that is not a PDF, is encrypted, is too big or has no pages. */
-export async function readPdf(bytes: Uint8Array): Promise<PdfDocument> {
+export async function readPdf(bytes: Uint8Array, options: ReadOptions = {}): Promise<PdfDocument> {
   if (bytes.length > MAX_PDF_BYTES) throw new PdfReadError('too-big');
   const text = latin1(bytes);
   if (!text.slice(0, 1024).includes('%PDF-')) throw new PdfReadError('not-a-pdf');
@@ -653,6 +777,7 @@ export async function readPdf(bytes: Uint8Array): Promise<PdfDocument> {
   const infos = pageList(doc);
   if (infos.length === 0) throw new PdfReadError('no-pages');
   const pages: PdfPage[] = [];
+  const pictures: { ref: number; ctm: Matrix }[][] = [];
   for (let i = 0; i < infos.length; i++) {
     const info = infos[i];
     const { m, width, height } = pageMatrix(info);
@@ -665,9 +790,79 @@ export async function readPdf(bytes: Uint8Array): Promise<PdfDocument> {
       const data = entry ? await decodeStream(doc, entry) : null;
       if (data) content += latin1(data) + '\n';
     }
-    const it: Interpreter = { doc, strokes: [], budget: MAX_STROKES_PER_PAGE };
+    const it: Interpreter = { doc, strokes: [], budget: MAX_STROKES_PER_PAGE, images: [] };
     await interpret(it, content, info.resources, { ctm: m, stroke: [0, 0, 0], width: 1, dash: [] }, 0);
-    pages.push({ number: i + 1, widthPt: width, heightPt: height, strokes: it.strokes });
+    // How much of the page the pictures cover: the area of the unit square after the matrix, against the page.
+    let covered = 0;
+    for (const img of it.images) covered += Math.abs(img.ctm[0] * img.ctm[3] - img.ctm[1] * img.ctm[2]);
+    pages.push({ number: i + 1, widthPt: width, heightPt: height, strokes: it.strokes, pictureShare: Math.min(1, covered / Math.max(1, width * height)) });
+    pictures.push(it.images);
   }
-  return { pages, warnings: [...doc.warnings] };
+  const MAX_COMPOSITE_PX = 3600;
+  const tracePage = async (pageIndex: number, traceOptions?: TraceOptions): Promise<PdfStroke[]> => {
+    const page = pages[pageIndex];
+    if (!page) return [];
+    const placed: { picture: PixelImage; ctm: Matrix }[] = [];
+    for (const p of pictures[pageIndex] ?? []) {
+      const entry = doc.objects.get(p.ref);
+      const picture = entry ? await pictureOf(doc, entry, options) : null;
+      if (picture) placed.push({ picture, ctm: p.ctm });
+    }
+    if (placed.length === 0) return [];
+    const areaOf = (m: Matrix) => Math.abs(m[0] * m[3] - m[1] * m[2]);
+    const pageArea = Math.max(1, page.widthPt * page.heightPt);
+    const biggest = placed.reduce((a, b) => (areaOf(b.ctm) > areaOf(a.ctm) ? b : a));
+    const out: PdfStroke[] = [];
+    if (areaOf(biggest.ctm) >= 0.5 * pageArea) {
+      // One picture is the pattern: traced as it is, at its own resolution.
+      const traced = traceLineArt(biggest.picture, traceOptions);
+      const at = (q: Vec2): Vec2 => apply(biggest.ctm, q[0] / biggest.picture.width, 1 - q[1] / biggest.picture.height);
+      const pt = Math.sqrt(areaOf(biggest.ctm)) / Math.max(biggest.picture.width, biggest.picture.height);
+      for (const line of traced.cut) out.push({ points: line.points.map(at), closed: line.closed, rgb: line.rgb, width: Math.max(0.3, 1.5 * pt), dash: [] });
+      for (const fold of traced.folds) out.push({ points: [at(fold.a), at(fold.b)], closed: false, rgb: fold.rgb, width: Math.max(0.3, 1.5 * pt), dash: [3, 2] });
+      return out;
+    }
+    // Many pictures (a page cut into tiles): put them together on one bitmap of the page, at the finest resolution any of them has, and trace that.
+    const covered = placed.reduce((sum, p) => sum + areaOf(p.ctm), 0);
+    if (covered < 0.3 * pageArea) return [];
+    let density = 0;
+    for (const p of placed) density = Math.max(density, p.picture.width / Math.max(1e-6, Math.hypot(p.ctm[0], p.ctm[1])));
+    const scale = Math.min(density, MAX_COMPOSITE_PX / Math.max(page.widthPt, page.heightPt));
+    const cw = Math.max(1, Math.round(page.widthPt * scale));
+    const ch = Math.max(1, Math.round(page.heightPt * scale));
+    const canvas = new Uint8Array(cw * ch * 3).fill(255);
+    for (const { picture, ctm } of placed) {
+      const det = ctm[0] * ctm[3] - ctm[1] * ctm[2];
+      if (Math.abs(det) < 1e-9) continue;
+      const corners = [apply(ctm, 0, 0), apply(ctm, 1, 0), apply(ctm, 0, 1), apply(ctm, 1, 1)];
+      const x0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c[0])) * scale));
+      const x1 = Math.min(cw - 1, Math.ceil(Math.max(...corners.map((c) => c[0])) * scale));
+      const y0 = Math.max(0, Math.floor((page.heightPt - Math.max(...corners.map((c) => c[1]))) * scale));
+      const y1 = Math.min(ch - 1, Math.ceil((page.heightPt - Math.min(...corners.map((c) => c[1]))) * scale));
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          // Page point of this pixel, back to the picture's unit square.
+          const px = (x + 0.5) / scale - ctm[4];
+          const py = page.heightPt - (y + 0.5) / scale - ctm[5];
+          const u = (px * ctm[3] - py * ctm[2]) / det;
+          const v = (py * ctm[0] - px * ctm[1]) / det;
+          if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+          const sx = Math.min(picture.width - 1, Math.floor(u * picture.width));
+          const sy = Math.min(picture.height - 1, Math.floor((1 - v) * picture.height));
+          const from = (sy * picture.width + sx) * 3;
+          const to = (y * cw + x) * 3;
+          canvas[to] = picture.rgb[from];
+          canvas[to + 1] = picture.rgb[from + 1];
+          canvas[to + 2] = picture.rgb[from + 2];
+        }
+      }
+    }
+    const traced = traceLineArt({ width: cw, height: ch, rgb: canvas }, traceOptions);
+    const at = (q: Vec2): Vec2 => [q[0] / scale, page.heightPt - q[1] / scale];
+    const pt = 1 / scale;
+    for (const line of traced.cut) out.push({ points: line.points.map(at), closed: line.closed, rgb: line.rgb, width: Math.max(0.3, 1.5 * pt), dash: [] });
+    for (const fold of traced.folds) out.push({ points: [at(fold.a), at(fold.b)], closed: false, rgb: fold.rgb, width: Math.max(0.3, 1.5 * pt), dash: [3, 2] });
+    return out;
+  };
+  return { pages, warnings: [...doc.warnings], tracePage };
 }

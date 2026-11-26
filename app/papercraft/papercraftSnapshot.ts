@@ -1,4 +1,4 @@
-import type { RawMesh, Vec3 } from '@/src/lib/papercraft-engine';
+import type { PagePin, RawMesh, Vec3 } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 import type { ModelSource, PapercraftState, PaperPreset, SizeBy } from './papercraftState';
 import { initialPapercraftState, MIN_DETAIL_PCT } from './papercraftState';
@@ -16,6 +16,7 @@ export interface SerializedPapercraft {
   paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm?: number; customHeightMm?: number };
   detailPct?: number;
   colourParts?: boolean;
+  layout?: { pins?: Record<string, PagePin>; maxPartsPerPage?: number; tight?: boolean };
   pattern: { tabWidthMm: number; tabAngleDeg: number; printedSide: 'outside' | 'inside'; numberHeightMm: number; partLabels: boolean };
   cover: boolean;
   edits: { forceCut: number[]; forceJoin: number[] };
@@ -49,6 +50,15 @@ export function serializePapercraft(state: PapercraftState): SerializedPapercraf
     paper: { ...state.paper },
     ...(state.detailPct < 100 ? { detailPct: state.detailPct } : {}),
     ...(state.colourParts ? { colourParts: true } : {}),
+    ...(Object.keys(state.layout.pins).length > 0 || state.layout.maxPartsPerPage !== null || !state.layout.tight
+      ? {
+          layout: {
+            ...(Object.keys(state.layout.pins).length > 0 ? { pins: Object.fromEntries(Object.entries(state.layout.pins).map(([id, p]) => [id, { ...p }])) } : {}),
+            ...(state.layout.maxPartsPerPage !== null ? { maxPartsPerPage: state.layout.maxPartsPerPage } : {}),
+            ...(!state.layout.tight ? { tight: false } : {}),
+          },
+        }
+      : {}),
     pattern: { ...state.pattern },
     cover: state.cover,
     edits: { forceCut: [...state.edits.forceCut], forceJoin: [...state.edits.forceJoin] },
@@ -120,6 +130,7 @@ export function deserializePapercraft(data: unknown): PapercraftState | null {
     },
     detailPct: isNum(data.detailPct) ? clamp(Math.round(data.detailPct), MIN_DETAIL_PCT, 100) : 100,
     colourParts: data.colourParts === true,
+    layout: readLayout(data.layout),
     pattern: {
       tabWidthMm: clamp(pattern.tabWidthMm, 3, 30),
       tabAngleDeg: clamp(pattern.tabAngleDeg, 10, 90),
@@ -129,6 +140,30 @@ export function deserializePapercraft(data: unknown): PapercraftState | null {
     },
     cover: data.cover,
     edits: { forceCut: edits.forceCut, forceJoin: edits.forceJoin },
+  };
+}
+
+const MAX_PINS = 500;
+
+/** The pins of a saved layout: only entries that are numbers and make sense; the rest is left out. */
+function readLayout(value: unknown): PapercraftState['layout'] {
+  const base = initialPapercraftState().layout;
+  if (!isRecord(value)) return base;
+  const pins: Record<number, PagePin> = {};
+  if (isRecord(value.pins)) {
+    for (const [key, raw] of Object.entries(value.pins).slice(0, MAX_PINS)) {
+      const id = Number(key);
+      if (!Number.isInteger(id) || id < 1 || !isRecord(raw)) continue;
+      const { page, rotation, x, y, w, h } = raw;
+      if (![page, rotation, x, y, w, h].every(isNum)) continue;
+      if ((page as number) < 0 || (page as number) > 200 || (w as number) <= 0 || (h as number) <= 0) continue;
+      pins[id] = { page: Math.floor(page as number), rotation: rotation as number, x: x as number, y: y as number, w: w as number, h: h as number };
+    }
+  }
+  return {
+    pins,
+    maxPartsPerPage: isNum(value.maxPartsPerPage) && value.maxPartsPerPage >= 1 ? Math.min(50, Math.floor(value.maxPartsPerPage)) : null,
+    tight: value.tight !== false,
   };
 }
 
