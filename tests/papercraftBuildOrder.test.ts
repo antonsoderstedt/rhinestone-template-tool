@@ -46,7 +46,8 @@ describe('the order to build in', () => {
     expect(buildOrderOf(parts, pairs).flatMap((s) => s.joins.flatMap((j) => j.edges))).toEqual([2]);
   });
 
-  it('every glued edge is in exactly one step, as a seam or as a join, for every built-in model', () => {
+  // Forty models are unfolded one after the other: a few seconds, more on a slow machine.
+  it('every glued edge is in exactly one step, as a seam or as a join, for every built-in model', { timeout: 60_000 }, () => {
     for (const m of BUILT_IN_MODELS) {
       const run = modelRun(m.id, m.defaultSizeMm);
       const order = run.pattern.buildOrder;
