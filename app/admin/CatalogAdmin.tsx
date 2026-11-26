@@ -2,17 +2,17 @@
 
 import { Eye, EyeOff, Info, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import CatalogPreview from '../components/CatalogPreview';
 import { WorkspaceEmptyState, WorkspaceSurface, WorkspaceTag, workspaceInputClassName, workspaceSelectClassName, workspaceTextAreaClassName } from '../components/workspace/WorkspaceChrome';
 import {
   deleteCatalogTemplate,
-  fetchCatalogFile,
   listCatalog,
   saveCatalogDetails,
   uploadCatalogFile,
   type CatalogFailure,
   type CatalogTemplate,
 } from '../lib/catalog/catalogClient';
-import { CATALOG_STUDIOS, formatOfFileName, mimeOfFormat, PREVIEW_FORMATS, STUDIO_FORMATS, STUDIO_NAMES, isTextFormat, type CatalogStudio } from '../lib/catalog/catalogFormat';
+import { CATALOG_STUDIOS, formatOfFileName, PREVIEW_FORMATS, STUDIO_FORMATS, STUDIO_NAMES, isTextFormat, type CatalogStudio } from '../lib/catalog/catalogFormat';
 import { useT } from '../lib/i18n';
 import { detailsOf, draftOf, draftProblems, emptyDraft, type CatalogDraft, type DraftProblem } from './catalogDraft';
 
@@ -36,38 +36,6 @@ function Hint({ text }: { text: string }) {
 function formatBytes(chars: number, format: string): string {
   const bytes = isTextFormat(format) ? chars : Math.round((chars * 3) / 4);
   return bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} kB`;
-}
-
-/** A template's picture, fetched when the row shows. */
-function Preview({ template }: { template: CatalogTemplate }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const has = template.preview !== null;
-  const stamp = template.updatedAt;
-  useEffect(() => {
-    if (!has) return undefined;
-    let cancelled = false;
-    let made: string | null = null;
-    void fetchCatalogFile(template, 'preview').then((result) => {
-      if (cancelled || !result.ok) return;
-      const type = mimeOfFormat(formatOfFileName(result.value.name));
-      made = URL.createObjectURL(new Blob([result.value.bytes as BlobPart], { type }));
-      setUrl(made);
-    });
-    return () => {
-      cancelled = true;
-      if (made) URL.revokeObjectURL(made);
-    };
-    // The picture is fetched again when the template changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template.id, has, stamp]);
-  return (
-    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/80 bg-surface">
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a picture from the catalog, shown from a blob: address
-        <img src={url} alt="" className="h-full w-full object-contain" />
-      ) : null}
-    </div>
-  );
 }
 
 export default function CatalogAdmin() {
@@ -245,7 +213,7 @@ export default function CatalogAdmin() {
           <ul className="mt-6 divide-y divide-border/70">
             {shown.map((tpl) => (
               <li key={tpl.id} className="flex flex-wrap items-center gap-4 py-4">
-                <Preview template={tpl} />
+                <CatalogPreview template={tpl} className="h-16 w-16 rounded-xl border border-border/80 bg-surface" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-ink">{tpl.name}</span>
@@ -310,7 +278,7 @@ export default function CatalogAdmin() {
             </div>
 
             <div className="md:col-span-2">
-              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ model, a PDF pattern, an SVG or a saved JSON. Rhinestone and HTV: an SVG or a saved JSON.')} /></label>
+              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone and HTV: an SVG or a saved JSON.')} /></label>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-border/80 bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-surface-raised">
                   <Upload className="h-4 w-4" aria-hidden="true" /> {file ? t('Choose another file') : existing?.file ? t('Replace the file') : t('Choose a file')}

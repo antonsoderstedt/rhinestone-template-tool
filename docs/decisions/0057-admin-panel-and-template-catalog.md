@@ -33,7 +33,8 @@ This is a program of several parts; the first part, decided with the owner, is *
   category, tags and licence.
 - **Admin page** (`/admin`, a static client page like the others): list with search and studio filter, a picture per row, publish /
   edit / delete, and a form with file and picture upload. Where there is no catalog (GitHub Pages, `next dev`) the page says so.
-- **Not in this part, planned next:** the studios reading the catalog (Papercraft's model picker first), statistics (own events in D1
+- **Papercraft reads the catalog** (added): the Model panel has a “From the catalog” section (`app/papercraft/CatalogModels.tsx`) with the published Papercraft templates that have an OBJ, STL or GLB file; a click fetches the file and runs it through the same import as a file the person picked. It renders nothing where there is no catalog or nothing published.
+- **Not in this part, planned next:** Rhinestone and HTV reading the catalog, statistics (own events in D1
   plus Google Analytics / Tag Manager), tracking and metadata settings, and managing the other content (designs, fonts, library).
 
 ## Consequences

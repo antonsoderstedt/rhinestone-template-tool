@@ -1601,7 +1601,6 @@
   "Licence": "Licens",
   "Who made it and what you may do with it. Write it down so you know later.": "Vem som gjort den och vad du får göra med den. Skriv ner det så du vet senare.",
   "File": "Fil",
-  "Papercraft: an OBJ model, a PDF pattern, an SVG or a saved JSON. Rhinestone and HTV: an SVG or a saved JSON.": "Papercraft: en OBJ-modell, ett PDF-mönster, en SVG eller en sparad JSON. Rhinestone och HTV: en SVG eller en sparad JSON.",
   "Choose another file": "Välj en annan fil",
   "Replace the file": "Byt ut filen",
   "Picture": "Bild",
@@ -1622,5 +1621,10 @@
   "Admin": "Admin",
   "Admin panel": "Adminpanel",
   "Upload and manage the templates the studios can use. Only you can open this page: it is behind your Cloudflare Access login.": "Ladda upp och hantera de mallar studiorna kan använda. Bara du kan öppna den här sidan: den ligger bakom din Cloudflare Access-inloggning.",
-  "1 template": "1 mall"
+  "1 template": "1 mall",
+  "Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone and HTV: an SVG or a saved JSON.": "Papercraft: en OBJ-, STL- eller GLB-modell, ett PDF-mönster, en SVG eller en sparad JSON. Rhinestone och HTV: en SVG eller en sparad JSON.",
+  "From the catalog": "Från katalogen",
+  "Search the catalog": "Sök i katalogen",
+  "No model matches.": "Ingen modell matchar.",
+  "The model could not be fetched from the catalog.": "Modellen gick inte att hämta från katalogen."
 }
