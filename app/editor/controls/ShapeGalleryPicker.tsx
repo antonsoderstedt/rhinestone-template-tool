@@ -5,11 +5,11 @@ import { editorFieldLabelClassName } from './controlStyles';
 
 import { useT } from '../../lib/i18n';
 /** Ready-made shapes to start from, for people who have no file yet. */
-export default function ShapeGalleryPicker({ onPick, selectedName }: { onPick: (shape: GalleryShape) => void; selectedName?: string | null }) {
+export default function ShapeGalleryPicker({ onPick, selectedName, label }: { onPick: (shape: GalleryShape) => void; selectedName?: string | null; label?: string }) {
   const t = useT();
   return (
     <div className="space-y-2" role="group" aria-label={t('Ready-made shapes')}>
-      <span className={editorFieldLabelClassName}>{t('Or start from a shape')}</span>
+      <span className={editorFieldLabelClassName}>{label ?? t('Or start from a shape')}</span>
       <ul className="grid grid-cols-3 gap-1.5">
         {GALLERY_SHAPES.map((shape) => (
           <li key={shape.id}>

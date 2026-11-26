@@ -9,6 +9,7 @@ import { LengthField, NumberField, SelectField, Section } from './fields';
 import { DEFAULT_SIMPLIFY_FACES, MAX_FACES, MIN_SIMPLIFY_FACES } from './papercraftCompute';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
 import ModelThumb from './ModelThumb';
+import ShapeSection from './ShapeSection';
 import { BUILT_IN_MODELS, MODEL_GROUPS } from './papercraftModels';
 import { describeMeshWarning } from './papercraftWarnings';
 import type { PapercraftAction, PapercraftState, SizeBy } from './papercraftState';
@@ -96,6 +97,8 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
           </p>
         )}
       </Section>
+
+      <ShapeSection source={state.source} dispatch={dispatch} />
 
       {state.source.kind === 'file' && solid && (
         <Section title={t('Check your model')}>

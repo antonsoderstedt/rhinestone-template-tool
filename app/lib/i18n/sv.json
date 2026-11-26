@@ -1388,5 +1388,22 @@
   "Silhouette DXF made: {name}": "Silhouette-DXF klar: {name}",
   "Download DXF for Silhouette": "Ladda ner DXF för Silhouette",
   "In Silhouette Studio open the DXF and give each colour its own setting: black is Cut, red is Score, blue (the numbers) can be deleted. The unit is millimetres.": "Öppna DXF-filen i Silhouette Studio och ge varje färg sin egen inställning: svart är skär, rött är räfflar (score), blått (numren) kan tas bort. Enheten är millimeter.",
-  "Silhouette DXF": "Silhouette DXF"
+  "Silhouette DXF": "Silhouette DXF",
+  "Make a model from a shape": "Gör en modell av en form",
+  "Pick a flat shape. It becomes a box in that shape, or the shape is spun round like a vase.": "Välj en platt form. Den blir en ask i den formen, eller så snurras formen runt som en vas.",
+  "Use your own SVG file": "Använd din egen SVG-fil",
+  "Choose an SVG file": "Välj en SVG-fil",
+  "Make it": "Gör den till",
+  "A box in the shape": "En ask i formen",
+  "The shape spun round": "Formen snurrad runt",
+  "Corners": "Hörn",
+  "Rings": "Ringar",
+  "Sides": "Sidor",
+  "box": "ask",
+  "spun": "snurrad",
+  "Shape": "Form",
+  "There is nothing in this shape to build a model from.": "Det finns inget i den här formen att bygga en modell av.",
+  "This file could not be read as a shape.": "Filen gick inte att läsa som en form.",
+  "That file is too big (over 2 MB). Use a simpler SVG.": "Filen är för stor (över 2 MB). Använd en enklare SVG.",
+  "{count} separate pieces were left out: the biggest one is the model.": "{count} separata delar lämnades utanför: den största är modellen."
 }
