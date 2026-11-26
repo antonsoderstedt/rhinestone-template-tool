@@ -675,6 +675,19 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 
 ---
 
+## Admin panel and template catalog (ADR 0057)
+
+- [x] `/api/catalog/*` and `/api/admin/*` refuse a request without a valid Access token (tested)
+- [x] Details are validated: id, studio, format, name, tags, own fields; a template cannot change studio (tested)
+- [x] A file is stored in chunks, with name, type and size on the template, and is served back whole (tested)
+- [x] Published templates only are listed unless `all=1`; a draft cannot be published without a file
+- [x] `/admin`: list, search, studio filter, new / edit / delete, publish, file and picture upload, own fields
+- [ ] Checked on the deployed private site behind Cloudflare Access
+- [ ] The studios read the published templates (Papercraft first)
+- [ ] Statistics, tracking and metadata settings (later parts)
+
+---
+
 ## General Non-Regression Rules
 
 These must hold across all phases:
