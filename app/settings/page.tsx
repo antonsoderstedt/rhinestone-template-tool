@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Ruler, Settings2 } from 'lucide-react';
+import { CheckCircle2, Ruler, Settings2, ShieldCheck } from 'lucide-react';
 import {
   type CalibrationProfile,
   type WorkspaceVault,
@@ -108,6 +108,11 @@ export default function SettingsPage() {
           title={t('Defaults for new projects')}
           description={t('Choose what a new project starts with. Every setting here is used by the studios; changes apply to new projects and never alter work you already saved.')}
           tone="accent"
+          actions={(
+            <Link href="/admin" className="inline-flex items-center gap-2 rounded-2xl border border-border/80 bg-surface px-5 py-3 text-sm font-semibold text-ink transition hover:bg-surface-raised">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" /> {t('Admin panel')}
+            </Link>
+          )}
           aside={(
             <WorkspaceSurface className="p-5">
               <div className="inline-flex items-center gap-2 rounded-full bg-success-50 px-4 py-2 text-sm font-medium text-success-600">
