@@ -695,7 +695,7 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Every parametric template builds from its defaults and its extremes and unfolds to parts that fit an A4 page (tested)
 - [x] The recipe is saved with the design and comes back; a damaged recipe or a design from before recipes still opens (tested)
 - [x] “Build your own model” in the Model panel: templates, values, part editor (checked in the running studio)
-- [ ] Save the model as a template in the catalog
+- [x] Save the model as a template in the catalog (JSON design + picture); it opens again from “From the catalog” with its recipe, size and settings (checked on the local Worker)
 - [ ] Draw the pattern flat in 2D
 - [ ] A real model built from one of the templates has been folded and glued
 

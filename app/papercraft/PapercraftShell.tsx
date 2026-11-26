@@ -66,7 +66,7 @@ export default function PapercraftShell() {
   // Choosing another model or importing a file starts a new design (saving it does not overwrite the one that was open).
   const dispatchModelChange: React.Dispatch<PapercraftAction> = useCallback((action) => {
     dispatch(action);
-    if (action.type === 'USE_BUILT_IN' || action.type === 'USE_FILE') {
+    if (action.type === 'USE_BUILT_IN' || action.type === 'USE_FILE' || action.type === 'LOAD_STATE') {
       setActiveId(null);
       setSavedText(null);
       setSavedAt(null);
@@ -325,7 +325,7 @@ export default function PapercraftShell() {
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'model' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[272px] lg:border-t-0`}>
-          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} simplifying={simplifying} onSimplify={simplifyModel} onRestoreOriginal={restoreOriginal} />
+          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onLoadState={(loaded) => dispatchModelChange({ type: 'LOAD_STATE', state: loaded })} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} simplifying={simplifying} onSimplify={simplifyModel} onRestoreOriginal={restoreOriginal} />
         </div>
 
         <main

@@ -10,7 +10,7 @@ import { LengthField, NumberField, RangeField, SelectField, Section } from './fi
 import { DEFAULT_SIMPLIFY_FACES, MAX_FACES, MIN_SIMPLIFY_FACES } from './papercraftCompute';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
 import BuilderSection from './BuilderSection';
-import CatalogModels from './CatalogModels';
+import CatalogSections from './CatalogSections';
 import ModelThumb from './ModelThumb';
 import ShapeSection from './ShapeSection';
 import { BUILT_IN_MODELS, MODEL_GROUPS } from './papercraftModels';
@@ -25,6 +25,8 @@ interface ModelPanelProps {
   solid: Solid | null;
   importError: string | null;
   onImportFile: (file: File) => void;
+  /** A whole design from the catalog (a saved template). */
+  onLoadState: (state: PapercraftState) => void;
   onFillHoles: () => void;
   onFlipFaces: () => void;
   /** True while a model is being simplified (a heavy one takes a few seconds). */
@@ -33,7 +35,7 @@ interface ModelPanelProps {
   onRestoreOriginal: () => void;
 }
 
-export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onFillHoles, onFlipFaces, simplifying, onSimplify, onRestoreOriginal }: ModelPanelProps) {
+export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onLoadState, onFillHoles, onFlipFaces, simplifying, onSimplify, onRestoreOriginal }: ModelPanelProps) {
   const t = useT();
   const unit = useUnit();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -152,7 +154,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
         )}
       </Section>
 
-      <CatalogModels onImportFile={onImportFile} activeFileName={state.source.kind === 'file' ? state.source.fileName : null} />
+      <CatalogSections state={state} onImportFile={onImportFile} onLoadState={onLoadState} />
 
       <ShapeSection source={state.source} dispatch={dispatch} />
 
