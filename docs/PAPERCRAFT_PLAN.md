@@ -79,7 +79,7 @@ Saved models in My Designs and sync, Swedish, phone layout, share link, version 
 
 ### Later
 Import finished PDF patterns as cut files (read lines from the PDF), shapes from the tool's 2D shapes (extrude, lathe), coloured faces with print-then-cut,
-Silhouette DXF, slot-together models (no glue), animals with horns or a mane. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044; birds on two legs: ADR 0046; upright birds: ADR 0047.)
+Silhouette DXF, slot-together models (no glue), curled horns and branching antlers. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044; birds on two legs: ADR 0046; upright birds: ADR 0047; horns, manes and tufts: ADR 0048.)
 
 ## Risks and open points
 
