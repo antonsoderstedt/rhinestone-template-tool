@@ -3,6 +3,7 @@ export { buildSolid, planarCoordinates, type BuildOptions } from './mesh/build';
 export { parseObj, parseStl, readMeshFile, MeshReadError } from './mesh/readers';
 export * as shapes from './mesh/shapes';
 export { BUILT_IN_SHAPES } from './mesh/shapes';
+export { extrudeFaces, ringSweep, type LimbStep, type LimbOp, type RingSection, type RingSweep, type RingProfile } from './mesh/limbs';
 export { simplifyMesh, type SimplifyOptions, type SimplifyResult } from './mesh/simplify';
 export { fillHoles, flipFaces, boundaryLoops, type FillHolesResult } from './mesh/repair';
 export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarget } from './mesh/inspect';
