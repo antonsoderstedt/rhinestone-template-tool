@@ -18,6 +18,7 @@ export { assessBuild, type BuildAssessment, type Difficulty } from './unfold/ass
 export { textWidthMm, wrapText, toWinAnsi } from './export/helvetica';
 export { partHue, partRgb } from './export/colors';
 export { exportPageSvg, type SvgPurpose } from './export/svg';
+export { exportPageDxf } from './export/dxf';
 export { exportPdf } from './export/pdf';
 export { strokeText } from './export/strokeFont';
 export { createPapercraft, DEFAULT_PAGE_SETTINGS, type PapercraftInput, type PapercraftResult } from './pipeline';

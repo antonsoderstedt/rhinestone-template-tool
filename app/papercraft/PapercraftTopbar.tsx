@@ -17,11 +17,12 @@ interface PapercraftTopbarProps {
   dispatch: React.Dispatch<PapercraftAction>;
   onExportPdf: () => void;
   onExportCricut: () => void;
+  onExportSilhouette: () => void;
   theme: StudioTheme;
   onToggleTheme: () => void;
 }
 
-export default function PapercraftTopbar({ projectName, view, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, theme, onToggleTheme }: PapercraftTopbarProps) {
+export default function PapercraftTopbar({ projectName, view, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, onExportSilhouette, theme, onToggleTheme }: PapercraftTopbarProps) {
   const t = useT();
   const views: { id: PapercraftView; label: string; icon: typeof Box }[] = [
     { id: 'model', label: t('3D model'), icon: Box },
@@ -88,6 +89,15 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
           >
             <Scissors className="h-4 w-4" aria-hidden="true" />
             {t('Cricut SVG')}
+          </button>
+          <button
+            type="button"
+            onClick={onExportSilhouette}
+            disabled={!canExport}
+            className="hidden items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
+          >
+            <Scissors className="h-4 w-4" aria-hidden="true" />
+            {t('Silhouette DXF')}
           </button>
           <StudioThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>

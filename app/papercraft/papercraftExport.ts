@@ -1,4 +1,5 @@
 import {
+  exportPageDxf,
   exportPageSvg,
   exportPdf,
   renderCover,
@@ -34,6 +35,15 @@ export function buildCricutSvgs(run: PapercraftResult, base: string): { name: st
   }));
 }
 
+/** One DXF per page (layers CUT, SCORE and NUMBERS), named `<base>-silhouette-page-<n>.dxf`. */
+export function buildSilhouetteDxfs(run: PapercraftResult, base: string): { name: string; dxf: string }[] {
+  const drawings = renderPages(run.layout.pages, run.pattern.parts);
+  return drawings.map((d, i) => ({
+    name: drawings.length === 1 ? `${base}-silhouette.dxf` : `${base}-silhouette-page-${i + 1}.dxf`,
+    dxf: exportPageDxf(d),
+  }));
+}
+
 export interface ExportFile {
   fileName: string;
   mime: string;
@@ -46,6 +56,14 @@ export function buildCricutDownload(run: PapercraftResult, projectName: string):
   const files = buildCricutSvgs(run, base);
   if (files.length === 1) return { fileName: files[0].name, mime: 'image/svg+xml', data: files[0].svg };
   return { fileName: `${base}-cricut.zip`, mime: 'application/zip', data: createZip(files.map((f) => ({ name: f.name, data: f.svg }))) };
+}
+
+/** The files a "DXF for Silhouette" download gives: one DXF for one page, a zip for several. */
+export function buildSilhouetteDownload(run: PapercraftResult, projectName: string): ExportFile {
+  const base = exportBaseName(projectName);
+  const files = buildSilhouetteDxfs(run, base);
+  if (files.length === 1) return { fileName: files[0].name, mime: 'application/dxf', data: files[0].dxf };
+  return { fileName: `${base}-silhouette.zip`, mime: 'application/zip', data: createZip(files.map((f) => ({ name: f.name, data: f.dxf }))) };
 }
 
 export function buildPdfDownload(
