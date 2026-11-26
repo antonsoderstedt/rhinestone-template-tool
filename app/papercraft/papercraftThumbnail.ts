@@ -28,12 +28,17 @@ export function thumbnailPolygons(mesh: RawMesh, colourIndex: number, azimuthDeg
   }));
 }
 
-/** The picture as an SVG image address (`data:image/svg+xml`), for places that show an <img>. */
-export function thumbnailDataUri(polys: readonly ThumbPolygon[]): string | null {
+/** The picture as SVG text (plain polygons: nothing a cutter or a browser would object to), or null when there is nothing to draw. */
+export function thumbnailSvg(polys: readonly ThumbPolygon[]): string | null {
   if (polys.length === 0) return null;
   const body = polys.map((p) => `<polygon points="${p.points}" fill="${p.fill}" stroke="#222" stroke-width="0.5" stroke-linejoin="round"/>`).join('');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">${body}</svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">${body}</svg>`;
+}
+
+/** The picture as an SVG image address (`data:image/svg+xml`), for places that show an <img>. */
+export function thumbnailDataUri(polys: readonly ThumbPolygon[]): string | null {
+  const svg = thumbnailSvg(polys);
+  return svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : null;
 }
 
 const cache = new Map<string, string | null>();

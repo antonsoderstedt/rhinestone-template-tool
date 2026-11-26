@@ -39,4 +39,10 @@ editor follow separately.
   touching ends open.
 - A model made of parts has no “detail” control (it is as simple as it is made).
 - A template converted to parts cannot go back to its numbers.
-- Not in this part: saving the model as a template in the catalog, a flat 2D pattern editor, a 3D drag editor for the parts.
+- **Save as a template** (added; `papercraftCatalog.ts`, `CatalogSections.tsx`): the Model panel's “Save as a template” puts the open design in the
+  catalog (ADR 0057) as a new Papercraft template: details (name, category, published, “Made in”), the design as `<id>.json` (the same text
+  as a saved design, so it carries size, paper, tab settings and the recipe) and a small SVG picture of the model (plain polygons). The id is made from
+  the name and never replaces a template (`name`, `name-2`, …). “From the catalog” lists published models (OBJ/STL/GLB, imported as a file) and
+  saved templates (JSON, opened as a whole design through `LOAD_STATE`; a JSON file that is not one of ours is refused). Opening one starts a new unsaved design.
+  The section only shows where there is a catalog.
+- Not in this part: a flat 2D pattern editor, a 3D drag editor for the parts.

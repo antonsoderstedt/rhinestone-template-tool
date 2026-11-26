@@ -1700,5 +1700,12 @@
   "Open at the top": "Öppen upptill",
   "Open at the bottom": "Öppen nedtill",
   "Open at both ends": "Öppen i båda ändar",
-  "An open end has no lid: leave it open to make a tube, or where another part is glued on.": "En öppen ände har inget lock: lämna den öppen för att göra ett rör, eller där en annan del limmas på."
+  "An open end has no lid: leave it open to make a tube, or where another part is glued on.": "En öppen ände har inget lock: lämna den öppen för att göra ett rör, eller där en annan del limmas på.",
+  "Saved “{name}” in the catalog.": "Sparade ”{name}” i katalogen.",
+  "This model is too big to save as a template.": "Den här modellen är för stor för att sparas som mall.",
+  "A saved template: it opens with its size and settings.": "En sparad mall: den öppnas med sin storlek och sina inställningar.",
+  "Save as a template": "Spara som mall",
+  "Keep this model, with its size and settings (and how it is built, if you built it here), in your catalog so you can start from it again.": "Spara den här modellen med storlek och inställningar (och hur den är byggd, om du byggde den här) i din katalog så att du kan börja från den igen.",
+  "Template name": "Mallens namn",
+  "Show it under “From the catalog”": "Visa den under ”Från katalogen”"
 }
