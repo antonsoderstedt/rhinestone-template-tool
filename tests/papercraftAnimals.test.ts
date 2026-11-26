@@ -142,7 +142,8 @@ describe('a body along a curve (ringSweep)', () => {
 const FOUR_LEGGED = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe'] as const;
 const BIRDS = ['duck', 'chicken', 'flamingo'] as const;
 const UPRIGHT = ['penguin', 'owl'] as const;
-const ANIMALS = [...FOUR_LEGGED, ...BIRDS, ...UPRIGHT] as const;
+const HORNED = ['unicorn', 'deer', 'lion', 'rhino', 'bull'] as const;
+const ANIMALS = [...FOUR_LEGGED, ...BIRDS, ...UPRIGHT, ...HORNED] as const;
 const meshOf = (id: (typeof ANIMALS)[number]): RawMesh => shapes[id]();
 const atDefaultSize = (id: (typeof ANIMALS)[number]): Solid => {
   const model = BUILT_IN_MODELS.find((m) => m.id === id)!;
@@ -306,5 +307,36 @@ describe('folds that close by themselves', () => {
       const n = normalOf(whole, f.id);
       expect(n[0] * f.normal[0] + n[1] * f.normal[1] + n[2] * f.normal[2]).toBeCloseTo(1, 6);
     }
+  });
+});
+
+describe('horns, manes and tufts', () => {
+  const base = { sections: [[0, 20, 4, 6, 0], [10, 20, 10, 10, 0], [20, 20, 10, 10, 0], [30, 20, 10, 10, 0], [40, 20, 10, 10, 0], [50, 20, 6, 6, 0]], boxRear: true, boxFront: true, legs: [{ pair: 1, steps: [{ fall: 1 }] }, { pair: 3, steps: [{ fall: 1 }] }] } as const;
+
+  it('grows a horn from the flat top, and several limbs when a list is given', () => {
+    // Counted before the mesh is cleaned (cleaning merges flat neighbours): a face is replaced by four walls and a cap.
+    const plain = shapes.buildAnimal(base);
+    const horn = shapes.buildAnimal({ ...base, crest: { pair: 2, steps: [{ by: [0, 0, 8], scale: 0.5 }] } });
+    expect(horn.faces.length).toBe(plain.faces.length + 4);
+    const two = shapes.buildAnimal({ ...base, crest: [{ pair: 0, steps: [{ by: [0, 0, 6] }] }, { pair: 2, steps: [{ by: [0, 0, 6] }] }] });
+    expect(two.faces.length).toBe(plain.faces.length + 8);
+    const solid = buildSolid(two);
+    expect(solid.closed).toBe(true);
+    expect(solid.warnings).toEqual([]);
+  });
+
+  it('refuses two limbs on neighbouring faces (they share a corner), and a limb on a face that is not there', () => {
+    expect(() => shapes.buildAnimal({ ...base, crest: [{ pair: 1, steps: [{ by: [0, 0, 5] }] }, { pair: 2, steps: [{ by: [0, 0, 5] }] }] })).toThrow(/touch/);
+    expect(() => shapes.buildAnimal({ ...base, crest: { pair: 9, steps: [{ by: [0, 0, 5] }] } })).toThrow(RangeError);
+  });
+
+  it('a tuft on a tail is a last step that is wider than the step before', () => {
+    const lion = buildSolid(shapes.lion());
+    const maxX = (s: Solid) => Math.min(...s.vertices.map((v) => v[0]));
+    // The tip of the tail is the furthest back point, and it is wider than the tail before it.
+    const tip = lion.vertices.filter((v) => v[0] < maxX(lion) + 1e-6);
+    const width = Math.max(...tip.map((v) => v[1])) - Math.min(...tip.map((v) => v[1]));
+    const before = lion.vertices.filter((v) => v[0] > maxX(lion) + 4 && v[0] < maxX(lion) + 9 && v[2] > 30);
+    expect(width).toBeGreaterThan(Math.max(...before.map((v) => v[1])) - Math.min(...before.map((v) => v[1])));
   });
 });

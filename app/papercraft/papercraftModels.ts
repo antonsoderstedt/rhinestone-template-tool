@@ -55,6 +55,11 @@ export const BUILT_IN_MODELS: readonly BuiltInModel[] = [
   { id: 'flamingo', name: 'Flamingo', description: 'A flamingo with long legs and a long neck.', group: 'animals', defaultSizeMm: 350, mesh: () => shapes.flamingo() },
   { id: 'penguin', name: 'Penguin', description: 'A penguin standing upright, with flippers, a beak and little feet.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.penguin() },
   { id: 'owl', name: 'Owl', description: 'An owl with tufts on its head, folded wings and a small beak.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.owl() },
+  { id: 'unicorn', name: 'Unicorn', description: 'A unicorn with a horn and a mane along its neck.', group: 'animals', defaultSizeMm: 300, mesh: () => shapes.unicorn() },
+  { id: 'deer', name: 'Deer', description: 'A deer with a long neck and slim legs.', group: 'animals', defaultSizeMm: 280, mesh: () => shapes.deer() },
+  { id: 'lion', name: 'Lion', description: 'A lion with a big mane and a tufted tail.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.lion() },
+  { id: 'rhino', name: 'Rhino', description: 'A rhino with two horns on its nose.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.rhino() },
+  { id: 'bull', name: 'Bull', description: 'A bull with horns and a tufted tail.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.bull() },
 ];
 
 export function findBuiltInModel(id: string): BuiltInModel | undefined {

@@ -35,6 +35,11 @@ export interface LegStep {
   scale?: number;
 }
 
+export interface Crest {
+  pair: number;
+  steps: readonly LimbStep[];
+}
+
 /** A section of the body: x, height of the centre line, half width, half height, and (optionally) the tilt of the centre line in degrees. */
 type Section = readonly [x: number, z: number, width: number, height: number, tiltDeg?: number];
 
@@ -58,8 +63,11 @@ export interface AnimalSpec {
    */
   feet?: { pair: number; steps: readonly LimbStep[] };
   beak?: { pair: number; steps: readonly LimbStep[] };
-  /** One limb out of the flat top between section `pair` and `pair + 1`: a comb, a crest. */
-  crest?: { pair: number; steps: readonly LimbStep[] };
+  /**
+   * Limbs out of the flat top between section `pair` and `pair + 1`: a comb, a horn, a mane (a long fin along the neck). Faces that share a corner
+   * cannot both grow a limb, so two of them need a section between them, and a limb on the top cannot be next to an ear on the shoulder.
+   */
+  crest?: Crest | readonly Crest[];
   /** A pair of ears at the shoulder faces (`edge: 'shoulder'`) or the side faces (`'side'`) between section `pair` and `pair + 1`. */
   ears?: readonly { pair: number; edge?: 'shoulder' | 'side'; steps: readonly LimbStep[] }[];
 }
@@ -109,7 +117,7 @@ export function buildAnimal(spec: AnimalSpec): RawMesh {
   }
   if (spec.feet) ops.push({ face: faceAt(spec.feet.pair, EDGE.padRight), steps: spec.feet.steps }, { face: faceAt(spec.feet.pair, EDGE.padLeft), steps: mirrored(spec.feet.steps) });
   if (spec.beak) ops.push({ face: faceAt(spec.beak.pair, EDGE.belly), steps: spec.beak.steps });
-  if (spec.crest) ops.push({ face: faceAt(spec.crest.pair, EDGE.top), steps: spec.crest.steps });
+  for (const c of spec.crest === undefined ? [] : 'pair' in spec.crest ? [spec.crest] : spec.crest) ops.push({ face: faceAt(c.pair, EDGE.top), steps: c.steps });
   if (spec.tail) ops.push({ face: body.startCap, steps: spec.tail });
   if (spec.nose) ops.push({ face: body.endCap, steps: spec.nose });
   return extrudeFaces(body.mesh, ops);
@@ -360,4 +368,125 @@ export const owl = (): RawMesh =>
       { pair: 2, edge: 'side', steps: [{ by: [-3, 5, -3], scale: 0.8 }, { by: [-3, 2, -10], scale: 0.5 }] },
       { pair: 6, edge: 'side', steps: [{ by: [0, 3, 8], scale: 0.6 }] },
     ],
+  });
+
+/** Horns, manes and tufts: the same limbs, pulled out of the head, the neck and the tail. */
+export const unicorn = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 74, 5, 9, 0],
+      [12, 74, 13.5, 18, 0],
+      [28, 74, 13.5, 18, 0],
+      [52, 74, 13.5, 18, 0],
+      [66, 74, 13.5, 18, 0],
+      [82, 90, 11, 14],
+      [104, 122, 7, 12, -15],
+      [114, 119.4, 7, 12, -15],
+      [134, 113, 4.5, 7, -15],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ fall: 1, scale: 0.7 }] },
+      { pair: 3, steps: [{ fall: 1, scale: 0.7 }] },
+    ],
+    tail: [{ by: [-4, 0, -8], scale: 0.85 }, { by: [-3, 0, -14], scale: 0.75 }],
+    ears: [{ pair: 6, edge: 'side', steps: [{ by: [-1, 3, 7], scale: 0.55 }] }],
+    crest: [
+      { pair: 5, steps: [{ by: [-6, 0, 4], scale: 0.8 }] },
+      { pair: 7, steps: [{ by: [5, 0, 14], scale: 0.55 }] },
+    ],
+  });
+
+export const deer = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 64, 4.5, 8, 0],
+      [10, 64, 11, 15, 0],
+      [24, 64, 11, 15, 0],
+      [42, 64, 11, 15, 0],
+      [54, 64, 11, 15, 0],
+      [70, 80, 9, 11],
+      [80, 94, 6.5, 10],
+      [90, 98, 6.5, 10, 0],
+      [100, 98, 6.5, 10, 0],
+      [112, 94, 4, 6, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ fall: 1, scale: 0.6 }] },
+      { pair: 3, steps: [{ fall: 1, scale: 0.6 }] },
+    ],
+    tail: [{ by: [-4, 0, 3], scale: 0.8 }],
+    // Antlers: out and up from the shoulders of the head, then outward again.
+    ears: [{ pair: 7, steps: [{ by: [0, 3, 8], scale: 0.8 }, { by: [-2, 6, 7], scale: 0.7 }] }],
+  });
+
+export const lion = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 44, 4, 6, 0],
+      [12, 44, 12.5, 15, 0],
+      [28, 44, 12.5, 15, 0],
+      [48, 44, 12.5, 15, 0],
+      [62, 44, 12.5, 15, 0],
+      [72, 48, 15, 18, 0],
+      [84, 52, 21, 21, 0],
+      [94, 52, 21, 21, 0],
+      [102, 48, 9, 10, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ fall: 1, scale: 0.85 }] },
+      { pair: 3, steps: [{ fall: 1, scale: 0.85 }] },
+    ],
+    tail: [{ by: [-9, 0, 4], scale: 0.7 }, { by: [-8, 0, 3], scale: 0.9 }, { by: [-5, 0, 2], scale: 1.8 }],
+  });
+
+export const rhino = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 50, 6, 11, 0],
+      [12, 46, 22, 24, 0],
+      [30, 46, 22, 24, 0],
+      [56, 46, 22, 24, 0],
+      [74, 46, 22, 24, 0],
+      [88, 50, 17, 20, 0],
+      [100, 50, 17, 20, 0],
+      [112, 44, 11, 14, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ fall: 1, scale: 0.9 }] },
+      { pair: 3, steps: [{ fall: 1, scale: 0.9 }] },
+    ],
+    tail: [{ by: [-4, 0, -4], scale: 0.85 }],
+    nose: [{ by: [3, 0, 13], scale: 0.55 }],
+    crest: { pair: 5, steps: [{ by: [2, 0, 7], scale: 0.6 }] },
+    ears: [{ pair: 5, edge: 'side', steps: [{ by: [-3, 5, 3], scale: 0.7 }] }],
+  });
+
+export const bull = (): RawMesh =>
+  buildAnimal({
+    sections: [
+      [0, 46, 7, 10, 0],
+      [12, 42, 16, 18, 0],
+      [28, 42, 16, 18, 0],
+      [50, 42, 16, 18, 0],
+      [64, 42, 16, 18, 0],
+      [76, 46, 13, 15, 0],
+      [88, 46, 13, 15, 0],
+      [98, 42, 8, 9, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ fall: 1, scale: 0.8 }] },
+      { pair: 3, steps: [{ fall: 1, scale: 0.8 }] },
+    ],
+    tail: [{ by: [-4, 0, -6], scale: 0.8 }, { by: [-3, 0, -8], scale: 0.9 }, { by: [-2, 0, -4], scale: 1.6 }],
+    ears: [{ pair: 5, edge: 'side', steps: [{ by: [0, 9, 5], scale: 0.8 }, { by: [0, 6, 12], scale: 0.55 }] }],
   });
