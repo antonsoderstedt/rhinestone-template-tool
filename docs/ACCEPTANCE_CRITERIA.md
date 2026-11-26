@@ -80,7 +80,7 @@ ADR 0040 · Tests: `tests/papercraftMesh.test.ts` ("more built-in shapes", "repa
 - [x] "Turn the model inside out" turns every face of an imported model; both fixes reset the hand edits and say what they did, and only work on an imported model
 - [x] A shortest edge under 8 mm is warned about for every model, in both languages
 - [x] Glue tabs are placed from the tightest edge first and a triangular tab is the last resort; edges with no room are reported
-- [ ] Every edge gets a tab on curved models (a few edges of the vase, bottle, egg, rocket, fish and swan do not: the studio says to glue them edge to edge)
+- [x] On curved models (vase, bottle, egg, rocket, fish, swan) at most one glued edge has no tab, and the edges that need it get a very narrow tab (ADR 0042: twelve ways of ordering the edges are tried and the best net is kept)
 - [ ] The built-in models built and glued on paper (needs the owner)
 
 ---
@@ -98,6 +98,19 @@ ADR 0041 · Tests: `tests/papercraftSave.test.ts` (snapshot, vault, opening, dra
 - [x] The backup file holds saved models (older backups still read; damaged entries are skipped and counted) and a restore adds, updates or keeps the newer copy
 - [x] A browser with no room left says so when saving
 - [ ] Opened on a real second device and a phone (needs the owner)
+
+---
+
+## Papercraft — glue tabs on curved models (Implemented 2026-11-26)
+
+ADR 0042 · Tests: "glue tab placement" in `tests/papercraftUnfold.test.ts`, the built-in model test in `tests/papercraftStudio.test.ts`.
+
+- [x] Every rule for ordering the edges gives a valid net (faces keep their size, nothing overlaps, joined edges = faces - parts)
+- [x] `buildPattern` keeps the best of several nets and is never worse than the first rule; it says which rule it used and which glued edges got no tab
+- [x] The curved built-in models have at most one edge with no tab; a very narrow tab (1.2 mm up to the minimum width) is reported as such
+- [x] Cutting or joining an edge by hand keeps the net: most folded edges stay folded
+- [x] A big model tries fewer rules, so the work stays small
+- [ ] A very narrow tab glued on real paper (needs the owner)
 
 ---
 

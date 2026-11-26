@@ -8,6 +8,8 @@ export interface UnfoldOptions {
   maxPartSize?: { widthMm: number; heightMm: number };
   forceCutEdges?: readonly number[];
   forceJoinEdges?: readonly number[];
+  /** Which rule orders the edges (see `weightOf`); 0 is the default. Different rules give different nets of the same model. */
+  weightVariant?: number;
 }
 
 export interface UnfoldResult {
@@ -56,9 +58,35 @@ export function unfold(solid: Solid, options: UnfoldOptions = {}): UnfoldResult 
   const trisOf = (f: number, pts: readonly Vec2[]): Vec2[][] => triangles[f].map((t) => t.map((i) => pts[i]));
 
   const candidates = solid.edges.filter((e) => e.faces.length === 2 && !forceCut.has(e.id));
+  const variant = options.weightVariant ?? 0;
   const weight = (e: (typeof candidates)[number]) => {
     const flat = Math.max(0, dot3(solid.faces[e.faces[0]].normal, solid.faces[e.faces[1]].normal));
-    return e.length * (1 + 0.5 * flat);
+    switch (variant) {
+      case 1:
+        return e.length;
+      case 2:
+        return 1000 * flat + e.length;
+      case 3:
+        return e.length * (1 + 2 * flat);
+      case 4:
+        return e.length * (1 + flat) ** 3;
+      case 5:
+        return -e.id;
+      case 6:
+        return e.id;
+      case 7:
+        return -e.length;
+      case 8:
+        return e.length * (1 - 0.5 * flat);
+      case 9:
+        return 1000 * (1 - flat) + e.length;
+      case 10:
+        return Math.sin(e.id * 12.9898) * 43758.5453 % 1;
+      case 11:
+        return Math.sin(e.id * 78.233 + 1) * 12345.6789 % 1;
+      default:
+        return e.length * (1 + 0.5 * flat);
+    }
   };
   const ordered = [...candidates].sort((p, q) => {
     const fp = forceJoin.has(p.id) ? 1 : 0;

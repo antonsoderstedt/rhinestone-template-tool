@@ -58,10 +58,55 @@ function polygonCentroid(points: readonly Vec2[]): Vec2 {
 }
 
 /**
+ * The rules that order the edges when unfolding (`weightVariant` of `unfold`), best first. Different rules give different nets of the same
+ * model and some leave room for every glue tab where others do not, so several are tried.
+ */
+export const UNFOLD_RULES = [0, 1, 7, 6, 8, 5, 9, 2, 4, 3, 10, 11] as const;
+
+/** How many rules are worth trying for a model of this size (each is a full unfolding): a small model tries them all. */
+export function rulesToTry(faceCount: number): number {
+  return faceCount <= 150 ? UNFOLD_RULES.length : faceCount <= 500 ? 6 : faceCount <= 1500 ? 3 : 1;
+}
+
+/** Lower is better: a glue tab that cannot be made costs much more than an extra part; a very narrow tab costs about an extra part and a narrowed tab a little. */
+export function patternScore(pattern: Pattern): number {
+  const missing = pattern.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0;
+  const narrowed = pattern.warnings.find((w) => w.code === 'tab-narrowed')?.count ?? 0;
+  const veryNarrow = pattern.warnings.find((w) => w.code === 'tab-very-narrow')?.count ?? 0;
+  return 10 * missing + 3 * veryNarrow + 2 * (pattern.stats.partCount - 1) + 0.5 * narrowed;
+}
+
+/**
  * Builds the printable/cuttable pattern: unfolds the solid, then adds glue tabs, edge numbers, fold lines (mountain,
- * valley) and cut outlines to every part.
+ * valley) and cut outlines to every part. Several rules for ordering the edges are tried (for a small enough model) and the pattern with
+ * the fewest missing tabs, then the fewest parts, is kept. With edges cut or joined by hand, the rule that won without them is used, so the
+ * net does not jump about while it is being edited; a rule given in `weightVariant` is used as it is.
  */
 export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings> = {}): Pattern {
+  const edited = (userSettings.forceCutEdges?.length ?? 0) + (userSettings.forceJoinEdges?.length ?? 0) > 0;
+  if (userSettings.weightVariant !== undefined) return buildPatternWithRule(solid, userSettings);
+  if (edited) {
+    // The edits are made on the net that was shown without them: the same rule, so the net does not jump about.
+    const shown = buildPattern(solid, { ...userSettings, forceCutEdges: [], forceJoinEdges: [] });
+    return buildPatternWithRule(solid, { ...userSettings, weightVariant: shown.rule });
+  }
+  let best: Pattern | null = null;
+  let bestScore = Infinity;
+  for (const rule of UNFOLD_RULES.slice(0, rulesToTry(solid.faces.length))) {
+    const pattern = buildPatternWithRule(solid, { ...userSettings, weightVariant: rule });
+    const score = patternScore(pattern);
+    if (score < bestScore - 1e-9) {
+      best = pattern;
+      bestScore = score;
+    }
+    // One part with every tab: nothing can be better.
+    if (bestScore <= 0.5 * (pattern.warnings.find((w) => w.code === 'tab-narrowed')?.count ?? 0) && pattern.stats.partCount === 1) break;
+  }
+  return best!;
+}
+
+/** One unfolding by one rule, with its tabs, numbers and lines. */
+export function buildPatternWithRule(solid: Solid, userSettings: Partial<PatternSettings> = {}): Pattern {
   const settings: PatternSettings = { ...DEFAULT_PATTERN_SETTINGS, ...userSettings };
   const warnings: PatternWarning[] = [];
   const maxFaces = settings.maxPartSize
@@ -70,7 +115,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
         heightMm: Math.max(1, settings.maxPartSize.heightMm - 2 * settings.tabWidthMm),
       }
     : undefined;
-  const result = unfold(solid, { maxPartSize: maxFaces, forceCutEdges: settings.forceCutEdges, forceJoinEdges: settings.forceJoinEdges });
+  const result = unfold(solid, { maxPartSize: maxFaces, forceCutEdges: settings.forceCutEdges, forceJoinEdges: settings.forceJoinEdges, weightVariant: settings.weightVariant });
   if (result.rejectedForcedJoins.length > 0) {
     warnings.push({ code: 'forced-join-overlaps', count: result.rejectedForcedJoins.length, message: `${result.rejectedForcedJoins.length} joins you asked for were not made because the part would overlap itself or be too big.` });
   }
@@ -95,9 +140,12 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
   const tabAngles = [...new Set([baseAngle, 30, 20, 12].filter((a) => a <= baseAngle + 1e-9))].map((a) => Math.tan((a * Math.PI) / 180));
   // The last resort: a triangle that comes to a point in the middle of the edge (0 stands for it below).
   tabAngles.push(0);
+  const veryNarrowMm = Math.max(1.2, settings.minTabWidthMm * 0.4);
   const tabsByFace = new Map<number, Tab[]>();
   let tabMissing = 0;
+  const missingTabEdgeIds: number[] = [];
   let tabNarrowed = 0;
+  let tabVeryNarrow = 0;
 
   // Obstacles (face triangles and placed tabs) per part, for tab fitting.
   const obstacles: Vec2[][][] = result.islands.map((island) =>
@@ -113,7 +161,8 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
     if (L < 1e-6) return null;
     const d: Vec2 = [(Q[0] - P[0]) / L, (Q[1] - P[1]) / L];
     const o: Vec2 = [d[1], -d[0]];
-    for (let w = settings.tabWidthMm; w >= settings.minTabWidthMm - 1e-9; w *= 0.75) {
+    // Down to a very narrow tab (a thin line of glue) before giving up on the edge.
+    for (let w = settings.tabWidthMm; w >= veryNarrowMm - 1e-9; w *= 0.75) {
       for (const tan of tabAngles) {
         const inset = tan === 0 ? 0.49 * L : Math.min(w / tan, 0.4 * L);
         const p1: Vec2 = [P[0] + o[0] * w + d[0] * inset, P[1] + o[1] * w + d[1] * inset];
@@ -176,9 +225,11 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
     }
     if (!chosen) {
       tabMissing++;
+      missingTabEdgeIds.push(pair.eid);
       continue;
     }
-    if (chosen.tab.width < settings.tabWidthMm - 1e-9) tabNarrowed++;
+    if (chosen.tab.width < settings.minTabWidthMm - 1e-9) tabVeryNarrow++;
+    else if (chosen.tab.width < settings.tabWidthMm - 1e-9) tabNarrowed++;
     const [P, Q, q1, p1] = chosen.tab.points;
     obstacles[chosen.side.island].push([P, Q, q1], [P, q1, p1]);
     tabsInIsland[chosen.side.island]++;
@@ -188,6 +239,7 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
   }
   const rawParts = result.islands;
   if (tabMissing > 0) warnings.push({ code: 'tab-missing', count: tabMissing, message: `${tabMissing} edges have no room for a glue tab. Glue those edges edge to edge.` });
+  if (tabVeryNarrow > 0) warnings.push({ code: 'tab-very-narrow', count: tabVeryNarrow, message: `${tabVeryNarrow} glue tabs are under ${settings.minTabWidthMm} mm wide: there is little room there. Use a thin line of glue.` });
   if (tabNarrowed > 0) warnings.push({ code: 'tab-narrowed', count: tabNarrowed, message: `${tabNarrowed} glue tabs are narrower than asked to fit.` });
 
   const parts: Part[] = rawParts.map((island, pi) => {
@@ -296,6 +348,8 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
   }
 
   return {
+    rule: settings.weightVariant ?? 0,
+    missingTabEdgeIds: missingTabEdgeIds.sort((a, b) => a - b),
     parts,
     joinedEdgeIds: [...result.joined].sort((a, b) => a - b),
     edgePairCount: pairNumber.size,

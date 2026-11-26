@@ -43,6 +43,8 @@ export function describePatternWarning(t: T, w: PatternWarning): WarningLine | n
   switch (w.code) {
     case 'tab-missing':
       return { tone: 'warning', text: t('{count} edges have no room for a glue tab. Glue those edges edge to edge.', { count }) };
+    case 'tab-very-narrow':
+      return { tone: 'warning', text: t('{count} glue tabs are very narrow: there is little room there. Use a thin line of glue.', { count }) };
     case 'tab-narrowed':
       return { tone: 'info', text: t('{count} glue tabs are narrower than asked to fit.', { count }) };
     case 'forced-join-overlaps':

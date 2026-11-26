@@ -1339,5 +1339,6 @@
   "That saved model was not found. It may have been deleted.": "Den sparade modellen hittades inte. Den kan ha tagits bort.",
   "This model is too big for a link. Save it instead: it follows you to your other devices.": "Den här modellen är för stor för en länk. Spara den i stället: den följer med till dina andra enheter.",
   "This model is too big to save in the browser. Keep the model file.": "Den här modellen är för stor för att sparas i webbläsaren. Behåll modellfilen.",
-  "Saved to My Designs. Last save: {time}.": "Sparad i Mina designer. Senaste sparning: {time}."
+  "Saved to My Designs. Last save: {time}.": "Sparad i Mina designer. Senaste sparning: {time}.",
+  "{count} glue tabs are very narrow: there is little room there. Use a thin line of glue.": "{count} limflikar är mycket smala: det finns lite plats där. Använd en tunn sträng lim."
 }

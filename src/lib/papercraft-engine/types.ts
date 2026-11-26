@@ -129,6 +129,7 @@ export interface Part {
 export type PatternWarningCode =
   | 'tab-missing'
   | 'tab-narrowed'
+  | 'tab-very-narrow'
   | 'forced-join-overlaps'
   | 'part-too-large'
   | 'non-manifold-edge-cut';
@@ -140,6 +141,10 @@ export interface PatternWarning {
 }
 
 export interface Pattern {
+  /** The rule for ordering the edges that gave this net (see `weightVariant`). */
+  rule: number;
+  /** Edge ids of the glued edges that have no room for a tab (glue them edge to edge). */
+  missingTabEdgeIds: number[];
   parts: Part[];
   /** Edge ids of the solid that are folded rather than cut. */
   joinedEdgeIds: number[];
@@ -158,7 +163,7 @@ export interface Pattern {
 export interface PatternSettings {
   /** Glue tab depth. */
   tabWidthMm: number;
-  /** Narrowest tab accepted when a tab has to be narrowed to fit. */
+  /** Narrowest tab that is called a proper tab; a tab can go down to 0.4 times this (at least 1.2 mm) where there is no room, and is then reported as very narrow. */
   minTabWidthMm: number;
   /** Angle of the tab's sides to the edge, in degrees. 90 gives a rectangle. */
   tabAngleDeg: number;
@@ -171,6 +176,8 @@ export interface PatternSettings {
   /** Edge ids that must be cut / joined (a join is dropped if it makes a part overlap itself). */
   forceCutEdges?: number[];
   forceJoinEdges?: number[];
+  /** Which rule orders the edges when unfolding (0 is the default). */
+  weightVariant?: number;
 }
 
 export const DEFAULT_PATTERN_SETTINGS: PatternSettings = {

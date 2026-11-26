@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMat4, buildFoldTree, buildPattern, buildSolid, faceTriangles, foldPoses, IDENTITY, shapes, unfold } from '../src/lib/papercraft-engine';
+import { applyMat4, buildFoldTree, buildPattern, buildPatternWithRule, patternScore, rulesToTry, UNFOLD_RULES, buildSolid, faceTriangles, foldPoses, IDENTITY, shapes, unfold } from '../src/lib/papercraft-engine';
 import type { RawMesh, Solid, Vec2 } from '../src/lib/papercraft-engine';
 import { convexOverlap, triangulate } from '../src/lib/papercraft-engine/geometry/polygon';
 
@@ -318,5 +318,108 @@ describe('fold animation', () => {
     expect(segments.filter((s) => s.state === 'joined')).toHaveLength(pattern.stats.foldCount);
     expect(segments.filter((s) => s.state === 'cut')).toHaveLength(pattern.edgePairCount * 2);
     expect(segments.every((s) => s.state !== 'cut' || s.number !== undefined)).toBe(true);
+  });
+});
+
+describe('glue tab placement', () => {
+  const swan = buildSolid(shapes.swan());
+  const bottle = buildSolid(shapes.bottle());
+  const named = (mesh: RawMesh, mm: number) => buildSolid({ positions: mesh.positions.map(([x, y, z]) => [x * mm, y * mm, z * mm]), faces: mesh.faces });
+  const curved = [
+    ['vase', named(shapes.vase(), 0.9)],
+    ['bottle', named(shapes.bottle(), 0.85)],
+    ['egg', named(shapes.egg(), 1)],
+    ['rocket', named(shapes.rocket(), 1.1)],
+    ['fish', named(shapes.fish(), 1)],
+    ['swan', named(shapes.swan(), 1.1)],
+  ] as const;
+  const PAGE = { widthMm: 190, heightMm: 277 };
+
+  it('every rule for ordering the edges gives a valid net: faces keep their size, nothing overlaps, joined edges = faces - parts', () => {
+    for (const rule of UNFOLD_RULES) {
+      const r = unfold(bottle, { weightVariant: rule, maxPartSize: { widthMm: 174, heightMm: 261 } });
+      expect(r.joined.size, `rule ${rule}`).toBe(bottle.faces.length - r.islands.length);
+      bottle.faces.forEach((face, f) => {
+        const pts = r.placed[f];
+        for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+          expect(Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1])).toBeCloseTo(dist3(bottle.vertices[face.vertices[i]], bottle.vertices[face.vertices[j]]), 4);
+        }
+      });
+      for (const island of r.islands) {
+        for (let i = 0; i < island.length; i++) for (let j = i + 1; j < island.length; j++) {
+          for (const a of triangles(r.placed[island[i]])) for (const b of triangles(r.placed[island[j]])) expect(convexOverlap(a, b)).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('tries several rules and keeps the best net: never worse than the first rule, and it says which rule it used', () => {
+    for (const [name, solid] of curved) {
+      const best = buildPattern(solid, { maxPartSize: PAGE });
+      const first = buildPatternWithRule(solid, { maxPartSize: PAGE, weightVariant: 0 });
+      expect(patternScore(best), name).toBeLessThanOrEqual(patternScore(first));
+      expect(UNFOLD_RULES as readonly number[]).toContain(best.rule);
+    }
+  });
+
+  it('gets curved models down to a few narrow tabs and at most one edge with no tab', () => {
+    let missing = 0;
+    for (const [name, solid] of curved) {
+      const p = buildPattern(solid, { maxPartSize: PAGE });
+      const m = p.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0;
+      expect(m, name).toBeLessThanOrEqual(1);
+      missing += m;
+    }
+    expect(missing).toBeLessThanOrEqual(2);
+  });
+
+  it('names the edges that have no tab, and each is a glued edge without a tab', () => {
+    const p = buildPattern(swan, { maxPartSize: PAGE });
+    const missing = p.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0;
+    expect(p.missingTabEdgeIds).toHaveLength(missing);
+    const tabbed = new Set(p.parts.flatMap((part) => part.tabs.map((t) => t.edgeId)));
+    const cut = new Set(p.parts.flatMap((part) => part.edgeSegments.filter((e) => e.state === 'cut').map((e) => e.edgeId)));
+    for (const id of p.missingTabEdgeIds) {
+      expect(tabbed.has(id)).toBe(false);
+      expect(cut.has(id)).toBe(true);
+    }
+  });
+
+  it('a very narrow tab is reported as such and only a tab under the minimum width counts as one', () => {
+    for (const [name, solid] of curved) {
+      const p = buildPattern(solid, { maxPartSize: PAGE });
+      const veryNarrow = p.parts.flatMap((part) => part.tabs).filter((t) => t.widthMm < 3 - 1e-9).length;
+      expect(veryNarrow, name).toBe(p.warnings.find((w) => w.code === 'tab-very-narrow')?.count ?? 0);
+      for (const t of p.parts.flatMap((part) => part.tabs)) expect(t.widthMm).toBeGreaterThanOrEqual(1.2 - 1e-9);
+    }
+  });
+
+  it('keeps the net as it was while it is edited by hand (the same rule), and uses exactly the rule it is given', () => {
+    const plain = buildPattern(bottle, { maxPartSize: PAGE });
+    const edited = buildPattern(bottle, { maxPartSize: PAGE, forceCutEdges: [plain.joinedEdgeIds[0]] });
+    expect(edited.rule).toBe(plain.rule);
+    // One more cut changes the net only a little: most of the folded edges are still folded.
+    const stillJoined = edited.joinedEdgeIds.filter((e) => plain.joinedEdgeIds.includes(e)).length;
+    expect(stillJoined / plain.joinedEdgeIds.length).toBeGreaterThan(0.8);
+    expect(buildPattern(bottle, { maxPartSize: PAGE, weightVariant: 7 }).rule).toBe(7);
+  });
+
+  it('scores a missing tab much worse than an extra part, and a very narrow tab about as much as one', () => {
+    const base = buildPatternWithRule(buildSolid(shapes.cube(50)), {});
+    const withWarning = (code: 'tab-missing' | 'tab-very-narrow' | 'tab-narrowed', count: number) => ({ ...base, warnings: [{ code, count, message: '' }] });
+    expect(patternScore(withWarning('tab-missing', 1))).toBeGreaterThan(patternScore({ ...base, stats: { ...base.stats, partCount: base.stats.partCount + 3 } }));
+    expect(patternScore(withWarning('tab-very-narrow', 1))).toBeGreaterThan(patternScore(withWarning('tab-narrowed', 1)));
+    expect(patternScore(withWarning('tab-very-narrow', 1))).toBeLessThan(patternScore(withWarning('tab-missing', 1)));
+  });
+
+  it('tries fewer rules for a big model, so the work stays small', () => {
+    expect(rulesToTry(40)).toBe(UNFOLD_RULES.length);
+    expect(rulesToTry(300)).toBe(6);
+    expect(rulesToTry(1000)).toBe(3);
+    expect(rulesToTry(2500)).toBe(1);
+  });
+
+  it('is deterministic', () => {
+    expect(JSON.stringify(buildPattern(swan, { maxPartSize: PAGE }))).toBe(JSON.stringify(buildPattern(swan, { maxPartSize: PAGE })));
   });
 });
