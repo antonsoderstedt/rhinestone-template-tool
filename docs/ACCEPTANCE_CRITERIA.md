@@ -114,6 +114,20 @@ ADR 0042 · Tests: "glue tab placement" in `tests/papercraftUnfold.test.ts`, the
 
 ---
 
+## Papercraft — simplifying heavy models (Implemented 2026-11-26)
+
+ADR 0043 · Tests: `tests/papercraftSimplify.test.ts`, "simplifying a heavy model" in `tests/papercraftStudio.test.ts`.
+
+- [x] A dense closed model is reduced to the target and stays closed with the same Euler number; its size and volume stay close to the original
+- [x] The cut-up sides of a cube become a cube again (six faces); an open sheet keeps its border and its area
+- [x] Same mesh and target give the same mesh; a mesh already under the target is returned as it was; never fewer than four faces; separate pieces are not joined
+- [x] 82 000 faces to 500 in well under 15 s (330 000 in about 2 s)
+- [x] A model over the limit is simplified when it is imported; the studio can simplify again from the imported mesh and undo it (when under the limit)
+- [x] The simplified mesh is saved, shared and synced; the heavy original is not
+- [ ] A simplified model built on real paper looks like the model (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

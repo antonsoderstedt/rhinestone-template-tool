@@ -5,7 +5,13 @@ export type PaperPreset = 'a4' | 'letter' | 'cricut12x12' | 'cricut12x24';
 export type SizeBy = 'height' | 'width' | 'depth' | 'largest';
 export type PapercraftView = 'model' | 'pattern' | 'pages';
 
-export type ModelSource = { kind: 'builtin'; id: string } | { kind: 'file'; fileName: string; mesh: RawMesh };
+export type ModelSource =
+  | { kind: 'builtin'; id: string }
+  /**
+   * `mesh` is what the pattern is made from and what is saved. `original` is the mesh before it was simplified: kept in this visit
+   * only (a saved design holds the simplified mesh), so the detail can be changed or undone without importing the file again.
+   */
+  | { kind: 'file'; fileName: string; mesh: RawMesh; original?: RawMesh };
 
 export interface PapercraftState {
   projectName: string;
@@ -52,7 +58,11 @@ export type PapercraftAction =
   | { type: 'LOAD_STATE'; state: PapercraftState }
   | { type: 'SET_NAME'; name: string }
   | { type: 'USE_BUILT_IN'; id: string }
-  | { type: 'USE_FILE'; fileName: string; mesh: RawMesh }
+  | { type: 'USE_FILE'; fileName: string; mesh: RawMesh; original?: RawMesh }
+  /** A simplified version of the imported mesh (fewer faces). The mesh it came from is kept so the change can be undone. */
+  | { type: 'SIMPLIFY_MESH'; mesh: RawMesh }
+  /** Back to the imported mesh as it was before it was simplified. */
+  | { type: 'RESTORE_ORIGINAL' }
   /** A repaired version of the imported mesh (holes closed, turned inside out). Ignored for a built-in model. */
   | { type: 'REPAIR_MESH'; mesh: RawMesh }
   | { type: 'SET_SIZE'; size: Partial<PapercraftState['size']> }
@@ -92,7 +102,7 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
       return {
         ...state,
         projectName: action.fileName.replace(/\.[^.]+$/, '') || 'Model',
-        source: { kind: 'file', fileName: action.fileName, mesh: action.mesh },
+        source: { kind: 'file', fileName: action.fileName, mesh: action.mesh, ...(action.original ? { original: action.original } : {}) },
         size: { by: 'largest', mm: 100 },
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
@@ -101,6 +111,19 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
     case 'REPAIR_MESH':
       if (state.source.kind !== 'file') return state;
       return { ...state, source: { ...state.source, mesh: action.mesh }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+    case 'SIMPLIFY_MESH':
+      if (state.source.kind !== 'file') return state;
+      return {
+        ...state,
+        source: { ...state.source, mesh: action.mesh, original: state.source.original ?? state.source.mesh },
+        edits: { forceCut: [], forceJoin: [] },
+        selectedPartId: null,
+      };
+    case 'RESTORE_ORIGINAL': {
+      if (state.source.kind !== 'file' || !state.source.original) return state;
+      const { original, ...rest } = state.source;
+      return { ...state, source: { ...rest, mesh: original }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+    }
     case 'SET_SIZE': {
       const size = { ...state.size, ...action.size };
       if (!(size.mm > 0) || !Number.isFinite(size.mm)) return state;

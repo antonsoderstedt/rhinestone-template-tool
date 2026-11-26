@@ -7,8 +7,13 @@ import {
 import { findBuiltInModel } from './papercraftModels';
 import type { PapercraftState } from './papercraftState';
 
-/** More faces than this are not unfolded yet (the unfolding checks every join for overlap and would freeze the page). */
+/** More faces than this are not unfolded (the unfolding checks every join for overlap and would freeze the page): the studio simplifies the model first. */
 export const MAX_FACES = 3000;
+
+/** Where a model over `MAX_FACES` is simplified to when it is imported: a model of this many faces is a good paper model at hand size. */
+export const DEFAULT_SIMPLIFY_FACES = 500;
+/** The fewest faces the studio asks for: below this a model is no longer recognisable. */
+export const MIN_SIMPLIFY_FACES = 12;
 
 export type ComputeResult =
   | { ok: true; run: PapercraftResult }

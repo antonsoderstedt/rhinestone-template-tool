@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { buildSolid, reportSolid, shapes } from '../src/lib/papercraft-engine';
+import { buildSolid, reportSolid, shapes, simplifyMesh } from '../src/lib/papercraft-engine';
 import type { MeshWarning, PatternWarning } from '../src/lib/papercraft-engine';
 import { translate } from '../app/lib/i18n';
 import { BUILT_IN_MODELS } from '../app/papercraft/papercraftModels';
+import { canSavePapercraft, deserializePapercraft, serializePapercraft } from '../app/papercraft/papercraftSnapshot';
 import { initialPapercraftState, papercraftReducer, type PapercraftState } from '../app/papercraft/papercraftState';
-import { computePapercraft, MAX_FACES } from '../app/papercraft/papercraftCompute';
+import { computePapercraft, DEFAULT_SIMPLIFY_FACES, MAX_FACES } from '../app/papercraft/papercraftCompute';
 import { BUILT_IN_MODELS as MODELS, MODEL_GROUPS } from '../app/papercraft/papercraftModels';
 import { describeSizeWarnings, MIN_COMFORTABLE_EDGE_MM } from '../app/papercraft/papercraftWarnings';
 import { describeLayoutWarning, describeMeshWarning, describePatternWarning } from '../app/papercraft/papercraftWarnings';
@@ -419,5 +420,86 @@ describe('texts in both languages', () => {
       if (m.name !== 'Pyramid' && m.name !== 'Cube') expect(sv(m.name), m.name).not.toBe(m.name);
       expect(sv(m.description), m.id).not.toBe(m.description);
     }
+  });
+});
+
+describe('simplifying a heavy model', () => {
+  /** A cube cut into n x n squares per side, as triangles: a heavy model that is really a box. */
+  function heavyBox(n: number) {
+    const positions: [number, number, number][] = [];
+    const faces: number[][] = [];
+    const side = (o: number[], u: number[], v: number[]) => {
+      const base = positions.length;
+      for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) positions.push([o[0] + (u[0] * i + v[0] * j) / n, o[1] + (u[1] * i + v[1] * j) / n, o[2] + (u[2] * i + v[2] * j) / n]);
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+        const a = base + j * (n + 1) + i;
+        faces.push([a, a + 1, a + n + 2], [a, a + n + 2, a + n + 1]);
+      }
+    };
+    side([0, 0, 0], [60, 0, 0], [0, 60, 0]);
+    side([0, 0, 60], [0, 60, 0], [60, 0, 0]);
+    side([0, 0, 0], [0, 60, 0], [0, 0, 60]);
+    side([60, 0, 0], [0, 0, 60], [0, 60, 0]);
+    side([0, 0, 0], [0, 0, 60], [60, 0, 0]);
+    side([0, 60, 0], [60, 0, 0], [0, 0, 60]);
+    return { positions, faces };
+  }
+
+  const imported = () => {
+    const mesh = heavyBox(30); // 10 800 faces: over the limit
+    return { mesh, state: papercraftReducer(initialPapercraftState(), { type: 'USE_FILE', fileName: 'heavy.obj', mesh }) };
+  };
+
+  it('a model over the limit cannot be unfolded until it is simplified, then it can', () => {
+    const { mesh, state } = imported();
+    expect(mesh.faces.length).toBeGreaterThan(MAX_FACES);
+    expect(computePapercraft(state)).toMatchObject({ ok: false, reason: 'too-many-faces' });
+    const simplified = simplifyMesh(mesh, { targetFaces: DEFAULT_SIMPLIFY_FACES });
+    const next = papercraftReducer(state, { type: 'SIMPLIFY_MESH', mesh: simplified.mesh });
+    const run = computePapercraft(next);
+    expect(run.ok).toBe(true);
+    if (run.ok) {
+      expect(run.run.solid.closed).toBe(true);
+      // A box stays a box: six sides.
+      expect(run.run.solid.faces.length).toBe(6);
+    }
+  });
+
+  it('keeps the imported mesh to simplify again or to undo, and starts the hand edits over', () => {
+    const { mesh, state } = imported();
+    const first = papercraftReducer({ ...state, edits: { forceCut: [3], forceJoin: [4] } }, { type: 'SIMPLIFY_MESH', mesh: simplifyMesh(mesh, { targetFaces: 300 }).mesh });
+    if (first.source.kind !== 'file') throw new Error('not a file');
+    expect(first.source.original).toBe(mesh);
+    expect(first.edits).toEqual({ forceCut: [], forceJoin: [] });
+    // A second simplification does not replace the first original.
+    const second = papercraftReducer(first, { type: 'SIMPLIFY_MESH', mesh: simplifyMesh(mesh, { targetFaces: 100 }).mesh });
+    if (second.source.kind !== 'file') throw new Error('not a file');
+    expect(second.source.original).toBe(mesh);
+    const back = papercraftReducer(second, { type: 'RESTORE_ORIGINAL' });
+    if (back.source.kind !== 'file') throw new Error('not a file');
+    expect(back.source.mesh).toBe(mesh);
+    expect(back.source.original).toBeUndefined();
+  });
+
+  it('ignores simplify and restore for a built-in model or without an original', () => {
+    const start = initialPapercraftState();
+    expect(papercraftReducer(start, { type: 'SIMPLIFY_MESH', mesh: shapes.cube(10) })).toBe(start);
+    expect(papercraftReducer(start, { type: 'RESTORE_ORIGINAL' })).toBe(start);
+    const file = papercraftReducer(start, { type: 'USE_FILE', fileName: 'a.obj', mesh: shapes.cube(10) });
+    expect(papercraftReducer(file, { type: 'RESTORE_ORIGINAL' })).toBe(file);
+  });
+
+  it('a simplified model can be saved, and the heavy original is not saved with it', () => {
+    const { mesh, state } = imported();
+    // As it was imported it would be far too big for a share link; simplified it fits.
+    expect(JSON.stringify(serializePapercraft(state)).length).toBeGreaterThan(60_000);
+    const next = papercraftReducer(state, { type: 'SIMPLIFY_MESH', mesh: simplifyMesh(mesh, { targetFaces: 300 }).mesh });
+    expect(canSavePapercraft(next)).toBe(true);
+    const text = JSON.stringify(serializePapercraft(next));
+    expect(text.length).toBeLessThan(60_000);
+    const loaded = deserializePapercraft(JSON.parse(text));
+    if (!loaded || loaded.source.kind !== 'file') throw new Error('not loaded');
+    expect(loaded.source.original).toBeUndefined();
+    expect(loaded.source.mesh.faces.length).toBeLessThanOrEqual(300);
   });
 });
