@@ -9,7 +9,7 @@ export interface BuildOptions {
   coplanarAngleDeg?: number;
 }
 
-function newell(vertices: readonly Vec3[], ids: readonly number[]): Vec3 {
+export function newell(vertices: readonly Vec3[], ids: readonly number[]): Vec3 {
   // Twice the area, as a vector. Measured from the first corner to keep precision for far-from-origin models.
   const o = vertices[ids[0]];
   let nx = 0;
@@ -24,7 +24,7 @@ function newell(vertices: readonly Vec3[], ids: readonly number[]): Vec3 {
   return [nx / 2, ny / 2, nz / 2];
 }
 
-function weldVertices(positions: readonly Vec3[], tol: number): { map: number[]; vertices: Vec3[] } {
+export function weldVertices(positions: readonly Vec3[], tol: number): { map: number[]; vertices: Vec3[] } {
   const cell = tol * 2;
   const grid = new Map<string, number[]>();
   const vertices: Vec3[] = [];

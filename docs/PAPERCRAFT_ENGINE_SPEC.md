@@ -112,6 +112,17 @@ rings of triangles where the corners are not flat. Named models: `vase`, `bottle
 loop is flat (deviation under 2 % of the square root of its area) and triangles around its centre otherwise; it returns the new mesh with the number of holes `filled` and `skipped`.
 `flipFaces(mesh)` reverses every face. `boundaryLoops(solid)` lists the loops. `projectSolid(solid, colourOf)` draws a solid without unfolding it (for the pictures in the model list).
 
+## Simplifying (`simplifyMesh`)
+
+`simplifyMesh(mesh, { targetFaces, minNormalCosine = 0.2 })` returns `{ mesh, inputFaces, outputFaces, reached }`. Steps: weld corners (1e-6 of the diagonal), cut polygons into triangles (ear
+clipping on the plane of the face), drop faces with no area and duplicates, scale to a diagonal of 1. Every corner gets a quadric (ten numbers) from the planes of its faces (weight: the area)
+and, on an open border, from a plane through each border edge perpendicular to its face (weight: the edge length squared). Every edge goes in a min-heap by cost (error at the new place plus
+1e-9 times the edge length squared, so flat areas go shortest first), then lower corner id, then higher. The place of a collapse: the corner that is locked (on a non-manifold edge) or alone on a
+border; for two border corners an end or the middle, only when they share one face; otherwise the least-error one of both ends, the middle and the point where the three planes meet (when the
+quadric is well-conditioned and the point is within three edge lengths of the middle). A collapse needs: a shared-neighbour set equal to the far corners of the faces on the edge, no neighbouring face
+turned over, shrunk to nothing or bent past `minNormalCosine`, and at least four faces left in its piece. Heap entries carry the versions of their two corners and are skipped when stale; when
+the heap is empty and the target is not reached, the heap is rebuilt and the pass repeated until a pass collapses nothing. The output mesh is back in the units of the input.
+
 ## Cover page (`renderCover`, `projectModel`, `assessBuild`)
 
 `renderCover(content, solid, pattern, layout, {widthMm, heightMm})` returns a `PageDrawing` with `fills`, `texts` (Helvetica runs), cut
@@ -128,4 +139,4 @@ harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 g
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
-reading in the engine (done in the app), import of finished PDF patterns, Silhouette DXF, mesh simplification, true polygon nesting.
+reading in the engine (done in the app), import of finished PDF patterns, Silhouette DXF, true polygon nesting.

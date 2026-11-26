@@ -1215,7 +1215,7 @@
   "The print ends up outside": "Trycket hamnar på utsidan",
   "The surface has no consistent inside and outside (twisted or self-touching). The pattern may be wrong.": "Ytan har ingen entydig in- och utsida (vriden eller rör vid sig själv). Mönstret kan bli fel.",
   "This browser cannot show 3D here. The pattern and the pages work as usual.": "Den här webbläsaren kan inte visa 3D här. Mönstret och sidorna fungerar som vanligt.",
-  "This model has {count} faces. Models over {max} faces are not unfolded yet: use a lower-poly version.": "Den här modellen har {count} ytor. Modeller med över {max} ytor viks inte upp än: använd en version med färre polygoner.",
+  "This model has {count} faces. Models over {max} faces are not unfolded: simplify it under Model.": "Den här modellen har {count} ytor. Modeller med över {max} ytor viks inte upp: förenkla den under Modell.",
   "US Letter sheet": "US Letter-ark",
   "Undo my {count} edge changes": "Ångra mina {count} kantändringar",
   "Untitled model": "Namnlös modell",
@@ -1340,5 +1340,17 @@
   "This model is too big for a link. Save it instead: it follows you to your other devices.": "Den här modellen är för stor för en länk. Spara den i stället: den följer med till dina andra enheter.",
   "This model is too big to save in the browser. Keep the model file.": "Den här modellen är för stor för att sparas i webbläsaren. Behåll modellfilen.",
   "Saved to My Designs. Last save: {time}.": "Sparad i Mina designer. Senaste sparning: {time}.",
-  "{count} glue tabs are very narrow: there is little room there. Use a thin line of glue.": "{count} limflikar är mycket smala: det finns lite plats där. Använd en tunn sträng lim."
+  "{count} glue tabs are very narrow: there is little room there. Use a thin line of glue.": "{count} limflikar är mycket smala: det finns lite plats där. Använd en tunn sträng lim.",
+  "The model had {from} faces. It was simplified to {to} so it can be unfolded; change the detail under Model.": "Modellen hade {from} ytor. Den förenklades till {to} så att den kan viks upp; ändra detaljnivån under Modell.",
+  "Simplified from {from} to {to} faces.": "Förenklad från {from} till {to} ytor.",
+  "Simplified from {from} to {to} faces. It could not go lower without breaking the model.": "Förenklad från {from} till {to} ytor. Den gick inte att förenkla mer utan att modellen går sönder.",
+  "(was {count})": "(var {count})",
+  "Average edge": "Genomsnittlig kant",
+  "This model has too many faces to unfold. Simplify it: fewer faces make fewer, bigger parts that are easier to cut and glue.": "Den här modellen har för många ytor för att viks upp. Förenkla den: färre ytor ger färre, större delar som är lättare att klippa och limma.",
+  "Fewer faces make fewer, bigger parts that are easier to cut and glue. More faces keep more of the shape.": "Färre ytor ger färre, större delar som är lättare att klippa och limma. Fler ytor bevarar mer av formen.",
+  "Simplify to": "Förenkla till",
+  "faces": "ytor",
+  "Simplify": "Förenkla",
+  "Simplifying…": "Förenklar…",
+  "Use the original": "Använd originalet"
 }

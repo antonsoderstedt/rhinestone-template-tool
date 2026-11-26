@@ -4,7 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState
 import dynamic from 'next/dynamic';
 import { Download, Pause, Play, SlidersHorizontal, Shapes } from 'lucide-react';
 import { buildPapercraftDesignEntry, readWorkspaceVault, writeWorkspaceVault } from '../lib/workspaceVault';
-import { fillHoles, flipFaces, reportSolid } from '@/src/lib/papercraft-engine';
+import { fillHoles, flipFaces, reportSolid, simplifyMesh } from '@/src/lib/papercraft-engine';
 import { useStudioTheme } from '../lib/studioTheme';
 import MobileStudioBar from '../components/MobileStudioBar';
 import { useT } from '../lib/i18n';
@@ -13,7 +13,7 @@ import PagesView from './PagesView';
 import PapercraftTopbar from './PapercraftTopbar';
 import PatternView from './PatternView';
 import SettingsPanel from './SettingsPanel';
-import { computePapercraft, MAX_FACES } from './papercraftCompute';
+import { computePapercraft, DEFAULT_SIMPLIFY_FACES, MAX_FACES } from './papercraftCompute';
 import { buildCoverContent, coverPageSize } from './papercraftCover';
 import { buildCricutDownload, buildPdfDownload, downloadExportFile } from './papercraftExport';
 import { ModelFileError, readModelFile } from './papercraftFiles';
@@ -43,6 +43,7 @@ export default function PapercraftShell() {
   const [versions, setVersions] = useState<PapercraftVersion[]>(() => (boot.activeId ? readPapercraftVersions(window.localStorage, boot.activeId) : []));
   const [mobilePanel, setMobilePanel] = useState<'none' | 'model' | 'settings'>('none');
   const [importError, setImportError] = useState<string | null>(null);
+  const [simplifying, setSimplifying] = useState(false);
   // A saved design named in the address that is not there (deleted here or on another device) says so.
   const [toast, setToast] = useState<string | null>(() => (boot.from === 'missing-design' ? t('That saved model was not found. It may have been deleted.') : null));
   const [playing, setPlaying] = useState(false);
@@ -178,7 +179,20 @@ export default function PapercraftShell() {
     setImportError(null);
     try {
       const { fileName, mesh } = await readModelFile(file);
-      dispatchModelChange({ type: 'USE_FILE', fileName, mesh });
+      if (mesh.faces.length > MAX_FACES) {
+        // Too heavy to unfold: simplify it first (the page gets a moment to say so).
+        setSimplifying(true);
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        try {
+          const simplified = simplifyMesh(mesh, { targetFaces: DEFAULT_SIMPLIFY_FACES });
+          dispatchModelChange({ type: 'USE_FILE', fileName, mesh: simplified.mesh, original: mesh });
+          setToast(t('The model had {from} faces. It was simplified to {to} so it can be unfolded; change the detail under Model.', { from: mesh.faces.length, to: simplified.outputFaces }));
+        } finally {
+          setSimplifying(false);
+        }
+      } else {
+        dispatchModelChange({ type: 'USE_FILE', fileName, mesh });
+      }
       setMobilePanel('none');
     } catch (error) {
       if (error instanceof ModelFileError) {
@@ -235,6 +249,27 @@ export default function PapercraftShell() {
     setToast(t('Cricut SVG made: {name}', { name: file.fileName }));
   }, [run, state.projectName, t]);
 
+  const simplifyModel = useCallback(async (targetFaces: number) => {
+    if (state.source.kind !== 'file') return;
+    // Always from the imported mesh, so a second try with more faces gets the detail back.
+    const from = state.source.original ?? state.source.mesh;
+    setSimplifying(true);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    try {
+      const result = simplifyMesh(from, { targetFaces });
+      dispatch({ type: 'SIMPLIFY_MESH', mesh: result.mesh });
+      setToast(
+        result.reached
+          ? t('Simplified from {from} to {to} faces.', { from: from.faces.length, to: result.outputFaces })
+          : t('Simplified from {from} to {to} faces. It could not go lower without breaking the model.', { from: from.faces.length, to: result.outputFaces }),
+      );
+    } finally {
+      setSimplifying(false);
+    }
+  }, [state.source, t]);
+
+  const restoreOriginal = useCallback(() => dispatch({ type: 'RESTORE_ORIGINAL' }), []);
+
   const closeHoles = useCallback(() => {
     if (state.source.kind !== 'file') return;
     const result = fillHoles(state.source.mesh);
@@ -258,7 +293,7 @@ export default function PapercraftShell() {
   const failure = !result.ok ? result : null;
   const failureText = failure
     ? failure.reason === 'too-many-faces'
-      ? t('This model has {count} faces. Models over {max} faces are not unfolded yet: use a lower-poly version.', { count: failure.faceCount ?? 0, max: MAX_FACES })
+      ? t('This model has {count} faces. Models over {max} faces are not unfolded: simplify it under Model.', { count: failure.faceCount ?? 0, max: MAX_FACES })
       : failure.reason === 'empty'
         ? t('The model has no faces.')
         : t('Something went wrong while building the pattern. Try another model.')
@@ -282,7 +317,7 @@ export default function PapercraftShell() {
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'model' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[272px] lg:border-t-0`}>
-          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} />
+          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} simplifying={simplifying} onSimplify={simplifyModel} onRestoreOriginal={restoreOriginal} />
         </div>
 
         <main

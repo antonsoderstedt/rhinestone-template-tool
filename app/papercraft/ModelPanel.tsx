@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef } from 'react';
-import { FileUp, FlipHorizontal2, PackageCheck } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { FileUp, FlipHorizontal2, PackageCheck, Undo2, Wand2 } from 'lucide-react';
 import type { Solid, SolidReport } from '@/src/lib/papercraft-engine';
 import { formatLength, useUnit } from '../lib/units';
 import { useT } from '../lib/i18n';
-import { LengthField, SelectField, Section } from './fields';
+import { LengthField, NumberField, SelectField, Section } from './fields';
+import { DEFAULT_SIMPLIFY_FACES, MAX_FACES, MIN_SIMPLIFY_FACES } from './papercraftCompute';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
 import ModelThumb from './ModelThumb';
 import { BUILT_IN_MODELS, MODEL_GROUPS } from './papercraftModels';
@@ -22,12 +23,17 @@ interface ModelPanelProps {
   onImportFile: (file: File) => void;
   onFillHoles: () => void;
   onFlipFaces: () => void;
+  /** True while a model is being simplified (a heavy one takes a few seconds). */
+  simplifying: boolean;
+  onSimplify: (targetFaces: number) => void;
+  onRestoreOriginal: () => void;
 }
 
-export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onFillHoles, onFlipFaces }: ModelPanelProps) {
+export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onFillHoles, onFlipFaces, simplifying, onSimplify, onRestoreOriginal }: ModelPanelProps) {
   const t = useT();
   const unit = useUnit();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [targetFaces, setTargetFaces] = useState(DEFAULT_SIMPLIFY_FACES);
   const sizeOptions: { value: SizeBy; label: string }[] = [
     { value: 'largest', label: t('Longest side') },
     { value: 'height', label: t('Height') },
@@ -130,6 +136,64 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
               <span className="block font-normal text-[var(--studio-ink-subtle)]">{t('Use this if mountain and valley folds come out the wrong way round.')}</span>
             </span>
           </button>
+        </Section>
+      )}
+
+      {state.source.kind === 'file' && (
+        <Section title={t('Detail')}>
+          {(() => {
+            const source = state.source;
+            if (source.kind !== 'file') return null;
+            const faceCount = source.mesh.faces.length;
+            const originalCount = source.original?.faces.length ?? null;
+            const target = Math.min(MAX_FACES, Math.max(MIN_SIMPLIFY_FACES, targetFaces));
+            const heavy = faceCount > MAX_FACES;
+            const canRestore = originalCount !== null && originalCount <= MAX_FACES;
+            const averageEdge = solid && solid.edges.length > 0 ? solid.edges.reduce((sum, e) => sum + e.length, 0) / solid.edges.length : null;
+            return (
+              <>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-[var(--studio-ink-secondary)]">
+                  <dt className="text-[var(--studio-ink-subtle)]">{t('Faces')}</dt>
+                  <dd>
+                    {faceCount.toLocaleString()}
+                    {originalCount !== null && <span className="text-[var(--studio-ink-subtle)]"> {t('(was {count})', { count: originalCount.toLocaleString() })}</span>}
+                  </dd>
+                  {averageEdge !== null && (
+                    <>
+                      <dt className="text-[var(--studio-ink-subtle)]">{t('Average edge')}</dt>
+                      <dd>{formatLength(averageEdge, unit)}</dd>
+                    </>
+                  )}
+                </dl>
+                <p className="text-xs text-[var(--studio-ink-subtle)]">
+                  {heavy
+                    ? t('This model has too many faces to unfold. Simplify it: fewer faces make fewer, bigger parts that are easier to cut and glue.')
+                    : t('Fewer faces make fewer, bigger parts that are easier to cut and glue. More faces keep more of the shape.')}
+                </p>
+                <NumberField label={t('Simplify to')} suffix={t('faces')} value={target} min={MIN_SIMPLIFY_FACES} max={MAX_FACES} step={50} onChange={setTargetFaces} />
+                <button
+                  type="button"
+                  disabled={simplifying}
+                  onClick={() => onSimplify(target)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-violet-600 px-2.5 py-2 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-60"
+                >
+                  <Wand2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {simplifying ? t('Simplifying…') : t('Simplify')}
+                </button>
+                {canRestore && (
+                  <button
+                    type="button"
+                    disabled={simplifying}
+                    onClick={onRestoreOriginal}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-2 text-xs font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)] disabled:opacity-60"
+                  >
+                    <Undo2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {t('Use the original')}
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </Section>
       )}
 
