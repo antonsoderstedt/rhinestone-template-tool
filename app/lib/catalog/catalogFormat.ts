@@ -12,8 +12,11 @@ export const STUDIO_NAMES: Record<CatalogStudio, string> = { rhinestone: 'Rhines
 export const STUDIO_FORMATS: Record<CatalogStudio, readonly string[]> = {
   rhinestone: ['svg', 'json'],
   htv: ['svg', 'json'],
-  papercraft: ['obj', 'pdf', 'svg', 'json'],
+  papercraft: ['obj', 'stl', 'glb', 'pdf', 'svg', 'json'],
 };
+
+/** The catalog formats that are 3D models the Papercraft studio can open as a model. */
+export const PAPERCRAFT_MODEL_FORMATS: readonly string[] = ['obj', 'stl', 'glb'];
 
 export const TEXT_FORMATS: ReadonlySet<string> = new Set(['obj', 'svg', 'json', 'dxf', 'txt', 'csv']);
 export const PREVIEW_FORMATS = ['svg', 'png', 'jpg', 'jpeg', 'webp'] as const;

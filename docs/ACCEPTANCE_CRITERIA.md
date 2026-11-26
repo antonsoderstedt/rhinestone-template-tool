@@ -683,7 +683,8 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Published templates only are listed unless `all=1`; a draft cannot be published without a file
 - [x] `/admin`: list, search, studio filter, new / edit / delete, publish, file and picture upload, own fields
 - [ ] Checked on the deployed private site behind Cloudflare Access
-- [ ] The studios read the published templates (Papercraft first)
+- [x] Papercraft: published OBJ/STL/GLB models of the catalog are listed under “From the catalog” and open like an imported file (nothing shows where there is no catalog)
+- [ ] Rhinestone and HTV read the published templates
 - [ ] Statistics, tracking and metadata settings (later parts)
 
 ---
