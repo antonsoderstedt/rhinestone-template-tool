@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { FileUp, FlipHorizontal2, PackageCheck, Undo2, Wand2 } from 'lucide-react';
 import type { Solid, SolidReport } from '@/src/lib/papercraft-engine';
@@ -91,6 +92,9 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
             </span>
           </span>
         </button>
+        <Link href="/papercraft/pdf" className="block text-xs font-medium text-violet-300 underline-offset-2 hover:underline">
+          {t('Have a finished PDF pattern? Make a cutting file from it')}
+        </Link>
         {importError && (
           <p role="alert" className="rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-[var(--studio-ink)]">
             {importError}

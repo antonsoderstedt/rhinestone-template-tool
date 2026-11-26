@@ -166,6 +166,20 @@ ADR 0050 · Tests: `tests/papercraftShapes.test.ts`.
 
 ---
 
+## Papercraft — cutting files from PDF patterns (Implemented 2026-11-26)
+
+ADR 0051 · Tests: `tests/papercraftPdfImport.test.ts`.
+
+- [x] The lines of a PDF are read: lines, rectangles, curves, closed paths, colours, widths and dashes (from `d` and from a graphics state), transforms and saved states, form XObjects (and a form that calls itself ends), page rotation and a MediaBox that does not start at 0
+- [x] Content in several streams, Flate, ASCIIHex and ASCII85 streams, object streams and nested page trees are read; text, strings with brackets, comments and inline images do not upset the lines around them
+- [x] A file that is not a PDF, is encrypted, has no pages or is too big is refused; a stream with a filter that is not known is skipped with a warning
+- [x] The studio's own PDF reads back: the page size, the cut outlines as closed lines of the same length, the folds as dashed lines
+- [x] Lines are grouped by colour and solid or dashed, the frame of a page is left out, roles are guessed (dashed score, solid cut, white left out) and can be changed; the drawing is in millimetres, scaled, cropped on request, and feeds the Cricut SVG and the Silhouette DXF
+- [x] The page at /papercraft/pdf reads a PDF in the browser and shows its styles, a preview and the downloads (checked in the dev server)
+- [ ] A cutting file made from a finished pattern cuts at the right size on a real machine (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps
