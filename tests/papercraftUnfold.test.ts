@@ -362,6 +362,14 @@ describe('glue tab placement', () => {
     }
   });
 
+  it('keeps the lowest score of all the rules it tries (a model this small tries every rule)', () => {
+    for (const [name, solid] of curved) {
+      expect(rulesToTry(solid.faces.length), name).toBe(UNFOLD_RULES.length);
+      const lowest = Math.min(...UNFOLD_RULES.map((rule) => patternScore(buildPatternWithRule(solid, { maxPartSize: PAGE, weightVariant: rule }))));
+      expect(patternScore(buildPattern(solid, { maxPartSize: PAGE })), name).toBeCloseTo(lowest, 9);
+    }
+  });
+
   it('gets curved models down to a few narrow tabs and at most one edge with no tab', () => {
     let missing = 0;
     for (const [name, solid] of curved) {

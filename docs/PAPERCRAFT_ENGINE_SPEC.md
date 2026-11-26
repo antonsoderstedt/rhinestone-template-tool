@@ -48,7 +48,7 @@ joined part fits the limit in some rotation. Otherwise the edge stays cut. Joine
 `unfold` takes a `weightVariant`, the rule that orders the edges: 0 long and flat first (`length * (1 + 0.5 * flatness)`), 1 long, 2 flat then long, 3 and 4 flat weighted more, 5 and 6 by edge
 number (descending, ascending), 7 short first, 8 long and bent first, 9 bent first, 10 and 11 two fixed pseudo-random orders. `buildPattern` tries `UNFOLD_RULES` (0, 1, 7, 6, 8, 5, 9, 2, 4, 3, 10, 11) in that order, as many as
 `rulesToTry(faces)` says (12 up to 150 faces, 6 up to 500, 3 up to 1 500, else 1), builds the whole pattern with each (`buildPatternWithRule`) and keeps the lowest `patternScore` (10 for each glued edge with no tab, 3 for each very narrow tab, 2 for each
-part beyond the first, 0.5 for each narrowed tab; the earlier rule wins a tie; it stops early at one part with no missing, very narrow or narrowed-beyond-needed tab). With `weightVariant` given, only that rule is used. With edges cut or joined by hand, the rule
+part beyond the first, 0.5 for each narrowed tab; the earlier rule wins a tie; it stops early only at a score of 0: one part, no missing, very narrow or narrowed tab). With `weightVariant` given, only that rule is used. With edges cut or joined by hand, the rule
 that won without the edits is used, so the net stays as it was. `Pattern.rule` is the rule used and `Pattern.missingTabEdgeIds` the glued edges that got no tab.
 
 ## Tabs, numbers and lines (`buildPattern`)

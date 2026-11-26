@@ -99,8 +99,8 @@ export function buildPattern(solid: Solid, userSettings: Partial<PatternSettings
       best = pattern;
       bestScore = score;
     }
-    // One part with every tab: nothing can be better.
-    if (bestScore <= 0.5 * (pattern.warnings.find((w) => w.code === 'tab-narrowed')?.count ?? 0) && pattern.stats.partCount === 1) break;
+    // A perfect net (one part, every tab full width): nothing can be better.
+    if (bestScore <= 1e-9) break;
   }
   return best!;
 }
