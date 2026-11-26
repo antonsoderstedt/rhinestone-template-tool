@@ -5,6 +5,11 @@ export * as shapes from './mesh/shapes';
 export { BUILT_IN_SHAPES } from './mesh/shapes';
 export { extrudeShape, latheShape, shapeOutline, simplifyOutline, rasterizeShape, type ShapeRegion, type OutlineResult } from './mesh/outline';
 export { extrudeFaces, ringSweep, type LimbStep, type LimbOp, type RingSection, type RingSweep, type RingProfile } from './mesh/limbs';
+export {
+  PART_KINDS, PART_OPENS, PART_LIMITS, PARAMETRIC_TEMPLATES, defaultPart, clampPart, partMesh, buildParts, findTemplate, templateValues,
+  partsOfRecipe, meshOfRecipe, recipeOfTemplate, longestSide,
+  type BuildPart, type PartKind, type PartOpen, type ParametricTemplate, type TemplateParam, type ModelRecipe,
+} from './mesh/builder';
 export { simplifyMesh, type SimplifyOptions, type SimplifyResult } from './mesh/simplify';
 export { fillHoles, flipFaces, boundaryLoops, type FillHolesResult } from './mesh/repair';
 export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarget } from './mesh/inspect';

@@ -1,4 +1,4 @@
-import type { PagePin, RawMesh } from '@/src/lib/papercraft-engine';
+import type { ModelRecipe, PagePin, RawMesh } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 
 export type PaperPreset = 'a3' | 'a4' | 'a5' | 'letter' | 'tabloid' | 'cricut12x12' | 'cricut12x24' | 'custom';
@@ -10,8 +10,9 @@ export type ModelSource =
   /**
    * `mesh` is what the pattern is made from and what is saved. `original` is the mesh before it was simplified: kept in this visit
    * only (a saved design holds the simplified mesh), so the detail can be changed or undone without importing the file again.
+   * `recipe` is how a model built in the studio (from a template or from parts) is made: kept so it can be changed again.
    */
-  | { kind: 'file'; fileName: string; mesh: RawMesh; original?: RawMesh };
+  | { kind: 'file'; fileName: string; mesh: RawMesh; original?: RawMesh; recipe?: ModelRecipe };
 
 export interface PapercraftState {
   projectName: string;
@@ -76,6 +77,10 @@ export type PapercraftAction =
   | { type: 'USE_FILE'; fileName: string; mesh: RawMesh; original?: RawMesh }
   /** A simplified version of the imported mesh (fewer faces). The mesh it came from is kept so the change can be undone. */
   | { type: 'SIMPLIFY_MESH'; mesh: RawMesh }
+  /** A new model built in the studio from a recipe. The size is the longest side of the mesh, so the numbers of the recipe are the real sizes. */
+  | { type: 'USE_RECIPE'; name: string; recipe: ModelRecipe; mesh: RawMesh; sizeMm: number }
+  /** The recipe of the model built in the studio was changed: the mesh follows, the name and the paper stay. */
+  | { type: 'SET_RECIPE'; recipe: ModelRecipe; mesh: RawMesh; sizeMm: number }
   /** Back to the imported mesh as it was before it was simplified. */
   | { type: 'RESTORE_ORIGINAL' }
   /** A repaired version of the imported mesh (holes closed, turned inside out). Ignored for a built-in model. */
@@ -99,6 +104,9 @@ export type PapercraftAction =
   | { type: 'SET_VIEW'; view: PapercraftView }
   | { type: 'SELECT_PART'; partId: number | null }
   | { type: 'SET_FOLD'; fold: number };
+
+/** The size to show for a built model: to a hundredth of a millimetre, within what the studio allows. */
+const sizeOf = (mm: number) => (Number.isFinite(mm) && mm > 0 ? Math.round(Math.min(3000, Math.max(5, mm)) * 100) / 100 : 100);
 
 const without = (list: readonly number[], id: number) => list.filter((x) => x !== id);
 
@@ -136,6 +144,29 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         selectedPartId: null,
         fold: 1,
       };
+    case 'USE_RECIPE':
+      return {
+        ...state,
+        projectName: action.name,
+        source: { kind: 'file', fileName: action.name, mesh: action.mesh, recipe: action.recipe },
+        size: { by: 'largest', mm: sizeOf(action.sizeMm) },
+        detailPct: 100,
+        layout: { ...state.layout, pins: {} },
+        edits: { forceCut: [], forceJoin: [] },
+        selectedPartId: null,
+        fold: 1,
+      };
+    case 'SET_RECIPE': {
+      if (state.source.kind !== 'file') return state;
+      return {
+        ...state,
+        source: { kind: 'file', fileName: state.source.fileName, mesh: action.mesh, recipe: action.recipe },
+        size: { by: 'largest', mm: sizeOf(action.sizeMm) },
+        layout: { ...state.layout, pins: {} },
+        edits: { forceCut: [], forceJoin: [] },
+        selectedPartId: null,
+      };
+    }
     case 'REPAIR_MESH':
       if (state.source.kind !== 'file') return state;
       return { ...state, source: { ...state.source, mesh: action.mesh }, layout: { ...state.layout, pins: {} }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
