@@ -32,9 +32,10 @@ interface SettingsPanelProps {
   onRestoreVersion: (version: PapercraftVersion) => void;
   onExportPdf: () => void;
   onExportCricut: () => void;
+  onExportSilhouette: () => void;
 }
 
-export default function SettingsPanel({ state, dispatch, run, save, onSave, onShare, onRestoreVersion, onExportPdf, onExportCricut }: SettingsPanelProps) {
+export default function SettingsPanel({ state, dispatch, run, save, onSave, onShare, onRestoreVersion, onExportPdf, onExportCricut, onExportSilhouette }: SettingsPanelProps) {
   const t = useT();
   const unit = useUnit();
   const presetOptions: { value: PaperPreset; label: string }[] = [
@@ -189,10 +190,23 @@ export default function SettingsPanel({ state, dispatch, run, save, onSave, onSh
           <Scissors className="h-4 w-4" aria-hidden="true" />
           {t('Download SVG for Cricut')}
         </button>
+        <button
+          type="button"
+          onClick={onExportSilhouette}
+          disabled={!run}
+          className="flex w-full items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-2 text-sm font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Scissors className="h-4 w-4" aria-hidden="true" />
+          {t('Download DXF for Silhouette')}
+        </button>
         <CheckField label={t('Cover page in the PDF (picture, facts, steps)')} checked={state.cover} onChange={(cover) => dispatch({ type: 'SET_COVER', cover })} />
         <p className="flex gap-2 text-xs leading-5 text-[var(--studio-ink-subtle)]">
           <Download className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>{t('In Cricut Design Space each colour is its own layer: set black to Cut, red to Score and blue (the numbers) to Draw, or delete it. Try the Test cube on your paper first.')}</span>
+        </p>
+        <p className="flex gap-2 text-xs leading-5 text-[var(--studio-ink-subtle)]">
+          <Download className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>{t('In Silhouette Studio open the DXF and give each colour its own setting: black is Cut, red is Score, blue (the numbers) can be deleted. The unit is millimetres.')}</span>
         </p>
       </Section>
     </aside>

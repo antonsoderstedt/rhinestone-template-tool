@@ -144,6 +144,16 @@ ADR 0044 and 0045 · Tests: `tests/papercraftAnimals.test.ts`, "built-in models 
 
 ---
 
+## Papercraft — Silhouette DXF (Implemented 2026-11-26)
+
+ADR 0049 · Tests: `tests/papercraftDxf.test.ts`.
+
+- [x] A page is a release 12 ASCII DXF in millimetres with the layers CUT (black), SCORE (red) and NUMBERS (blue); closed outlines are closed polylines, folds and tabs are lines, flat folds are left out; same drawing, same text
+- [x] The studio gives one DXF for one page and a zip for several, named after the project, next to the Cricut download
+- [ ] The DXF opens in Silhouette Studio at the right size, with each colour settable to Cut or Score (needs the owner's machine)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

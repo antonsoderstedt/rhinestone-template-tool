@@ -1384,5 +1384,9 @@
   "Deer": "Hjort",
   "Lion": "Lejon",
   "Rhino": "Noshörning",
-  "Bull": "Tjur"
+  "Bull": "Tjur",
+  "Silhouette DXF made: {name}": "Silhouette-DXF klar: {name}",
+  "Download DXF for Silhouette": "Ladda ner DXF för Silhouette",
+  "In Silhouette Studio open the DXF and give each colour its own setting: black is Cut, red is Score, blue (the numbers) can be deleted. The unit is millimetres.": "Öppna DXF-filen i Silhouette Studio och ge varje färg sin egen inställning: svart är skär, rött är räfflar (score), blått (numren) kan tas bort. Enheten är millimeter.",
+  "Silhouette DXF": "Silhouette DXF"
 }

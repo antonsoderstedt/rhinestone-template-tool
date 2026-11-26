@@ -15,7 +15,7 @@ import PatternView from './PatternView';
 import SettingsPanel from './SettingsPanel';
 import { computePapercraft, DEFAULT_SIMPLIFY_FACES, MAX_FACES } from './papercraftCompute';
 import { buildCoverContent, coverPageSize } from './papercraftCover';
-import { buildCricutDownload, buildPdfDownload, downloadExportFile } from './papercraftExport';
+import { buildCricutDownload, buildPdfDownload, buildSilhouetteDownload, downloadExportFile } from './papercraftExport';
 import { ModelFileError, readModelFile } from './papercraftFiles';
 import { bootPapercraft } from './papercraftBoot';
 import { readPapercraftDraft, writePapercraftDraft } from './papercraftDraft';
@@ -249,6 +249,13 @@ export default function PapercraftShell() {
     setToast(t('Cricut SVG made: {name}', { name: file.fileName }));
   }, [run, state.projectName, t]);
 
+  const exportSilhouette = useCallback(() => {
+    if (!run) return;
+    const file = buildSilhouetteDownload(run, state.projectName);
+    downloadExportFile(file);
+    setToast(t('Silhouette DXF made: {name}', { name: file.fileName }));
+  }, [run, state.projectName, t]);
+
   const simplifyModel = useCallback(async (targetFaces: number) => {
     if (state.source.kind !== 'file') return;
     // Always from the imported mesh, so a second try with more faces gets the detail back.
@@ -311,6 +318,7 @@ export default function PapercraftShell() {
         dispatch={dispatch}
         onExportPdf={exportPdf}
         onExportCricut={exportCricut}
+        onExportSilhouette={exportSilhouette}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -381,7 +389,7 @@ export default function PapercraftShell() {
         </main>
 
         <div className={`order-3 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'settings' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[288px] lg:border-t-0`}>
-          <SettingsPanel state={state} dispatch={dispatch} run={run} save={{ activeId, dirty, savedAt, versions, canSave }} onSave={saveDesign} onShare={shareLink} onRestoreVersion={restoreVersion} onExportPdf={exportPdf} onExportCricut={exportCricut} />
+          <SettingsPanel state={state} dispatch={dispatch} run={run} save={{ activeId, dirty, savedAt, versions, canSave }} onSave={saveDesign} onShare={shareLink} onRestoreVersion={restoreVersion} onExportPdf={exportPdf} onExportCricut={exportCricut} onExportSilhouette={exportSilhouette} />
         </div>
       </div>
 

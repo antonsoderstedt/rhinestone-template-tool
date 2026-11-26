@@ -106,6 +106,9 @@ owner cut or join an edge and to build the hinge tree.
   some page has text.
 - **Numbers** are drawn with a seven-segment stroke font (`strokeText`): digits, `-`, `/`, `.`, `x`.
 
+`exportPageDxf(drawing)` (ADR 0049): a DXF, release 12, ASCII with CRLF, millimetres. Header with `$ACADVER AC1009`, `$INSUNITS 4`, `$MEASUREMENT 1`; tables with the line type `CONTINUOUS` and the layers `CUT` (colour 7), `SCORE` (1) and `NUMBERS` (5);
+entities: a `POLYLINE` (closed flag 1 when closed, `VERTEX` per point, `SEQEND`) for each cut outline and each number stroke, a `LINE` on `SCORE` for each mountain, valley and tab line (flat folds are left out). Numbers are rounded to 0.0001; a polyline with fewer than two points is skipped.
+
 ## Built-in shapes and repair
 
 Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,
@@ -153,4 +156,4 @@ harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 g
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB
-reading in the engine (done in the app), import of finished PDF patterns, Silhouette DXF, true polygon nesting.
+reading in the engine (done in the app), import of finished PDF patterns, true polygon nesting.

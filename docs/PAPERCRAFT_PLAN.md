@@ -1,6 +1,6 @@
 # Papercraft studio: plan
 
-**Status:** Phases 0 to 5 done (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); animals with legs (ADR 0044) and folds that close by themselves (ADR 0045); what is left is under "Later" below · **Date:** 2026-11-25
+**Status:** Phases 0 to 5 done (Silhouette DXF: ADR 0049) (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); animals with legs (ADR 0044) and folds that close by themselves (ADR 0045); what is left is under "Later" below · **Date:** 2026-11-25
 
 A third studio next to Rhinestone and HTV: make 3D paper models from low-poly meshes, then **print** the patterns or **cut and score**
 them with a cutting machine, and fold and glue.
@@ -79,7 +79,7 @@ Saved models in My Designs and sync, Swedish, phone layout, share link, version 
 
 ### Later
 Import finished PDF patterns as cut files (read lines from the PDF), shapes from the tool's 2D shapes (extrude, lathe), coloured faces with print-then-cut,
-Silhouette DXF, slot-together models (no glue), curled horns and branching antlers. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044; birds on two legs: ADR 0046; upright birds: ADR 0047; horns, manes and tufts: ADR 0048.)
+slot-together models (no glue), curled horns and branching antlers. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044; birds on two legs: ADR 0046; upright birds: ADR 0047; horns, manes and tufts: ADR 0048.)
 
 ## Risks and open points
 
