@@ -9,6 +9,7 @@ import { useT } from '../lib/i18n';
 import { LengthField, NumberField, RangeField, SelectField, Section } from './fields';
 import { DEFAULT_SIMPLIFY_FACES, MAX_FACES, MIN_SIMPLIFY_FACES } from './papercraftCompute';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
+import BuilderSection from './BuilderSection';
 import CatalogModels from './CatalogModels';
 import ModelThumb from './ModelThumb';
 import ShapeSection from './ShapeSection';
@@ -154,6 +155,8 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
       <CatalogModels onImportFile={onImportFile} activeFileName={state.source.kind === 'file' ? state.source.fileName : null} />
 
       <ShapeSection source={state.source} dispatch={dispatch} />
+
+      <BuilderSection source={state.source} dispatch={dispatch} />
 
       {state.source.kind === 'file' && solid && (
         <Section title={t('Check your model')}>

@@ -178,6 +178,18 @@ back to front, coloured by part and shaded. The page map draws each page as a sh
 `assessBuild(pattern, solid)` gives a difficulty and minutes: glued edges up to 15 easy, 45 medium, 120 hard, more expert, one step
 harder for a shortest edge under 15 mm; minutes = 10 + parts + 0.4 folds + 1.5 glued edges, rounded to 5 (at least 5).
 
+## Models from parts and templates (`mesh/builder.ts`)
+
+`partMesh(part)` builds one part, z up, standing on its base whose centre is `(x, y, z)`: a ring of `sides` points at the base (for a
+four-sided part a rectangle with corners at ±width/2 and ±depth/2; otherwise an ellipse that wide, first point on +x) and, unless the part
+is pointed (cone, pyramid), a ring at `height` scaled by the top share (1 for box and cylinder, `topPct` for a frustum). Faces are counter-clockwise
+from outside: side quads (triangles to the apex when pointed), a top lid unless `open` is `top` or `both`, a bottom lid unless `open` is
+`bottom` or `both`. The turn is applied about the base centre as x, then y, then z (degrees), then the part is moved. `clampPart` brings
+every number into range (size 1–1000 mm, sides 3–32, 3–12 for a pyramid, top 5–95 %, position ±2000 mm, angle ±360) and replaces a non-number.
+`buildParts` concatenates up to 40 parts with their indices shifted; parts are separate shells.
+A `ParametricTemplate` maps clamped values to parts (`box-with-lid`, `pencil-cup`, `house`, `tower`, `cake`); a `ModelRecipe` is a template with
+values or a list of parts, and `meshOfRecipe` builds it. Everything is deterministic.
+
 ## Not in this version
 
 Parts bigger than a page split along a fold with registration marks, coloured/textured faces, GLB

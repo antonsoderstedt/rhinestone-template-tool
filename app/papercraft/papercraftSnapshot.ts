@@ -1,4 +1,4 @@
-import type { PagePin, RawMesh, Vec3 } from '@/src/lib/papercraft-engine';
+import { clampPart, findTemplate, PART_KINDS, PART_LIMITS, templateValues, type BuildPart, type ModelRecipe, type PagePin, type RawMesh, type Vec3 } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 import type { ModelSource, PapercraftState, PaperPreset, SizeBy } from './papercraftState';
 import { initialPapercraftState, MIN_DETAIL_PCT } from './papercraftState';
@@ -11,7 +11,7 @@ import { initialPapercraftState, MIN_DETAIL_PCT } from './papercraftState';
 export interface SerializedPapercraft {
   version: 1;
   projectName: string;
-  source: { kind: 'builtin'; id: string } | { kind: 'file'; fileName: string; mesh: { positions: number[]; faces: number[][] } };
+  source: { kind: 'builtin'; id: string } | { kind: 'file'; fileName: string; mesh: { positions: number[]; faces: number[][] }; recipe?: ModelRecipe };
   size: { by: SizeBy; mm: number };
   paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm?: number; customHeightMm?: number };
   detailPct?: number;
@@ -38,6 +38,12 @@ function serializeMesh(mesh: RawMesh): { positions: number[]; faces: number[][] 
   return { positions, faces: mesh.faces.map((f) => [...f]) };
 }
 
+function serializeRecipe(recipe: ModelRecipe): ModelRecipe {
+  return recipe.kind === 'parametric'
+    ? { kind: 'parametric', templateId: recipe.templateId, values: { ...recipe.values } }
+    : { kind: 'parts', parts: recipe.parts.map((p) => ({ ...p })) };
+}
+
 export function serializePapercraft(state: PapercraftState): SerializedPapercraft {
   return {
     version: 1,
@@ -45,7 +51,7 @@ export function serializePapercraft(state: PapercraftState): SerializedPapercraf
     source:
       state.source.kind === 'builtin'
         ? { kind: 'builtin', id: state.source.id }
-        : { kind: 'file', fileName: state.source.fileName, mesh: serializeMesh(state.source.mesh) },
+        : { kind: 'file', fileName: state.source.fileName, mesh: serializeMesh(state.source.mesh), ...(state.source.recipe ? { recipe: serializeRecipe(state.source.recipe) } : {}) },
     size: { ...state.size },
     paper: { ...state.paper },
     ...(state.detailPct < 100 ? { detailPct: state.detailPct } : {}),
@@ -87,12 +93,38 @@ function readMesh(value: unknown): RawMesh | null {
   return { positions, faces };
 }
 
+const PART_NUMBER_KEYS = ['width', 'depth', 'height', 'sides', 'topPct', 'x', 'y', 'z', 'rotX', 'rotY', 'rotZ'] as const;
+
+/** The recipe of a saved model: what is wrong with it is brought into range or the recipe is left out (the mesh is saved with it anyway). */
+function readRecipe(value: unknown): ModelRecipe | undefined {
+  if (!isRecord(value)) return undefined;
+  if (value.kind === 'parametric') {
+    const template = typeof value.templateId === 'string' ? findTemplate(value.templateId) : undefined;
+    if (!template || !isRecord(value.values)) return undefined;
+    const given: Record<string, number> = {};
+    for (const [key, v] of Object.entries(value.values)) if (isNum(v)) given[key] = v;
+    return { kind: 'parametric', templateId: template.id, values: templateValues(template, given) };
+  }
+  if (value.kind === 'parts' && Array.isArray(value.parts) && value.parts.length > 0) {
+    const parts: BuildPart[] = [];
+    for (const raw of value.parts.slice(0, PART_LIMITS.parts)) {
+      if (!isRecord(raw) || !PART_KINDS.includes(raw.kind as BuildPart['kind'])) return undefined;
+      if (!PART_NUMBER_KEYS.every((k) => isNum(raw[k]))) return undefined;
+      parts.push(clampPart(raw as unknown as BuildPart));
+    }
+    return { kind: 'parts', parts };
+  }
+  return undefined;
+}
+
 function readSource(value: unknown): ModelSource | null {
   if (!isRecord(value)) return null;
   if (value.kind === 'builtin') return typeof value.id === 'string' && findBuiltInModel(value.id) ? { kind: 'builtin', id: value.id } : null;
   if (value.kind === 'file') {
     const mesh = readMesh(value.mesh);
-    return mesh && typeof value.fileName === 'string' ? { kind: 'file', fileName: value.fileName.slice(0, 200), mesh } : null;
+    if (!mesh || typeof value.fileName !== 'string') return null;
+    const recipe = readRecipe(value.recipe);
+    return { kind: 'file', fileName: value.fileName.slice(0, 200), mesh, ...(recipe ? { recipe } : {}) };
   }
   return null;
 }
