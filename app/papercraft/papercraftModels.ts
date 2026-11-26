@@ -60,6 +60,9 @@ export const BUILT_IN_MODELS: readonly BuiltInModel[] = [
   { id: 'lion', name: 'Lion', description: 'A lion with a big mane and a tufted tail.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.lion() },
   { id: 'rhino', name: 'Rhino', description: 'A rhino with two horns on its nose.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.rhino() },
   { id: 'bull', name: 'Bull', description: 'A bull with horns and a tufted tail.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.bull() },
+  { id: 'frog', name: 'Frog', description: 'A crouching frog with folded hind legs and eyes on top.', group: 'animals', defaultSizeMm: 200, mesh: () => shapes.frog() },
+  { id: 'dolphin', name: 'Dolphin', description: 'A dolphin with a long beak, flippers and a flat tail.', group: 'animals', defaultSizeMm: 280, mesh: () => shapes.dolphin() },
+  { id: 'shark', name: 'Shark', description: 'A shark with a tall dorsal fin and a big tail.', group: 'animals', defaultSizeMm: 280, mesh: () => shapes.shark() },
 ];
 
 export function findBuiltInModel(id: string): BuiltInModel | undefined {

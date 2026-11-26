@@ -490,3 +490,65 @@ export const bull = (): RawMesh =>
     tail: [{ by: [-4, 0, -6], scale: 0.8 }, { by: [-3, 0, -8], scale: 0.9 }, { by: [-2, 0, -4], scale: 1.6 }],
     ears: [{ pair: 5, edge: 'side', steps: [{ by: [0, 9, 5], scale: 0.8 }, { by: [0, 6, 12], scale: 0.55 }] }],
   });
+
+/** A crouching frog: wide and low, hind legs folded in three steps and ending in flat feet, eyes on top of the head. */
+export const frog = (): RawMesh =>
+  buildAnimal({
+    pad: [0.25, 0.8],
+    sections: [
+      [0, 21, 10, 11, 0],
+      [10, 20, 18, 11, 0],
+      [24, 20, 18, 11, 0],
+      [44, 19, 16, 10, 0],
+      [56, 19, 16, 10, 0],
+      [68, 23, 17, 10, 0],
+      [80, 23, 17, 10, 0],
+      [89, 19, 11, 6, 0],
+    ],
+    boxFront: true,
+    legs: [
+      { pair: 1, steps: [{ dx: -2, dy: 3, fall: 0.5, scale: 1.2 }, { dx: 6, fall: 0.5, scale: 1.6 }] },
+      { pair: 3, steps: [{ dx: 2, fall: 1, scale: 1.2 }] },
+    ],
+    ears: [{ pair: 5, steps: [{ by: [0, 2, 10], scale: 0.85 }] }],
+  });
+
+/** A shark lying on its belly: a long body, a dorsal fin, two side fins and a tall tail. */
+export const shark = (): RawMesh =>
+  buildAnimal({
+    pad: [0.3, 0.9],
+    sections: [
+      [0, 21, 2.5, 9, 0],
+      [14, 17, 8, 12, 0],
+      [34, 15, 14, 15, 0],
+      [56, 15, 14, 15, 0],
+      [78, 14, 12, 14, 0],
+      [98, 13, 8, 9, 0],
+      [112, 13, 3, 3.5, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    tail: [{ by: [-8, 0, 8], scale: 1.4 }],
+    crest: { pair: 2, steps: [{ by: [-10, 0, 16], scale: 0.3 }] },
+    ears: [{ pair: 2, edge: 'side', steps: [{ by: [-8, 10, -2], scale: 0.5 }] }],
+  });
+
+/** A dolphin lying on its belly: a flat tail (flukes), a round body, a long beak, one dorsal fin and two flippers. */
+export const dolphin = (): RawMesh =>
+  buildAnimal({
+    pad: [0.3, 0.9],
+    sections: [
+      [0, 24, 12, 2, 0],
+      [10, 20, 5, 6, 0],
+      [26, 16, 8, 10, 0],
+      [46, 14, 11, 14, 0],
+      [62, 14, 11, 14, 0],
+      [78, 14.5, 9, 12, 0],
+      [90, 14, 6, 8, 0],
+      [104, 13, 2.5, 2.5, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    crest: { pair: 3, steps: [{ by: [-8, 0, 12], scale: 0.3 }] },
+    ears: [{ pair: 3, edge: 'side', steps: [{ by: [-6, 9, -3], scale: 0.5 }] }],
+  });
