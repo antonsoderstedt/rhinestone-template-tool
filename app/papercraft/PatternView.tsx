@@ -11,6 +11,8 @@ interface PatternViewProps {
   selectedPartId: number | null;
   onSelectPart: (partId: number | null) => void;
   onToggleEdge: (edgeId: number, joined: boolean) => void;
+  /** Each part in its own colour (on the screen only). */
+  colourParts: boolean;
 }
 
 interface Box {
@@ -53,7 +55,7 @@ function useCanvasLayout(parts: readonly Part[]) {
   }, [parts]);
 }
 
-export default function PatternView({ run, selectedPartId, onSelectPart, onToggleEdge }: PatternViewProps) {
+export default function PatternView({ run, selectedPartId, onSelectPart, onToggleEdge, colourParts }: PatternViewProps) {
   const t = useT();
   const parts = run.pattern.parts;
   const { placements, bounds } = useCanvasLayout(parts);
@@ -150,7 +152,7 @@ export default function PatternView({ run, selectedPartId, onSelectPart, onToggl
                   <polygon key={`t${tab.edgeNumber}`} points={pointsAttr(tab.points.map(T))} fill="rgba(255,255,255,0.18)" stroke="var(--studio-ink-muted)" strokeWidth={strokeWidth} />
                 ))}
                 {part.faces.map((f) => (
-                  <polygon key={f.faceId} points={pointsAttr(f.points.map(T))} fill={partColor(part.id, selected ? 72 : 58)} fillOpacity={selected ? 0.95 : 0.8} stroke="none" />
+                  <polygon key={f.faceId} points={pointsAttr(f.points.map(T))} fill={colourParts ? partColor(part.id, selected ? 72 : 58) : selected ? '#f6e7a8' : '#e6e0d0'} fillOpacity={selected ? 0.95 : colourParts ? 0.8 : 0.9} stroke="none" />
                 ))}
                 {part.foldLines.map((line, i) => (
                   <line
@@ -213,13 +215,13 @@ export default function PatternView({ run, selectedPartId, onSelectPart, onToggl
       </svg>
 
       <div className="absolute bottom-3 right-3 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] p-1 shadow-lg">
-        <button type="button" onClick={() => zoomAt(0.75)} aria-label={t('Zoom in')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
+        <button type="button" onClick={() => zoomAt(0.75)} aria-label={t('Zoom in')} title={t('Zoom in')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
           <ZoomIn className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => zoomAt(1.33)} aria-label={t('Zoom out')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
+        <button type="button" onClick={() => zoomAt(1.33)} aria-label={t('Zoom out')} title={t('Zoom out')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
           <ZoomOut className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => setBox(bounds)} aria-label={t('Show all')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
+        <button type="button" onClick={() => setBox(bounds)} aria-label={t('Show all')} title={t('Show all the parts')} className="inline-flex h-9 w-9 items-center justify-center rounded text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-hover-overlay)]">
           <Maximize2 className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
@@ -227,8 +229,13 @@ export default function PatternView({ run, selectedPartId, onSelectPart, onToggl
       <div className="pointer-events-none absolute left-3 top-3 max-w-[60%] rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)]/90 px-3 py-2 text-xs text-[var(--studio-ink-secondary)] shadow">
         <span className="font-medium text-[var(--studio-ink)]">{t('Click an edge to change it:')}</span>{' '}
         {t('a fold becomes a cut, a cut becomes a fold.')}
-        <span className="ml-2 inline-flex items-center gap-1"><span className="inline-block h-0.5 w-4 bg-red-500" aria-hidden="true" />{t('mountain')}</span>
-        <span className="ml-2 inline-flex items-center gap-1"><span className="inline-block h-0.5 w-4 bg-blue-500" aria-hidden="true" />{t('valley')}</span>
+        <span className="ml-2 inline-flex items-center gap-1" title={t('A mountain fold: the fold points up towards you when the paper is folded.')}><span className="inline-block h-0.5 w-4 bg-red-500" aria-hidden="true" />{t('mountain')}</span>
+        <span className="ml-2 inline-flex items-center gap-1" title={t('A valley fold: the fold points away from you when the paper is folded.')}><span className="inline-block h-0.5 w-4 bg-blue-500" aria-hidden="true" />{t('valley')}</span>
+        <span className="mt-1 block text-[var(--studio-ink-subtle)]">
+          {colourParts
+            ? t('Each part has its own colour only to tell the parts apart on the screen. You can turn the colours off under View in the settings. Nothing is printed or cut in colour.')
+            : t('Red and blue are only on the screen, to show mountain and valley folds. On paper they are dash patterns.')}
+        </span>
       </div>
     </div>
   );

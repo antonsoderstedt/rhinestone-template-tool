@@ -1,7 +1,7 @@
 import type { RawMesh } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 
-export type PaperPreset = 'a4' | 'letter' | 'cricut12x12' | 'cricut12x24';
+export type PaperPreset = 'a3' | 'a4' | 'a5' | 'letter' | 'tabloid' | 'cricut12x12' | 'cricut12x24' | 'custom';
 export type SizeBy = 'height' | 'width' | 'depth' | 'largest';
 export type PapercraftView = 'model' | 'pattern' | 'pages';
 
@@ -17,7 +17,12 @@ export interface PapercraftState {
   projectName: string;
   source: ModelSource;
   size: { by: SizeBy; mm: number };
-  paper: { preset: PaperPreset; marginMm: number; gapMm: number };
+  /** `customWidthMm` and `customHeightMm` are the size of the sheet when the preset is `custom`. */
+  paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm: number; customHeightMm: number };
+  /** How much of a built-in model's detail is kept, in percent (100 is as it is made). An imported model is simplified by its face count instead. */
+  detailPct: number;
+  /** Each part in its own colour on the screen (it only tells parts apart; print and cut are not coloured). */
+  colourParts: boolean;
   pattern: {
     tabWidthMm: number;
     tabAngleDeg: number;
@@ -37,13 +42,18 @@ export interface PapercraftState {
 
 export const DEFAULT_MODEL_ID = 'test-cube';
 
+/** The least detail a built-in model keeps: below this it is no longer the animal. */
+export const MIN_DETAIL_PCT = 30;
+
 export function initialPapercraftState(): PapercraftState {
   const model = findBuiltInModel(DEFAULT_MODEL_ID)!;
   return {
     projectName: model.name,
     source: { kind: 'builtin', id: model.id },
     size: { by: 'largest', mm: model.defaultSizeMm },
-    paper: { preset: 'a4', marginMm: 10, gapMm: 3 },
+    paper: { preset: 'a4', marginMm: 10, gapMm: 3, customWidthMm: 300, customHeightMm: 400 },
+    detailPct: 100,
+    colourParts: false,
     pattern: { tabWidthMm: 8, tabAngleDeg: 45, printedSide: 'outside', numberHeightMm: 3, partLabels: true },
     cover: true,
     edits: { forceCut: [], forceJoin: [] },
@@ -67,6 +77,8 @@ export type PapercraftAction =
   | { type: 'REPAIR_MESH'; mesh: RawMesh }
   | { type: 'SET_SIZE'; size: Partial<PapercraftState['size']> }
   | { type: 'SET_PAPER'; paper: Partial<PapercraftState['paper']> }
+  | { type: 'SET_DETAIL'; pct: number }
+  | { type: 'SET_COLOURS'; on: boolean }
   | { type: 'SET_PATTERN'; pattern: Partial<PapercraftState['pattern']> }
   | { type: 'SET_COVER'; cover: boolean }
   /** Click on an edge: a folded edge is cut, a cut edge is folded. `joined` is what it is now. */
@@ -93,6 +105,7 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         projectName: model.name,
         source: { kind: 'builtin', id: model.id },
         size: { by: 'largest', mm: model.defaultSizeMm },
+        detailPct: 100,
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
         fold: 1,
@@ -104,6 +117,7 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         projectName: action.fileName.replace(/\.[^.]+$/, '') || 'Model',
         source: { kind: 'file', fileName: action.fileName, mesh: action.mesh, ...(action.original ? { original: action.original } : {}) },
         size: { by: 'largest', mm: 100 },
+        detailPct: 100,
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
         fold: 1,
@@ -129,6 +143,10 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
       if (!(size.mm > 0) || !Number.isFinite(size.mm)) return state;
       return { ...state, size, selectedPartId: null };
     }
+    case 'SET_DETAIL':
+      return { ...state, detailPct: Math.min(100, Math.max(MIN_DETAIL_PCT, Math.round(action.pct))), edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+    case 'SET_COLOURS':
+      return { ...state, colourParts: action.on };
     case 'SET_PAPER':
       return { ...state, paper: { ...state.paper, ...action.paper }, selectedPartId: null };
     case 'SET_PATTERN':

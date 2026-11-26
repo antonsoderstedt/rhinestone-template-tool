@@ -6,14 +6,14 @@ import { FileUp, FlipHorizontal2, PackageCheck, Undo2, Wand2 } from 'lucide-reac
 import type { Solid, SolidReport } from '@/src/lib/papercraft-engine';
 import { formatLength, useUnit } from '../lib/units';
 import { useT } from '../lib/i18n';
-import { LengthField, NumberField, SelectField, Section } from './fields';
+import { LengthField, NumberField, RangeField, SelectField, Section } from './fields';
 import { DEFAULT_SIMPLIFY_FACES, MAX_FACES, MIN_SIMPLIFY_FACES } from './papercraftCompute';
 import { MODEL_FILE_ACCEPT } from './papercraftFiles';
 import ModelThumb from './ModelThumb';
 import ShapeSection from './ShapeSection';
 import { BUILT_IN_MODELS, MODEL_GROUPS } from './papercraftModels';
 import { describeMeshWarning } from './papercraftWarnings';
-import type { PapercraftAction, PapercraftState, SizeBy } from './papercraftState';
+import { MIN_DETAIL_PCT, type PapercraftAction, type PapercraftState, type SizeBy } from './papercraftState';
 
 interface ModelPanelProps {
   state: PapercraftState;
@@ -44,6 +44,53 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
   ];
   return (
     <aside aria-label={t('Model')} className="htv-studio-panel flex h-full w-full flex-col gap-3 overflow-y-auto border-r border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
+      <Section title={t('Size and detail')}>
+        <SelectField
+          label={t('Set the size by')}
+          tip={t('Which measurement you type in. The model keeps its shape: the other measurements follow.')}
+          value={state.size.by}
+          options={sizeOptions}
+          onChange={(by) => dispatch({ type: 'SET_SIZE', size: { by } })}
+        />
+        <LengthField
+          label={t('Size')}
+          tip={t('How big the finished model is. A bigger model has bigger parts that are easier to cut and glue, and needs more pages.')}
+          valueMm={state.size.mm}
+          minMm={5}
+          maxMm={3000}
+          onChange={(mm) => dispatch({ type: 'SET_SIZE', size: { mm } })}
+        />
+        {report && (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-[var(--studio-ink-secondary)]">
+            <dt className="text-[var(--studio-ink-subtle)]" title={t('Width, depth and height of the finished model.')}>{t('Built size')}</dt>
+            <dd>{report.size.map((v) => formatLength(v, unit)).join(' × ')}</dd>
+            <dt className="text-[var(--studio-ink-subtle)]" title={t('The shortest edge of the model. Under 8 mm it is hard to fold and glue.')}>{t('Shortest edge')}</dt>
+            <dd>{formatLength(report.minEdgeMm, unit)}</dd>
+            {solid && (
+              <>
+                <dt className="text-[var(--studio-ink-subtle)]" title={t('The number of flat faces the model is made of.')}>{t('Faces')}</dt>
+                <dd>{solid.faces.length}</dd>
+              </>
+            )}
+          </dl>
+        )}
+        {state.source.kind === 'builtin' && (
+          <>
+            <RangeField
+              label={t('Detail')}
+              tip={t('How much of the model\'s detail is kept. Less detail gives fewer, bigger parts that are quicker to build, but the shape gets coarser. 100 % is the model as it is made.')}
+              value={state.detailPct}
+              min={MIN_DETAIL_PCT}
+              max={100}
+              step={5}
+              suffix=" %"
+              onChange={(pct) => dispatch({ type: 'SET_DETAIL', pct })}
+            />
+            <p className="text-xs text-[var(--studio-ink-subtle)]">{t('The built-in models are already as simple as they can be while staying recognisable. Lower the detail to get fewer parts; for more detail, import your own model.')}</p>
+          </>
+        )}
+      </Section>
+
       <Section title={t('Choose a model')}>
         {MODEL_GROUPS.map((group) => (
           <div key={group.id}>
@@ -82,6 +129,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
+          title={t('Open an OBJ, STL or GLB file with your own 3D model.')}
           className={`flex w-full items-center gap-2 rounded-lg border border-dashed px-3 py-3 text-left text-sm transition hover:bg-[var(--studio-surface-hover)] ${state.source.kind === 'file' ? 'border-violet-400/70 bg-violet-500/20' : 'border-[var(--studio-border-strong)] bg-[var(--studio-well)]'}`}
         >
           <FileUp className="h-4 w-4 shrink-0 text-violet-300" aria-hidden="true" />
@@ -122,6 +170,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
                       <button
                         type="button"
                         onClick={onFillHoles}
+          title={t('Close the open edges with flat faces so the model is solid.')}
                         className="mt-2 flex items-center gap-1.5 rounded-md bg-violet-600 px-2.5 py-1.5 font-medium text-white hover:bg-violet-500"
                       >
                         {t('Close the holes')}
@@ -135,6 +184,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
           <button
             type="button"
             onClick={onFlipFaces}
+          title={t('Turn every face over. Use it if the model looks dark inside out or folds go the wrong way.')}
             className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-2 text-left text-xs font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)]"
           >
             <FlipHorizontal2 className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -177,11 +227,12 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
                     ? t('This model has too many faces to unfold. Simplify it: fewer faces make fewer, bigger parts that are easier to cut and glue.')
                     : t('Fewer faces make fewer, bigger parts that are easier to cut and glue. More faces keep more of the shape.')}
                 </p>
-                <NumberField label={t('Simplify to')} suffix={t('faces')} value={target} min={MIN_SIMPLIFY_FACES} max={MAX_FACES} step={50} onChange={setTargetFaces} />
+                <NumberField label={t('Simplify to')} tip={t('The number of faces the model is reduced to. Fewer faces make fewer, bigger parts.')} suffix={t('faces')} value={target} min={MIN_SIMPLIFY_FACES} max={MAX_FACES} step={50} onChange={setTargetFaces} />
                 <button
                   type="button"
                   disabled={simplifying}
                   onClick={() => onSimplify(target)}
+          title={t('Make a version of the imported model with this number of faces.')}
                   className="flex w-full items-center justify-center gap-1.5 rounded-md bg-violet-600 px-2.5 py-2 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-60"
                 >
                   <Wand2 className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -192,6 +243,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
                     type="button"
                     disabled={simplifying}
                     onClick={onRestoreOriginal}
+          title={t('Go back to the imported model as it was before it was simplified.')}
                     className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2.5 py-2 text-xs font-medium text-[var(--studio-ink-secondary)] hover:bg-[var(--studio-surface-hover)] disabled:opacity-60"
                   >
                     <Undo2 className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -204,18 +256,6 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
         </Section>
       )}
 
-      <Section title={t('Size')}>
-        <SelectField label={t('Set the size by')} value={state.size.by} options={sizeOptions} onChange={(by) => dispatch({ type: 'SET_SIZE', size: { by } })} />
-        <LengthField label={t('Size')} valueMm={state.size.mm} minMm={5} maxMm={3000} onChange={(mm) => dispatch({ type: 'SET_SIZE', size: { mm } })} />
-        {report && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-[var(--studio-ink-secondary)]">
-            <dt className="text-[var(--studio-ink-subtle)]">{t('Built size')}</dt>
-            <dd>{report.size.map((v) => formatLength(v, unit)).join(' × ')}</dd>
-            <dt className="text-[var(--studio-ink-subtle)]">{t('Shortest edge')}</dt>
-            <dd>{formatLength(report.minEdgeMm, unit)}</dd>
-          </dl>
-        )}
-      </Section>
     </aside>
   );
 }

@@ -1,7 +1,7 @@
 import type { RawMesh, Vec3 } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 import type { ModelSource, PapercraftState, PaperPreset, SizeBy } from './papercraftState';
-import { initialPapercraftState } from './papercraftState';
+import { initialPapercraftState, MIN_DETAIL_PCT } from './papercraftState';
 
 /**
  * A papercraft design as it is saved (in My Designs, in a share link, in a backup and on the server): the model, the size, the paper
@@ -13,7 +13,9 @@ export interface SerializedPapercraft {
   projectName: string;
   source: { kind: 'builtin'; id: string } | { kind: 'file'; fileName: string; mesh: { positions: number[]; faces: number[][] } };
   size: { by: SizeBy; mm: number };
-  paper: { preset: PaperPreset; marginMm: number; gapMm: number };
+  paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm?: number; customHeightMm?: number };
+  detailPct?: number;
+  colourParts?: boolean;
   pattern: { tabWidthMm: number; tabAngleDeg: number; printedSide: 'outside' | 'inside'; numberHeightMm: number; partLabels: boolean };
   cover: boolean;
   edits: { forceCut: number[]; forceJoin: number[] };
@@ -24,7 +26,7 @@ export const MAX_SAVED_POSITION_NUMBERS = 450_000;
 export const MAX_SAVED_FACES = 12_000;
 
 const SIZE_BYS: readonly SizeBy[] = ['height', 'width', 'depth', 'largest'];
-const PRESETS: readonly PaperPreset[] = ['a4', 'letter', 'cricut12x12', 'cricut12x24'];
+const PRESETS: readonly PaperPreset[] = ['a3', 'a4', 'a5', 'letter', 'tabloid', 'cricut12x12', 'cricut12x24', 'custom'];
 
 /** Seven significant digits: more than any model needs, and short enough in JSON. */
 const compact = (v: number) => Number(v.toPrecision(7));
@@ -45,6 +47,8 @@ export function serializePapercraft(state: PapercraftState): SerializedPapercraf
         : { kind: 'file', fileName: state.source.fileName, mesh: serializeMesh(state.source.mesh) },
     size: { ...state.size },
     paper: { ...state.paper },
+    ...(state.detailPct < 100 ? { detailPct: state.detailPct } : {}),
+    ...(state.colourParts ? { colourParts: true } : {}),
     pattern: { ...state.pattern },
     cover: state.cover,
     edits: { forceCut: [...state.edits.forceCut], forceJoin: [...state.edits.forceJoin] },
@@ -107,7 +111,15 @@ export function deserializePapercraft(data: unknown): PapercraftState | null {
     projectName: data.projectName.slice(0, 200),
     source,
     size: { by: size.by as SizeBy, mm: clamp(size.mm, 1, 100_000) },
-    paper: { preset: paper.preset as PaperPreset, marginMm: clamp(paper.marginMm, 0, 50), gapMm: clamp(paper.gapMm, 0, 30) },
+    paper: {
+      preset: paper.preset as PaperPreset,
+      marginMm: clamp(paper.marginMm, 0, 50),
+      gapMm: clamp(paper.gapMm, 0, 30),
+      customWidthMm: isNum(paper.customWidthMm) ? clamp(paper.customWidthMm, 50, 2000) : base.paper.customWidthMm,
+      customHeightMm: isNum(paper.customHeightMm) ? clamp(paper.customHeightMm, 50, 2000) : base.paper.customHeightMm,
+    },
+    detailPct: isNum(data.detailPct) ? clamp(Math.round(data.detailPct), MIN_DETAIL_PCT, 100) : 100,
+    colourParts: data.colourParts === true,
     pattern: {
       tabWidthMm: clamp(pattern.tabWidthMm, 3, 30),
       tabAngleDeg: clamp(pattern.tabAngleDeg, 10, 90),

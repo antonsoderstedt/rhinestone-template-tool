@@ -106,7 +106,7 @@ describe('papercraft studio computation', () => {
 
   it('a smaller page makes more pages', () => {
     const a4 = computePapercraft({ ...start(), source: { kind: 'builtin', id: 'dodecahedron' }, size: { by: 'largest', mm: 160 } });
-    const mat = computePapercraft({ ...start(), source: { kind: 'builtin', id: 'dodecahedron' }, size: { by: 'largest', mm: 160 }, paper: { preset: 'cricut12x12', marginMm: 5, gapMm: 3 } });
+    const mat = computePapercraft({ ...start(), source: { kind: 'builtin', id: 'dodecahedron' }, size: { by: 'largest', mm: 160 }, paper: { ...start().paper, preset: 'cricut12x12', marginMm: 5, gapMm: 3 } });
     if (!a4.ok || !mat.ok) throw new Error('no run');
     expect(a4.run.layout.pages.length).toBeGreaterThanOrEqual(mat.run.layout.pages.length);
   });

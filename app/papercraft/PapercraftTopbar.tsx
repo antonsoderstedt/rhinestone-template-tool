@@ -24,10 +24,10 @@ interface PapercraftTopbarProps {
 
 export default function PapercraftTopbar({ projectName, view, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, onExportSilhouette, theme, onToggleTheme }: PapercraftTopbarProps) {
   const t = useT();
-  const views: { id: PapercraftView; label: string; icon: typeof Box }[] = [
-    { id: 'model', label: t('3D model'), icon: Box },
-    { id: 'pattern', label: t('Pattern'), icon: Shapes },
-    { id: 'pages', label: t('Pages'), icon: Layers },
+  const views: { id: PapercraftView; label: string; tip: string; icon: typeof Box }[] = [
+    { id: 'model', label: t('3D model'), tip: t('See the finished model in 3D and fold it up.'), icon: Box },
+    { id: 'pattern', label: t('Pattern'), tip: t('See the flat parts. Click an edge to change a fold into a cut, or the other way round.'), icon: Shapes },
+    { id: 'pages', label: t('Pages'), tip: t('See how the parts are placed on the pages that are printed or cut.'), icon: Layers },
   ];
   return (
     <section aria-label={t('Project actions')} className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">
@@ -38,6 +38,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
             value={projectName}
             onChange={(event) => dispatch({ type: 'SET_NAME', name: event.target.value })}
             aria-label={t('Project name')}
+            title={t('The name of your model. It is used for the file names.')}
             placeholder={t('Untitled model')}
             className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-[var(--studio-ink)] focus:bg-[var(--studio-surface)] focus-visible:ring-2 focus-visible:ring-violet-400"
           />
@@ -51,6 +52,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
                 key={v.id}
                 type="button"
                 aria-pressed={view === v.id}
+                title={v.tip}
                 onClick={() => dispatch({ type: 'SET_VIEW', view: v.id })}
                 className={`inline-flex min-h-9 items-center gap-1.5 rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.1em] transition ${view === v.id ? 'bg-violet-500/35 text-[var(--studio-ink)]' : 'text-[var(--studio-ink-muted)] hover:bg-[var(--studio-hover-overlay)] hover:text-[var(--studio-ink)]'}`}
               >
@@ -64,7 +66,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            onClick={onSave}
+            onClick={onSave} title={t('Save this model in My Designs in this browser.')}
             disabled={!canSave}
             className="hidden items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-1.5 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-[var(--studio-surface-hover)] focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
           >
@@ -74,7 +76,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
           </button>
           <button
             type="button"
-            onClick={onExportPdf}
+            onClick={onExportPdf} title={t('Download a PDF to print at 100 % scale.')}
             disabled={!canExport}
             className="hidden items-center gap-2 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:bg-[var(--studio-hover-overlay)] disabled:text-[var(--studio-ink-subtle)] lg:inline-flex"
           >
@@ -83,7 +85,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
           </button>
           <button
             type="button"
-            onClick={onExportCricut}
+            onClick={onExportCricut} title={t('Download SVG files for Cricut Design Space: black is cut, red is score.')}
             disabled={!canExport}
             className="hidden items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
           >
@@ -92,7 +94,7 @@ export default function PapercraftTopbar({ projectName, view, canExport, canSave
           </button>
           <button
             type="button"
-            onClick={onExportSilhouette}
+            onClick={onExportSilhouette} title={t('Download DXF files for Silhouette Studio: black is cut, red is score.')}
             disabled={!canExport}
             className="hidden items-center gap-2 rounded-md border border-violet-400/50 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
           >
