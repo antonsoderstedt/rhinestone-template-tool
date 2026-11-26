@@ -139,7 +139,9 @@ describe('a body along a curve (ringSweep)', () => {
   });
 });
 
-const ANIMALS = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe'] as const;
+const FOUR_LEGGED = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe'] as const;
+const BIRDS = ['duck', 'chicken', 'flamingo'] as const;
+const ANIMALS = [...FOUR_LEGGED, ...BIRDS] as const;
 const meshOf = (id: (typeof ANIMALS)[number]): RawMesh => shapes[id]();
 const atDefaultSize = (id: (typeof ANIMALS)[number]): Solid => {
   const model = BUILT_IN_MODELS.find((m) => m.id === id)!;
@@ -156,14 +158,16 @@ describe.each(ANIMALS)('the %s', (id) => {
     expect(volume(solid)).toBeGreaterThan(0);
   });
 
-  it('stands on four flat feet: the lowest points are the 16 corners of four feet, all on the ground', () => {
+  it('stands on flat feet: the lowest points are the corners of the feet (four feet, or two for a bird), all on the ground', () => {
     const low = Math.min(...solid.vertices.map((v) => v[2]));
     expect(low).toBeCloseTo(0, 9);
     const feet = solid.vertices.filter((v) => Math.abs(v[2]) < 1e-6);
-    expect(feet).toHaveLength(16);
-    // Four groups, one in each corner under the body.
-    const quadrants = new Set(feet.map((v) => `${v[0] < (Math.min(...feet.map((f) => f[0])) + Math.max(...feet.map((f) => f[0]))) / 2}${v[1] > 0}`));
-    expect(quadrants.size).toBe(4);
+    const bird = (BIRDS as readonly string[]).includes(id);
+    expect(feet).toHaveLength(bird ? 8 : 16);
+    // One group in each corner under the body (a bird has one on each side).
+    const middle = (Math.min(...feet.map((f) => f[0])) + Math.max(...feet.map((f) => f[0]))) / 2;
+    const groups = new Set(feet.map((v) => `${bird ? true : v[0] < middle}${v[1] > 0}`));
+    expect(groups.size).toBe(bird ? 2 : 4);
   });
 
   it('is the same on the left and the right', () => {

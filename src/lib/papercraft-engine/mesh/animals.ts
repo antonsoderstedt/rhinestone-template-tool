@@ -52,6 +52,8 @@ export interface AnimalSpec {
   tail?: readonly LimbStep[];
   /** Steps out of the front end: a trunk, a snout. */
   nose?: readonly LimbStep[];
+  /** One limb out of the flat top between section `pair` and `pair + 1`: a comb, a crest. */
+  crest?: { pair: number; steps: readonly LimbStep[] };
   /** A pair of ears at the shoulder faces (`edge: 'shoulder'`) or the side faces (`'side'`) between section `pair` and `pair + 1`. */
   ears?: readonly { pair: number; edge?: 'shoulder' | 'side'; steps: readonly LimbStep[] }[];
 }
@@ -99,6 +101,7 @@ export function buildAnimal(spec: AnimalSpec): RawMesh {
     const [right, left] = ear.edge === 'side' ? [EDGE.sideRight, EDGE.sideLeft] : [EDGE.shoulderRight, EDGE.shoulderLeft];
     ops.push({ face: faceAt(ear.pair, right), steps: ear.steps }, { face: faceAt(ear.pair, left), steps: mirrored(ear.steps) });
   }
+  if (spec.crest) ops.push({ face: faceAt(spec.crest.pair, EDGE.top), steps: spec.crest.steps });
   if (spec.tail) ops.push({ face: body.startCap, steps: spec.tail });
   if (spec.nose) ops.push({ face: body.endCap, steps: spec.nose });
   return extrudeFaces(body.mesh, ops);
@@ -242,4 +245,73 @@ export const giraffe = (): RawMesh =>
     ],
     tail: [{ by: [-3, 0, -14], scale: 0.8 }, { by: [-2, 0, -14], scale: 0.85 }],
     ears: [{ pair: 7, steps: [{ by: [-1, 3, 7], scale: 0.6 }] }],
+  });
+
+/** Birds stand on two legs: one pair of legs, each ending in a flat foot (a last step that is wider than the leg). */
+export const duck = (): RawMesh =>
+  buildAnimal({
+    pad: [0.3, 0.75],
+    sections: [
+      [0, 26, 4, 5, 0],
+      [10, 23, 13, 10, 0],
+      [24, 23, 13, 10, 0],
+      [34, 23, 13, 10, 0],
+      [46, 23, 13, 10, 0],
+      [56, 36, 9, 9],
+      [64, 52, 7, 7, 0],
+      [72, 52, 7, 7, 0],
+      [80, 50, 5, 4.5, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [{ pair: 3, steps: [{ fall: 0.75, scale: 0.6 }, { dx: 3, fall: 0.25, scale: 2 }] }],
+    tail: [{ by: [-5, 0, 4], scale: 1.2 }],
+    nose: [{ by: [7, 0, -1], scale: 1.1 }],
+    ears: [{ pair: 1, edge: 'side', steps: [{ by: [-6, 4, -2], scale: 0.8 }] }],
+  });
+
+export const chicken = (): RawMesh =>
+  buildAnimal({
+    pad: [0.3, 0.75],
+    sections: [
+      [0, 40, 5, 8, 0],
+      [10, 34, 14, 14, 0],
+      [24, 34, 14, 14, 0],
+      [34, 34, 14, 14, 0],
+      [46, 34, 14, 14, 0],
+      [56, 54, 9, 10],
+      [64, 66, 7.5, 7.5, 0],
+      [72, 66, 7.5, 7.5, 0],
+      [80, 63, 5, 4.5, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [{ pair: 3, steps: [{ fall: 0.88, scale: 0.55 }, { dx: 4, fall: 0.12, scale: 2.2 }] }],
+    tail: [{ by: [-6, 0, 14], scale: 1.5 }],
+    nose: [{ by: [4, 0, -1], scale: 0.8 }],
+    crest: { pair: 6, steps: [{ by: [0, 0, 8], scale: 0.7 }] },
+    ears: [{ pair: 1, edge: 'side', steps: [{ by: [-6, 4, -2], scale: 0.8 }] }],
+  });
+
+export const flamingo = (): RawMesh =>
+  buildAnimal({
+    pad: [0.3, 0.75],
+    sections: [
+      [0, 70, 4, 6, 0],
+      [8, 66, 12, 11, 0],
+      [20, 66, 12, 11, 0],
+      [28, 66, 12, 11, 0],
+      [38, 66, 12, 11, 0],
+      [46, 80, 8, 8],
+      [52, 112, 7, 7],
+      [60, 130, 7, 7, 0],
+      [68, 130, 7, 7, 0],
+      [76, 126, 4.5, 4, 0],
+    ],
+    boxRear: true,
+    boxFront: true,
+    legs: [{ pair: 3, steps: [{ fall: 0.88, scale: 0.8 }, { dx: 3, fall: 0.12, scale: 2 }] }],
+    tail: [{ by: [-5, 0, -2], scale: 0.9 }],
+    nose: [{ by: [7, 0, -5], scale: 0.8 }],
+    ears: [{ pair: 1, edge: 'side', steps: [{ by: [-6, 3, -2], scale: 0.8 }] }],
   });
