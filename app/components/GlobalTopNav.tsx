@@ -211,11 +211,12 @@ export default function GlobalTopNav() {
   return (
     <header data-focus-surface="dark" className={`sticky top-0 z-50 border-b border-zinc-200/80 bg-[#1b1a1d]/95 text-zinc-200 backdrop-blur-xl ${studioRoute ? 'max-lg:hidden' : ''}`}>
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1.5 md:px-5">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/20 text-xs font-black text-violet-100 shadow-md shadow-black/20">
             {t('RT')}
           </div>
-          <div className="min-w-0">
+          {/* The name has no room next to nine menu items: only the logo there. */}
+          <div className="min-w-0 max-xl:max-w-[16rem] xl:hidden">
             <div className="text-xs font-medium tracking-[0.18em] text-zinc-400 uppercase">{t('Rhinestone OS')}</div>
             <div className="truncate text-sm font-medium text-zinc-200">{t('Rhinestone and HTV templates')}</div>
           </div>
@@ -230,14 +231,16 @@ export default function GlobalTopNav() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                title={t(item.label)}
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition  ${
                   active
                     ? 'bg-violet-500/35 text-white shadow-sm'
                     : 'text-zinc-400 hover:bg-white/10 hover:text-zinc-100'
                 }`}
               >
-                <Icon className="h-4 w-4" />
-                {t(item.label)}
+                <Icon className="h-4 w-4 shrink-0" />
+                {/* Nine places do not fit in one row, not even on a wide screen (the bar is at most 1600 px): short names, the full name is the tooltip. */}
+                <span>{t(item.shortLabel)}</span>
               </Link>
             );
           })}
@@ -256,21 +259,12 @@ export default function GlobalTopNav() {
 
         <div className="hidden items-center gap-2 whitespace-nowrap lg:flex">
           <SyncStatusPill />
-          <span className="hidden rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs 2xl:inline font-medium uppercase tracking-[0.14em] text-zinc-400">
-            {t(modeMeta.studioLabel)}
-          </span>
 
           <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${getNavStatusClassName(modeMeta.status)}`} title={t(modeMeta.statusText)}>
             <StatusIcon className="h-3.5 w-3.5" />
             {t(getNavStatusLabel(modeMeta.status, modeMeta.statusText))}
           </span>
 
-          <Link
-            href="/library"
-            className="hidden rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100 2xl:inline-flex"
-          >
-            {t('Manage Assets')}
-          </Link>
           <UnitSwitch />
           <LanguageSwitch />
           {/* Pointless on the studio page itself. */}
