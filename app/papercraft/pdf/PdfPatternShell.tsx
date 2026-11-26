@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, FileUp, Scissors } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, FileArchive, FileUp, Image as ImageIcon, Scissors } from 'lucide-react';
 import {
   PdfReadError,
   defaultRoles,
@@ -15,15 +15,24 @@ import {
   type LineRole,
   type LineStyle,
   type PdfDocument,
+  type PdfPage,
+  type PdfStroke,
 } from '@/src/lib/papercraft-engine';
 import StudioThemeToggle from '../../components/StudioThemeToggle';
 import { useT } from '../../lib/i18n';
 import { useStudioTheme } from '../../lib/studioTheme';
 import { CheckField, NumberField, Section } from '../fields';
+import { createZip } from '../../lib/zip';
 import { downloadExportFile, exportBaseName } from '../papercraftExport';
+import { decodeJpegInBrowser } from './decodeJpeg';
 
 /** A page of lines worth showing: a page with only a handful of strokes is a cover or a page of text. */
 const MIN_LINES = 20;
+
+/** A page that is a picture: it has pictures over much of the page and hardly any lines of its own. Its lines are found by tracing. */
+const isPicturePage = (p: PdfPage) => p.pictureShare >= 0.3 && p.strokes.length < MIN_LINES;
+
+const nextFrame = () => new Promise<void>((resolve) => setTimeout(resolve, 20));
 
 /** Turn a finished PDF pattern into a cutting file: pick a page, say which lines are cuts and which are folds, download. */
 export default function PdfPatternShell() {
@@ -39,6 +48,9 @@ export default function PdfPatternShell() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  /** The lines traced from the pictures of a page, by page index. */
+  const [traced, setTraced] = useState<Record<number, PdfStroke[]>>({});
+  const [zipping, setZipping] = useState<string | null>(null);
 
   const open = useCallback(
     async (file: File) => {
@@ -50,15 +62,16 @@ export default function PdfPatternShell() {
       }
       setBusy(true);
       try {
-        const read = await readPdf(new Uint8Array(await file.arrayBuffer()));
+        const read = await readPdf(new Uint8Array(await file.arrayBuffer()), { decodeJpeg: decodeJpegInBrowser });
+        setTraced({});
         const all = new Map<string, LineStyle>();
         for (const p of read.pages) for (const s of lineStyles(p)) all.set(s.id, s);
         setRoles(defaultRoles([...all.values()]));
         setDoc(read);
         setFileName(file.name);
-        const first = read.pages.findIndex((p) => p.strokes.length >= MIN_LINES);
+        const first = read.pages.findIndex((p) => p.strokes.length >= MIN_LINES || isPicturePage(p));
         setPageIndex(Math.max(0, first));
-        if (read.pages.every((p) => p.strokes.length === 0)) setError(t('This PDF has no lines to cut: it is made of pictures. Use a PDF with vector lines.'));
+        if (read.pages.every((p) => p.strokes.length === 0 && p.pictureShare < 0.3)) setError(t('This PDF has no lines to cut: it is made of pictures. Use a PDF with vector lines.'));
       } catch (e) {
         setDoc(null);
         setError(
@@ -79,7 +92,62 @@ export default function PdfPatternShell() {
     [t],
   );
 
-  const page = doc?.pages[pageIndex] ?? null;
+  const rawPage = doc?.pages[pageIndex] ?? null;
+  // A page made of pictures has the lines that were traced from them, in place of the few it has itself.
+  const page = useMemo(() => (rawPage && traced[pageIndex] ? { ...rawPage, strokes: traced[pageIndex] } : rawPage), [rawPage, traced, pageIndex]);
+  const needsTrace = rawPage !== null && isPicturePage(rawPage) && traced[pageIndex] === undefined;
+  // While the lines of the page are not there yet, they are being traced.
+  const tracing = needsTrace;
+
+  // A page that is a picture is traced when it is opened.
+  useEffect(() => {
+    if (!doc || !needsTrace) return;
+    let cancelled = false;
+    void (async () => {
+      await nextFrame();
+      const strokes = await doc.tracePage(pageIndex);
+      if (cancelled) return;
+      setTraced((t) => ({ ...t, [pageIndex]: strokes }));
+      setRoles((r) => ({ ...defaultRoles(lineStyles({ ...doc.pages[pageIndex], strokes })), ...r }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [doc, needsTrace, pageIndex]);
+
+  /** Everything the person can download: the pages that have lines, each as a file, in one zip. Picture pages are traced first. */
+  const downloadAll = async (kind: 'svg' | 'dxf') => {
+    if (!doc) return;
+    setZipping(t('Making the files…'));
+    const files: { name: string; data: string }[] = [];
+    try {
+      for (let i = 0; i < doc.pages.length; i++) {
+        const p = doc.pages[i];
+        let strokes = traced[i];
+        if (strokes === undefined && isPicturePage(p)) {
+          await nextFrame();
+          strokes = await doc.tracePage(i);
+          setTraced((tr) => ({ ...tr, [i]: strokes! }));
+        }
+        const withLines = { ...p, strokes: strokes ?? p.strokes };
+        if (withLines.strokes.length < MIN_LINES && !strokes) continue;
+        const merged = { ...defaultRoles(lineStyles(withLines)), ...roles };
+        const drawing = patternDrawing(withLines, merged, { scalePct, crop });
+        if (drawing.cut.length + drawing.folds.length === 0) continue;
+        const name = `${exportBaseName(fileName.replace(/\.pdf$/i, '') || 'pattern')}-page-${p.number}`;
+        files.push(kind === 'svg' ? { name: `${name}-cricut.svg`, data: exportPageSvg(drawing, 'cricut') } : { name: `${name}-silhouette.dxf`, data: exportPageDxf(drawing) });
+      }
+      if (files.length === 0) {
+        setToast(t('No page has lines to make a file from.'));
+        return;
+      }
+      const base = exportBaseName(fileName.replace(/\.pdf$/i, '') || 'pattern');
+      downloadExportFile({ fileName: `${base}-${kind === 'svg' ? 'cricut' : 'silhouette'}.zip`, mime: 'application/zip', data: createZip(files) });
+      setToast(t('{count} files made.', { count: files.length }));
+    } finally {
+      setZipping(null);
+    }
+  };
   const styles = useMemo(() => (page ? lineStyles(page) : []), [page]);
   const drawing = useMemo(() => (page ? patternDrawing(page, roles, { scalePct, crop }) : null), [page, roles, scalePct, crop]);
   const preview = useMemo(() => {
@@ -156,21 +224,32 @@ export default function PdfPatternShell() {
                       type="button"
                       onClick={() => setPageIndex(i)}
                       aria-pressed={i === pageIndex}
-                      title={t('{count} lines', { count: p.strokes.length })}
-                      className={`w-full rounded-md border px-1.5 py-1.5 text-xs transition ${i === pageIndex ? 'border-violet-500 bg-violet-500/20' : 'border-[var(--studio-border)] bg-[var(--studio-well)] hover:border-violet-400/50'} ${p.strokes.length < MIN_LINES ? 'opacity-50' : ''}`}
+                      title={isPicturePage(p) ? t('A picture: its lines are traced when you open the page.') : t('{count} lines', { count: p.strokes.length })}
+                      className={`w-full rounded-md border px-1.5 py-1.5 text-xs transition ${i === pageIndex ? 'border-violet-500 bg-violet-500/20' : 'border-[var(--studio-border)] bg-[var(--studio-well)] hover:border-violet-400/50'} ${p.strokes.length < MIN_LINES && !isPicturePage(p) ? 'opacity-50' : ''}`}
                     >
                       {p.number}
-                      <span className="block text-xs text-[var(--studio-ink-subtle)]">{p.strokes.length}</span>
+                      <span className="block text-xs text-[var(--studio-ink-subtle)]">
+                        {isPicturePage(p) ? (
+                          <ImageIcon className="mx-auto h-3 w-3" aria-label={t('A picture: its lines are traced')} />
+                        ) : (
+                          p.strokes.length
+                        )}
+                      </span>
                     </button>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-[var(--studio-ink-subtle)]">{t('The number under a page is how many lines it has. Pages with few lines are covers or text.')}</p>
+              <p className="text-xs text-[var(--studio-ink-subtle)]">{t('The number under a page is how many lines it has. A picture symbol means the page is a picture: its lines are traced. Pages with few lines are covers or text.')}</p>
             </Section>
           )}
         </aside>
 
         <main aria-label={t('Preview')} className="relative min-h-[320px] min-w-0 flex-1 overflow-hidden bg-[var(--studio-well)] p-3">
+          {tracing && (
+            <p role="status" className="absolute left-5 top-5 z-10 rounded-md border border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-2 text-xs shadow">
+              {t('Tracing the lines from the picture…')}
+            </p>
+          )}
           {preview ? (
             <div className="h-full w-full rounded-md border border-[var(--studio-border)] bg-white" dangerouslySetInnerHTML={{ __html: preview }} />
           ) : (
@@ -208,6 +287,11 @@ export default function PdfPatternShell() {
               </ul>
             )}
             <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Solid lines are cut, dashed lines are scored (folded). Change any group here; the picture follows.')}</p>
+            {rawPage && traced[pageIndex] !== undefined && (
+              <p className="rounded-md border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs">
+                {t('This page is a picture, so its lines were traced from it. Check the result against the original: a very thin or faint line can be missing, and numbers and text are left out.')}
+              </p>
+            )}
           </Section>
 
           <Section title={t('Size')}>
@@ -247,7 +331,27 @@ export default function PdfPatternShell() {
               <Scissors className="h-4 w-4" aria-hidden="true" />
               {t('Download DXF for Silhouette')}
             </button>
-            <p className="text-xs text-[var(--studio-ink-subtle)]">{t('One page at a time. Check the size against a ruler before you cut: a PDF can be scaled when it was made.')}</p>
+            <button
+              type="button"
+              disabled={!doc || zipping !== null}
+              onClick={() => void downloadAll('svg')}
+              className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--studio-surface-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              title={t('Makes one SVG for every page that has lines, and puts them in one zip file.')}
+            >
+              <FileArchive className="h-4 w-4" aria-hidden="true" />
+              {zipping ?? t('All pages as SVG (zip)')}
+            </button>
+            <button
+              type="button"
+              disabled={!doc || zipping !== null}
+              onClick={() => void downloadAll('dxf')}
+              className="flex w-full items-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--studio-surface-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              title={t('Makes one DXF for every page that has lines, and puts them in one zip file.')}
+            >
+              <FileArchive className="h-4 w-4" aria-hidden="true" />
+              {t('All pages as DXF (zip)')}
+            </button>
+            <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Check the size against a ruler before you cut: a PDF can be scaled when it was made.')}</p>
             {toast && (
               <p role="status" className="text-xs text-[var(--studio-ink-secondary)]">
                 {toast}

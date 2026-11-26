@@ -193,6 +193,20 @@ ADR 0053 · Tests: `tests/papercraftSizesDetail.test.ts`.
 
 ---
 
+## Papercraft — page layout by hand, and tracing pictures (Implemented 2026-11-26)
+
+ADR 0054 and `docs/decisions/0055-papercraft-page-layout.md` · Tests: `tests/papercraftLayoutEditor.test.ts`, `tests/papercraftLayoutHelpers.test.ts`, `tests/papercraftPdfTrace.test.ts`.
+
+- [x] A part can be placed on a page and turned by hand (a pin); the others are placed round it and never over it; a pin for a part that has changed is ignored; empty pages are dropped
+- [x] A limit on parts per page and a tight packing (several orders, turns and rules; never more pages than the plain packing) are options of the layout
+- [x] Parts that stick out over the page or lie over each other are found and shown
+- [x] The Pages view lets a part be dragged (with snapping to the margin and to other parts), dropped on another page, turned, nudged with the arrow keys and moved to a page by name; the layout is saved and shared
+- [x] A pattern that is a picture is traced: outlines as closed cut lines, dashed lines (and dash-and-dot) as fold lines, numbers and photos left out, pale lines and lines split by a number handled; tiles are put together first; grey, RGB, CMYK, palette and one-bit pictures, and JPEG through a decoder
+- [x] The PDF page traces a picture page when it is opened, says so, and gives all pages as one zip of SVG or DXF
+- [ ] A traced pattern cuts right on a real machine (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

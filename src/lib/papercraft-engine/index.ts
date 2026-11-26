@@ -11,7 +11,7 @@ export { reportSolid, scaleMesh, findTinyEdges, type SolidReport, type ScaleTarg
 export { unfold, type UnfoldOptions, type UnfoldResult } from './unfold/unfold';
 export { buildPattern, buildPatternWithRule, foldKindOfEdge, patternScore, rulesToTry, UNFOLD_RULES } from './unfold/pattern';
 export { buildFoldTree, foldPoses, faceTriangles, applyMat4, multiplyMat4, rotationAboutLine, IDENTITY, type FoldTree, type FoldNode, type Mat4 } from './unfold/folding';
-export { layoutPages, transformPoint } from './layout/pack';
+export { layoutPages, layoutProblems, partBox, transformPoint, type LayoutProblem } from './layout/pack';
 export { renderPage, renderPages, type PageDrawing, type RenderOptions, type FilledShape, type TextRun } from './export/render';
 export { renderCover, type CoverContent } from './export/cover';
 export { projectModel, projectSolid, type PreviewPolygon } from './export/preview';
@@ -20,7 +20,8 @@ export { textWidthMm, wrapText, toWinAnsi } from './export/helvetica';
 export { partHue, partRgb } from './export/colors';
 export { exportPageSvg, type SvgPurpose } from './export/svg';
 export { exportPageDxf } from './export/dxf';
-export { readPdf, PdfReadError, MAX_PDF_BYTES, type PdfDocument, type PdfPage, type PdfStroke } from './pdf/read';
+export { readPdf, PdfReadError, MAX_PDF_BYTES, type PdfDocument, type PdfPage, type PdfStroke, type ReadOptions } from './pdf/read';
+export { traceLineArt, type PixelImage, type TraceOptions, type TraceResult, type TracedLine } from './pdf/trace';
 export { lineStyles, defaultRoles, patternDrawing, styleIdOf, DEFAULT_PATTERN_OPTIONS, type LineRole, type LineStyle, type PatternOptions } from './pdf/pattern';
 export { exportPdf } from './export/pdf';
 export { strokeText } from './export/strokeFont';

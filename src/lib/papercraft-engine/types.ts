@@ -228,6 +228,29 @@ export interface Placement {
   ty: number;
 }
 
+/**
+ * A part the person has put where they want it: on page `page` (0-based), turned by `rotation` radians, with the lower left corner of its
+ * box at (`x`, `y`) on the page. `w` and `h` are the size of that box when it was put there; if the part has changed since (another size, another
+ * model) the pin no longer fits it and is ignored.
+ */
+export interface PagePin {
+  page: number;
+  rotation: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface LayoutOptions {
+  /** Parts the person has placed, by part id. */
+  pins?: Readonly<Record<number, PagePin>>;
+  /** Most parts on one page for the parts that are not pinned (a page may have more when they are pinned). */
+  maxPartsPerPage?: number;
+  /** Try several orders, turns and rules and keep the layout with the fewest pages. */
+  tight?: boolean;
+}
+
 export interface Page {
   index: number;
   widthMm: number;

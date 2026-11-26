@@ -1,4 +1,4 @@
-import type { RawMesh } from '@/src/lib/papercraft-engine';
+import type { PagePin, RawMesh } from '@/src/lib/papercraft-engine';
 import { findBuiltInModel } from './papercraftModels';
 
 export type PaperPreset = 'a3' | 'a4' | 'a5' | 'letter' | 'tabloid' | 'cricut12x12' | 'cricut12x24' | 'custom';
@@ -21,6 +21,8 @@ export interface PapercraftState {
   paper: { preset: PaperPreset; marginMm: number; gapMm: number; customWidthMm: number; customHeightMm: number };
   /** How much of a built-in model's detail is kept, in percent (100 is as it is made). An imported model is simplified by its face count instead. */
   detailPct: number;
+  /** Where the person has put parts on the pages (by part id), how many parts to a page at most, and whether to pack tightly. */
+  layout: { pins: Record<number, PagePin>; maxPartsPerPage: number | null; tight: boolean };
   /** Each part in its own colour on the screen (it only tells parts apart; print and cut are not coloured). */
   colourParts: boolean;
   pattern: {
@@ -54,6 +56,7 @@ export function initialPapercraftState(): PapercraftState {
     paper: { preset: 'a4', marginMm: 10, gapMm: 3, customWidthMm: 300, customHeightMm: 400 },
     detailPct: 100,
     colourParts: false,
+    layout: { pins: {}, maxPartsPerPage: null, tight: true },
     pattern: { tabWidthMm: 8, tabAngleDeg: 45, printedSide: 'outside', numberHeightMm: 3, partLabels: true },
     cover: true,
     edits: { forceCut: [], forceJoin: [] },
@@ -79,6 +82,12 @@ export type PapercraftAction =
   | { type: 'SET_PAPER'; paper: Partial<PapercraftState['paper']> }
   | { type: 'SET_DETAIL'; pct: number }
   | { type: 'SET_COLOURS'; on: boolean }
+  /** The parts as the person has placed them (all of them, so the layout stays as it is). */
+  | { type: 'SET_PINS'; pins: Record<number, PagePin> }
+  /** Back to the program placing the parts. */
+  | { type: 'RESET_LAYOUT' }
+  | { type: 'SET_PAGE_LIMIT'; limit: number | null }
+  | { type: 'SET_TIGHT'; on: boolean }
   | { type: 'SET_PATTERN'; pattern: Partial<PapercraftState['pattern']> }
   | { type: 'SET_COVER'; cover: boolean }
   /** Click on an edge: a folded edge is cut, a cut edge is folded. `joined` is what it is now. */
@@ -106,6 +115,7 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         source: { kind: 'builtin', id: model.id },
         size: { by: 'largest', mm: model.defaultSizeMm },
         detailPct: 100,
+        layout: { ...state.layout, pins: {} },
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
         fold: 1,
@@ -118,25 +128,27 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
         source: { kind: 'file', fileName: action.fileName, mesh: action.mesh, ...(action.original ? { original: action.original } : {}) },
         size: { by: 'largest', mm: 100 },
         detailPct: 100,
+        layout: { ...state.layout, pins: {} },
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
         fold: 1,
       };
     case 'REPAIR_MESH':
       if (state.source.kind !== 'file') return state;
-      return { ...state, source: { ...state.source, mesh: action.mesh }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+      return { ...state, source: { ...state.source, mesh: action.mesh }, layout: { ...state.layout, pins: {} }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
     case 'SIMPLIFY_MESH':
       if (state.source.kind !== 'file') return state;
       return {
         ...state,
         source: { ...state.source, mesh: action.mesh, original: state.source.original ?? state.source.mesh },
+        layout: { ...state.layout, pins: {} },
         edits: { forceCut: [], forceJoin: [] },
         selectedPartId: null,
       };
     case 'RESTORE_ORIGINAL': {
       if (state.source.kind !== 'file' || !state.source.original) return state;
       const { original, ...rest } = state.source;
-      return { ...state, source: { ...rest, mesh: original }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+      return { ...state, source: { ...rest, mesh: original }, layout: { ...state.layout, pins: {} }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
     }
     case 'SET_SIZE': {
       const size = { ...state.size, ...action.size };
@@ -144,7 +156,16 @@ export function papercraftReducer(state: PapercraftState, action: PapercraftActi
       return { ...state, size, selectedPartId: null };
     }
     case 'SET_DETAIL':
-      return { ...state, detailPct: Math.min(100, Math.max(MIN_DETAIL_PCT, Math.round(action.pct))), edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+      return { ...state, detailPct: Math.min(100, Math.max(MIN_DETAIL_PCT, Math.round(action.pct))), layout: { ...state.layout, pins: {} }, edits: { forceCut: [], forceJoin: [] }, selectedPartId: null };
+    case 'SET_PINS':
+      return { ...state, layout: { ...state.layout, pins: action.pins } };
+    case 'RESET_LAYOUT':
+      return { ...state, layout: { ...state.layout, pins: {} } };
+    case 'SET_PAGE_LIMIT':
+      // A limit changes which parts go where: the program places them again.
+      return { ...state, layout: { ...state.layout, pins: {}, maxPartsPerPage: action.limit === null || !(action.limit >= 1) ? null : Math.min(50, Math.floor(action.limit)) } };
+    case 'SET_TIGHT':
+      return { ...state, layout: { ...state.layout, pins: {}, tight: action.on } };
     case 'SET_COLOURS':
       return { ...state, colourParts: action.on };
     case 'SET_PAPER':
