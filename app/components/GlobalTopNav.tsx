@@ -232,6 +232,7 @@ export default function GlobalTopNav() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 title={t(item.label)}
+                aria-label={t(item.label)}
                 className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition  ${
                   active
                     ? 'bg-violet-500/35 text-white shadow-sm'
