@@ -23,8 +23,8 @@ hole in it just gave a warning and no way out.
   imported mesh, resets the hand edits and says what it did. Closed models are already turned outward automatically.
 - **A size warning for every model:** a shortest edge under 8 mm says the model is too small to fold and glue well.
 - **Tab placement works from the tightest edge first** (an edge with little room gets it before the roomy ones fill it up) and has a last-resort
-  triangular tab. Edges that still have no room are reported (`tab-missing`): glue them edge to edge. On curved models a few edges, in the same part, have
-  no room on either side; a better choice of cuts would help and is not done.
+  triangular tab. Edges that still have no room are reported (`tab-missing`): glue them edge to edge. On curved models a few edges, in the same part, had
+  no room on either side; ADR 0042 fixed most of them.
 
 ## Not in this phase
 

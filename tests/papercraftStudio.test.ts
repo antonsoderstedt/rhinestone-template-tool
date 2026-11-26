@@ -134,14 +134,14 @@ describe('built-in models are good first models', () => {
     expect(new Set(MODELS.map((m) => m.id)).size).toBe(MODELS.length);
   });
 
-  it.each(MODELS.map((m) => [m.id, m] as const))('%s at its default size: a clean mesh, edges big enough to fold, most glue tabs fit, few enough faces', (_id, model) => {
+  it.each(MODELS.map((m) => [m.id, m] as const))('%s at its default size: a clean mesh, edges big enough to fold, every glue tab fits (or all but one), few enough faces', (_id, model) => {
     const r = computePapercraft({ ...start(), source: { kind: 'builtin', id: model.id }, size: { by: 'largest', mm: model.defaultSizeMm } });
     if (!r.ok) throw new Error('no run');
     expect(r.run.solid.warnings).toEqual([]);
-    // A few edges of a curved model have no room for a tab (the studio says to glue them edge to edge); nothing else is wrong.
-    expect(r.run.pattern.warnings.filter((w) => w.code !== 'tab-missing' && w.code !== 'tab-narrowed')).toEqual([]);
+    // Narrow tabs are fine on a curved model (the studio says so); at most one edge has no room at all for a tab.
+    expect(r.run.pattern.warnings.filter((w) => !['tab-missing', 'tab-narrowed', 'tab-very-narrow'].includes(w.code))).toEqual([]);
     const missing = r.run.pattern.warnings.find((w) => w.code === 'tab-missing')?.count ?? 0;
-    expect(missing / Math.max(1, r.run.pattern.edgePairCount)).toBeLessThanOrEqual(0.4);
+    expect(missing).toBeLessThanOrEqual(1);
     expect(describeSizeWarnings(t, r.run.solid, (mm) => `${mm} mm`)).toEqual([]);
     expect(Math.min(...r.run.solid.edges.map((e) => e.length))).toBeGreaterThanOrEqual(MIN_COMFORTABLE_EDGE_MM);
     expect(r.run.solid.faces.length).toBeLessThanOrEqual(100);

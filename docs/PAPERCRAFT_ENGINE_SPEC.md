@@ -43,13 +43,21 @@ joined part fits the limit in some rotation. Otherwise the edge stays cut. Joine
 
 `maxPartSize` for the faces is the page's usable size minus two tab widths, so tabs always fit.
 
+## Choosing the net (`buildPattern`)
+
+`unfold` takes a `weightVariant`, the rule that orders the edges: 0 long and flat first (`length * (1 + 0.5 * flatness)`), 1 long, 2 flat then long, 3 and 4 flat weighted more, 5 and 6 by edge
+number (descending, ascending), 7 short first, 8 long and bent first, 9 bent first, 10 and 11 two fixed pseudo-random orders. `buildPattern` tries `UNFOLD_RULES` (0, 1, 7, 6, 8, 5, 9, 2, 4, 3, 10, 11) in that order, as many as
+`rulesToTry(faces)` says (12 up to 150 faces, 6 up to 500, 3 up to 1 500, else 1), builds the whole pattern with each (`buildPatternWithRule`) and keeps the lowest `patternScore` (10 for each glued edge with no tab, 3 for each very narrow tab, 2 for each
+part beyond the first, 0.5 for each narrowed tab; the earlier rule wins a tie; it stops early only at a score of 0: one part, no missing, very narrow or narrowed tab). With `weightVariant` given, only that rule is used. With edges cut or joined by hand, the rule
+that won without the edits is used, so the net stays as it was. `Pattern.rule` is the rule used and `Pattern.missingTabEdgeIds` the glued edges that got no tab.
+
 ## Tabs, numbers and lines (`buildPattern`)
 
 - **Numbers.** Every cut edge with two faces is a pair and gets a number 1..N in part order (faces by id, edges in face order).
 - **Tab.** The pairs are placed from the tightest to the roomiest (room measured per pair with the faces only, before any tab is placed). For a pair, the side in the part with fewer tabs so far is tried first (ties by face id), then the other. A tab on edge P-Q
   (outward normal to the right of P to Q) is the quadrilateral P, Q, Q + w*o - d*i, P + w*o + d*i where w is the width and i = min(w / tan(a),
   0.4 * |PQ|). Tried in order: width from `tabWidthMm` down by factors of 0.75 to `minTabWidthMm`; for each width the side angle from `tabAngleDeg`
-  then 30, 20 and 12 degrees, then a triangle that comes to a point in the middle of the edge. A tab is accepted when it overlaps no face triangle and no earlier tab of the part. The first full-width
+  then 30, 20 and 12 degrees, then a triangle that comes to a point in the middle of the edge; widths go down to 0.4 times `minTabWidthMm` (at least 1.2 mm), and a tab under `minTabWidthMm` is reported as `tab-very-narrow`. A tab is accepted when it overlaps no face triangle and no earlier tab of the part. The first full-width
   tab wins; otherwise the widest found on either side; if none, `tab-missing`. Narrowed tabs give `tab-narrowed`.
 - **Folds.** Each joined edge is a fold line: `flat` when the faces differ by less than 0.5 degrees; otherwise mountain or valley. Seen from
   the printed side a convex corner (ridge toward the viewer) is a mountain fold, a concave corner a valley fold; `printedSide: 'inside'`
