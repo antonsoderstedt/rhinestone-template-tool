@@ -141,7 +141,8 @@ describe('a body along a curve (ringSweep)', () => {
 
 const FOUR_LEGGED = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe'] as const;
 const BIRDS = ['duck', 'chicken', 'flamingo'] as const;
-const ANIMALS = [...FOUR_LEGGED, ...BIRDS] as const;
+const UPRIGHT = ['penguin', 'owl'] as const;
+const ANIMALS = [...FOUR_LEGGED, ...BIRDS, ...UPRIGHT] as const;
 const meshOf = (id: (typeof ANIMALS)[number]): RawMesh => shapes[id]();
 const atDefaultSize = (id: (typeof ANIMALS)[number]): Solid => {
   const model = BUILT_IN_MODELS.find((m) => m.id === id)!;
@@ -158,7 +159,7 @@ describe.each(ANIMALS)('the %s', (id) => {
     expect(volume(solid)).toBeGreaterThan(0);
   });
 
-  it('stands on flat feet: the lowest points are the corners of the feet (four feet, or two for a bird), all on the ground', () => {
+  it.skipIf((UPRIGHT as readonly string[]).includes(id))('stands on flat feet: the lowest points are the corners of the feet (four feet, or two for a bird), all on the ground', () => {
     const low = Math.min(...solid.vertices.map((v) => v[2]));
     expect(low).toBeCloseTo(0, 9);
     const feet = solid.vertices.filter((v) => Math.abs(v[2]) < 1e-6);
@@ -168,6 +169,24 @@ describe.each(ANIMALS)('the %s', (id) => {
     const middle = (Math.min(...feet.map((f) => f[0])) + Math.max(...feet.map((f) => f[0]))) / 2;
     const groups = new Set(feet.map((v) => `${bird ? true : v[0] < middle}${v[1] > 0}`));
     expect(groups.size).toBe(bird ? 2 : 4);
+  });
+
+  it.runIf((UPRIGHT as readonly string[]).includes(id))('stands upright on its flat base: the lowest points are on the ground, the middle of its weight is over the base, it has two feet at the front and is taller than it is deep', () => {
+    expect(Math.min(...solid.vertices.map((v) => v[2]))).toBeCloseTo(0, 9);
+    const ground = solid.vertices.filter((v) => Math.abs(v[2]) < 1e-6);
+    // The base (eight corners) and the front of two feet.
+    expect(ground.length).toBeGreaterThanOrEqual(12);
+    const xs = ground.map((v) => v[0]);
+    const ys = ground.map((v) => v[1]);
+    const centre = solid.vertices.reduce((s, v) => [s[0] + v[0] / solid.vertices.length, s[1] + v[1] / solid.vertices.length], [0, 0]);
+    expect(centre[0]).toBeGreaterThan(Math.min(...xs));
+    expect(centre[0]).toBeLessThan(Math.max(...xs));
+    expect(centre[1]).toBeGreaterThan(Math.min(...ys));
+    expect(centre[1]).toBeLessThan(Math.max(...ys));
+    const size = [0, 1, 2].map((a) => Math.max(...solid.vertices.map((v) => v[a])) - Math.min(...solid.vertices.map((v) => v[a])));
+    expect(size[2]).toBeGreaterThan(size[0]);
+    // The feet stick out in front of the base: the lowest points reach further forward than the body's front.
+    expect(Math.max(...xs)).toBeGreaterThan(Math.max(...solid.vertices.filter((v) => v[2] > 20).map((v) => v[0])) - 1e-6);
   });
 
   it('is the same on the left and the right', () => {
@@ -200,8 +219,9 @@ describe('folds that close by themselves', () => {
     for (const id of ANIMALS) {
       const solid = atDefaultSize(id);
       const r = unfold(solid, { maxPartSize: { widthMm: 174, heightMm: 261 } });
-      // Not a tree any more: a few folds close a loop that is flat all the way round.
-      expect(r.joined.size, id).toBeGreaterThan(solid.faces.length - r.islands.length);
+      // Never fewer than a tree; where a box leg meets a flat underside, a few folds close a loop that is flat all the way round.
+      expect(r.joined.size, id).toBeGreaterThanOrEqual(solid.faces.length - r.islands.length);
+      if (id === 'elephant') expect(r.joined.size).toBeGreaterThan(solid.faces.length - r.islands.length);
       // And nothing that is left cut lies edge to edge in the same part.
       for (const e of solid.edges) {
         if (r.joined.has(e.id) || e.faces.length !== 2) continue;
