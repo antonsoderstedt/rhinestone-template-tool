@@ -417,7 +417,8 @@ describe('repairing an imported model', () => {
 describe('texts in both languages', () => {
   it('the built-in model names and descriptions are translated', () => {
     for (const m of BUILT_IN_MODELS) {
-      if (m.name !== 'Pyramid' && m.name !== 'Cube') expect(sv(m.name), m.name).not.toBe(m.name);
+      // Some names are the same word in Swedish.
+      if (!['Pyramid', 'Cube', 'Flamingo'].includes(m.name)) expect(sv(m.name), m.name).not.toBe(m.name);
       expect(sv(m.description), m.id).not.toBe(m.description);
     }
   });
