@@ -128,6 +128,19 @@ ADR 0043 · Tests: `tests/papercraftSimplify.test.ts`, "simplifying a heavy mode
 
 ---
 
+## Papercraft — animals with legs and folds that close (Implemented 2026-11-26)
+
+ADR 0044 and 0045 · Tests: `tests/papercraftAnimals.test.ts`, "built-in models are good first models" in `tests/papercraftStudio.test.ts`.
+
+- [x] A limb grown out of a face gives one closed solid (Euler number 2, no face split, the volume of the body plus the tube); several steps can bend and shrink; faces that do not exist, no steps, a scale of 0, a face twice or two faces that touch are refused
+- [x] A body along a curve with any cross-section keeps a flat face between two sections as one four-sided face and a face that is not flat as two triangles; a section can be a box where the others have eight corners
+- [x] Dog, cat, pig, horse, elephant and giraffe are closed solids with nothing to warn about, the same left and right, standing on four flat feet (16 corners on the ground), and are in the list of models under Animals
+- [x] At its default size each animal has at most 100 faces, no edge under 8 mm and at most one glued edge with no room for a tab
+- [x] A cut edge whose two faces already lie edge to edge in the same part becomes a fold (no tab, no number); a model with no such corner unfolds as before; no part overlaps itself; an edge cut by hand stays cut; the net lies flat when unfolded and folds up to the finished model
+- [ ] An animal built on real paper stands, holds its weight and looks like the animal (needs the owner)
+
+---
+
 ## Phase 16 — Canvas Pen Tool + Full-Tool Audit Fixes (Implemented)
 
 - [x] Fill's default "offset-grid" pattern advances rows by the hexagonal close-pack pitch (`spacingMm * sqrt(3)/2`), matching `docs/RHINESTONE_ENGINE_SPEC.md`'s "Grid Generation" section, instead of a full `spacingMm` that left visible gaps

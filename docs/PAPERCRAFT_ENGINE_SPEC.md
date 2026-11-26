@@ -41,6 +41,10 @@ convex triangles, bounding-box prefilter, touching within 1e-4 mm is not overlap
 joined part fits the limit in some rotation. Otherwise the edge stays cut. Joined edges form a spanning forest, so
 `joined edges = faces - parts`. Edges within one part that are not joined are cut and glued.
 
+Then one more fold is made wherever it costs nothing (ADR 0045): a cut edge, not forced cut and with two faces, whose two faces are in the same part and already lie on the same place
+(both ends within 1e-6 mm) becomes a fold. That happens at a corner where the faces around it add up to 360 degrees (a box leg on a flat underside). Nothing moves. For a model with no such corner
+`joined edges = faces - parts` still holds; otherwise `joined edges` is larger and a part is a tree of faces with a few folds that close loops. `buildFoldTree` skips an edge that closes a loop.
+
 `maxPartSize` for the faces is the page's usable size minus two tab widths, so tabs always fit.
 
 ## Choosing the net (`buildPattern`)
@@ -107,10 +111,20 @@ owner cut or join an edge and to build the hinge tree.
 Generators (all in `mesh/shapes.ts`, sizes in mm, scaled by the studio): `lathe(profile, segments)`, `extrude(outline, depth)` (outline in any winding), `sweep(sections,
 sides)`: a ring of `sides` corners at every section of a curve in the x-z plane (x forward, z up), the ring standing across the curve with the sideways direction fixed
 as y; `top` and `bottom` stretch the top or bottom corner of a section (a fin; needs a multiple of 4 sides); both ends are a point (width and height 0) or a flat cap; four-sided
-rings of triangles where the corners are not flat. Named models: `vase`, `bottle`, `lantern`, `egg`, `rocket`, `house`, `heartBox`, `starBox`, `fish`, `swan`, `gem`, and the solids of ADR 0037.
+rings of triangles where the corners are not flat. Named models: `vase`, `bottle`, `lantern`, `egg`, `rocket`, `house`, `heartBox`, `starBox`, `fish`, `swan`, `gem`, the animals with legs below, and the solids of ADR 0037.
 `fillHoles(mesh, maxLoopSize = 400)` cleans the mesh, follows each loop of open edges in the direction the faces run along it, and caps it with the loop reversed: one polygon when the
 loop is flat (deviation under 2 % of the square root of its area) and triangles around its centre otherwise; it returns the new mesh with the number of holes `filled` and `skipped`.
 `flipFaces(mesh)` reverses every face. `boundaryLoops(solid)` lists the loops. `projectSolid(solid, colourOf)` draws a solid without unfolding it (for the pictures in the model list).
+
+Limbs and animals (ADR 0044, `mesh/limbs.ts`, `mesh/animals.ts`). `extrudeFaces(mesh, [{ face, steps: [{ by, scale }] }])` takes each listed face away and grows a tube out of its edges: one ring per step, a copy of the ring
+before it moved by `by` (from the centre of that ring) and scaled by `scale` about its own centre, a wall of flat four-sided faces between two rings, the last ring closed. A wall that runs along an edge of the removed face
+goes the same way along that edge, so the walls join the faces next to the hole and the result is closed. It throws a `RangeError` for a face that does not exist, no steps, a scale of 0 or less, a face used twice, or two faces that share a corner.
+`ringSweep(sections, profile)` is `sweep` with any cross-section: `sections` are `{ x, z, width, height, tilt?, profile? }` along a curve in the x-z plane, `profile` lists the corners as [sideways, up] between -1 and 1 counter-clockwise
+seen from the front with y to the right. The ring of a section stands across the curve (the direction from the section before to the section after, or `tilt` radians above the x axis when given); a section's own `profile` must have as
+many corners, and corners next to each other that are the same point share one vertex. A face between two sections is one four-sided face when its four corners are flat (to 1e-9) and two triangles when not; `quad(p, i)` gives
+the index of the flat face between section p and p + 1 at profile edge i. The two ends are flat faces (`startCap`, `endCap`). `buildAnimal(spec)` makes the body from `sections` with an eight-corner profile (two flat pads and a flat belly,
+a side and a shoulder on each side, a flat top; pads from `pad[0]` to `pad[1]` of the half width), then grows the legs from the pads of a pair of sections (left and right, the last step reaching z = 0), the ears from the shoulder or side faces, a
+tail from the rear end and a nose or trunk from the front end; `boxRear` and `boxFront` make the end sections boxes. Named animals: `dog`, `cat`, `pig`, `horse`, `elephant`, `giraffe`.
 
 ## Simplifying (`simplifyMesh`)
 

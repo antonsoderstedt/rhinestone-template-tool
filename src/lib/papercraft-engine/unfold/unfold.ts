@@ -20,7 +20,10 @@ export interface UnfoldResult {
   /** Parts as lists of face ids, largest first. */
   islands: number[][];
   islandOf: number[];
-  /** Edge ids that are folded (joined) rather than cut. */
+  /**
+   * Edge ids that are folded (joined) rather than cut: the edges that joined the parts, and the edges between two faces that already lie
+   * edge to edge in the same part (see `unfold`). So a part is a tree of faces, plus a few extra folds where the surface is flat all around a corner.
+   */
   joined: Set<number>;
   /** Forced joins that were dropped because the part would overlap itself or get too big. */
   rejectedForcedJoins: number[];
@@ -38,6 +41,11 @@ const boundsDisjoint = (a: Bounds, b: Bounds, eps: number) =>
  * worth keeping joined (long, nearly flat) to the least; two parts are joined across an edge when the joined
  * part has no overlap and fits the size limit. That gives a spanning forest of the faces with no overlap by
  * construction. The result is deterministic: same solid and options give the same parts.
+ *
+ * Then one more fold is added wherever it costs nothing: a cut edge whose two faces already lie edge to edge in the same part. That happens
+ * at a corner where the faces around it add up to 360 degrees (a leg of a box meeting a flat underside): going round the corner through the
+ * other faces brings the two faces back to the same place. Joining them changes nothing in the net, and saves a glue tab that would not fit
+ * anyway, because the neighbour is where the tab would go.
  */
 export function unfold(solid: Solid, options: UnfoldOptions = {}): UnfoldResult {
   const faceCount = solid.faces.length;
@@ -175,6 +183,16 @@ export function unfold(solid: Solid, options: UnfoldOptions = {}): UnfoldResult 
     }
     members[moveIsland] = [];
     joined.add(edge.id);
+  }
+
+  // A corner that is flat all around closes by itself: the two faces are already edge to edge, so the edge is a fold, not a seam.
+  const FLUSH = 1e-6;
+  for (const edge of candidates) {
+    if (joined.has(edge.id)) continue;
+    const [fa, fb] = edge.faces;
+    if (islandOf[fa] !== islandOf[fb]) continue;
+    const at = (f: number, v: number): Vec2 => placed[f][solid.faces[f].vertices.indexOf(v)];
+    if ([edge.a, edge.b].every((v) => Math.hypot(at(fa, v)[0] - at(fb, v)[0], at(fa, v)[1] - at(fb, v)[1]) < FLUSH)) joined.add(edge.id);
   }
 
   const islands = members

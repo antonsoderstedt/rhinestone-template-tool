@@ -1352,5 +1352,17 @@
   "faces": "ytor",
   "Simplify": "Förenkla",
   "Simplifying…": "Förenklar…",
-  "Use the original": "Använd originalet"
+  "Use the original": "Använd originalet",
+  "A dog on four legs, with a tail and pointed ears.": "En hund på fyra ben, med svans och spetsiga öron.",
+  "A cat with a long tail and pointed ears.": "En katt med lång svans och spetsiga öron.",
+  "A pig with a snout, floppy ears and short legs.": "En gris med tryne, hängande öron och korta ben.",
+  "A horse with a long neck and thin legs.": "En häst med lång hals och smala ben.",
+  "An elephant with big ears and a trunk.": "En elefant med stora öron och snabel.",
+  "A giraffe with a very long neck.": "En giraff med mycket lång hals.",
+  "Dog": "Hund",
+  "Cat": "Katt",
+  "Pig": "Gris",
+  "Horse": "Häst",
+  "Elephant": "Elefant",
+  "Giraffe": "Giraff"
 }

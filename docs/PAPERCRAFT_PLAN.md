@@ -1,6 +1,6 @@
 # Papercraft studio: plan
 
-**Status:** Phases 0 to 5 done (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); what is left is under "Later" below · **Date:** 2026-11-25
+**Status:** Phases 0 to 5 done (ADR 0037 to 0041, `docs/PAPERCRAFT_ENGINE_SPEC.md`, the engine, the studio at `/papercraft`, the PDF cover page, twenty built-in models, repair of imported models, and saving, sharing and syncing of models); simplifying of heavy models (ADR 0043); animals with legs (ADR 0044) and folds that close by themselves (ADR 0045); what is left is under "Later" below · **Date:** 2026-11-25
 
 A third studio next to Rhinestone and HTV: make 3D paper models from low-poly meshes, then **print** the patterns or **cut and score**
 them with a cutting machine, and fold and glue.
@@ -79,7 +79,7 @@ Saved models in My Designs and sync, Swedish, phone layout, share link, version 
 
 ### Later
 Import finished PDF patterns as cut files (read lines from the PDF), shapes from the tool's 2D shapes (extrude, lathe), coloured faces with print-then-cut,
-Silhouette DXF, slot-together models (no glue). (Simplifying a heavy model to low-poly is done: ADR 0043.)
+Silhouette DXF, slot-together models (no glue), animals on two legs (a bird) and with horns or a mane. (Simplifying a heavy model to low-poly is done: ADR 0043; four-legged animals: ADR 0044.)
 
 ## Risks and open points
 
@@ -88,6 +88,7 @@ Silhouette DXF, slot-together models (no glue). (Simplifying a heavy model to lo
 - **Cutting** has not been tried: Design Space scoring, the usable mat area, and tab and fold tolerances need physical test sheets.
 - **Numbers** as outlined paths (Design Space handles text poorly) on a draw or print layer; to be confirmed.
 - **Mountain or valley** depends on which side of the paper faces out; one setting, checked on the cube.
+- **Animals with legs** are blocky and rated expert (about 90 faces, 100 glued edges); whether the legs of a big one hold, and whether the small tab at a tail tip is workable, is not known until one is built.
 - **Model quality** from the user's own files: open, non-manifold or very dense meshes get warnings; dense meshes are simplified when they are imported (ADR 0043).
 
 ## First milestone (shows something real)

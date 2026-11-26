@@ -44,6 +44,12 @@ export const BUILT_IN_MODELS: readonly BuiltInModel[] = [
 
   { id: 'fish', name: 'Fish', description: 'A fish with a fin on its back and a tail.', group: 'animals', defaultSizeMm: 100, mesh: () => shapes.fish() },
   { id: 'swan', name: 'Swan', description: 'A swan with a curved neck.', group: 'animals', defaultSizeMm: 120, mesh: () => shapes.swan() },
+  { id: 'dog', name: 'Dog', description: 'A dog on four legs, with a tail and pointed ears.', group: 'animals', defaultSizeMm: 240, mesh: () => shapes.dog() },
+  { id: 'cat', name: 'Cat', description: 'A cat with a long tail and pointed ears.', group: 'animals', defaultSizeMm: 200, mesh: () => shapes.cat() },
+  { id: 'pig', name: 'Pig', description: 'A pig with a snout, floppy ears and short legs.', group: 'animals', defaultSizeMm: 210, mesh: () => shapes.pig() },
+  { id: 'horse', name: 'Horse', description: 'A horse with a long neck and thin legs.', group: 'animals', defaultSizeMm: 280, mesh: () => shapes.horse() },
+  { id: 'elephant', name: 'Elephant', description: 'An elephant with big ears and a trunk.', group: 'animals', defaultSizeMm: 200, mesh: () => shapes.elephant() },
+  { id: 'giraffe', name: 'Giraffe', description: 'A giraffe with a very long neck.', group: 'animals', defaultSizeMm: 320, mesh: () => shapes.giraffe() },
 ];
 
 export function findBuiltInModel(id: string): BuiltInModel | undefined {
