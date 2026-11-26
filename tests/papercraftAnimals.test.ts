@@ -139,11 +139,12 @@ describe('a body along a curve (ringSweep)', () => {
   });
 });
 
-const FOUR_LEGGED = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe'] as const;
+const FOUR_LEGGED = ['dog', 'cat', 'pig', 'horse', 'elephant', 'giraffe', 'frog'] as const;
 const BIRDS = ['duck', 'chicken', 'flamingo'] as const;
 const UPRIGHT = ['penguin', 'owl'] as const;
 const HORNED = ['unicorn', 'deer', 'lion', 'rhino', 'bull'] as const;
-const ANIMALS = [...FOUR_LEGGED, ...BIRDS, ...UPRIGHT, ...HORNED] as const;
+const SWIMMERS = ['shark', 'dolphin'] as const;
+const ANIMALS = [...FOUR_LEGGED, ...BIRDS, ...UPRIGHT, ...HORNED, ...SWIMMERS] as const;
 const meshOf = (id: (typeof ANIMALS)[number]): RawMesh => shapes[id]();
 const atDefaultSize = (id: (typeof ANIMALS)[number]): Solid => {
   const model = BUILT_IN_MODELS.find((m) => m.id === id)!;
@@ -160,7 +161,7 @@ describe.each(ANIMALS)('the %s', (id) => {
     expect(volume(solid)).toBeGreaterThan(0);
   });
 
-  it.skipIf((UPRIGHT as readonly string[]).includes(id))('stands on flat feet: the lowest points are the corners of the feet (four feet, or two for a bird), all on the ground', () => {
+  it.skipIf((UPRIGHT as readonly string[]).includes(id) || (SWIMMERS as readonly string[]).includes(id))('stands on flat feet: the lowest points are the corners of the feet (four feet, or two for a bird), all on the ground', () => {
     const low = Math.min(...solid.vertices.map((v) => v[2]));
     expect(low).toBeCloseTo(0, 9);
     const feet = solid.vertices.filter((v) => Math.abs(v[2]) < 1e-6);
@@ -188,6 +189,18 @@ describe.each(ANIMALS)('the %s', (id) => {
     expect(size[2]).toBeGreaterThan(size[0]);
     // The feet stick out in front of the base: the lowest points reach further forward than the body's front.
     expect(Math.max(...xs)).toBeGreaterThan(Math.max(...solid.vertices.filter((v) => v[2] > 20).map((v) => v[0])) - 1e-6);
+  });
+
+  it.runIf((SWIMMERS as readonly string[]).includes(id))('lies on its flat belly: the lowest points are on the ground, there are enough of them to rest on, and the middle of its weight is over them', () => {
+    expect(Math.min(...solid.vertices.map((v) => v[2]))).toBeCloseTo(0, 9);
+    const ground = solid.vertices.filter((v) => Math.abs(v[2]) < 1e-6);
+    expect(ground.length).toBeGreaterThanOrEqual(4);
+    const centre = solid.vertices.reduce((s, v) => [s[0] + v[0] / solid.vertices.length, s[1] + v[1] / solid.vertices.length], [0, 0]);
+    expect(centre[0]).toBeGreaterThan(Math.min(...ground.map((v) => v[0])));
+    expect(centre[0]).toBeLessThan(Math.max(...ground.map((v) => v[0])));
+    // Longer than it is tall, as a swimmer is.
+    const size = [0, 1, 2].map((a) => Math.max(...solid.vertices.map((v) => v[a])) - Math.min(...solid.vertices.map((v) => v[a])));
+    expect(size[0]).toBeGreaterThan(size[2]);
   });
 
   it('is the same on the left and the right', () => {

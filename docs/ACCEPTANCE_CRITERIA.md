@@ -140,6 +140,7 @@ ADR 0044 and 0045 · Tests: `tests/papercraftAnimals.test.ts`, "built-in models 
 - [x] Duck, chicken and flamingo (ADR 0046) stand on two flat feet (8 corners on the ground) and pass the same checks
 - [x] Penguin and owl (ADR 0047) stand upright on a flat base with two feet at the front and pass the same checks
 - [x] Unicorn, deer, lion, rhino and bull (ADR 0048) have horns, a mane or tufts and pass the same checks; two limbs on faces that touch are refused
+- [x] Frog, dolphin and shark (ADR 0052) pass the same checks; the swimmers lie on a flat belly
 - [ ] An animal built on real paper stands, holds its weight and looks like the animal (needs the owner)
 
 ---

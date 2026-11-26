@@ -1436,5 +1436,11 @@
   "{width} × {height} mm, {cuts} cut lines, {scores} score lines": "{width} × {height} mm, {cuts} skärlinjer, {scores} räfflingslinjer",
   "One page at a time. Check the size against a ruler before you cut: a PDF can be scaled when it was made.": "En sida i taget. Kontrollera storleken mot en linjal innan du skär: en PDF kan ha skalats när den gjordes.",
   "Download": "Ladda ner",
-  "Have a finished PDF pattern? Make a cutting file from it": "Har du ett färdigt PDF-mönster? Gör en skärfil av det"
+  "Have a finished PDF pattern? Make a cutting file from it": "Har du ett färdigt PDF-mönster? Gör en skärfil av det",
+  "A crouching frog with folded hind legs and eyes on top.": "En hukande groda med hopvikta bakben och ögon på toppen.",
+  "A dolphin with a long beak, flippers and a flat tail.": "En delfin med lång nos, fenor och platt stjärt.",
+  "A shark with a tall dorsal fin and a big tail.": "En haj med hög ryggfena och stor stjärt.",
+  "Frog": "Groda",
+  "Dolphin": "Delfin",
+  "Shark": "Haj"
 }
