@@ -26,6 +26,17 @@ export interface DrawItem {
   page: number;
   /** The points are control points of a smooth curve that runs through them (a cut or a fold line with at least three points), not corners. */
   smooth?: boolean;
+  /**
+   * A Bézier curve: one pair of handles for each point (so as many as `points`), which makes each piece of the line between two points a cubic Bézier
+   * curve. A point whose handles are both zero is a corner. An item with handles is not `smooth`.
+   */
+  handles?: BezierHandle[];
+}
+
+/** The two control points of a point on a Bézier curve, as distances from the point in millimetres: `in` is on the side the line comes from, `out` on the side it goes to. */
+export interface BezierHandle {
+  in: Vec2;
+  out: Vec2;
 }
 
 /** What is given to make an item: the id is made here, and the page is the first unless it is said. */
@@ -131,12 +142,68 @@ export function boundsOf(items: readonly DrawItem[]): { minX: number; minY: numb
 
 // ─── Curves ───────────────────────────────────────────────────────────────────
 
+/** True for an item whose line is not straight between its points: a smooth curve through them, or a Bézier curve with handles. */
+export const isCurved = (item: Pick<DrawItem, 'smooth' | 'handles'>): boolean => item.smooth === true || item.handles !== undefined;
+
+const hasHandle = (h: BezierHandle): boolean => h.in[0] !== 0 || h.in[1] !== 0 || h.out[0] !== 0 || h.out[1] !== 0;
+
+/** The handles that make a Bézier curve pass through the points the way a smooth curve does (a Catmull-Rom spline), so a smooth item can be edited with handles and keep its shape. */
+export function autoHandles(points: readonly Vec2[], closed: boolean): BezierHandle[] {
+  const n = points.length;
+  if (n < 2) return points.map(() => ({ in: [0, 0], out: [0, 0] }));
+  const at = (i: number): Vec2 => {
+    if (closed) return points[((i % n) + n) % n]!;
+    if (i < 0) return [2 * points[0]![0] - points[1]![0], 2 * points[0]![1] - points[1]![1]];
+    if (i >= n) return [2 * points[n - 1]![0] - points[n - 2]![0], 2 * points[n - 1]![1] - points[n - 2]![1]];
+    return points[i]!;
+  };
+  return points.map((_, i): BezierHandle => {
+    const a = at(i - 1);
+    const b = at(i + 1);
+    const out: Vec2 = [round((b[0] - a[0]) / 6), round((b[1] - a[1]) / 6)];
+    // `0 - n` keeps a zero as 0 (not -0), so a saved and opened drawing is equal to the one that was saved.
+    return { in: [0 - out[0], 0 - out[1]], out };
+  });
+}
+
+/** The pieces of a Bézier line, cut into straight pieces about a millimetre long. A piece with no handle at either end is a straight line. */
+function flattenBezier(points: readonly Vec2[], handles: readonly BezierHandle[], closed: boolean): Vec2[] {
+  const n = points.length;
+  const segments = closed ? n : n - 1;
+  const out: Vec2[] = [];
+  for (let i = 0; i < segments; i++) {
+    const a = points[i]!;
+    const j = (i + 1) % n;
+    const b = points[j]!;
+    const ho = handles[i]!.out;
+    const hi = handles[j]!.in;
+    out.push([a[0], a[1]]);
+    if (ho[0] === 0 && ho[1] === 0 && hi[0] === 0 && hi[1] === 0) continue;
+    const c1: Vec2 = [a[0] + ho[0], a[1] + ho[1]];
+    const c2: Vec2 = [b[0] + hi[0], b[1] + hi[1]];
+    const length = Math.hypot(c1[0] - a[0], c1[1] - a[1]) + Math.hypot(c2[0] - c1[0], c2[1] - c1[1]) + Math.hypot(b[0] - c2[0], b[1] - c2[1]);
+    const steps = Math.min(80, Math.max(6, Math.ceil(length)));
+    for (let k = 1; k < steps; k++) {
+      const t = k / steps;
+      const m = 1 - t;
+      const w0 = m * m * m;
+      const w1 = 3 * m * m * t;
+      const w2 = 3 * m * t * t;
+      const w3 = t * t * t;
+      out.push([round(w0 * a[0] + w1 * c1[0] + w2 * c2[0] + w3 * b[0]), round(w0 * a[1] + w1 * c1[1] + w2 * c2[1] + w3 * b[1])]);
+    }
+  }
+  if (!closed) out.push([points[n - 1]![0], points[n - 1]![1]]);
+  return out;
+}
+
 /**
- * The points a smooth item is drawn and cut along: a centripetal Catmull-Rom curve through its control points (closed for a closed shape),
+ * The points a curved item is drawn and cut along. A Bézier item (with handles) is its cubic Bézier pieces. A smooth item is a centripetal Catmull-Rom curve through its control points (closed for a closed shape),
  * cut into short straight pieces about a millimetre long (a cutter or an SVG path takes straight pieces). A straight item is its own points.
  */
-export function flattenItem(item: Pick<DrawItem, 'points' | 'closed' | 'smooth'>): Vec2[] {
+export function flattenItem(item: Pick<DrawItem, 'points' | 'closed' | 'smooth' | 'handles'>): Vec2[] {
   const raw = item.points;
+  if (item.handles && item.handles.length === raw.length && raw.length >= 2) return flattenBezier(raw, item.handles, item.closed);
   if (!item.smooth || raw.length < 3) return raw.map((p): Vec2 => [p[0], p[1]]);
   // Points on top of each other would make the curve undefined.
   const pts: Vec2[] = [];
@@ -228,7 +295,23 @@ export function cleanItem(item: Omit<DrawItem, 'page'> & { page?: number }): Dra
   }
   const closed = kind === 'cut' && item.closed === true && points.length >= 3;
   if (points.length < 2) return null;
-  return { id, kind, page, points, closed, ...(item.smooth === true && points.length >= 3 ? { smooth: true } : {}) };
+  const handles = cleanHandles(item.handles, points.length);
+  // Handles make a Bézier curve; the smooth flag is only for the other kind of curve.
+  return { id, kind, page, points, closed, ...(handles ? { handles } : item.smooth === true && points.length >= 3 ? { smooth: true } : {}) };
+}
+
+/** The handles of an item, with every number in range; undefined when there are none or they do not fit the points (one pair for each). */
+function cleanHandles(raw: unknown, count: number): BezierHandle[] | undefined {
+  if (!Array.isArray(raw) || raw.length !== count) return undefined;
+  const offset = (v: unknown): Vec2 | null => (Array.isArray(v) && finite(v[0]) && finite(v[1]) ? [round(clampCoord(v[0])), round(clampCoord(v[1]))] : null);
+  const out: BezierHandle[] = [];
+  for (const h of raw) {
+    const a = h && typeof h === 'object' ? offset((h as BezierHandle).in) : null;
+    const b = h && typeof h === 'object' ? offset((h as BezierHandle).out) : null;
+    if (!a || !b) return undefined;
+    out.push({ in: a, out: b });
+  }
+  return out;
 }
 
 // ─── Operations ───────────────────────────────────────────────────────────────
@@ -323,9 +406,11 @@ export function rotateItems(doc: DrawDoc, ids: readonly number[], degrees: numbe
   const a = (degrees * Math.PI) / 180;
   const cos = Math.cos(a);
   const sin = Math.sin(a);
+  const turnOffset = (o: Vec2): Vec2 => [o[0] * cos - o[1] * sin, o[0] * sin + o[1] * cos];
   return mapItems(doc, ids, (i) => ({
     ...i,
     points: i.points.map((p): Vec2 => [c[0] + (p[0] - c[0]) * cos - (p[1] - c[1]) * sin, c[1] + (p[0] - c[0]) * sin + (p[1] - c[1]) * cos]),
+    ...(i.handles ? { handles: i.handles.map((h): BezierHandle => ({ in: turnOffset(h.in), out: turnOffset(h.out) })) } : {}),
     ...(i.kind === 'text' ? { angleDeg: (i.angleDeg ?? 0) + degrees } : {}),
   }));
 }
@@ -334,14 +419,24 @@ export function rotateItems(doc: DrawDoc, ids: readonly number[], degrees: numbe
 export function mirrorItems(doc: DrawDoc, ids: readonly number[], axis: 'horizontal' | 'vertical'): DrawDoc {
   const c = centreOf(doc, ids);
   if (!c) return doc;
-  return mapItems(doc, ids, (i) => ({ ...i, points: i.points.map((p): Vec2 => (axis === 'horizontal' ? [2 * c[0] - p[0], p[1]] : [p[0], 2 * c[1] - p[1]])) }));
+  const flip = (o: Vec2): Vec2 => (axis === 'horizontal' ? [-o[0], o[1]] : [o[0], -o[1]]);
+  return mapItems(doc, ids, (i) => ({
+    ...i,
+    points: i.points.map((p): Vec2 => (axis === 'horizontal' ? [2 * c[0] - p[0], p[1]] : [p[0], 2 * c[1] - p[1]])),
+    ...(i.handles ? { handles: i.handles.map((h): BezierHandle => ({ in: flip(h.in), out: flip(h.out) })) } : {}),
+  }));
 }
 
 /** Scales the items together about the middle of their bounding box. */
 export function scaleItems(doc: DrawDoc, ids: readonly number[], factor: number): DrawDoc {
   const c = centreOf(doc, ids);
   if (!c || !finite(factor) || factor <= 0) return doc;
-  return mapItems(doc, ids, (i) => ({ ...i, points: i.points.map((p): Vec2 => [c[0] + (p[0] - c[0]) * factor, c[1] + (p[1] - c[1]) * factor]) }));
+  const grow = (o: Vec2): Vec2 => [o[0] * factor, o[1] * factor];
+  return mapItems(doc, ids, (i) => ({
+    ...i,
+    points: i.points.map((p): Vec2 => [c[0] + (p[0] - c[0]) * factor, c[1] + (p[1] - c[1]) * factor]),
+    ...(i.handles ? { handles: i.handles.map((h): BezierHandle => ({ in: grow(h.in), out: grow(h.out) })) } : {}),
+  }));
 }
 
 /** Copies of the items, moved by (dx, dy). Returns the new document and the ids of the copies. */
@@ -367,11 +462,79 @@ export function flipFolds(doc: DrawDoc, ids: readonly number[]): DrawDoc {
 export function setSmooth(doc: DrawDoc, ids: readonly number[], smooth: boolean): DrawDoc {
   return mapItems(doc, ids, (i) => {
     if (i.kind === 'text' || i.points.length < 3) return i;
-    // Straight is no flag at all, so an item is either smooth or has no `smooth` (never `false`).
-    const { smooth: _was, ...rest } = i;
+    // Straight is no flag at all, so an item is either smooth or has no `smooth` (never `false`). An item with handles stops being a Bézier curve.
+    const { smooth: _was, handles: _handles, ...rest } = i;
     void _was;
+    void _handles;
     return smooth ? { ...rest, smooth: true } : rest;
   });
+}
+
+/**
+ * Makes items Bézier curves, with a pair of handles at each point, or takes the handles away (the line is then straight between the points again).
+ * A smooth item keeps its shape (its handles are the ones that give the same curve); a straight item gets handles of length zero, so it keeps its
+ * corners until a handle is pulled out of one (`toggleCorner` gives a point its handles). A text stays as it is.
+ */
+export function setBezier(doc: DrawDoc, ids: readonly number[], on: boolean): DrawDoc {
+  return mapItems(doc, ids, (i) => {
+    if (i.kind === 'text' || i.points.length < 2) return i;
+    const { smooth: _was, handles: _handles, ...rest } = i;
+    void _was;
+    void _handles;
+    if (!on) return rest;
+    if (i.handles) return i;
+    return { ...rest, handles: i.smooth ? autoHandles(i.points, i.closed) : i.points.map((): BezierHandle => ({ in: [0, 0], out: [0, 0] })) };
+  });
+}
+
+/**
+ * Moves one handle of a point of a Bézier item to `offset` (a distance from the point). With `mirror` the other handle of the point is the same
+ * distance the other way, which keeps the curve smooth through the point; without it the other handle stays, which makes a corner.
+ */
+export function setHandle(doc: DrawDoc, id: number, index: number, which: 'in' | 'out', offset: Vec2, mirror = true): DrawDoc {
+  if (!finite(offset[0]) || !finite(offset[1])) return doc;
+  return mapItems(doc, [id], (i) => {
+    if (!i.handles || index < 0 || index >= i.handles.length) return i;
+    const other = which === 'in' ? 'out' : 'in';
+    const handles = i.handles.map((h, k): BezierHandle => (k !== index ? h : { ...h, [which]: offset, ...(mirror ? { [other]: [0 - offset[0], 0 - offset[1]] } : {}) }));
+    return { ...i, handles };
+  });
+}
+
+/** A point of a Bézier item that has handles becomes a corner (its handles go to zero); a corner gets handles that make the curve smooth through it. */
+export function toggleCorner(doc: DrawDoc, id: number, index: number): DrawDoc {
+  return mapItems(doc, [id], (i) => {
+    if (!i.handles || index < 0 || index >= i.handles.length) return i;
+    const now = i.handles[index]!;
+    const next: BezierHandle = hasHandle(now) ? { in: [0, 0], out: [0, 0] } : autoHandles(i.points, i.closed)[index]!;
+    return { ...i, handles: i.handles.map((h, k) => (k === index ? next : h)) };
+  });
+}
+
+export interface HandleHit {
+  index: number;
+  which: 'in' | 'out';
+}
+
+/** The handle of a Bézier item that is at a place, within `tolMm`. A handle of length zero is not there to be hit. The one nearer is taken. */
+export function hitHandle(item: DrawItem, p: Vec2, tolMm: number): HandleHit | null {
+  if (!item.handles) return null;
+  let best: HandleHit | null = null;
+  let bestDistance = tolMm;
+  item.handles.forEach((h, index) => {
+    const at = item.points[index];
+    if (!at) return;
+    for (const which of ['in', 'out'] as const) {
+      const o = h[which];
+      if (o[0] === 0 && o[1] === 0) continue;
+      const d = Math.hypot(at[0] + o[0] - p[0], at[1] + o[1] - p[1]);
+      if (d <= bestDistance) {
+        best = { index, which };
+        bestDistance = d;
+      }
+    }
+  });
+  return best;
 }
 
 export function setText(doc: DrawDoc, id: number, patch: { text?: string; heightMm?: number }): DrawDoc {
@@ -394,7 +557,7 @@ export const DEFAULT_TAB: TabOptions = { widthMm: 8, angleDeg: 45 };
  */
 export function addTab(doc: DrawDoc, id: number, edge: number, options: Partial<TabOptions> = {}): { doc: DrawDoc; added: boolean } {
   const item = doc.items.find((i) => i.id === id);
-  if (!item || item.kind !== 'cut' || !item.closed || item.smooth || edge < 0 || edge >= item.points.length) return { doc, added: false };
+  if (!item || item.kind !== 'cut' || !item.closed || isCurved(item) || edge < 0 || edge >= item.points.length) return { doc, added: false };
   const o = { ...DEFAULT_TAB, ...options };
   const width = clamp(finite(o.widthMm) ? o.widthMm : DEFAULT_TAB.widthMm, 1, 100);
   const angle = clamp(finite(o.angleDeg) ? o.angleDeg : DEFAULT_TAB.angleDeg, 20, 90);
@@ -446,11 +609,11 @@ export function hitTest(doc: DrawDoc, p: Vec2, tolMm: number, only?: readonly nu
       if (Math.hypot(q[0] - p[0], q[1] - p[1]) <= Math.max(tolMm, (item.heightMm ?? 4) * 1.5)) return { id: item.id, vertex: null, edge: null };
       continue;
     }
-    // A smooth item is hit along its curve; only a straight edge can be told apart (for a glue tab).
+    // A curved item is hit along its curve; only a straight edge can be told apart (for a glue tab).
     const line = flattenItem(item);
     const n = line.length;
     const edges = item.closed ? n : n - 1;
-    for (let i = 0; i < edges; i++) if (distanceToSegment(p, line[i]!, line[(i + 1) % n]!) <= tolMm) return { id: item.id, vertex: null, edge: item.smooth ? null : i };
+    for (let i = 0; i < edges; i++) if (distanceToSegment(p, line[i]!, line[(i + 1) % n]!) <= tolMm) return { id: item.id, vertex: null, edge: isCurved(item) ? null : i };
   }
   let best: DrawItem | null = null;
   let bestArea = Infinity;
@@ -502,7 +665,7 @@ export function drawProblems(doc: DrawDoc): DrawProblem[] {
   if (doc.pageCount > 1) for (let page = 0; page < doc.pageCount; page++) if (!doc.items.some((i) => i.page === page)) problems.push({ code: 'empty-page', page });
   const eps = 0.01;
   for (const item of doc.items) {
-    const shown = item.smooth ? flattenItem(item) : item.points;
+    const shown = isCurved(item) ? flattenItem(item) : item.points;
     const b = boundsOf([{ ...item, points: shown }])!;
     if (b.minX < -eps || b.minY < -eps || b.maxX > doc.sheet.widthMm + eps || b.maxY > doc.sheet.heightMm + eps) problems.push({ code: 'outside-sheet', itemId: item.id });
     if (item.kind === 'text') continue;
@@ -580,7 +743,7 @@ export interface SerializedDrawing {
 }
 
 export function serializeDoc(doc: DrawDoc): SerializedDrawing {
-  return { version: 1, kind: 'papercraft-drawing', doc: { ...doc, items: doc.items.map((i) => ({ ...i, points: i.points.map((p): Vec2 => [p[0], p[1]]) })) } };
+  return { version: 1, kind: 'papercraft-drawing', doc: { ...doc, items: doc.items.map((i) => ({ ...i, points: i.points.map((p): Vec2 => [p[0], p[1]]), ...(i.handles ? { handles: i.handles.map((h): BezierHandle => ({ in: [h.in[0], h.in[1]], out: [h.out[0], h.out[1]] })) } : {}) })) } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);

@@ -7,14 +7,17 @@ import {
   addTab,
   drawingOf,
   flattenItem,
+  hitHandle,
   hitTest,
   pageView,
   moveItems,
   rectanglePoints,
   regularPolygonPoints,
   removeItems,
+  setHandle,
   setItemPoint,
   snapPoint,
+  toggleCorner,
   type DrawDoc,
   type DrawItem,
   type Hit,
@@ -47,6 +50,7 @@ interface View {
 type Gesture =
   | { kind: 'move'; start: Vec2; base: DrawDoc; ids: number[]; moved: boolean }
   | { kind: 'vertex'; base: DrawDoc; id: number; index: number }
+  | { kind: 'handle'; base: DrawDoc; id: number; index: number; which: 'in' | 'out'; mirror: boolean }
   | { kind: 'rect' | 'ngon' | 'fold'; start: Vec2 }
   | { kind: 'pan'; startClient: [number, number]; startView: View };
 
@@ -137,6 +141,14 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
     }
 
     if (tool === 'select') {
+      // A handle of the one selected Bézier curve is taken before anything under it.
+      const only = selection.length === 1 ? shown.items.find((i) => i.id === selection[0]) : undefined;
+      const handle = only ? hitHandle(only, raw, tol) : null;
+      if (only && handle) {
+        // Alt moves one handle on its own (a corner); without it the other handle follows (a smooth point).
+        gesture.current = { kind: 'handle', base: doc, id: only.id, index: handle.index, which: handle.which, mirror: !e.altKey };
+        return;
+      }
       const hit = hitTest(shown, raw, tol);
       if (!hit) {
         dispatch({ type: 'SELECT', ids: [] });
@@ -205,6 +217,11 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
       dispatch({ type: 'PREVIEW', doc: moveItems(g.base, g.ids, dx, dy) });
       return;
     }
+    if (g.kind === 'handle') {
+      const at = g.base.items.find((i) => i.id === g.id)?.points[g.index];
+      if (at) dispatch({ type: 'PREVIEW', doc: setHandle(g.base, g.id, g.index, g.which, [raw[0] - at[0], raw[1] - at[1]], g.mirror) });
+      return;
+    }
     if (g.kind === 'vertex') {
       const p = snapPoint(pageView(g.base, page), raw, { gridMm: options.gridMm, tolMm: snapTol, exclude: [g.id] });
       dispatch({ type: 'PREVIEW', doc: setItemPoint(g.base, g.id, g.index, p) });
@@ -218,7 +235,7 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
     gesture.current = null;
     if (!g) return;
     if (g.kind === 'pan') return;
-    if (g.kind === 'move' || g.kind === 'vertex') {
+    if (g.kind === 'move' || g.kind === 'vertex' || g.kind === 'handle') {
       dispatch({ type: 'COMMIT' });
       return;
     }
@@ -336,7 +353,16 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => setCursor(null)}
-        onDoubleClick={() => { if (tool === 'polygon' && poly.length >= 2) { const trimmed = poly.slice(0, -1); finishPolygon(trimmed.length >= (closing ? 3 : 2) ? trimmed : poly); } }}
+        onDoubleClick={(e) => {
+          // On a point of the selected Bézier curve: a corner gets handles, a smooth point becomes a corner.
+          if (tool === 'select' && selection.length === 1) {
+            const item = shown.items.find((i) => i.id === selection[0]);
+            const hit = item?.handles ? hitTest(shown, toMm(e), tol, [item.id]) : null;
+            if (item && hit && hit.vertex !== null) dispatch({ type: 'EDIT', doc: toggleCorner(doc, item.id, hit.vertex) });
+            return;
+          }
+          if (tool === 'polygon' && poly.length >= 2) { const trimmed = poly.slice(0, -1); finishPolygon(trimmed.length >= (closing ? 3 : 2) ? trimmed : poly); }
+        }}
         onWheel={(e) => zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, toMm(e))}
         className="block select-none"
       >
@@ -360,6 +386,16 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
             <circle key={`ts${i.id}`} cx={i.points[0]![0]} cy={i.points[0]![1]} r={Math.max((i.heightMm ?? 4) * 1.2, px(10))} fill="none" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeDasharray="3 3" />
           ))}
           {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.kind !== 'text').flatMap((i) => i.points.map((p, k) => <rect key={`${i.id}-${k}`} x={p[0] - px(4)} y={p[1] - px(4)} width={px(8)} height={px(8)} fill="#ffffff" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />))}
+          {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.handles).flatMap((i) => i.handles!.flatMap((h, k) => (['in', 'out'] as const).filter((w) => h[w][0] !== 0 || h[w][1] !== 0).map((w) => {
+            const p = i.points[k]!;
+            const c: Vec2 = [p[0] + h[w][0], p[1] + h[w][1]];
+            return (
+              <g key={`h${i.id}-${k}-${w}`} pointerEvents="none">
+                <line x1={p[0]} y1={p[1]} x2={c[0]} y2={c[1]} stroke={COLOURS.selected} strokeWidth={1} vectorEffect="non-scaling-stroke" opacity={0.7} />
+                <circle cx={c[0]} cy={c[1]} r={px(4.5)} fill={COLOURS.selected} stroke="#ffffff" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+              </g>
+            );
+          })))}
           {hoverEdge && <line x1={hoverEdge[0][0]} y1={hoverEdge[0][1]} x2={hoverEdge[1][0]} y2={hoverEdge[1][1]} stroke={COLOURS.draft} strokeWidth={4} vectorEffect="non-scaling-stroke" strokeLinecap="round" opacity={0.6} pointerEvents="none" />}
           {draftShape}
           {poly.length > 0 && (

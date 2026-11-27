@@ -1962,5 +1962,11 @@
   "Uploaded": "Uppladdad",
   "Uploading…": "Laddar upp…",
   "Upload {n} files": "Ladda upp {n} filer",
-  "Uploaded by me": "Uppladdade av mig"
+  "Uploaded by me": "Uppladdade av mig",
+  "The parts in 3D. Drag a part to move it, hold Shift to lift it, drag a square handle on the selected part to change its size, drag the background to turn the view.": "Delarna i 3D. Dra en del för att flytta den, håll Skift för att lyfta den, dra i ett fyrkantigt handtag på den valda delen för att ändra storleken, dra i bakgrunden för att vrida vyn.",
+  "Drag a part to move it. Hold Shift to lift it. Drag a square handle on the selected part to change its size. Drag the background to turn the view.": "Dra en del för att flytta den. Håll Skift för att lyfta den. Dra i ett fyrkantigt handtag på den valda delen för att ändra storleken. Dra i bakgrunden för att vrida vyn.",
+  "Each point gets handles you can drag to bend the line, as in a drawing program.": "Varje punkt får handtag som du kan dra i för att böja linjen, som i ett ritprogram.",
+  "Remove the handles": "Ta bort handtagen",
+  "Edit with Bézier handles": "Redigera med Bézier-handtag",
+  "Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.": "Dra i ett runt handtag för att böja kurvan. Håll Alt för att flytta ett handtag för sig. Dubbelklicka på en punkt för att göra den till ett hörn eller ge den handtag."
 }

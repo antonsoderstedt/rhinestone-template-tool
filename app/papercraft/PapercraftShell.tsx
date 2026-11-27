@@ -4,7 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState
 import dynamic from 'next/dynamic';
 import { Download, Pause, Play, SlidersHorizontal, Shapes } from 'lucide-react';
 import { buildPapercraftDesignEntry, readWorkspaceVault, writeWorkspaceVault } from '../lib/workspaceVault';
-import { fillHoles, flipFaces, longestSide, meshOfRecipe, moveBuildPart, reportSolid, simplifyMesh, turnBuildPart, type BuildPart } from '@/src/lib/papercraft-engine';
+import { fillHoles, flipFaces, longestSide, meshOfRecipe, moveBuildPart, reportSolid, resizeBuildPart, simplifyMesh, turnBuildPart, type BuildPart } from '@/src/lib/papercraft-engine';
 import { useStudioTheme } from '../lib/studioTheme';
 import MobileStudioBar from '../components/MobileStudioBar';
 import { useT } from '../lib/i18n';
@@ -363,7 +363,7 @@ export default function PapercraftShell() {
           {buildParts && view === 'build' && (
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
-                <PartsView3D parts={buildParts} selected={buildPart} onSelect={setBuildPart} onMove={(index, delta) => changeBuildParts(moveBuildPart(buildParts, index, delta, 1))} />
+                <PartsView3D parts={buildParts} selected={buildPart} onSelect={setBuildPart} onMove={(index, delta) => changeBuildParts(moveBuildPart(buildParts, index, delta, 1))} onResize={(index, face, delta) => changeBuildParts(resizeBuildPart(buildParts, index, face, delta, 1))} />
               </div>
               <div className="flex flex-wrap items-center gap-2 border-t border-[var(--studio-border)] bg-[var(--studio-surface)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
                 <span>{buildPart === null ? t('Click a part to select it.') : t('Part {n} is selected.', { n: buildPart + 1 })}</span>

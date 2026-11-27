@@ -749,6 +749,8 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [ ] A drawing cut on a real machine
 - [x] Save a drawing in the catalog and open it from “Drawings from the catalog” (checked on the local Worker); the studio does not list drawings
 - [x] Move the parts of a built model with the mouse in the Build view: select, drag on the ground, Shift-drag to lift (math tested; checked in the running studio with synthetic pointer events)
+- [x] Bézier handles in the flat drawing tool (ADR 0065): handles bend a curve that is cut, drawn and exported along its Bézier pieces; a smooth item keeps its shape when it becomes a Bézier curve; turning, mirroring and scaling move the handles; a drawing with handles saves and opens equal; bad handles are dropped (tested; checked in the running page: drag, undo/redo, Alt-drag, double-click a point, Cricut SVG with no `<use>`; with synthetic pointer events)
+- [x] Resize handles in the 3D Build view (ADR 0065): a face of the selected part is dragged and the part grows away from the opposite face, along its own axes, rounded to 1 mm and kept in range (tested; checked in the running studio with a real mouse drag of a handle)
 - [ ] A real model built from one of the templates has been folded and glued
 
 ---
