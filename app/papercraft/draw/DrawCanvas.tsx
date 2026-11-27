@@ -6,7 +6,9 @@ import {
   addItem,
   addTab,
   drawingOf,
+  flattenItem,
   hitTest,
+  pageView,
   moveItems,
   rectanglePoints,
   regularPolygonPoints,
@@ -24,6 +26,8 @@ import { nextNumberText, type DrawTool, type ToolOptions } from './drawTools';
 
 interface Props {
   doc: DrawDoc;
+  /** The page that is shown and worked on (0 is the first). */
+  page: number;
   selection: number[];
   tool: DrawTool;
   options: ToolOptions;
@@ -52,7 +56,7 @@ const DASH: Record<'mountain' | 'valley', string> = { mountain: '10 3 2 3', vall
 const pointsAttr = (points: readonly Vec2[]) => points.map((p) => `${p[0]},${p[1]}`).join(' ');
 
 /** The sheet and everything on it, drawn as SVG (y up), with the tools' mouse handling. */
-export default function DrawCanvas({ doc, selection, tool, options, dispatch, onNumberPlaced, onTool }: Props) {
+export default function DrawCanvas({ doc, page, selection, tool, options, dispatch, onNumberPlaced, onTool }: Props) {
   const t = useT();
   const box = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -72,6 +76,9 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // What is found, snapped to and drawn is what is on this page; a change is made to the whole drawing.
+  const shown = useMemo(() => pageView(doc, page), [doc, page]);
 
   const fit = useMemo<View>(() => {
     const k = Math.min(size.w / (doc.sheet.widthMm + 30), size.h / (doc.sheet.heightMm + 30));
@@ -93,7 +100,7 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     },
     [left, top, v.pxPerMm],
   );
-  const snapped = (p: Vec2, exclude?: readonly number[]) => snapPoint(doc, p, { gridMm: options.gridMm, tolMm: snapTol, exclude });
+  const snapped = (p: Vec2, exclude?: readonly number[]) => snapPoint(shown, p, { gridMm: options.gridMm, tolMm: snapTol, exclude });
 
   const zoomAt = (factor: number, around: Vec2 | null) => {
     const k = Math.min(40, Math.max(0.2, v.pxPerMm * factor));
@@ -103,9 +110,11 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     setView({ cx: p[0] + (v.cx - p[0]) * r, cy: p[1] + (v.cy - p[1]) * r, pxPerMm: k });
   };
 
+  /** A cut is closed unless the person leaves it open; a fold line is always an open line. */
+  const closing = options.outlineKind === 'cut' && !options.leaveOpen;
   const finishPolygon = (points: Vec2[]) => {
-    if (points.length >= 3) {
-      const added = addItem(doc, { kind: 'cut', points, closed: true });
+    if (points.length >= (closing ? 3 : 2)) {
+      const added = addItem(doc, { kind: options.outlineKind, points, closed: closing, smooth: options.smooth, page });
       if (added.id !== null) dispatch({ type: 'EDIT', doc: added.doc, selection: [added.id] });
     }
     setPoly([]);
@@ -128,7 +137,7 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     }
 
     if (tool === 'select') {
-      const hit = hitTest(doc, raw, tol);
+      const hit = hitTest(shown, raw, tol);
       if (!hit) {
         dispatch({ type: 'SELECT', ids: [] });
         gesture.current = { kind: 'pan', startClient: [e.clientX, e.clientY], startView: v };
@@ -146,7 +155,7 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
 
     const p = snapped(raw);
     if (tool === 'polygon') {
-      if (poly.length >= 3 && Math.hypot(poly[0]![0] - p[0], poly[0]![1] - p[1]) <= snapTol) finishPolygon(poly);
+      if (closing && poly.length >= 3 && Math.hypot(poly[0]![0] - p[0], poly[0]![1] - p[1]) <= snapTol) finishPolygon(poly);
       else setPoly([...poly, p]);
       return;
     }
@@ -156,16 +165,16 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
       return;
     }
     if (tool === 'tab') {
-      const hit: Hit | null = hitTest(doc, raw, tol);
-      const item = hit ? doc.items.find((i) => i.id === hit.id) : undefined;
-      if (hit && item && hit.edge !== null && item.kind === 'cut' && item.closed) {
+      const hit: Hit | null = hitTest(shown, raw, tol);
+      const item = hit ? shown.items.find((i) => i.id === hit.id) : undefined;
+      if (hit && item && hit.edge !== null && item.kind === 'cut' && item.closed && !item.smooth) {
         const result = addTab(doc, hit.id, hit.edge, options.tab);
         if (result.added) dispatch({ type: 'EDIT', doc: result.doc, selection: [hit.id] });
       }
       return;
     }
     if (tool === 'number') {
-      const added = addItem(doc, { kind: 'text', points: [p], closed: false, text: options.numberText, heightMm: options.numberHeightMm });
+      const added = addItem(doc, { kind: 'text', points: [p], closed: false, text: options.numberText, heightMm: options.numberHeightMm, page });
       if (added.id !== null) {
         dispatch({ type: 'EDIT', doc: added.doc, selection: [added.id] });
         onNumberPlaced(nextNumberText(options.numberText));
@@ -197,7 +206,7 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
       return;
     }
     if (g.kind === 'vertex') {
-      const p = snapPoint(g.base, raw, { gridMm: options.gridMm, tolMm: snapTol, exclude: [g.id] });
+      const p = snapPoint(pageView(g.base, page), raw, { gridMm: options.gridMm, tolMm: snapTol, exclude: [g.id] });
       dispatch({ type: 'PREVIEW', doc: setItemPoint(g.base, g.id, g.index, p) });
       return;
     }
@@ -220,15 +229,15 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     if (!long) return;
     if (g.kind === 'rect') {
       if (Math.abs(b[0] - a[0]) < 1 || Math.abs(b[1] - a[1]) < 1) return;
-      const added = addItem(doc, { kind: 'cut', points: rectanglePoints(a[0], a[1], b[0], b[1]), closed: true });
+      const added = addItem(doc, { kind: 'cut', points: rectanglePoints(a[0], a[1], b[0], b[1]), closed: true, page });
       if (added.id !== null) dispatch({ type: 'EDIT', doc: added.doc, selection: [added.id] });
     } else if (g.kind === 'ngon') {
       const radius = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const start = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
-      const added = addItem(doc, { kind: 'cut', points: regularPolygonPoints(a[0], a[1], radius, options.sides, start), closed: true });
+      const added = addItem(doc, { kind: 'cut', points: regularPolygonPoints(a[0], a[1], radius, options.sides, start), closed: true, page });
       if (added.id !== null) dispatch({ type: 'EDIT', doc: added.doc, selection: [added.id] });
     } else {
-      const added = addItem(doc, { kind: options.foldKind, points: [a, b], closed: false });
+      const added = addItem(doc, { kind: options.foldKind, points: [a, b], closed: false, page });
       if (added.id !== null) dispatch({ type: 'EDIT', doc: added.doc, selection: [added.id] });
     }
   };
@@ -267,12 +276,12 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     }
   };
 
-  const textStrokes = useMemo(() => drawingOf(doc).text, [doc]);
-  const selected = new Set(selection);
-  const hover: Hit | null = tool === 'tab' && cursor ? hitTest(doc, cursor, tol) : null;
-  const hoverItem = hover ? doc.items.find((i) => i.id === hover.id) : undefined;
+  const textStrokes = useMemo(() => drawingOf(doc, { page }).text, [doc, page]);
+  const selected = new Set(selection.filter((id) => shown.items.some((i) => i.id === id)));
+  const hover: Hit | null = tool === 'tab' && cursor ? hitTest(shown, cursor, tol) : null;
+  const hoverItem = hover ? shown.items.find((i) => i.id === hover.id) : undefined;
   const hoverEdge =
-    hover && hover.edge !== null && hoverItem && hoverItem.kind === 'cut' && hoverItem.closed
+    hover && hover.edge !== null && hoverItem && hoverItem.kind === 'cut' && hoverItem.closed && !hoverItem.smooth
       ? ([hoverItem.points[hover.edge]!, hoverItem.points[(hover.edge + 1) % hoverItem.points.length]!] as const)
       : null;
   const px = (n: number) => n / v.pxPerMm;
@@ -283,7 +292,8 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
     if (item.kind === 'text') return null;
     const stroke = isSel ? COLOURS.selected : COLOURS[item.kind];
     const common = { fill: 'none', stroke, strokeWidth: isSel ? 2.5 : 1.5, vectorEffect: 'non-scaling-stroke' as const, strokeLinejoin: 'round' as const, ...(item.kind !== 'cut' ? { strokeDasharray: DASH[item.kind] } : {}) };
-    return item.closed ? <polygon key={item.id} points={pointsAttr(item.points)} {...common} fillOpacity={0} style={{ fill: isSel ? 'rgba(124,58,237,0.08)' : 'rgba(17,24,39,0.03)' }} /> : <polyline key={item.id} points={pointsAttr(item.points)} {...common} />;
+    const drawn = flattenItem(item);
+    return item.closed ? <polygon key={item.id} points={pointsAttr(drawn)} {...common} fillOpacity={0} style={{ fill: isSel ? 'rgba(124,58,237,0.08)' : 'rgba(17,24,39,0.03)' }} /> : <polyline key={item.id} points={pointsAttr(drawn)} {...common} />;
   };
 
   const draftShape = (() => {
@@ -326,7 +336,7 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => setCursor(null)}
-        onDoubleClick={() => { if (tool === 'polygon' && poly.length >= 3) finishPolygon(poly.slice(0, -1).length >= 3 ? poly.slice(0, -1) : poly); }}
+        onDoubleClick={() => { if (tool === 'polygon' && poly.length >= 2) { const trimmed = poly.slice(0, -1); finishPolygon(trimmed.length >= (closing ? 3 : 2) ? trimmed : poly); } }}
         onWheel={(e) => zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, toMm(e))}
         className="block select-none"
       >
@@ -342,19 +352,19 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
               <rect x={0} y={0} width={doc.sheet.widthMm} height={doc.sheet.heightMm} fill="url(#draw-grid)" pointerEvents="none" />
             </>
           )}
-          {doc.items.map(renderItem)}
+          {shown.items.map(renderItem)}
           {textStrokes.map((line, i) => (
             <polyline key={`t${i}`} points={pointsAttr(line)} fill="none" stroke="#111827" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
           ))}
-          {doc.items.filter((i) => i.kind === 'text' && selected.has(i.id)).map((i) => (
+          {shown.items.filter((i) => i.kind === 'text' && selected.has(i.id)).map((i) => (
             <circle key={`ts${i.id}`} cx={i.points[0]![0]} cy={i.points[0]![1]} r={Math.max((i.heightMm ?? 4) * 1.2, px(10))} fill="none" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeDasharray="3 3" />
           ))}
-          {selection.length === 1 && doc.items.filter((i) => i.id === selection[0] && i.kind !== 'text').flatMap((i) => i.points.map((p, k) => <rect key={`${i.id}-${k}`} x={p[0] - px(4)} y={p[1] - px(4)} width={px(8)} height={px(8)} fill="#ffffff" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />))}
+          {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.kind !== 'text').flatMap((i) => i.points.map((p, k) => <rect key={`${i.id}-${k}`} x={p[0] - px(4)} y={p[1] - px(4)} width={px(8)} height={px(8)} fill="#ffffff" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />))}
           {hoverEdge && <line x1={hoverEdge[0][0]} y1={hoverEdge[0][1]} x2={hoverEdge[1][0]} y2={hoverEdge[1][1]} stroke={COLOURS.draft} strokeWidth={4} vectorEffect="non-scaling-stroke" strokeLinecap="round" opacity={0.6} pointerEvents="none" />}
           {draftShape}
           {poly.length > 0 && (
             <>
-              <polyline points={pointsAttr(cursor ? [...poly, snapped(cursor)] : poly)} fill="none" stroke={COLOURS.draft} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
+              <polyline points={pointsAttr(flattenItem({ points: cursor ? [...poly, snapped(cursor)] : poly, closed: false, smooth: options.smooth }))} fill="none" stroke={COLOURS.draft} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
               {poly.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={px(i === 0 ? 5 : 3)} fill={i === 0 ? COLOURS.draft : '#ffffff'} stroke={COLOURS.draft} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />)}
             </>
           )}
