@@ -33,7 +33,18 @@ for them in the admin panel too.
 ## Consequences
 
 - A catalog SVG that has no shapes Rhinestone can use, or a project file that does not parse, is refused with the generic message.
-- Not done: saving a design from Rhinestone or HTV as a catalog template (Papercraft has “Save as a template”); for Rhinestone the owner
-  uploads a downloaded project file in the admin panel. HTV would need a design file format first.
+- Not done: saving an HTV design as a catalog template (HTV would need a design file format first).
 - Template names are shown as the owner wrote them, but the studio's Swedish text translator may still translate a name that equals a
   known English phrase (a template called “Heart” shows as “Hjärta”).
+
+## Update: Save as a template from Rhinestone
+
+- “Save as a catalog template” (a collapsed section in the My Designs panel, `app/editor/SaveCatalogTemplate.tsx`) puts the design on the screen in
+  the catalog: the project (`serializeRhinestoneProject`, with the chosen name) as `<id>.rhinestone.json` and a small SVG picture of the stones
+  (the same SVG the My Designs thumbnails use), plus details (studio, name, category, published, field `Made in: Rhinestone Studio`).
+- **A new template every time**: the id comes from the name and never one that exists (`box`, `box-2`, …), so nothing is overwritten. A failed picture is
+  reported (“its picture could not be saved”) but does not fail the save. A project over 20 MB (what the studio opens again) is refused.
+- The list under “From the catalog” fetches again after a save. The section shows only where there is a catalog.
+- What the studios share (`uniqueTemplateId`, `saveTemplateToCatalog`, the options and result types) is in `app/lib/catalog/saveTemplate.ts`;
+  Papercraft's own saves keep their code and re-export `uniqueTemplateId`.
+- Counted as a `template_saved` event with label `rhinestone` (ADR 0060).

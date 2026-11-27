@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import CatalogTemplates from '../app/components/CatalogTemplates';
 import type { CatalogTemplate } from '../app/lib/catalog/catalogClient';
 import { STUDIO_FORMATS } from '../app/lib/catalog/catalogFormat';
-import { OPEN_FORMATS, catalogTemplateFile, isOpenableFileName, openableTemplates, searchTemplates } from '../app/lib/catalog/studioCatalog';
+import { OPEN_FORMATS, catalogTemplateFile, isOpenableFileName, openableTemplates, saveRhinestoneTemplate, searchTemplates } from '../app/lib/catalog/studioCatalog';
 
 const make = (over: Partial<CatalogTemplate> & { id: string }): CatalogTemplate => ({
   studio: 'rhinestone', format: 'svg', name: over.id, description: '', category: '', tags: [], licence: '', fields: {}, published: true,
@@ -76,5 +76,49 @@ describe('CatalogTemplates', () => {
   it('shows nothing until (and unless) the catalog has templates, so a site without one looks as before', () => {
     expect(renderToStaticMarkup(createElement(CatalogTemplates, { studio: 'rhinestone', onOpen: vi.fn() }))).toBe('');
     expect(renderToStaticMarkup(createElement(CatalogTemplates, { studio: 'htv', onOpen: vi.fn(), wrap: (c) => createElement('div', null, 'heading', c) }))).toBe('');
+  });
+});
+
+describe('saveRhinestoneTemplate', () => {
+  const calls: { url: string; method: string; body: string }[] = [];
+  const recorder = (failPreview = false, failFile = false): typeof fetch =>
+    (async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url);
+      calls.push({ url: u, method: init?.method ?? 'GET', body: String(init?.body ?? '') });
+      if (failFile && u.includes('part=file')) return new Response(JSON.stringify({ error: 'no' }), { status: 500, headers: { 'content-type': 'application/json' } });
+      if (failPreview && u.includes('part=preview')) return new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } });
+      return new Response('{"ok":true}', { headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+
+  it('saves the details, a .rhinestone.json project file and a picture, with a new id', async () => {
+    calls.length = 0;
+    const result = await saveRhinestoneTemplate('{"projectName":"Star"}', '<svg/>', { name: ' Cheer star ', category: ' Cheer ', published: true }, ['cheer-star'], recorder());
+    expect(result).toEqual({ ok: true, value: { id: 'cheer-star-2', previewSaved: true } });
+    const details = JSON.parse(calls[0]!.body);
+    expect(details).toMatchObject({ id: 'cheer-star-2', studio: 'rhinestone', format: 'json', name: 'Cheer star', category: 'Cheer', published: true, fields: { 'Made in': 'Rhinestone Studio' } });
+    expect(calls[1]!.url).toContain('id=cheer-star-2&part=file&name=cheer-star-2.rhinestone.json');
+    expect(calls[1]!.body).toBe('{"projectName":"Star"}');
+    expect(calls[2]!.url).toContain('part=preview&name=cheer-star-2.svg');
+  });
+
+  it('is found again by the studio: the file name passes the same rule that lists templates', async () => {
+    calls.length = 0;
+    await saveRhinestoneTemplate('{}', null, { name: 'Ä Å Ö', category: '', published: true }, [], recorder());
+    const name = decodeURIComponent(/name=([^&]+)/.exec(calls[1]!.url)![1]!);
+    expect(isOpenableFileName('rhinestone', name)).toBe(true);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('refuses no name and a project too big to open again, and sends nothing', async () => {
+    calls.length = 0;
+    expect(await saveRhinestoneTemplate('{}', null, { name: '  ', category: '', published: false }, [], recorder())).toEqual({ ok: false, reason: 'no-name' });
+    expect(await saveRhinestoneTemplate('x'.repeat(20 * 1024 * 1024 + 1), null, { name: 'Big', category: '', published: false }, [], recorder())).toEqual({ ok: false, reason: 'too-big' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('reports a failed picture without failing the save, and a failed file as a failure', async () => {
+    const options = { name: 'Star', category: '', published: true };
+    expect(await saveRhinestoneTemplate('{}', '<svg/>', options, [], recorder(true))).toEqual({ ok: true, value: { id: 'star', previewSaved: false } });
+    expect((await saveRhinestoneTemplate('{}', '<svg/>', options, [], recorder(false, true))).ok).toBe(false);
   });
 });

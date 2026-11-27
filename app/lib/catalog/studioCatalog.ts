@@ -6,6 +6,7 @@
 
 import { fetchCatalogFile, type CatalogTemplate } from './catalogClient';
 import { formatOfFileName, mimeOfFormat } from './catalogFormat';
+import { saveTemplateToCatalog, type SaveTemplateOptions, type SaveTemplateResult } from './saveTemplate';
 
 export type SvgStudio = 'rhinestone' | 'htv';
 
@@ -42,4 +43,20 @@ export async function catalogTemplateFile(template: CatalogTemplate, fetcher: ty
   const result = await fetchCatalogFile(template, 'file', fetcher);
   if (!result.ok) return null;
   return new File([result.value.bytes as BlobPart], result.value.name, { type: mimeOfFormat(formatOfFileName(result.value.name)) });
+}
+
+/** The most characters of a project file the studio opens from the catalog (`MAX_PROJECT_FILE_BYTES`, 20 MB). */
+const MAX_PROJECT_CHARS = 20 * 1024 * 1024;
+
+/**
+ * Saves the current Rhinestone design as a template: the project file (named `<id>.rhinestone.json`, so the studio lists it again),
+ * and a small SVG picture of the stones. A new template, never one that replaces another.
+ */
+export function saveRhinestoneTemplate(projectJson: string, previewSvg: string | null, options: SaveTemplateOptions, existingIds: Iterable<string>, fetcher: typeof fetch = fetch): Promise<SaveTemplateResult> {
+  return saveTemplateToCatalog(
+    { studio: 'rhinestone', fileName: (id) => `${id}${RHINESTONE_PROJECT_SUFFIX}`, text: projectJson, previewSvg, maxChars: MAX_PROJECT_CHARS, fields: { 'Made in': 'Rhinestone Studio' } },
+    options,
+    existingIds,
+    fetcher,
+  );
 }

@@ -1,5 +1,5 @@
-import { fetchCatalogFile, saveCatalogDetails, uploadCatalogFile, type CatalogResult, type CatalogTemplate } from '../lib/catalog/catalogClient';
-import { formatOfFileName, idFromName, mimeOfFormat, PAPERCRAFT_MODEL_FORMATS } from '../lib/catalog/catalogFormat';
+import { fetchCatalogFile, saveCatalogDetails, uploadCatalogFile, type CatalogTemplate } from '../lib/catalog/catalogClient';
+import { formatOfFileName, mimeOfFormat, PAPERCRAFT_MODEL_FORMATS } from '../lib/catalog/catalogFormat';
 import { meshOfSource } from './papercraftCompute';
 import { canSavePapercraft, deserializePapercraft, snapshotText } from './papercraftSnapshot';
 import type { PapercraftState } from './papercraftState';
@@ -55,25 +55,8 @@ export async function catalogDesignState(template: CatalogTemplate, fetcher: typ
   }
 }
 
-/** An id from the name that no template has yet: `box`, `box-2`, `box-3`, … */
-export function uniqueTemplateId(name: string, existingIds: Iterable<string>): string {
-  const taken = new Set(existingIds);
-  const base = idFromName(name).slice(0, 70);
-  if (!taken.has(base)) return base;
-  for (let n = 2; ; n++) {
-    const candidate = `${base}-${n}`;
-    if (!taken.has(candidate)) return candidate;
-  }
-}
-
-export interface SaveTemplateOptions {
-  name: string;
-  category: string;
-  published: boolean;
-}
-
-/** `previewSaved` is false when the template was saved but its picture could not be: the template works, it just has no picture. */
-export type SaveTemplateResult = CatalogResult<{ id: string; previewSaved: boolean }> | { ok: false; reason: 'too-big' | 'no-name' };
+export { uniqueTemplateId, type SaveTemplateOptions, type SaveTemplateResult } from '../lib/catalog/saveTemplate';
+import { uniqueTemplateId, type SaveTemplateOptions, type SaveTemplateResult } from '../lib/catalog/saveTemplate';
 
 /**
  * Saves the design (model, size, paper, tab settings and, for a model built in the studio, how it is built) as a template in the

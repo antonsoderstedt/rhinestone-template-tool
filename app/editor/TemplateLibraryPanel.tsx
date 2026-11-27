@@ -5,6 +5,8 @@ import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
 import CatalogTemplates from '../components/CatalogTemplates';
 import type { CatalogTemplate } from '../lib/catalog/catalogClient';
+import type { SaveTemplateOptions } from '../lib/catalog/saveTemplate';
+import SaveCatalogTemplate, { type SaveCatalogResult } from './SaveCatalogTemplate';
 
 import { useT } from '../lib/i18n';
 interface TemplateLibraryPanelProps {
@@ -22,6 +24,12 @@ interface TemplateLibraryPanelProps {
   onDuplicate: (templateId: string) => void;
   /** Opens a template from the site's catalog (an SVG or a saved project); false when it could not be opened. */
   onOpenCatalogFile: (file: File, template: CatalogTemplate) => boolean | Promise<boolean>;
+  /** Whether there is a design to save as a catalog template. */
+  canSaveCatalogTemplate: boolean;
+  /** The name of the design on the screen. */
+  currentName: string;
+  /** Saves the design on the screen as a new catalog template. */
+  onSaveCatalogTemplate: (options: SaveTemplateOptions, existingIds: string[]) => Promise<SaveCatalogResult>;
 }
 
 export default function TemplateLibraryPanel({
@@ -38,8 +46,13 @@ export default function TemplateLibraryPanel({
   onRename,
   onDuplicate,
   onOpenCatalogFile,
+  canSaveCatalogTemplate,
+  currentName,
+  onSaveCatalogTemplate,
 }: TemplateLibraryPanelProps) {
   const t = useT();
+  // Bumped when a template is saved, so the list under “From the catalog” fetches again and shows it.
+  const [catalogVersion, setCatalogVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'favorites' | 'starter' | 'saved'>('all');
   const [sortMode, setSortMode] = useState<'recent' | 'name' | 'stones'>('recent');
@@ -243,7 +256,9 @@ export default function TemplateLibraryPanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <SaveCatalogTemplate currentName={currentName} canSave={canSaveCatalogTemplate} save={onSaveCatalogTemplate} onSaved={() => setCatalogVersion((v) => v + 1)} />
           <CatalogTemplates
+            key={catalogVersion}
             studio="rhinestone"
             onOpen={onOpenCatalogFile}
             wrap={(content) => (
