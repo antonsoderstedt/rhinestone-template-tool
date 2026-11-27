@@ -31,6 +31,7 @@ import {
   defaultSvgAlphabetGlyphLoader,
   createImportedTemplate,
   validateAssetUpload,
+  serializeRhinestoneProject,
   TRW_STONE_SIZE_CALIBRATION,
   DEFAULT_OUTLINE_FONT_ID,
   isAvailableOutlineFontId,
@@ -104,6 +105,9 @@ import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, MAX_PROJECT_FILE_BYTES, readProjectFile, readProjectJson } from '../lib/projectUtils';
 import type { CatalogTemplate } from '../lib/catalog/catalogClient';
 import { formatOfFileName } from '../lib/catalog/catalogFormat';
+import type { SaveTemplateOptions } from '../lib/catalog/saveTemplate';
+import { saveRhinestoneTemplate } from '../lib/catalog/studioCatalog';
+import type { SaveCatalogResult } from './SaveCatalogTemplate';
 import { trackExport } from '../lib/tracking/track';
 import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
@@ -1647,6 +1651,16 @@ export default function EditorShell() {
     }
   }, [applyProjectToEditor]);
 
+  /** The design on the screen as a new template in the site's catalog (a project file and a picture of the stones). */
+  const handleSaveCatalogTemplate = useCallback(async (options: SaveTemplateOptions, existingIds: string[]): Promise<SaveCatalogResult> => {
+    if (!effectiveTemplate) return { ok: false, reason: 'nothing' };
+    const project = buildProjectFileFromEditorState(state);
+    if (!project) return { ok: false, reason: 'nothing' };
+    const name = options.name.trim();
+    const previewSvg = createBasicSvgExport(effectiveTemplate, { includeGuideBox: false, includeLabels: false, paddingMm: 4, decimalPlaces: 2 });
+    return saveRhinestoneTemplate(serializeRhinestoneProject({ ...project, projectName: name || project.projectName }), previewSvg, options, existingIds);
+  }, [effectiveTemplate, state]);
+
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
       setToast({ message: 'Nothing to export yet. Create or open a design first.', tone: 'warning' });
@@ -1860,6 +1874,9 @@ export default function EditorShell() {
         onRename={handleRenameLibraryEntry}
         onDuplicate={handleDuplicateLibraryEntry}
         onOpenCatalogFile={handleOpenCatalogFile}
+        canSaveCatalogTemplate={Boolean(effectiveTemplate)}
+        currentName={state.projectName}
+        onSaveCatalogTemplate={handleSaveCatalogTemplate}
       />
 
       <PromptDialog

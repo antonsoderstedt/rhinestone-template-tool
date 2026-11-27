@@ -685,7 +685,8 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [ ] Checked on the deployed private site behind Cloudflare Access
 - [x] Papercraft: published OBJ/STL/GLB models of the catalog are listed under “From the catalog” and open like an imported file (nothing shows where there is no catalog)
 - [x] Rhinestone and HTV read the published templates (ADR 0061): “From the catalog” in Rhinestone's My Designs panel (SVG as artwork, `.rhinestone.json` as a project) and in HTV's tool panel (SVG as a layer); nothing shows where there is no catalog or nothing published; a file the studio cannot open says so; each use is counted as `catalog_template_used` (checked in the running page on the local Worker)
-- [ ] A saved HTV design as a catalog template (HTV has no design file format yet) and “Save as a template” from Rhinestone
+- [x] Rhinestone: “Save as a catalog template” saves the design as a new `.rhinestone.json` template with a picture, never replacing another, and it opens again from “From the catalog” (checked in the running page on the local Worker: a 286-stone design saved, then opened over a 36-stone one)
+- [ ] A saved HTV design as a catalog template (HTV has no design file format yet)
 - [x] Statistics and tracking: see the next section (metadata settings are still to do)
 
 ---
