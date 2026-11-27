@@ -76,7 +76,7 @@ cat > wrangler.jsonc <<JSON
   "main": "worker/index.ts",
   "workers_dev": true,
   "preview_urls": false,
-  "assets": { "directory": "./out", "not_found_handling": "404-page", "run_worker_first": ["/api/sync/*", "/api/catalog/*", "/api/track/*", "/api/admin/*"] },
+  "assets": { "directory": "./out", "not_found_handling": "404-page", "run_worker_first": ["/api/sync/*", "/api/catalog/*", "/api/track/*", "/api/site/*", "/api/admin/*"] },
   "d1_databases": [{ "binding": "DB", "database_name": "$DB_NAME", "database_id": "$DB_ID" }],
   $VARS
 }

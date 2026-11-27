@@ -687,7 +687,8 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Rhinestone and HTV read the published templates (ADR 0061): “From the catalog” in Rhinestone's My Designs panel (SVG as artwork, `.rhinestone.json` as a project) and in HTV's tool panel (SVG as a layer); nothing shows where there is no catalog or nothing published; a file the studio cannot open says so; each use is counted as `catalog_template_used` (checked in the running page on the local Worker)
 - [x] Rhinestone: “Save as a catalog template” saves the design as a new `.rhinestone.json` template with a picture, never replacing another, and it opens again from “From the catalog” (checked in the running page on the local Worker: a 286-stone design saved, then opened over a 36-stone one)
 - [ ] A saved HTV design as a catalog template (HTV has no design file format yet)
-- [x] Statistics and tracking: see the next section (metadata settings are still to do)
+- [x] Statistics and tracking: see the next section
+- [x] Site title and description: see “Site metadata (ADR 0062)” below
 
 ---
 
@@ -704,7 +705,18 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] `/admin` has the tabs Templates, Statistics and Tracking; checked in the running page on the local Worker
 - [ ] Checked on the deployed private site behind Cloudflare Access
 - [ ] Events seen in a real Google Analytics / Tag Manager account (needs the owner's ids)
-- [ ] Metadata settings (title, description, social picture) — a later part
+
+---
+
+## Site metadata (ADR 0062)
+
+- [x] The title, the description and an optional title per studio (Rhinestone, HTV, Papercraft) are validated and stored: an empty title, a wrong type or a too long text is refused and nothing is written (tested)
+- [x] Line breaks and runs of spaces are collapsed; a stored value that does not pass falls back to the defaults (tested)
+- [x] `/api/site/meta` and `/api/admin/metadata` refuse a request without a valid Access token; only the admin path can write (tested)
+- [x] The tab title is the studio's own title when it has one, otherwise the site title; an empty description removes the tag (tested)
+- [x] `/admin` has the tab “Site text”; saving changes the open tab at once; a hard load of a studio page, and a move between pages, show the right title and description (checked in the running page on the local Worker)
+- [ ] Checked on the deployed private site behind Cloudflare Access
+- [ ] A social picture (Open Graph image): not done, see ADR 0062
 
 ---
 
