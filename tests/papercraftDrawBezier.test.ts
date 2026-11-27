@@ -257,3 +257,154 @@ describe('saving and opening a drawing with handles', () => {
     expect(item.handles).toHaveLength(3);
   });
 });
+
+// ─── Adding and removing points ──────────────────────────────────────────────
+
+import { distanceToSegment, insertPoint, nearestOnItem, removePoint } from '../src/lib/papercraft-engine';
+
+/** How far a point is from a line made of straight pieces (not just from its corners). */
+const toLine = (p: Vec2, line: Vec2[]) => Math.min(...line.slice(1).map((q, i) => distanceToSegment(p, line[i]!, q)));
+
+describe('finding the place on a line nearest to a point', () => {
+  it('on a straight piece: the piece, how far along it and the distance', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10]] });
+    const hit = nearestOnItem(itemOf(doc, id), [4, 3])!;
+    expect(hit.edge).toBe(0);
+    expect(hit.t).toBeCloseTo(0.4, 9);
+    expect(hit.at).toEqual([4, 0]);
+    expect(hit.distance).toBeCloseTo(3, 9);
+    expect(nearestOnItem(itemOf(doc, id), [12, 6])!.edge).toBe(1);
+  });
+
+  it('includes the piece that closes a closed shape', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: true });
+    expect(nearestOnItem(itemOf(doc, id), [-2, 5])).toMatchObject({ edge: 3 });
+    const open = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: false });
+    expect(nearestOnItem(itemOf(open.doc, open.id), [-2, 5])!.edge).not.toBe(3);
+  });
+
+  it('on a Bézier curve: the nearest place on the curve, not on the line between the points', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [30, 0]] });
+    const bez = itemOf(setHandle(setHandle(setBezier(doc, [id], true), id, 0, 'out', [0, 20], false), id, 1, 'in', [0, 20], false), id);
+    const hit = nearestOnItem(bez, [15, 15])!;
+    expect(hit.edge).toBe(0);
+    expect(hit.t).toBeCloseTo(0.5, 2);
+    expect(hit.at[1]).toBeCloseTo(15, 1);
+    expect(hit.distance).toBeLessThan(0.1);
+  });
+
+  it('has nothing for a text', () => {
+    const text = addItem(newDoc(), { kind: 'text', points: [[5, 5]], closed: false, text: '1' });
+    expect(nearestOnItem(itemOf(text.doc, text.id!), [5, 5])).toBeNull();
+  });
+});
+
+describe('adding a point', () => {
+  it('to a straight line puts it on the line and keeps the shape', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10]] });
+    const next = itemOf(insertPoint(doc, id, 0, 0.5), id);
+    expect(next.points).toEqual([[0, 0], [5, 0], [10, 0], [10, 10]]);
+    expect(next.handles).toBeUndefined();
+    expect(flattenItem(next)).toEqual([[0, 0], [5, 0], [10, 0], [10, 10]]);
+  });
+
+  it('to the piece that closes a closed shape puts the point last', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: true });
+    expect(itemOf(insertPoint(doc, id, 3, 0.5), id).points).toEqual([[0, 0], [10, 0], [10, 10], [0, 10], [0, 5]]);
+  });
+
+  it('to a Bézier curve does not change the curve (the piece is cut in two with de Casteljau)', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [40, 10], [70, -10]], closed: false });
+    let item = itemOf(setBezier(doc, [id], true), id);
+    let d = setHandle(setHandle(setBezier(doc, [id], true), id, 0, 'out', [5, 25], false), id, 1, 'in', [-12, 6], false);
+    d = setHandle(d, id, 1, 'out', [10, -8], false);
+    item = itemOf(d, id);
+    const next = itemOf(insertPoint(d, id, 0, 0.37), id);
+    expect(next.points).toHaveLength(4);
+    expect(next.handles).toHaveLength(4);
+    // every point of the old curve is on the new one and the other way round (within the cutting resolution)
+    const before = flattenItem(item);
+    const after = flattenItem(next);
+    const near = toLine;
+    expect(Math.max(...before.map((p) => near(p, after)))).toBeLessThan(0.35);
+    expect(Math.max(...after.map((p) => near(p, before)))).toBeLessThan(0.35);
+    // the point is where the curve is, and the rest of the line is untouched
+    const hit = nearestOnItem(item, next.points[1]!)!;
+    expect(hit.distance).toBeLessThan(0.01);
+    expect(next.points[0]).toEqual([0, 0]);
+    expect(next.points[3]).toEqual([70, -10]);
+    expect(next.handles![3]).toEqual(item.handles![2]);
+  });
+
+  it('to a closed Bézier curve works on the closing piece too', () => {
+    const { doc, id } = docWith({ points: [[10, 10], [50, 10], [30, 50]], closed: true, smooth: true });
+    const bez = setBezier(doc, [id], true);
+    const next = itemOf(insertPoint(bez, id, 2, 0.5), id);
+    expect(next.points).toHaveLength(4);
+    const near = toLine;
+    const before = flattenItem(itemOf(bez, id));
+    expect(Math.max(...flattenItem(next).map((p) => near(p, before)))).toBeLessThan(0.35);
+  });
+
+  it('to a smooth curve first makes it the Bézier curve it would be, then adds the point', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [20, 15], [40, 0]], smooth: true });
+    const next = itemOf(insertPoint(doc, id, 0, 0.5), id);
+    expect(next.smooth).toBeUndefined();
+    expect(next.handles).toHaveLength(4);
+    const before = flattenItem(itemOf(doc, id));
+    const near = toLine;
+    expect(Math.max(...flattenItem(next).map((p) => near(p, before)))).toBeLessThan(1.2);
+  });
+
+  it('is refused near an end of the piece, for a piece that is not there and for a text', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10]] });
+    expect(insertPoint(doc, id, 0, 0.01)).toBe(doc);
+    expect(insertPoint(doc, id, 0, 0.99)).toBe(doc);
+    expect(insertPoint(doc, id, 0, NaN)).toBe(doc);
+    expect(itemOf(insertPoint(doc, id, 5, 0.5), id).points).toHaveLength(3);
+    expect(itemOf(insertPoint(doc, id, 2, 0.5), id).points).toHaveLength(3); // an open line has no piece that closes it
+    const text = addItem(newDoc(), { kind: 'text', points: [[5, 5]], closed: false, text: '1' });
+    expect(itemOf(insertPoint(text.doc, text.id!, 0, 0.5), text.id!).points).toEqual([[5, 5]]);
+  });
+
+  it('is undone by taking the point away again (a straight line)', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10]] });
+    const back = removePoint(insertPoint(doc, id, 0, 0.5), id, 1);
+    expect(itemOf(back, id).points).toEqual([[0, 0], [10, 0], [10, 10]]);
+  });
+});
+
+describe('taking a point away', () => {
+  it('takes its handles with it and leaves the others', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [20, 10], [40, 0], [60, 10]], smooth: true });
+    const bez = setBezier(doc, [id], true);
+    const before = itemOf(bez, id);
+    const next = itemOf(removePoint(bez, id, 1), id);
+    expect(next.points).toEqual([[0, 0], [40, 0], [60, 10]]);
+    expect(next.handles).toEqual([before.handles![0], before.handles![2], before.handles![3]]);
+  });
+
+  it('keeps at least two points in a line and three in a closed shape', () => {
+    const line = docWith({ points: [[0, 0], [10, 0]] });
+    expect(itemOf(removePoint(line.doc, line.id, 0), line.id).points).toHaveLength(2);
+    const tri = docWith({ points: [[0, 0], [10, 0], [5, 8]], closed: true });
+    expect(itemOf(removePoint(tri.doc, tri.id, 0), tri.id).points).toHaveLength(3);
+    const quad = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: true });
+    expect(itemOf(removePoint(quad.doc, quad.id, 2), quad.id).points).toEqual([[0, 0], [10, 0], [0, 10]]);
+  });
+
+  it('ignores a point that is not there and a text', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10]] });
+    expect(itemOf(removePoint(doc, id, 7), id).points).toHaveLength(3);
+    expect(itemOf(removePoint(doc, id, -1), id).points).toHaveLength(3);
+    const text = addItem(newDoc(), { kind: 'text', points: [[5, 5]], closed: false, text: '1' });
+    expect(itemOf(removePoint(text.doc, text.id!, 0), text.id!).points).toHaveLength(1);
+  });
+
+  it('a smooth line that loses its third point becomes straight', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 5], [20, 0]], smooth: true });
+    const next = itemOf(removePoint(doc, id, 1), id);
+    expect(next.points).toHaveLength(2);
+    expect(next.smooth).toBeUndefined();
+  });
+});

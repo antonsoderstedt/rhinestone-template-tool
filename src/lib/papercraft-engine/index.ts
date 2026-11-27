@@ -37,6 +37,6 @@ export {
   DRAW_LIMITS, DEFAULT_TAB, TEXT_CHARACTERS, newDoc, addItem, removeItems, moveItems, setItemPoint, rotateItems, mirrorItems, scaleItems, duplicateItems, flipFolds,
   setText, addTab, cleanItem, hitTest, snapPoint, drawProblems, drawingOf, serializeDoc, parseDoc, rectanglePoints, regularPolygonPoints, signedArea,
   distanceToSegment, pointInPolygon, selfIntersects, boundsOf,
-  flattenItem, itemsOnPage, pageView, addPage, removePage, moveToPage, setSmooth, setBezier, setHandle, toggleCorner, hitHandle, autoHandles, isCurved, drawingsOf,
-  type DrawDoc, type DrawItem, type BezierHandle, type HandleHit, type NewDrawItem, type DrawKind, type DrawProblem, type DrawProblemCode, type DrawingOptions, type Hit, type SerializedDrawing, type TabOptions,
+  flattenItem, itemsOnPage, pageView, addPage, removePage, moveToPage, setSmooth, setBezier, setHandle, toggleCorner, hitHandle, autoHandles, isCurved, nearestOnItem, insertPoint, removePoint, drawingsOf,
+  type DrawDoc, type DrawItem, type BezierHandle, type HandleHit, type LinePoint, type NewDrawItem, type DrawKind, type DrawProblem, type DrawProblemCode, type DrawingOptions, type Hit, type SerializedDrawing, type TabOptions,
 } from './draw/doc';

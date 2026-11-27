@@ -511,6 +511,143 @@ export function toggleCorner(doc: DrawDoc, id: number, index: number): DrawDoc {
   });
 }
 
+/** An item as a Bézier curve: the same if it is one, a smooth item with the handles that give back its curve, nothing for any other item. */
+function asBezier(item: DrawItem): DrawItem | null {
+  if (item.handles) return item;
+  if (item.smooth && item.points.length >= 3) return { ...item, smooth: undefined, handles: autoHandles(item.points, item.closed) };
+  return null;
+}
+
+const lerp = (a: Vec2, b: Vec2, t: number): Vec2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+/** The four control points of the piece of a Bézier item that starts at point `edge` (the one after the last point closes a closed item). */
+function pieceOf(item: DrawItem, edge: number): [Vec2, Vec2, Vec2, Vec2] {
+  const n = item.points.length;
+  const a = item.points[edge]!;
+  const b = item.points[(edge + 1) % n]!;
+  const ho = item.handles![edge]!.out;
+  const hi = item.handles![(edge + 1) % n]!.in;
+  return [a, [a[0] + ho[0], a[1] + ho[1]], [b[0] + hi[0], b[1] + hi[1]], b];
+}
+
+const cubicAt = (c: readonly [Vec2, Vec2, Vec2, Vec2], t: number): Vec2 => {
+  const m = 1 - t;
+  const w = [m * m * m, 3 * m * m * t, 3 * m * t * t, t * t * t];
+  return [w[0]! * c[0][0] + w[1]! * c[1][0] + w[2]! * c[2][0] + w[3]! * c[3][0], w[0]! * c[0][1] + w[1]! * c[1][1] + w[2]! * c[2][1] + w[3]! * c[3][1]];
+};
+
+/** Where on a line a point is nearest to it: the piece (`edge`, from point `edge` to the next), how far along that piece (`t`, 0 to 1), the place and the distance. */
+export interface LinePoint {
+  edge: number;
+  t: number;
+  at: Vec2;
+  distance: number;
+}
+
+/**
+ * The place on an item's line that is nearest to `p`. A straight item is measured along its straight pieces, a Bézier item (and a smooth one, as the
+ * Bézier curve it would become) along its curve. A text has no line.
+ */
+export function nearestOnItem(input: DrawItem, p: Vec2): LinePoint | null {
+  if (input.kind === 'text' || input.points.length < 2) return null;
+  const item = input.smooth ? asBezier(input) ?? input : input;
+  const n = item.points.length;
+  const pieces = item.closed ? n : n - 1;
+  let best: LinePoint | null = null;
+  for (let edge = 0; edge < pieces; edge++) {
+    let t = 0;
+    let at: Vec2 = item.points[edge]!;
+    let distance = Infinity;
+    if (!item.handles) {
+      const a = item.points[edge]!;
+      const b = item.points[(edge + 1) % n]!;
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const len2 = dx * dx + dy * dy;
+      t = len2 === 0 ? 0 : clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2, 0, 1);
+      at = [a[0] + dx * t, a[1] + dy * t];
+      distance = Math.hypot(p[0] - at[0], p[1] - at[1]);
+    } else {
+      const c = pieceOf(item, edge);
+      // Coarse steps first, then a finer search between the two steps either side of the best.
+      const steps = 48;
+      let bestT = 0;
+      let bestD = Infinity;
+      for (let k = 0; k <= steps; k++) {
+        const q = cubicAt(c, k / steps);
+        const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if (d < bestD) {
+          bestD = d;
+          bestT = k / steps;
+        }
+      }
+      const lo = Math.max(0, bestT - 1 / steps);
+      const hi = Math.min(1, bestT + 1 / steps);
+      for (let k = 0; k <= 32; k++) {
+        const tt = lo + ((hi - lo) * k) / 32;
+        const q = cubicAt(c, tt);
+        const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if (d < distance) {
+          distance = d;
+          t = tt;
+          at = q;
+        }
+      }
+    }
+    if (!best || distance < best.distance) best = { edge, t, at: [round(at[0]), round(at[1])], distance };
+  }
+  return best;
+}
+
+/**
+ * Puts a new point on a line, `t` of the way along the piece that starts at point `edge` (as `nearestOnItem` gives them). A straight item gets a point on
+ * its straight piece. A Bézier item has its piece cut in two where the point is, so **the curve does not change** (the new handles are the ones of the two
+ * halves); a smooth item first becomes the Bézier curve that has its shape. Nothing is added too near an end of the piece (under 2 % of it), on a text, or
+ * when the item has as many points as it may have.
+ */
+export function insertPoint(doc: DrawDoc, id: number, edge: number, t: number): DrawDoc {
+  if (!finite(edge) || !finite(t) || t < 0.02 || t > 0.98) return doc;
+  return mapItems(doc, [id], (input) => {
+    if (input.kind === 'text' || input.points.length >= DRAW_LIMITS.pointsPerItem) return input;
+    const item = input.smooth ? asBezier(input) ?? input : input;
+    const n = item.points.length;
+    const pieces = item.closed ? n : n - 1;
+    if (!Number.isInteger(edge) || edge < 0 || edge >= pieces) return input;
+    const at = edge + 1; // where the new point goes in the list
+    if (!item.handles) {
+      const point = lerp(item.points[edge]!, item.points[(edge + 1) % n]!, t);
+      const { smooth: _was, ...rest } = item;
+      void _was;
+      return { ...rest, points: [...item.points.slice(0, at), point, ...item.points.slice(at)] };
+    }
+    const [a, c1, c2, b] = pieceOf(item, edge);
+    const q0 = lerp(a, c1, t);
+    const q1 = lerp(c1, c2, t);
+    const q2 = lerp(c2, b, t);
+    const r0 = lerp(q0, q1, t);
+    const r1 = lerp(q1, q2, t);
+    const s = lerp(r0, r1, t);
+    const off = (from: Vec2, to: Vec2): Vec2 => [to[0] - from[0], to[1] - from[1]];
+    const handles = item.handles.map((h) => ({ in: [...h.in] as Vec2, out: [...h.out] as Vec2 }));
+    handles[edge]!.out = off(a, q0);
+    handles[(edge + 1) % n]!.in = off(b, q2);
+    handles.splice(at, 0, { in: off(s, r0), out: off(s, r1) });
+    return { ...item, points: [...item.points.slice(0, at), s, ...item.points.slice(at)], handles };
+  });
+}
+
+/**
+ * Takes a point away from an item (and its handles with it). The line then runs from the point before it to the point after it, so the shape changes:
+ * with handles, the neighbours keep theirs. A line keeps at least two points and a closed shape at least three, and a text has no points to take.
+ */
+export function removePoint(doc: DrawDoc, id: number, index: number): DrawDoc {
+  return mapItems(doc, [id], (i) => {
+    if (i.kind === 'text' || !Number.isInteger(index) || index < 0 || index >= i.points.length) return i;
+    if (i.points.length <= (i.closed ? 3 : 2)) return i;
+    return { ...i, points: i.points.filter((_, k) => k !== index), ...(i.handles ? { handles: i.handles.filter((_, k) => k !== index) } : {}) };
+  });
+}
+
 export interface HandleHit {
   index: number;
   which: 'in' | 'out';

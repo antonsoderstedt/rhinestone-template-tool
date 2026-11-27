@@ -1980,5 +1980,6 @@
   "Each point gets handles you can drag to bend the line, as in a drawing program.": "Varje punkt får handtag som du kan dra i för att böja linjen, som i ett ritprogram.",
   "Remove the handles": "Ta bort handtagen",
   "Edit with Bézier handles": "Redigera med Bézier-handtag",
-  "Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.": "Dra i ett runt handtag för att böja kurvan. Håll Alt för att flytta ett handtag för sig. Dubbelklicka på en punkt för att göra den till ett hörn eller ge den handtag."
+  "Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.": "Dra i ett runt handtag för att böja kurvan. Håll Alt för att flytta ett handtag för sig. Dubbelklicka på en punkt för att göra den till ett hörn eller ge den handtag.",
+  "Double-click the line to add a point there. Ctrl- or Cmd-click a point to take it away.": "Dubbelklicka på linjen för att lägga till en punkt där. Ctrl- eller Cmd-klicka på en punkt för att ta bort den."
 }

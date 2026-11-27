@@ -9,11 +9,14 @@ import {
   flattenItem,
   hitHandle,
   hitTest,
+  insertPoint,
+  nearestOnItem,
   pageView,
   moveItems,
   rectanglePoints,
   regularPolygonPoints,
   removeItems,
+  removePoint,
   setHandle,
   setItemPoint,
   snapPoint,
@@ -153,6 +156,11 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
       if (!hit) {
         dispatch({ type: 'SELECT', ids: [] });
         gesture.current = { kind: 'pan', startClient: [e.clientX, e.clientY], startView: v };
+        return;
+      }
+      if (hit.vertex !== null && selection.length === 1 && selection[0] === hit.id && (e.ctrlKey || e.metaKey)) {
+        // Ctrl- or Cmd-click on a point of the selected line takes the point away (a line keeps two points, a closed shape three).
+        dispatch({ type: 'EDIT', doc: removePoint(doc, hit.id, hit.vertex) });
         return;
       }
       if (hit.vertex !== null && selection.length === 1 && selection[0] === hit.id) {
@@ -354,11 +362,19 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
         onPointerUp={onPointerUp}
         onPointerLeave={() => setCursor(null)}
         onDoubleClick={(e) => {
-          // On a point of the selected Bézier curve: a corner gets handles, a smooth point becomes a corner.
           if (tool === 'select' && selection.length === 1) {
             const item = shown.items.find((i) => i.id === selection[0]);
-            const hit = item?.handles ? hitTest(shown, toMm(e), tol, [item.id]) : null;
-            if (item && hit && hit.vertex !== null) dispatch({ type: 'EDIT', doc: toggleCorner(doc, item.id, hit.vertex) });
+            if (!item || item.kind === 'text') return;
+            const at = toMm(e);
+            const hit = hitTest(shown, at, tol, [item.id]);
+            if (hit && hit.vertex !== null) {
+              // On a point of a Bézier curve: a corner gets handles, a smooth point becomes a corner.
+              if (item.handles) dispatch({ type: 'EDIT', doc: toggleCorner(doc, item.id, hit.vertex) });
+              return;
+            }
+            // On the line, between the points: a new point there (a Bézier curve keeps its shape; a smooth curve becomes the Bézier curve it would be).
+            const near = nearestOnItem(item, at);
+            if (near && near.distance <= tol) dispatch({ type: 'EDIT', doc: insertPoint(doc, item.id, near.edge, near.t) });
             return;
           }
           if (tool === 'polygon' && poly.length >= 2) { const trimmed = poly.slice(0, -1); finishPolygon(trimmed.length >= (closing ? 3 : 2) ? trimmed : poly); }

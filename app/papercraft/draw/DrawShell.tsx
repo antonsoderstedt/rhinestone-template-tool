@@ -291,6 +291,9 @@ export default function DrawShell() {
                   {selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 2).every((i) => i.handles) ? t('Remove the handles') : t('Edit with Bézier handles')}
                 </button>
               )}
+              {only && only.kind !== 'text' && (
+                <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Double-click the line to add a point there. Ctrl- or Cmd-click a point to take it away.')}</p>
+              )}
               {only?.handles && (
                 <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.')}</p>
               )}
