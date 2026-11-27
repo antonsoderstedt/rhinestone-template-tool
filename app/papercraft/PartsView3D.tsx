@@ -194,7 +194,7 @@ function Scene({ parts, selected, onSelect, onMove, onResize }: Props) {
                 <lineBasicMaterial color={isSelected ? '#7c3aed' : '#333333'} />
               </lineSegments>
               {isSelected && PART_FACES.map((face) => (
-                <mesh key={face} position={partFaceCentre({ ...shown[i]!, x: 0, y: 0, z: 0 }, face)} onPointerDown={(e) => beginResize(e, i, face)} onClick={(e) => e.stopPropagation()}>
+                <mesh key={face} position={partFaceCentre(shown[i]!, face)} onPointerDown={(e) => beginResize(e, i, face)} onClick={(e) => e.stopPropagation()}>
                   <boxGeometry args={[handleSize, handleSize, handleSize]} />
                   <meshBasicMaterial color={resizing?.index === i && resizing.face === face ? '#f59e0b' : '#ffffff'} depthTest={false} transparent opacity={0.95} />
                 </mesh>
