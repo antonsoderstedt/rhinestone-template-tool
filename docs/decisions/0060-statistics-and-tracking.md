@@ -49,5 +49,5 @@ connect Google Analytics 4 and Google Tag Manager. This is the second part of th
 - Counts are per browser tab (a visit) and per login (a person), not per device; a person who opens two tabs is two visits.
 - The page-view events of a person using an ad blocker are lost on the Google side but still counted in the own database, since the
   own endpoint is on the same site.
-- Not part of this decision: metadata settings (title, description, social picture), a consent banner (the site is private and the
+- Not part of this decision: metadata settings (done in ADR 0062), a consent banner (the site is private and the
   owner chooses what to switch on), and events seen in a real Google account (needs the owner's ids).

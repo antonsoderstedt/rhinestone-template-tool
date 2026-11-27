@@ -5,10 +5,11 @@ import { useState } from 'react';
 import { WorkspaceHero, WorkspacePage } from '../components/workspace/WorkspaceChrome';
 import { useT } from '../lib/i18n';
 import CatalogAdmin from './CatalogAdmin';
+import MetaAdmin from './MetaAdmin';
 import StatsAdmin from './StatsAdmin';
 import TrackingAdmin from './TrackingAdmin';
 
-type Tab = 'templates' | 'statistics' | 'tracking';
+type Tab = 'templates' | 'statistics' | 'tracking' | 'site';
 
 export default function AdminPage() {
   const t = useT();
@@ -17,6 +18,7 @@ export default function AdminPage() {
     { id: 'templates', name: t('Templates') },
     { id: 'statistics', name: t('Statistics') },
     { id: 'tracking', name: t('Tracking') },
+    { id: 'site', name: t('Site text') },
   ];
   return (
     <WorkspacePage tone="neutral">
@@ -24,7 +26,7 @@ export default function AdminPage() {
         <WorkspaceHero
           eyebrow={<><ShieldCheck className="h-4 w-4" aria-hidden="true" /> {t('Admin')}</>}
           title={t('Admin panel')}
-          description={t('Upload and manage the templates the studios can use, see how the site is used, and choose what is tracked. Only you can open this page: it is behind your Cloudflare Access login.')}
+          description={t('Upload and manage the templates the studios can use, see how the site is used, choose what is tracked, and set the title and description. Only you can open this page: it is behind your Cloudflare Access login.')}
           tone="neutral"
         />
         <div role="tablist" aria-label={t('Admin sections')} className="flex gap-2 border-b border-border/70">
@@ -44,7 +46,7 @@ export default function AdminPage() {
           ))}
         </div>
         <div role="tabpanel" id={`admin-panel-${tab}`} aria-labelledby={`admin-tab-${tab}`}>
-          {tab === 'templates' ? <CatalogAdmin /> : tab === 'statistics' ? <StatsAdmin /> : <TrackingAdmin />}
+          {tab === 'templates' ? <CatalogAdmin /> : tab === 'statistics' ? <StatsAdmin /> : tab === 'tracking' ? <TrackingAdmin /> : <MetaAdmin />}
         </div>
       </div>
     </WorkspacePage>

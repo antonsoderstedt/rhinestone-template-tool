@@ -25,7 +25,7 @@ export interface Stats {
 
 type Failed = { ok: false; reason: TrackingFailure; message?: string };
 
-async function failureOf(response: Response): Promise<Failed> {
+export async function failureOf(response: Response): Promise<Failed> {
   const reason: TrackingFailure = response.status === 401 || response.status === 403 ? 'signin' : response.status === 404 ? 'unavailable' : 'error';
   try {
     const body = (await response.json()) as { error?: string };
@@ -37,7 +37,7 @@ async function failureOf(response: Response): Promise<Failed> {
 
 const isJson = (response: Response) => (response.headers.get('content-type') ?? '').includes('application/json');
 
-async function getJson<T>(path: string, pick: (body: unknown) => T | null, fetcher: typeof fetch): Promise<TrackingResult<T>> {
+export async function getJson<T>(path: string, pick: (body: unknown) => T | null, fetcher: typeof fetch): Promise<TrackingResult<T>> {
   try {
     const response = await fetcher(withBasePath(path), { cache: 'no-store', credentials: 'same-origin' });
     // A static host answers an unknown path with its 404 page (HTML): there is no tracking server here.

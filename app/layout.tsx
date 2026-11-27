@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import AppFrame from "./components/AppFrame";
 import FontCatalogLoader from "./components/FontCatalogLoader";
 import SyncManager from "./components/SyncManager";
+import SiteMetaManager from "./components/SiteMetaManager";
 import TrackingManager from "./components/TrackingManager";
+import { DEFAULT_SITE_META } from "@/src/lib/siteMeta/siteMeta";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rhinestone Template Tool",
-  description: "Precision SVG templates for Cricut Maker 3 + Magic Flock",
+  title: DEFAULT_SITE_META.title,
+  description: DEFAULT_SITE_META.description,
 };
 
 // Real device width, and let the page draw under the notch / home indicator (the studios pad their
@@ -43,6 +45,7 @@ export default function RootLayout({
         <FontCatalogLoader />
         <SyncManager />
         <TrackingManager />
+        <SiteMetaManager />
         <AppFrame>{children}</AppFrame>
       </body>
     </html>
