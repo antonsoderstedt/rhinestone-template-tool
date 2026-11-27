@@ -1962,6 +1962,7 @@
   "Uploading…": "Laddar upp…",
   "Upload {n} files": "Ladda upp {n} filer",
   "Uploaded by me": "Uppladdade av mig",
+  "The library’s own": "Bibliotekets eget",
   "Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone: an SVG or a saved project file (.rhinestone.json). HTV: an SVG or a saved design file (.htv.json).": "Papercraft: en OBJ-, STL- eller GLB-modell, ett PDF-mönster, en SVG eller en sparad JSON. Rhinestone: en SVG eller en sparad projektfil (.rhinestone.json). HTV: en SVG eller en sparad designfil (.htv.json).",
   "An HTV design file is named something.htv.json: use “Save design file” in the HTV studio.": "En HTV-designfil heter något.htv.json: använd ”Spara designfil” i HTV-studion.",
   "This design file is too large to open.": "Designfilen är för stor för att öppnas.",

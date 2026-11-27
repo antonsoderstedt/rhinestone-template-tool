@@ -75,6 +75,8 @@ export function uniqueUploadId(name: string, taken: ReadonlySet<string>): string
 
 export type ParsedItem = { ok: true; item: Omit<LibraryItem, 'updatedAt' | 'chars'>; data: string } | { ok: false; error: string };
 
+const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/;
+
 const finite = (value: unknown, min: number, max: number): number | null => (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max ? value : null);
 
 /** Checks an upload from the admin panel. The file text itself is only measured, never read. */
@@ -104,7 +106,8 @@ export function parseItem(raw: unknown): ParsedItem {
   const format = typeof o.format === 'string' ? o.format.toLowerCase() : '';
   if (!(FONT_FORMATS as readonly string[]).includes(format)) return { ok: false, error: 'A font must be a TTF, OTF or WOFF file.' };
   if (o.data.length > ITEM_LIMITS.fontChars) return { ok: false, error: 'The font is too large.' };
-  if (o.data.length % 4 !== 0) return { ok: false, error: 'The font file is damaged.' };
+  // Only base64 text: a text with other characters would be stored and then fail when the font is asked for.
+  if (o.data.length % 4 !== 0 || !BASE64_PATTERN.test(o.data)) return { ok: false, error: 'The font file is damaged.' };
   if (category !== '' && !(FONT_CATEGORIES as readonly string[]).includes(category)) return { ok: false, error: 'A font category must be one of the known ones.' };
   const family = typeof o.family === 'string' ? tidy(o.family).slice(0, ITEM_LIMITS.family) : '';
   return { ok: true, data: o.data, item: { kind, id: o.id, name, category, format, family, design: null } };
