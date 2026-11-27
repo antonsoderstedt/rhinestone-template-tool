@@ -101,7 +101,9 @@ import {
   savedStoneToEditableStone,
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
-import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
+import { buildProjectFilename, downloadProject, MAX_PROJECT_FILE_BYTES, readProjectFile, readProjectJson } from '../lib/projectUtils';
+import type { CatalogTemplate } from '../lib/catalog/catalogClient';
+import { formatOfFileName } from '../lib/catalog/catalogFormat';
 import { trackExport } from '../lib/tracking/track';
 import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
@@ -1617,6 +1619,33 @@ export default function EditorShell() {
       });
   }, [applyProjectToEditor]);
 
+  /** A template from the site's catalog: an SVG opens as artwork (like a library asset), a saved project as a project. */
+  const handleOpenCatalogFile = useCallback(async (file: File, template: CatalogTemplate): Promise<boolean> => {
+    try {
+      const text = await file.text();
+      if (formatOfFileName(file.name) === 'json') {
+        if (file.size > MAX_PROJECT_FILE_BYTES) return false;
+        applyProjectToEditor(readProjectJson(text));
+        // The catalog template is not one of "My Designs": saving must not overwrite one of those.
+        setActiveLibraryTemplateId(null);
+      } else {
+        const validation = validateAssetUpload({ fileName: file.name, mimeType: 'image/svg+xml', sizeBytes: file.size, svgText: text });
+        if (!validation.valid) return false;
+        dispatch({ type: 'SET_PROJECT_NAME', name: template.name });
+        dispatch({ type: 'SET_ACTIVE_TOOL', tool: 'svg' });
+        dispatch({
+          type: 'UPDATE_SVG_TOOL',
+          updates: { assetKind: 'svg', uploadedSvgText: text, svgFileName: file.name, uploadedImageDataUrl: null, imageFileName: null },
+        });
+      }
+      setTemplateLibraryOpen(false);
+      setToast({ message: `Opened "${template.name}".`, tone: 'success' });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [applyProjectToEditor]);
+
   const handleSaveProject = useCallback(() => {
     if (!effectiveTemplate) {
       setToast({ message: 'Nothing to export yet. Create or open a design first.', tone: 'warning' });
@@ -1829,6 +1858,7 @@ export default function EditorShell() {
         onDelete={handleDeleteLibraryEntry}
         onRename={handleRenameLibraryEntry}
         onDuplicate={handleDuplicateLibraryEntry}
+        onOpenCatalogFile={handleOpenCatalogFile}
       />
 
       <PromptDialog

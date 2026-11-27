@@ -278,7 +278,7 @@ export default function CatalogAdmin() {
             </div>
 
             <div className="md:col-span-2">
-              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone and HTV: an SVG or a saved JSON.')} /></label>
+              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone: an SVG or a saved project file (.rhinestone.json). HTV: an SVG.')} /></label>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-border/80 bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-surface-raised">
                   <Upload className="h-4 w-4" aria-hidden="true" /> {file ? t('Choose another file') : existing?.file ? t('Replace the file') : t('Choose a file')}

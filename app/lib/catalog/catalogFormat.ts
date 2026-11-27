@@ -11,7 +11,7 @@ export const STUDIO_NAMES: Record<CatalogStudio, string> = { rhinestone: 'Rhines
 /** The formats a studio can use from the catalog. */
 export const STUDIO_FORMATS: Record<CatalogStudio, readonly string[]> = {
   rhinestone: ['svg', 'json'],
-  htv: ['svg', 'json'],
+  htv: ['svg'],
   papercraft: ['obj', 'stl', 'glb', 'pdf', 'svg', 'json'],
 };
 
