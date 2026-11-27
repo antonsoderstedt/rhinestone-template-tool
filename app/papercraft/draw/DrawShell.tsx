@@ -5,21 +5,26 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ArrowLeft, FileUp, Hash, Hexagon, MousePointer2, Pentagon, RectangleHorizontal, Redo2, Slash, Tag, Undo2 } from 'lucide-react';
 import {
   PAGE_PRESETS,
+  addPage,
   boundsOf,
   drawProblems,
-  drawingOf,
+  drawingsOf,
   duplicateItems,
+  flattenItem,
   exportPageDxf,
   exportPageSvg,
   exportPdf,
   flipFolds,
   mirrorItems,
+  moveToPage,
   newDoc,
   parseDoc,
   removeItems,
+  removePage,
   rotateItems,
   scaleItems,
   serializeDoc,
+  setSmooth,
   setText,
   signedArea,
   type DrawDoc,
@@ -29,6 +34,7 @@ import StudioThemeToggle from '../../components/StudioThemeToggle';
 import { useT } from '../../lib/i18n';
 import { useStudioTheme } from '../../lib/studioTheme';
 import { CheckField, LengthField, NumberField, Section, SelectField } from '../fields';
+import { createZip } from '../../lib/zip';
 import { downloadExportFile, exportBaseName } from '../papercraftExport';
 import DrawCanvas from './DrawCanvas';
 import DrawCatalogPanel from './DrawCatalogPanel';
@@ -61,8 +67,14 @@ export default function DrawShell() {
   const [rotateBy, setRotateBy] = useState(15);
   const [scalePct, setScalePct] = useState(110);
   const [message, setMessage] = useState<string | null>(null);
+  const [pageAt, setPageAt] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { doc, selection } = state;
+  const { doc } = state;
+  /** The page being worked on: always one the drawing has (a page that was taken away leaves the view on the last). */
+  const page = Math.min(pageAt, doc.pageCount - 1);
+  const onPage = (id: number) => doc.items.some((i) => i.id === id && i.page === page);
+  // Only what is on this page can be selected.
+  const selection = state.selection.filter(onPage);
 
   // The drawing of the last visit comes back (read after load: the first render is the same on the server and in the browser).
   useEffect(() => {
@@ -76,7 +88,7 @@ export default function DrawShell() {
   }, [doc, state.pending]);
 
   const problems = useMemo(() => drawProblems(doc), [doc]);
-  const selectedItems = doc.items.filter((i) => selection.includes(i.id));
+  const selectedItems = doc.items.filter((i) => i.page === page && selection.includes(i.id));
   const only = selectedItems.length === 1 ? selectedItems[0]! : null;
   const set = (patch: Partial<ToolOptions>) => setOptions((o) => ({ ...o, ...patch }));
   const edit = (next: DrawDoc, ids?: number[]) => dispatch({ type: 'EDIT', doc: next, selection: ids });
@@ -109,6 +121,7 @@ export default function DrawShell() {
       case 'self-intersecting': return t('An outline crosses itself.');
       case 'open-outline': return t('An outline is not closed.');
       case 'tiny': return t('Something is smaller than half a millimetre.');
+      case 'empty-page': return t('A page has nothing on it.');
     }
   };
   const problemCounts = useMemo(() => {
@@ -124,9 +137,21 @@ export default function DrawShell() {
       return;
     }
     setMessage(null);
-    if (kind === 'pdf') downloadExportFile({ fileName: `${base}.pdf`, mime: 'application/pdf', data: exportPdf([drawingOf(doc)]) });
-    else if (kind === 'svg') downloadExportFile({ fileName: `${base}-cricut.svg`, mime: 'image/svg+xml', data: exportPageSvg(drawingOf(doc, { crop }), 'cricut') });
-    else downloadExportFile({ fileName: `${base}-silhouette.dxf`, mime: 'application/dxf', data: exportPageDxf(drawingOf(doc, { crop })) });
+    if (kind === 'pdf') {
+      // One PDF with every page, each at the size of the sheet.
+      downloadExportFile({ fileName: `${base}.pdf`, mime: 'application/pdf', data: exportPdf(drawingsOf(doc)) });
+      return;
+    }
+    // The cutting machine takes one page at a time: one file for one page, a zip for several (empty pages are left out).
+    const drawings = drawingsOf(doc, { crop }).map((drawing, i) => ({ drawing, i })).filter(({ drawing }) => drawing.cut.length > 0 || drawing.folds.length > 0 || drawing.text.length > 0);
+    const files = drawings.map(({ drawing, i }) => {
+      const suffix = doc.pageCount === 1 ? '' : `-page-${i + 1}`;
+      return kind === 'svg'
+        ? { name: `${base}-cricut${suffix}.svg`, data: exportPageSvg(drawing, 'cricut') }
+        : { name: `${base}-silhouette${suffix}.dxf`, data: exportPageDxf(drawing) };
+    });
+    if (files.length === 1) downloadExportFile({ fileName: files[0]!.name, mime: kind === 'svg' ? 'image/svg+xml' : 'application/dxf', data: files[0]!.data });
+    else downloadExportFile({ fileName: `${base}-${kind === 'svg' ? 'cricut' : 'silhouette'}.zip`, mime: 'application/zip', data: createZip(files) });
   };
 
   const openFile = async (file: File) => {
@@ -142,7 +167,7 @@ export default function DrawShell() {
   };
 
   const size = boundsOf(selectedItems);
-  const area = only && only.kind === 'cut' && only.closed ? Math.abs(signedArea(only.points)) : null;
+  const area = only && only.kind === 'cut' && only.closed ? Math.abs(signedArea(flattenItem(only))) : null;
   const preset = presetOf(doc);
 
   return (
@@ -182,6 +207,19 @@ export default function DrawShell() {
             </div>
             <p className="text-xs text-[var(--studio-ink-subtle)]">{tools.find((x) => x.id === tool)?.tip}</p>
             {tool === 'ngon' && <NumberField label={t('Sides')} tip={t('How many sides the polygon has. 48 is a circle for most uses.')} value={options.sides} min={3} max={200} onChange={(sides) => set({ sides })} />}
+            {tool === 'polygon' && (
+              <>
+                <SelectField<'cut' | 'mountain' | 'valley'>
+                  label={t('Draws a')}
+                  tip={t('The outline tool can draw a cut, or a mountain or valley fold line.')}
+                  value={options.outlineKind}
+                  options={[{ value: 'cut', label: t('Cut outline') }, { value: 'valley', label: t('Valley fold line (blue)') }, { value: 'mountain', label: t('Mountain fold line (red)') }]}
+                  onChange={(outlineKind) => set({ outlineKind })}
+                />
+                <CheckField label={t('Smooth curve')} tip={t('The line runs in a smooth curve through the points you click, instead of straight between them. Needs three points.')} checked={options.smooth} onChange={(smooth) => set({ smooth })} />
+                {options.outlineKind === 'cut' && <CheckField label={t('Leave it open')} tip={t('Do not close the outline: it stays a line, for a curved cut. Press Enter or double-click to finish.')} checked={options.leaveOpen} onChange={(leaveOpen) => set({ leaveOpen })} />}
+              </>
+            )}
             {tool === 'fold' && (
               <SelectField<'mountain' | 'valley'>
                 label={t('Kind of fold')}
@@ -240,6 +278,19 @@ export default function DrawShell() {
               </div>
               {selectedItems.some((i) => i.kind === 'mountain' || i.kind === 'valley') && (
                 <button type="button" className={buttonClass} onClick={() => edit(flipFolds(doc, selection))}>{t('Swap mountain and valley')}</button>
+              )}
+              {selectedItems.some((i) => i.kind !== 'text' && i.points.length >= 3) && (
+                <button type="button" className={buttonClass} onClick={() => edit(setSmooth(doc, selection, !selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 3).every((i) => i.smooth)))}>
+                  {selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 3).every((i) => i.smooth) ? t('Make it straight') : t('Make it a smooth curve')}
+                </button>
+              )}
+              {doc.pageCount > 1 && (
+                <SelectField<string>
+                  label={t('Move to page')}
+                  value=""
+                  options={[{ value: '', label: t('Choose a page') }, ...Array.from({ length: doc.pageCount }, (_, i) => ({ value: String(i), label: t('Page {n}', { n: i + 1 }) })).filter((_, i) => i !== page)]}
+                  onChange={(target) => { if (target !== '') { edit(moveToPage(doc, selection, Number(target)), []); } }}
+                />
               )}
               {only?.kind === 'text' && (
                 <>
@@ -307,9 +358,22 @@ export default function DrawShell() {
           </Section>
         </aside>
 
-        <main className="min-h-0 flex-1">
+        <main className="flex min-h-0 flex-1 flex-col">
+          <nav aria-label={t('Pages')} className="flex flex-wrap items-center gap-1.5 border-b border-[var(--studio-border)] bg-[var(--studio-surface)] px-3 py-1.5">
+            {Array.from({ length: doc.pageCount }, (_, i) => (
+              <button key={i} type="button" aria-pressed={i === page} onClick={() => { setPageAt(i); dispatch({ type: 'SELECT', ids: [] }); }} className={`${buttonClass} ${i === page ? '!border-violet-500 !bg-violet-500/20 !text-[var(--studio-ink)]' : ''}`}>
+                {t('Page {n}', { n: i + 1 })}
+              </button>
+            ))}
+            <button type="button" className={buttonClass} disabled={doc.pageCount >= 20} title={t('Add a page: another sheet of the same size.')} onClick={() => { edit(addPage(doc)); setPageAt(doc.pageCount); }}>+ {t('Add a page')}</button>
+            {doc.pageCount > 1 && (
+              <button type="button" className={`${buttonClass} text-red-300`} title={t('Remove this page and what is on it.')} onClick={() => { if (!doc.items.some((i) => i.page === page) || window.confirm(t('Remove page {n} and everything on it?', { n: page + 1 }))) { edit(removePage(doc, page), []); } }}>{t('Remove this page')}</button>
+            )}
+          </nav>
+          <div className="min-h-0 flex-1">
           <DrawCanvas
             doc={doc}
+            page={page}
             selection={selection}
             tool={tool}
             options={options}
@@ -317,6 +381,7 @@ export default function DrawShell() {
             onNumberPlaced={(next) => set({ numberText: next })}
             onTool={setTool}
           />
+          </div>
         </main>
       </div>
     </div>

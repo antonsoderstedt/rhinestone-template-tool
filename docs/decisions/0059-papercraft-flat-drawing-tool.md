@@ -39,3 +39,15 @@ Silhouette or print it.
 - Fixed on the way: the first click on the sheet was read after the canvas took the focus, and the focus could scroll the page, so the first corner landed in the wrong place on a narrow screen; the point is now read first and the focus does not scroll.
 - The mouse editing was checked with synthetic pointer events in the running page (rectangle, tab, outline, number, move, undo, four downloads),
   not with a real mouse or touch screen; nothing has been cut on a machine.
+
+## Update: pages and smooth curves
+
+- **Pages:** a drawing has `pageCount` (1–20) sheets of the same size; every item has a `page`. The canvas works on one page: what is hit,
+  snapped to and drawn is `pageView(doc, page)`, while a change is made to the whole drawing. Pages can be added, removed (with what is on them; later pages
+  move up) and items moved between pages. Exports: the PDF has every page; the Cricut SVG and Silhouette DXF are one file per page (a zip when there are
+  several; empty pages are left out). A page with nothing on it is pointed out. Drawings saved before pages open on one page (`parseDoc` raises the count to the
+  highest page used).
+- **Smooth curves:** an item (a cut or a fold line with three or more points) can be `smooth`: its points are control points and the line is a centripetal
+  Catmull-Rom curve through them (closed for a closed cut), cut into straight pieces about a millimetre long (`flattenItem`). The cutting files, hit
+  tests, the checks and the area use the flattened line; the handles stay on the control points. The outline tool has “Draws a” (cut or a fold line), “Smooth curve”
+  and “Leave it open”, and a selection can be made smooth or straight. A glue tab cannot be put on a smooth edge. The curve is a spline, not a Bézier with handles.

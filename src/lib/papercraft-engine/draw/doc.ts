@@ -22,13 +22,22 @@ export interface DrawItem {
   text?: string;
   heightMm?: number;
   angleDeg?: number;
+  /** The page of the drawing the item is on (0 is the first). */
+  page: number;
+  /** The points are control points of a smooth curve that runs through them (a cut or a fold line with at least three points), not corners. */
+  smooth?: boolean;
 }
+
+/** What is given to make an item: the id is made here, and the page is the first unless it is said. */
+export type NewDrawItem = Omit<DrawItem, 'id' | 'page'> & { page?: number };
 
 export interface DrawDoc {
   name: string;
   sheet: { widthMm: number; heightMm: number };
   items: DrawItem[];
   nextId: number;
+  /** How many pages (sheets of the same size) the drawing has. */
+  pageCount: number;
 }
 
 export const DRAW_LIMITS = {
@@ -38,6 +47,7 @@ export const DRAW_LIMITS = {
   coordinate: 5000,
   textLength: 12,
   textHeightMm: { min: 1, max: 50 },
+  pages: 20,
 } as const;
 
 export const TEXT_CHARACTERS = '0123456789-/.x';
@@ -49,7 +59,7 @@ const clampCoord = (n: number) => clamp(n, -DRAW_LIMITS.coordinate, DRAW_LIMITS.
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
 export function newDoc(widthMm = 210, heightMm = 297, name = 'Drawing'): DrawDoc {
-  return { name, sheet: { widthMm: clamp(widthMm, DRAW_LIMITS.sheet.min, DRAW_LIMITS.sheet.max), heightMm: clamp(heightMm, DRAW_LIMITS.sheet.min, DRAW_LIMITS.sheet.max) }, items: [], nextId: 1 };
+  return { name, sheet: { widthMm: clamp(widthMm, DRAW_LIMITS.sheet.min, DRAW_LIMITS.sheet.max), heightMm: clamp(heightMm, DRAW_LIMITS.sheet.min, DRAW_LIMITS.sheet.max) }, items: [], nextId: 1, pageCount: 1 };
 }
 
 // ─── Geometry ─────────────────────────────────────────────────────────────────
@@ -118,6 +128,61 @@ export function boundsOf(items: readonly DrawItem[]): { minX: number; minY: numb
   return minX <= maxX ? { minX, minY, maxX, maxY } : null;
 }
 
+
+// ─── Curves ───────────────────────────────────────────────────────────────────
+
+/**
+ * The points a smooth item is drawn and cut along: a centripetal Catmull-Rom curve through its control points (closed for a closed shape),
+ * cut into short straight pieces about a millimetre long (a cutter or an SVG path takes straight pieces). A straight item is its own points.
+ */
+export function flattenItem(item: Pick<DrawItem, 'points' | 'closed' | 'smooth'>): Vec2[] {
+  const raw = item.points;
+  if (!item.smooth || raw.length < 3) return raw.map((p): Vec2 => [p[0], p[1]]);
+  // Points on top of each other would make the curve undefined.
+  const pts: Vec2[] = [];
+  for (const p of raw) if (pts.length === 0 || Math.hypot(p[0] - pts[pts.length - 1]![0], p[1] - pts[pts.length - 1]![1]) > 1e-6) pts.push(p);
+  if (item.closed && pts.length > 1 && Math.hypot(pts[0]![0] - pts[pts.length - 1]![0], pts[0]![1] - pts[pts.length - 1]![1]) <= 1e-6) pts.pop();
+  const n = pts.length;
+  if (n < 3) return pts.map((p): Vec2 => [p[0], p[1]]);
+  const at = (i: number): Vec2 => {
+    if (item.closed) return pts[((i % n) + n) % n]!;
+    if (i < 0) return [2 * pts[0]![0] - pts[1]![0], 2 * pts[0]![1] - pts[1]![1]];
+    if (i >= n) return [2 * pts[n - 1]![0] - pts[n - 2]![0], 2 * pts[n - 1]![1] - pts[n - 2]![1]];
+    return pts[i]!;
+  };
+  const segments = item.closed ? n : n - 1;
+  const out: Vec2[] = [];
+  for (let i = 0; i < segments; i++) {
+    const p0 = at(i - 1);
+    const p1 = at(i);
+    const p2 = at(i + 1);
+    const p3 = at(i + 2);
+    const knot = (a: Vec2, b: Vec2) => Math.max(Math.pow(Math.hypot(b[0] - a[0], b[1] - a[1]), 0.5), 1e-6);
+    const t0 = 0;
+    const t1 = t0 + knot(p0, p1);
+    const t2 = t1 + knot(p1, p2);
+    const t3 = t2 + knot(p2, p3);
+    const steps = Math.min(60, Math.max(4, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]))));
+    out.push([p1[0], p1[1]]);
+    for (let k = 1; k < steps; k++) {
+      const t = t1 + ((t2 - t1) * k) / steps;
+      const mix = (a: Vec2, b: Vec2, ta: number, tb: number): Vec2 => {
+        const w = (t - ta) / (tb - ta);
+        return [a[0] * (1 - w) + b[0] * w, a[1] * (1 - w) + b[1] * w];
+      };
+      const a1 = mix(p0, p1, t0, t1);
+      const a2 = mix(p1, p2, t1, t2);
+      const a3 = mix(p2, p3, t2, t3);
+      const b1 = mix(a1, a2, t0, t2);
+      const b2 = mix(a2, a3, t1, t3);
+      const c = mix(b1, b2, t1, t2);
+      out.push([round(c[0]), round(c[1])]);
+    }
+  }
+  if (!item.closed) out.push([pts[n - 1]![0], pts[n - 1]![1]]);
+  return out;
+}
+
 // ─── Shapes ───────────────────────────────────────────────────────────────────
 
 /** A rectangle, counter-clockwise from its lower left corner. */
@@ -139,19 +204,21 @@ export function regularPolygonPoints(cx: number, cy: number, radius: number, sid
 // ─── Cleaning ─────────────────────────────────────────────────────────────────
 
 /** An item with every number in range and the rules of its kind kept; null when nothing is left of it. */
-export function cleanItem(item: DrawItem): DrawItem | null {
+export function cleanItem(item: Omit<DrawItem, 'page'> & { page?: number }): DrawItem | null {
   const kind: DrawKind = (['cut', 'mountain', 'valley', 'text'] as const).includes(item.kind) ? item.kind : 'cut';
   const points = (Array.isArray(item.points) ? item.points : [])
     .filter((p) => Array.isArray(p) && finite(p[0]) && finite(p[1]))
     .slice(0, DRAW_LIMITS.pointsPerItem)
     .map((p): Vec2 => [round(clampCoord(p[0])), round(clampCoord(p[1]))]);
   const id = Number.isInteger(item.id) && item.id > 0 ? item.id : 1;
+  const page = finite(item.page) && Number.isInteger(item.page) ? clamp(item.page, 0, DRAW_LIMITS.pages - 1) : 0;
   if (kind === 'text') {
     const text = [...String(item.text ?? '')].filter((c) => TEXT_CHARACTERS.includes(c)).join('').slice(0, DRAW_LIMITS.textLength);
     if (points.length < 1 || !text) return null;
     return {
       id,
       kind,
+      page,
       points: [points[0]!],
       closed: false,
       text,
@@ -161,7 +228,7 @@ export function cleanItem(item: DrawItem): DrawItem | null {
   }
   const closed = kind === 'cut' && item.closed === true && points.length >= 3;
   if (points.length < 2) return null;
-  return { id, kind, points, closed };
+  return { id, kind, page, points, closed, ...(item.smooth === true && points.length >= 3 ? { smooth: true } : {}) };
 }
 
 // ─── Operations ───────────────────────────────────────────────────────────────
@@ -171,11 +238,46 @@ function replaceItems(doc: DrawDoc, items: DrawItem[]): DrawDoc {
 }
 
 /** Adds an item (the id is made here). Returns the new document and the id, or the same document and null when the item is not valid or the sheet is full. */
-export function addItem(doc: DrawDoc, spec: Omit<DrawItem, 'id'>): { doc: DrawDoc; id: number | null } {
+export function addItem(doc: DrawDoc, spec: NewDrawItem): { doc: DrawDoc; id: number | null } {
   if (doc.items.length >= DRAW_LIMITS.items) return { doc, id: null };
-  const item = cleanItem({ ...spec, id: doc.nextId });
-  if (!item) return { doc, id: null };
+  const made = cleanItem({ ...spec, id: doc.nextId });
+  if (!made) return { doc, id: null };
+  // An item is on a page the drawing has.
+  const item = made.page >= doc.pageCount ? { ...made, page: doc.pageCount - 1 } : made;
   return { doc: { ...doc, items: [...doc.items, item], nextId: doc.nextId + 1 }, id: item.id };
+}
+
+// ─── Pages ────────────────────────────────────────────────────────────────────
+
+/** The items on one page. */
+export function itemsOnPage(doc: DrawDoc, page: number): DrawItem[] {
+  return doc.items.filter((i) => i.page === page);
+}
+
+/** The drawing as seen from one page: only that page's items. Used to find things on the page being worked on. */
+export function pageView(doc: DrawDoc, page: number): DrawDoc {
+  return { ...doc, items: itemsOnPage(doc, page) };
+}
+
+/** A new empty page at the end (at most `DRAW_LIMITS.pages`). */
+export function addPage(doc: DrawDoc): DrawDoc {
+  return doc.pageCount >= DRAW_LIMITS.pages ? doc : { ...doc, pageCount: doc.pageCount + 1 };
+}
+
+/** Takes a page away with what is on it; the pages after it move up by one. The last page cannot be removed. */
+export function removePage(doc: DrawDoc, page: number): DrawDoc {
+  if (doc.pageCount <= 1 || page < 0 || page >= doc.pageCount) return doc;
+  return {
+    ...doc,
+    pageCount: doc.pageCount - 1,
+    items: doc.items.filter((i) => i.page !== page).map((i) => (i.page > page ? { ...i, page: i.page - 1 } : i)),
+  };
+}
+
+/** Moves items to another page. */
+export function moveToPage(doc: DrawDoc, ids: readonly number[], page: number): DrawDoc {
+  if (!Number.isInteger(page) || page < 0 || page >= doc.pageCount) return doc;
+  return mapItems(doc, ids, (i) => ({ ...i, page }));
 }
 
 export function removeItems(doc: DrawDoc, ids: readonly number[]): DrawDoc {
@@ -261,6 +363,11 @@ export function flipFolds(doc: DrawDoc, ids: readonly number[]): DrawDoc {
   return mapItems(doc, ids, (i) => (i.kind === 'mountain' ? { ...i, kind: 'valley' } : i.kind === 'valley' ? { ...i, kind: 'mountain' } : i));
 }
 
+/** Makes items smooth curves through their points, or straight pieces between them again. A text, and an item with fewer than three points, stays as it is. */
+export function setSmooth(doc: DrawDoc, ids: readonly number[], smooth: boolean): DrawDoc {
+  return mapItems(doc, ids, (i) => (i.kind === 'text' || i.points.length < 3 ? i : { ...i, smooth }));
+}
+
 export function setText(doc: DrawDoc, id: number, patch: { text?: string; heightMm?: number }): DrawDoc {
   return mapItems(doc, [id], (i) => (i.kind === 'text' ? { ...i, ...patch } : i));
 }
@@ -281,7 +388,7 @@ export const DEFAULT_TAB: TabOptions = { widthMm: 8, angleDeg: 45 };
  */
 export function addTab(doc: DrawDoc, id: number, edge: number, options: Partial<TabOptions> = {}): { doc: DrawDoc; added: boolean } {
   const item = doc.items.find((i) => i.id === id);
-  if (!item || item.kind !== 'cut' || !item.closed || edge < 0 || edge >= item.points.length) return { doc, added: false };
+  if (!item || item.kind !== 'cut' || !item.closed || item.smooth || edge < 0 || edge >= item.points.length) return { doc, added: false };
   const o = { ...DEFAULT_TAB, ...options };
   const width = clamp(finite(o.widthMm) ? o.widthMm : DEFAULT_TAB.widthMm, 1, 100);
   const angle = clamp(finite(o.angleDeg) ? o.angleDeg : DEFAULT_TAB.angleDeg, 20, 90);
@@ -301,7 +408,7 @@ export function addTab(doc: DrawDoc, id: number, edge: number, options: Partial<
   let next = mapItems(doc, [id], (i) => ({ ...i, points }));
   const near = (p: Vec2, q: Vec2) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.01;
   const already = doc.items.some((i) => (i.kind === 'valley' || i.kind === 'mountain') && i.points.length === 2 && ((near(i.points[0]!, a) && near(i.points[1]!, b)) || (near(i.points[0]!, b) && near(i.points[1]!, a))));
-  if (!already) next = addItem(next, { kind: 'valley', points: [a, b], closed: false }).doc;
+  if (!already) next = addItem(next, { kind: 'valley', points: [a, b], closed: false, page: item.page }).doc;
   return { doc: next, added: true };
 }
 
@@ -333,15 +440,18 @@ export function hitTest(doc: DrawDoc, p: Vec2, tolMm: number, only?: readonly nu
       if (Math.hypot(q[0] - p[0], q[1] - p[1]) <= Math.max(tolMm, (item.heightMm ?? 4) * 1.5)) return { id: item.id, vertex: null, edge: null };
       continue;
     }
-    const n = item.points.length;
+    // A smooth item is hit along its curve; only a straight edge can be told apart (for a glue tab).
+    const line = flattenItem(item);
+    const n = line.length;
     const edges = item.closed ? n : n - 1;
-    for (let i = 0; i < edges; i++) if (distanceToSegment(p, item.points[i]!, item.points[(i + 1) % n]!) <= tolMm) return { id: item.id, vertex: null, edge: i };
+    for (let i = 0; i < edges; i++) if (distanceToSegment(p, line[i]!, line[(i + 1) % n]!) <= tolMm) return { id: item.id, vertex: null, edge: item.smooth ? null : i };
   }
   let best: DrawItem | null = null;
   let bestArea = Infinity;
   for (const item of items) {
-    if (item.kind !== 'cut' || !item.closed || !pointInPolygon(p, item.points)) continue;
-    const area = Math.abs(signedArea(item.points));
+    const outline = flattenItem(item);
+    if (item.kind !== 'cut' || !item.closed || !pointInPolygon(p, outline)) continue;
+    const area = Math.abs(signedArea(outline));
     if (area <= bestArea) {
       best = item;
       bestArea = area;
@@ -370,25 +480,29 @@ export function snapPoint(doc: DrawDoc, p: Vec2, options: { gridMm: number; tolM
 
 // ─── Checks ───────────────────────────────────────────────────────────────────
 
-export type DrawProblemCode = 'outside-sheet' | 'self-intersecting' | 'open-outline' | 'tiny' | 'nothing-to-cut';
+export type DrawProblemCode = 'outside-sheet' | 'self-intersecting' | 'open-outline' | 'tiny' | 'nothing-to-cut' | 'empty-page';
 
 export interface DrawProblem {
   code: DrawProblemCode;
   itemId?: number;
+  /** The page, for a page with nothing on it. */
+  page?: number;
 }
 
 /** What may be wrong with the drawing before it is cut: parts off the sheet, outlines that cross themselves, open outlines, specks. */
 export function drawProblems(doc: DrawDoc): DrawProblem[] {
   const problems: DrawProblem[] = [];
   if (!doc.items.some((i) => i.kind === 'cut')) problems.push({ code: 'nothing-to-cut' });
+  if (doc.pageCount > 1) for (let page = 0; page < doc.pageCount; page++) if (!doc.items.some((i) => i.page === page)) problems.push({ code: 'empty-page', page });
   const eps = 0.01;
   for (const item of doc.items) {
-    const b = boundsOf([item])!;
+    const shown = item.smooth ? flattenItem(item) : item.points;
+    const b = boundsOf([{ ...item, points: shown }])!;
     if (b.minX < -eps || b.minY < -eps || b.maxX > doc.sheet.widthMm + eps || b.maxY > doc.sheet.heightMm + eps) problems.push({ code: 'outside-sheet', itemId: item.id });
     if (item.kind === 'text') continue;
     if (Math.max(b.maxX - b.minX, b.maxY - b.minY) < 0.5) problems.push({ code: 'tiny', itemId: item.id });
     if (item.kind === 'cut') {
-      if (item.closed && selfIntersects(item.points, true)) problems.push({ code: 'self-intersecting', itemId: item.id });
+      if (item.closed && selfIntersects(shown, true)) problems.push({ code: 'self-intersecting', itemId: item.id });
       if (!item.closed && item.points.length >= 3) problems.push({ code: 'open-outline', itemId: item.id });
     }
   }
@@ -401,6 +515,8 @@ export interface DrawingOptions {
   /** Make the sheet only as big as the drawing (plus the margin), not as big as the paper. */
   crop?: boolean;
   marginMm?: number;
+  /** The page to draw (0 is the first). */
+  page?: number;
 }
 
 /** The drawing as the studio's exporters take it: cut outlines, folds (mountain or valley) and numbers as strokes. */
@@ -408,19 +524,24 @@ export function drawingOf(doc: DrawDoc, options: DrawingOptions = {}): PageDrawi
   const cut: PageDrawing['cut'] = [];
   const folds: PageDrawing['folds'] = [];
   const text: Vec2[][] = [];
-  for (const item of doc.items) {
-    if (item.kind === 'cut') cut.push({ points: item.points.map((p): Vec2 => [p[0], p[1]]), closed: item.closed });
+  const page = options.page ?? 0;
+  const here = doc.items.filter((i) => i.page === page);
+  for (const item of here) {
+    if (item.kind === 'cut') cut.push({ points: flattenItem(item), closed: item.closed });
     else if (item.kind === 'text') {
       const p = item.points[0]!;
       text.push(...strokeText(item.text ?? '', p[0], p[1], item.heightMm ?? 4, ((item.angleDeg ?? 0) * Math.PI) / 180));
-    } else for (let i = 1; i < item.points.length; i++) folds.push({ a: item.points[i - 1]!, b: item.points[i]!, kind: item.kind });
+    } else {
+      const line = flattenItem(item);
+      for (let i = 1; i < line.length; i++) folds.push({ a: line[i - 1]!, b: line[i]!, kind: item.kind });
+    }
   }
   let width = doc.sheet.widthMm;
   let height = doc.sheet.heightMm;
   if (options.crop) {
     const all: DrawItem[] = [
-      ...doc.items.filter((i) => i.kind !== 'text'),
-      ...text.map((points, k): DrawItem => ({ id: -k - 1, kind: 'cut', points, closed: false })),
+      ...here.filter((i) => i.kind !== 'text').map((i) => ({ ...i, points: flattenItem(i) })),
+      ...text.map((points, k): DrawItem => ({ id: -k - 1, kind: 'cut', page, points, closed: false })),
     ];
     const b = boundsOf(all);
     if (b) {
@@ -437,6 +558,11 @@ export function drawingOf(doc: DrawDoc, options: DrawingOptions = {}): PageDrawi
     }
   }
   return { widthMm: width, heightMm: height, cut, folds, text, fills: [], texts: [] };
+}
+
+/** Every page of the drawing, in order, as the exporters take them. */
+export function drawingsOf(doc: DrawDoc, options: Omit<DrawingOptions, 'page'> = {}): PageDrawing[] {
+  return Array.from({ length: doc.pageCount }, (_, page) => drawingOf(doc, { ...options, page }));
 }
 
 // ─── Saving ───────────────────────────────────────────────────────────────────
@@ -470,6 +596,8 @@ export function parseDoc(data: unknown): DrawDoc | null {
     maxId = Math.max(maxId, item.id);
     items.push(item);
   }
-  doc = { ...doc, items, nextId: maxId + 1 };
+  const highest = items.reduce((m, i) => Math.max(m, i.page), 0);
+  const asked = finite(raw.pageCount) ? Math.round(raw.pageCount) : 1;
+  doc = { ...doc, items, nextId: maxId + 1, pageCount: clamp(Math.max(asked, highest + 1), 1, DRAW_LIMITS.pages) };
   return doc;
 }

@@ -198,6 +198,9 @@ A `DrawDoc` is a sheet and items (`cut`, `mountain`, `valley`, `text`), y up, mi
 and adds a valley line `a`–`b` unless one is there. `hitTest` tries corners, then edges and lines, then the inside of closed shapes (smallest area). `drawProblems`
 reports nothing-to-cut, outside-sheet, self-intersecting (proper crossings of non-adjacent edges), open-outline and tiny. `drawingOf(doc, {crop, marginMm})` gives a `PageDrawing`:
 cut paths, folds with their kind, numbers as `strokeText` lines; with `crop` the content is moved to the margin and the sheet is its size plus the margin.
+Items have a `page` (0–19; `pageCount` pages of the same sheet); `drawingOf(doc, {page})` draws one page and `drawingsOf` all. A `smooth` item (three or more points) is a
+centripetal Catmull-Rom curve (knots at the square root of the chord length) through its points, closed for a closed cut and with mirrored end points for an open one, split into
+`clamp(ceil(chord in mm), 4, 60)` pieces per span (`flattenItem`); output, hit tests, checks and area use the flattened line.
 
 ## Not in this version
 

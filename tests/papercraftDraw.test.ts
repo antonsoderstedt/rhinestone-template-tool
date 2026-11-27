@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   addItem,
+  addPage,
   addTab,
   boundsOf,
   cleanItem,
   distanceToSegment,
   drawingOf,
   drawProblems,
+  DRAW_LIMITS,
+  drawingsOf,
   duplicateItems,
+  flattenItem,
   exportPageDxf,
   exportPageSvg,
   exportPdf,
@@ -15,17 +19,21 @@ import {
   hitTest,
   mirrorItems,
   moveItems,
+  moveToPage,
   newDoc,
   parseDoc,
+  pageView,
   pointInPolygon,
   rectanglePoints,
   regularPolygonPoints,
   removeItems,
+  removePage,
   rotateItems,
   scaleItems,
   selfIntersects,
   serializeDoc,
   setItemPoint,
+  setSmooth,
   setText,
   signedArea,
   snapPoint,
@@ -328,5 +336,158 @@ describe('saving', () => {
     expect(messy.items[1]!.kind).toBe('cut');
     expect(messy.nextId).toBe(6);
     expect(messy.name).toBe('Drawing');
+  });
+});
+
+describe('smooth curves', () => {
+  const near = (a: readonly number[], b: readonly number[]) => Math.hypot(a[0]! - b[0]!, a[1]! - b[1]!) < 1e-2;
+
+  it('an item that is not smooth, or has fewer than three points, is its own points', () => {
+    expect(flattenItem({ points: [[0, 0], [5, 5], [10, 0]], closed: false })).toEqual([[0, 0], [5, 5], [10, 0]]);
+    expect(flattenItem({ points: [[0, 0], [10, 0]], closed: false, smooth: true })).toEqual([[0, 0], [10, 0]]);
+  });
+
+  it('an open curve runs through every control point, from the first to the last, in short pieces', () => {
+    const control: Vec2[] = [[0, 0], [20, 15], [40, 0], [60, 15]];
+    const line = flattenItem({ points: control, closed: false, smooth: true });
+    expect(near(line[0]!, control[0]!)).toBe(true);
+    expect(near(line[line.length - 1]!, control[3]!)).toBe(true);
+    for (const c of control) expect(line.some((p) => near(p, c)), String(c)).toBe(true);
+    expect(line.length).toBeGreaterThan(control.length * 4);
+    for (let i = 1; i < line.length; i++) expect(Math.hypot(line[i]![0] - line[i - 1]![0], line[i]![1] - line[i - 1]![1])).toBeLessThan(6);
+  });
+
+  it('a closed curve through four points on a circle stays close to the circle, and does not repeat its first point', () => {
+    const line = flattenItem({ points: [[10, 0], [0, 10], [-10, 0], [0, -10]], closed: true, smooth: true });
+    expect(near(line[0]!, line[line.length - 1]!)).toBe(false);
+    for (const [x, y] of line) expect(Math.abs(Math.hypot(x, y) - 10)).toBeLessThan(1.2);
+    // Rounder than the diamond through the same points (area 200), and not fuller than the circle (about 314).
+    expect(signedArea(line)).toBeGreaterThan(250);
+    expect(signedArea(line)).toBeLessThan(320);
+  });
+
+  it('points on top of each other do not break the curve', () => {
+    const line = flattenItem({ points: [[0, 0], [0, 0], [10, 10], [10, 10], [20, 0]], closed: false, smooth: true });
+    expect(line.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))).toBe(true);
+  });
+
+  it('gives the same curve every time', () => {
+    const item = { points: [[0, 0], [20, 15], [40, 0]] as Vec2[], closed: false, smooth: true };
+    expect(JSON.stringify(flattenItem(item))).toBe(JSON.stringify(flattenItem(item)));
+  });
+
+  it('only a cut or fold line with three points can be smooth', () => {
+    let doc = addItem(newDoc(), { kind: 'cut', points: rectanglePoints(10, 10, 50, 50), closed: true, smooth: true }).doc;
+    doc = addItem(doc, { kind: 'valley', points: [[0, 0], [5, 5]], closed: false, smooth: true }).doc;
+    doc = addItem(doc, { kind: 'text', points: [[5, 5]], closed: false, text: '1', smooth: true }).doc;
+    expect(doc.items.map((i) => i.smooth === true)).toEqual([true, false, false]);
+    expect(setSmooth(doc, [1, 2, 3], false).items[0]!.smooth).toBeUndefined();
+    expect(setSmooth(doc, [1, 2, 3], true).items.map((i) => i.smooth === true)).toEqual([true, false, false]);
+  });
+
+  it('is hit along the curve, and a tab cannot be put on it', () => {
+    const doc = addItem(newDoc(), { kind: 'cut', points: [[10, 10], [60, 10], [60, 60], [10, 60]], closed: true, smooth: true }).doc;
+    const line = flattenItem(doc.items[0]!);
+    const on = line[Math.floor(line.length / 8)]!;
+    expect(hitTest(doc, on, 0.5)).toEqual({ id: 1, vertex: null, edge: null });
+    expect(addTab(doc, 1, 0).added).toBe(false);
+  });
+
+  it('is cut along the curve, and a curve that bulges off the sheet is reported', () => {
+    let doc = newDoc(100, 100);
+    doc = addItem(doc, { kind: 'cut', points: [[10, 10], [50, 40], [90, 10]], closed: false, smooth: true }).doc;
+    expect(drawingOf(doc).cut[0]!.points.length).toBeGreaterThan(20);
+    // A curve through the four corners of the sheet bows out past the edges.
+    const bulge = addItem(newDoc(100, 100), { kind: 'cut', points: [[0, 0], [100, 0], [100, 100], [0, 100]], closed: true, smooth: true }).doc;
+    expect(drawProblems(bulge).some((p) => p.code === 'outside-sheet')).toBe(true);
+    const crossing = addItem(newDoc(), { kind: 'cut', points: [[0, 0], [30, 30], [30, 0], [0, 30]], closed: true, smooth: true }).doc;
+    expect(drawProblems(crossing).some((p) => p.code === 'self-intersecting')).toBe(true);
+  });
+
+  it('a curve goes through the exporters', () => {
+    const doc = addItem(newDoc(), { kind: 'cut', points: [[10, 10], [50, 40], [90, 10]], closed: false, smooth: true }).doc;
+    expect(exportPageSvg(drawingOf(doc), 'cricut')).toMatch(/<path/);
+  });
+});
+
+describe('pages', () => {
+  const two = () => {
+    let doc = addPage(newDoc());
+    doc = addItem(doc, { kind: 'cut', points: rectanglePoints(0, 0, 20, 20), closed: true, page: 0 }).doc;
+    doc = addItem(doc, { kind: 'cut', points: rectanglePoints(5, 5, 30, 30), closed: true, page: 1 }).doc;
+    return doc;
+  };
+
+  it('a drawing starts with one page, gets more up to the limit, and an item is put on a page the drawing has', () => {
+    let doc = newDoc();
+    expect(doc.pageCount).toBe(1);
+    expect(addItem(doc, { kind: 'cut', points: rectanglePoints(0, 0, 5, 5), closed: true, page: 7 }).doc.items[0]!.page).toBe(0);
+    for (let i = 0; i < 40; i++) doc = addPage(doc);
+    expect(doc.pageCount).toBe(DRAW_LIMITS.pages);
+  });
+
+  it('the view of a page has only its items, and what is found or snapped to stays on the page', () => {
+    const doc = two();
+    expect(pageView(doc, 1).items.map((i) => i.id)).toEqual([2]);
+    expect(hitTest(pageView(doc, 1), [10, 10], 1)?.id).toBe(2);
+    expect(hitTest(pageView(doc, 0), [25, 25], 1)).toBeNull();
+    expect(snapPoint(pageView(doc, 1), [0.5, 0.5], { gridMm: 0, tolMm: 2 })).toEqual([0.5, 0.5]);
+  });
+
+  it('each page is drawn on its own, and drawingsOf gives them all in order', () => {
+    const doc = two();
+    expect(drawingOf(doc, { page: 0 }).cut).toHaveLength(1);
+    expect(drawingOf(doc, { page: 1 }).cut[0]!.points[0]).toEqual([5, 5]);
+    expect(drawingOf(doc, { page: 2 }).cut).toHaveLength(0);
+    expect(drawingsOf(doc)).toHaveLength(2);
+    expect(drawingsOf(doc, { crop: true })[1]!.widthMm).toBeLessThan(40);
+  });
+
+  it('removing a page takes its items with it and moves the later pages up; the last page cannot go', () => {
+    let doc = two();
+    doc = addPage(doc);
+    doc = addItem(doc, { kind: 'cut', points: rectanglePoints(1, 1, 9, 9), closed: true, page: 2 }).doc;
+    const removed = removePage(doc, 1);
+    expect(removed.pageCount).toBe(2);
+    expect(removed.items.map((i) => [i.id, i.page])).toEqual([[1, 0], [3, 1]]);
+    expect(removePage(newDoc(), 0).pageCount).toBe(1);
+    expect(removePage(doc, 9)).toBe(doc);
+  });
+
+  it('moves items to another page, only to a page that exists', () => {
+    const doc = two();
+    expect(moveToPage(doc, [1], 1).items[0]!.page).toBe(1);
+    expect(moveToPage(doc, [1], 5)).toBe(doc);
+    expect(moveToPage(doc, [1], -1)).toBe(doc);
+  });
+
+  it('a copy stays on the page of the original', () => {
+    const copy = duplicateItems(two(), [2], 3, 3);
+    expect(copy.doc.items.find((i) => i.id === copy.ids[0])!.page).toBe(1);
+  });
+
+  it('a page with nothing on it is pointed out when there are several', () => {
+    expect(drawProblems(addPage(square(newDoc()).doc)).filter((p) => p.code === 'empty-page')).toEqual([{ code: 'empty-page', page: 1 }]);
+    expect(drawProblems(square(newDoc()).doc).some((p) => p.code === 'empty-page')).toBe(false);
+  });
+
+  it('pages and curves are saved and come back; a drawing from before pages opens on one page', () => {
+    let doc = two();
+    doc = addItem(doc, { kind: 'cut', points: [[10, 10], [50, 40], [90, 10]], closed: false, smooth: true, page: 1 }).doc;
+    expect(parseDoc(JSON.parse(JSON.stringify(serializeDoc(doc))))).toEqual(doc);
+    const old = JSON.parse(JSON.stringify(serializeDoc(square(newDoc()).doc)));
+    delete old.doc.pageCount;
+    delete old.doc.items[0].page;
+    const back = parseDoc(old)!;
+    expect(back.pageCount).toBe(1);
+    expect(back.items[0]!.page).toBe(0);
+  });
+
+  it('a saved drawing with an item on a later page than it says has the page count raised', () => {
+    const saved = JSON.parse(JSON.stringify(serializeDoc(two())));
+    saved.doc.pageCount = 1;
+    expect(parseDoc(saved)!.pageCount).toBe(2);
+    saved.doc.pageCount = 9999;
+    expect(parseDoc(saved)!.pageCount).toBe(DRAW_LIMITS.pages);
   });
 });
