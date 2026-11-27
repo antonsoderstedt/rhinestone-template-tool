@@ -5,17 +5,19 @@ import { useState } from 'react';
 import { WorkspaceHero, WorkspacePage } from '../components/workspace/WorkspaceChrome';
 import { useT } from '../lib/i18n';
 import CatalogAdmin from './CatalogAdmin';
+import LibraryAdmin from './LibraryAdmin';
 import MetaAdmin from './MetaAdmin';
 import StatsAdmin from './StatsAdmin';
 import TrackingAdmin from './TrackingAdmin';
 
-type Tab = 'templates' | 'statistics' | 'tracking' | 'site';
+type Tab = 'templates' | 'statistics' | 'tracking' | 'site' | 'libraries';
 
 export default function AdminPage() {
   const t = useT();
   const [tab, setTab] = useState<Tab>('templates');
   const tabs: { id: Tab; name: string }[] = [
     { id: 'templates', name: t('Templates') },
+    { id: 'libraries', name: t('Libraries') },
     { id: 'statistics', name: t('Statistics') },
     { id: 'tracking', name: t('Tracking') },
     { id: 'site', name: t('Site text') },
@@ -46,7 +48,7 @@ export default function AdminPage() {
           ))}
         </div>
         <div role="tabpanel" id={`admin-panel-${tab}`} aria-labelledby={`admin-tab-${tab}`}>
-          {tab === 'templates' ? <CatalogAdmin /> : tab === 'statistics' ? <StatsAdmin /> : tab === 'tracking' ? <TrackingAdmin /> : <MetaAdmin />}
+          {tab === 'templates' ? <CatalogAdmin /> : tab === 'libraries' ? <LibraryAdmin /> : tab === 'statistics' ? <StatsAdmin /> : tab === 'tracking' ? <TrackingAdmin /> : <MetaAdmin />}
         </div>
       </div>
     </WorkspacePage>

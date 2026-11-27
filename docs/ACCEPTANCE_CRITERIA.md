@@ -689,6 +689,7 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [ ] A saved HTV design as a catalog template (HTV has no design file format yet)
 - [x] Statistics and tracking: see the next section
 - [x] Site title and description: see “Site metadata (ADR 0062)” below
+- [x] Hide and rename designs and fonts in the libraries: see “Curating the libraries (ADR 0063)” below
 
 ---
 
@@ -717,6 +718,19 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] `/admin` has the tab “Site text”; saving changes the open tab at once; a hard load of a studio page, and a move between pages, show the right title and description (checked in the running page on the local Worker)
 - [ ] Checked on the deployed private site behind Cloudflare Access
 - [ ] A social picture (Open Graph image): not done, see ADR 0062
+
+---
+
+## Curating the libraries (ADR 0063)
+
+- [x] A change (hidden, name, category) is validated: only the given fields, tidied, at most 120/60 characters, 1–200 distinct ids of the allowed shape; a bad request writes nothing (tested)
+- [x] `/api/library/*` and `/api/admin/library/*` refuse a request without a valid Access token (tested)
+- [x] An item that is back to normal has no row; only the given fields of an existing row change (tested)
+- [x] The design collection picker, the font catalog and the font page apply the overlay: hidden designs are left out, the owner's title and category are shown (applying is tested; checked in the running page on the local Worker: 2,653 designs, 2 hidden, the picker showed 2,651 and the new category)
+- [x] A hidden font is left out of the pickers but a saved design that uses it still finds it (tested)
+- [x] `/admin` has the tab “Libraries” with Designs and Fonts: search, category and status filters, 50 rows a page, bulk Hide / Show / Reset / Set category, inline edit (checked in the running page on the local Worker)
+- [ ] Checked on the deployed private site behind Cloudflare Access
+- [ ] Upload of new designs and fonts: the next part
 
 ---
 
