@@ -303,6 +303,8 @@ export interface FontCatalogFont {
   category?: string;
   /** Left out of the lists a person picks from, but still found by its id (a saved design may use it). */
   hidden?: boolean;
+  /** Where the font file is, when it is not in the library folder (a font uploaded in the admin panel). */
+  url?: string;
 }
 
 let hiddenCatalogIds: ReadonlySet<string> = new Set();
@@ -319,7 +321,7 @@ export function setFontCatalog(fonts: readonly FontCatalogFont[], aliases: Reado
     category: font.category,
     styleLabel: 'Imported',
     previewFamily: `FontLibrary_${font.id}`,
-    assetUrl: withBasePath(`${assetBase}/${font.id}.woff`),
+    assetUrl: withBasePath(font.url ?? `${assetBase}/${font.id}.woff`),
   }));
   hiddenCatalogIds = new Set(fonts.filter((font) => font.hidden).map((font) => font.id));
   catalogAliases = aliases;

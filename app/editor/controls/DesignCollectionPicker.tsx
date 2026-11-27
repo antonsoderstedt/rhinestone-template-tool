@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid } from 'lucide-react';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { compactToDots, compactToSvg, type CompactDesign } from '@/src/lib/rhinestone-engine/index';
-import { applyDesignOverlay } from '@/src/lib/library/library';
+import { designsWithUploads } from '@/src/lib/library/libraryItems';
 import { useT } from '../../lib/i18n';
-import { loadLibraryOverlay } from '../../lib/library/libraryClient';
+import { loadLibrary } from '../../lib/library/libraryClient';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
 /** One design in the collection built by `npm run import:designs` (see scripts/import-design-bundle.ts). */
@@ -22,16 +22,34 @@ export interface DesignCollectionEntry {
 }
 
 const BASE = withBasePath('/design-library');
+
+/** A design of the built library is a file in the library folder; an uploaded one is an address on the site. */
+const designUrl = (file: string): string => (file.startsWith('/api/') ? withBasePath(file) : `${BASE}/${file}`);
 const PAGE_SIZE = 24;
 let cachedIndex: Promise<DesignCollectionEntry[] | null> | null = null;
 
 function loadIndex(): Promise<DesignCollectionEntry[] | null> {
-  // The owner's changes from the admin panel (hidden designs, titles, categories) are put on top of the library's own list.
+  // The owner's changes from the admin panel (hidden designs, titles, categories) are put on top of the library's own list, and the
+  // designs uploaded there are added to it. With no built library the uploaded designs are still listed.
   cachedIndex ??= Promise.all([
-    fetch(`${BASE}/index.json`).then((response) => (response.ok ? (response.json() as Promise<{ designs?: DesignCollectionEntry[] }>) : null)),
-    loadLibraryOverlay(),
+    fetch(`${BASE}/index.json`).then((response) => (response.ok ? (response.json() as Promise<{ designs?: DesignCollectionEntry[] }>) : null)).catch(() => null),
+    loadLibrary(),
   ])
-    .then(([payload, overlay]) => (payload && Array.isArray(payload.designs) ? applyDesignOverlay(payload.designs, overlay) : null))
+    .then(([payload, library]) => {
+      const built = payload && Array.isArray(payload.designs) ? payload.designs : [];
+      const list = designsWithUploads<DesignCollectionEntry>(built, library.items, library.overlay, (item, file) => ({
+        id: item.id,
+        title: item.name,
+        category: item.category || 'Uploaded',
+        source: 'Uploaded in the admin panel',
+        stones: item.design?.stones ?? 0,
+        widthMm: item.design?.widthMm ?? 0,
+        heightMm: item.design?.heightMm ?? 0,
+        stoneMm: item.design?.stoneMm ?? 0,
+        file,
+      }));
+      return payload || list.length > 0 ? list : null;
+    })
     .catch(() => null);
   return cachedIndex;
 }
@@ -41,7 +59,7 @@ const designCache = new Map<string, Promise<CompactDesign | null>>();
 function loadDesign(file: string): Promise<CompactDesign | null> {
   let pending = designCache.get(file);
   if (!pending) {
-    pending = fetch(`${BASE}/${file}`)
+    pending = fetch(designUrl(file))
       .then((response) => (response.ok ? (response.json() as Promise<CompactDesign>) : null))
       .then((design) => (design && design.v === 1 && Array.isArray(design.s) && Array.isArray(design.c) ? design : null))
       .catch(() => null);

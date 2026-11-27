@@ -1,6 +1,7 @@
 /** What the library list in the admin panel shows: the rows as the owner has changed them, filtered and cut into pages. Pure. */
 
 import type { LibraryOverlay, LibraryKind } from '@/src/lib/library/library';
+import type { LibraryItem } from '@/src/lib/library/libraryItems';
 
 /** One item of a library as it was built. */
 export interface LibraryRow {
@@ -9,6 +10,8 @@ export interface LibraryRow {
   category: string;
   /** A short line of facts for the list: the stones and size of a design, the family of a font. */
   detail: string;
+  /** Uploaded in the admin panel (and so can be deleted), not part of the built library. */
+  uploaded?: boolean;
 }
 
 export interface ShownRow extends LibraryRow {
@@ -20,7 +23,7 @@ export interface ShownRow extends LibraryRow {
   changed: boolean;
 }
 
-export type StatusFilter = 'all' | 'visible' | 'hidden' | 'changed';
+export type StatusFilter = 'all' | 'visible' | 'hidden' | 'changed' | 'uploaded';
 
 export interface ListFilter {
   query: string;
@@ -30,6 +33,17 @@ export interface ListFilter {
 }
 
 export const EMPTY_FILTER: ListFilter = { query: '', category: '', status: 'all' };
+
+/** The uploaded items as rows: the category they were given, or the one an upload gets when none is chosen. */
+export function uploadedRows(kind: LibraryKind, items: readonly LibraryItem[]): LibraryRow[] {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    category: item.category || (kind === 'font' ? 'Uploads' : 'Uploaded'),
+    detail: item.design ? `${item.design.stones} · ${item.design.widthMm}×${item.design.heightMm} mm` : item.family,
+    uploaded: true,
+  }));
+}
 
 export function shownRows(rows: readonly LibraryRow[], overlay: LibraryOverlay, kind: LibraryKind): ShownRow[] {
   return rows.map((row) => {
@@ -45,6 +59,7 @@ export function filterRows(rows: readonly ShownRow[], filter: ListFilter): Shown
     if (filter.status === 'visible' && row.hidden) return false;
     if (filter.status === 'hidden' && !row.hidden) return false;
     if (filter.status === 'changed' && !row.changed) return false;
+    if (filter.status === 'uploaded' && !row.uploaded) return false;
     if (query === '') return true;
     return row.shownName.toLowerCase().includes(query) || row.shownCategory.toLowerCase().includes(query) || row.name.toLowerCase().includes(query) || row.id.toLowerCase().includes(query);
   });

@@ -2,13 +2,54 @@
 
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { LIBRARY_LIMITS, emptyOverlay, parseOverlay, type LibraryKind, type LibraryOverlay, type LibraryPatch } from '@/src/lib/library/library';
+import { emptyItems, parseItems, type LibraryItems } from '@/src/lib/library/libraryItems';
 import { failureOf, getJson, type TrackingResult } from '../tracking/trackingClient';
 
-export const fetchLibraryOverlay = (fetcher: typeof fetch = fetch): Promise<TrackingResult<LibraryOverlay>> =>
+/** What the owner has changed in the libraries: the hidden and renamed items, and the designs and fonts they have uploaded. */
+export interface LibraryState {
+  overlay: LibraryOverlay;
+  items: LibraryItems;
+}
+
+export const emptyLibraryState = (): LibraryState => ({ overlay: emptyOverlay(), items: emptyItems() });
+
+export const fetchLibrary = (fetcher: typeof fetch = fetch): Promise<TrackingResult<LibraryState>> =>
   getJson('/api/library/overlay', (body) => {
-    const overlay = (body as { overlay?: unknown } | null)?.overlay;
-    return overlay && typeof overlay === 'object' ? parseOverlay(overlay) : null;
+    const b = body as { overlay?: unknown; items?: unknown } | null;
+    return b && typeof b.overlay === 'object' && b.overlay !== null ? { overlay: parseOverlay(b.overlay), items: parseItems(b.items) } : null;
   }, fetcher);
+
+export interface UploadPayload {
+  kind: LibraryKind;
+  id: string;
+  name: string;
+  category: string;
+  format: string;
+  family?: string;
+  design?: { stones: number; widthMm: number; heightMm: number; stoneMm: number };
+  /** A design as compact JSON text, a font as base64. */
+  data: string;
+}
+
+export async function uploadLibraryItem(payload: UploadPayload, fetcher: typeof fetch = fetch): Promise<TrackingResult<string>> {
+  try {
+    const response = await fetcher(withBasePath('/api/admin/library/item'), { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!response.ok) return await failureOf(response);
+    return { ok: true, value: payload.id };
+  } catch {
+    return { ok: false, reason: 'error' };
+  }
+}
+
+export async function deleteLibraryItem(kind: LibraryKind, id: string, fetcher: typeof fetch = fetch): Promise<TrackingResult<true>> {
+  try {
+    const response = await fetcher(withBasePath(`/api/admin/library/item?kind=${kind}&id=${encodeURIComponent(id)}`), { method: 'DELETE', credentials: 'same-origin' });
+    if (!response.ok) return await failureOf(response);
+    return { ok: true, value: true };
+  } catch {
+    return { ok: false, reason: 'error' };
+  }
+}
 
 /** Changes the given fields of many items; the request is split so that each part is accepted. Stops at the first failure. */
 export async function patchLibrary(kind: LibraryKind, ids: readonly string[], patch: LibraryPatch, fetcher: typeof fetch = fetch): Promise<TrackingResult<number>> {
@@ -31,14 +72,14 @@ export async function patchLibrary(kind: LibraryKind, ids: readonly string[], pa
   return { ok: true, value: changed };
 }
 
-let cached: Promise<LibraryOverlay> | null = null;
+let cached: Promise<LibraryState> | null = null;
 
 /**
- * What the owner has hidden or renamed, for the studios' lists. Asked once per page load; empty where there is no server (GitHub
- * Pages, local development without the Worker) and when the answer cannot be had, so the library then shows as it was built.
+ * What the owner has changed, for the studios' lists. Asked once per page load; empty where there is no server (GitHub Pages, local
+ * development without the Worker) and when the answer cannot be had, so the library then shows as it was built.
  */
-export function loadLibraryOverlay(): Promise<LibraryOverlay> {
-  if (process.env.NEXT_PUBLIC_SYNC_ENABLED !== '1') return Promise.resolve(emptyOverlay());
-  cached ??= fetchLibraryOverlay().then((result) => (result.ok ? result.value : emptyOverlay()));
+export function loadLibrary(): Promise<LibraryState> {
+  if (process.env.NEXT_PUBLIC_SYNC_ENABLED !== '1') return Promise.resolve(emptyLibraryState());
+  cached ??= fetchLibrary().then((result) => (result.ok ? result.value : emptyLibraryState()));
   return cached;
 }

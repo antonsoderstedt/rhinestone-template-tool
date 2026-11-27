@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { handleLibrary, resetLibraryState } from '../worker/library';
 import type { D1Database, D1PreparedStatement } from '../worker/types';
-import { fetchLibraryOverlay, patchLibrary } from '../app/lib/library/libraryClient';
+import { fetchLibrary, patchLibrary } from '../app/lib/library/libraryClient';
 import { EMPTY_FILTER, categoryCounts, filterRows, pageCount, pageOf, shownRows, type LibraryRow } from '../app/admin/libraryView';
 import {
   LIBRARY_LIMITS,
@@ -102,7 +102,7 @@ function fakeDb(rows: unknown[] = []) {
     const self: D1PreparedStatement = {
       bind: (...v) => { values = v; return self; },
       run: async () => { calls.push({ query, values }); return undefined; },
-      all: async () => { calls.push({ query, values }); return { results: rows as never[] }; },
+      all: async () => { calls.push({ query, values }); return { results: (query.includes('FROM library_items') ? [] : rows) as never[] }; },
       first: async () => { calls.push({ query, values }); return null as never; },
     };
     (self as unknown as { q: string; v: () => unknown[] }).q = query;
@@ -145,7 +145,7 @@ describe('handleLibrary', () => {
       { kind: 'other', id: 'x', hidden: 1, name: '', category: '' },
     ]);
     const body = await (await handleLibrary(request('/api/library/overlay'), env(db), fetch, () => NOW)).json();
-    expect(body).toEqual({ overlay: { design: { a: { hidden: true, name: '', category: '' } }, font: { f: { hidden: false, name: 'Fancy', category: 'Script' } } } });
+    expect(body).toEqual({ overlay: { design: { a: { hidden: true, name: '', category: '' } }, font: { f: { hidden: false, name: 'Fancy', category: 'Script' } } }, items: { design: [], font: [] } });
   });
 
   it('changes only the given fields, for every id, and cleans up items that are back to normal', async () => {
@@ -201,10 +201,10 @@ const answer = (body: unknown, status = 200, type = 'application/json') => (asyn
 
 describe('the library client', () => {
   it('reads the overlay (and drops what does not fit)', async () => {
-    const result = await fetchLibraryOverlay(answer({ overlay: { design: { a: { hidden: true }, '../b': { hidden: true } }, font: {} } }));
-    expect(result).toEqual({ ok: true, value: { design: { a: { hidden: true, name: '', category: '' } }, font: {} } });
-    expect(await fetchLibraryOverlay(answer('<html>', 200, 'text/html'))).toEqual({ ok: false, reason: 'unavailable' });
-    expect(await fetchLibraryOverlay(answer({ error: 'no' }, 403))).toMatchObject({ ok: false, reason: 'signin' });
+    const result = await fetchLibrary(answer({ overlay: { design: { a: { hidden: true }, '../b': { hidden: true } }, font: {} } }));
+    expect(result).toEqual({ ok: true, value: { overlay: { design: { a: { hidden: true, name: '', category: '' } }, font: {} }, items: { design: [], font: [] } } });
+    expect(await fetchLibrary(answer('<html>', 200, 'text/html'))).toEqual({ ok: false, reason: 'unavailable' });
+    expect(await fetchLibrary(answer({ error: 'no' }, 403))).toMatchObject({ ok: false, reason: 'signin' });
   });
 
   it('splits a long list of ids into requests the Worker accepts, and stops at the first failure', async () => {

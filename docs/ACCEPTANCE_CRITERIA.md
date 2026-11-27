@@ -730,7 +730,10 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] A hidden font is left out of the pickers but a saved design that uses it still finds it (tested)
 - [x] `/admin` has the tab “Libraries” with Designs and Fonts: search, category and status filters, 50 rows a page, bulk Hide / Show / Reset / Set category, inline edit (checked in the running page on the local Worker)
 - [ ] Checked on the deployed private site behind Cloudflare Access
-- [ ] Upload of new designs and fonts: the next part
+- [x] Upload of new designs (SVG) and fonts (TTF/OTF/WOFF): an upload is validated (id, name, category, size limits, format, a font's base64) and stored in chunks; a bad one writes nothing; the Worker never parses the file (tested)
+- [x] A design is made in the browser with the engine's own import: an SVG with no stones, a broken one or an unsafe one is refused with a reason; a font that is not a font, a WOFF2 and a font over 1.5 MB are refused (tested)
+- [x] A font is served as its real bytes with the right type and a long cache time, and a damaged one gives an error (tested)
+- [x] The design picker, the font catalog, the font pickers and the font page list the uploaded items, also where no built library was published; an uploaded item can be hidden, renamed and deleted (the lists are tested; checked in the running page on the local Worker: an SVG became a 3-stone design that opened in the editor; a WOFF font came back byte for byte and gave the same text stones as the original font, not the default font's)
 
 ---
 
