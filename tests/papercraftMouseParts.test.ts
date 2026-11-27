@@ -16,7 +16,7 @@ describe('moving and turning parts', () => {
   it('keeps a part in range and ignores a part that is not there or numbers that are not numbers', () => {
     const parts = [part()];
     expect(moveBuildPart(parts, 0, { dx: 1e9, dy: 0, dz: 0 })[0]!.x).toBe(2000);
-    expect(moveBuildPart(parts, 3, { dx: 5, dy: 5, dz: 5 })).toEqual(parts);
+    expect(moveBuildPart(parts, 3, { dx: 5, dy: 5, dz: 5 })).toBe(parts);
     expect(moveBuildPart(parts, 0, { dx: NaN, dy: Infinity, dz: 0 })[0]).toMatchObject({ x: 0, y: 0, z: 0 });
   });
 
@@ -24,8 +24,8 @@ describe('moving and turning parts', () => {
     const parts = [part({ rotZ: 170 })];
     expect(turnBuildPart(parts, 0, 'z', 30)[0]!.rotZ).toBe(-160);
     expect(turnBuildPart(parts, 0, 'x', -15)[0]!.rotX).toBe(-15);
-    expect(turnBuildPart(parts, 5, 'z', 30)).toEqual(parts);
-    expect(turnBuildPart(parts, 0, 'z', NaN)).toEqual(parts);
+    expect(turnBuildPart(parts, 5, 'z', 30)).toBe(parts);
+    expect(turnBuildPart(parts, 0, 'z', NaN)).toBe(parts);
   });
 });
 
