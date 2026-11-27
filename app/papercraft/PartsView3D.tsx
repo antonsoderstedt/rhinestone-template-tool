@@ -4,11 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { partMesh, type BuildPart } from '@/src/lib/papercraft-engine';
+import { PART_FACES, partAxes, partFaceCentre, partMesh, resizeBuildPart, type BuildPart, type PartFace } from '@/src/lib/papercraft-engine';
 import { isWebglAvailable } from '../htv/webglSupport';
 import { useT } from '../lib/i18n';
 import { partColor } from './papercraftColors';
-import { dragDelta, dragPlane, rayPlaneHit, type DragMode, type DragPlane, type V3 } from './partsDrag';
+import { axisParameter, dragDelta, dragPlane, modelToScene, rayPlaneHit, type DragMode, type DragPlane, type V3 } from './partsDrag';
+
+/** Sizes are rounded to a whole millimetre when a handle is dragged, as a part is when it is moved. */
+const GRID_MM = 1;
 
 interface Delta {
   dx: number;
@@ -22,6 +25,8 @@ interface Props {
   onSelect: (index: number | null) => void;
   /** The part was dragged by this much (millimetres, in the model). */
   onMove: (index: number, delta: Delta) => void;
+  /** A face of the part was dragged outward by this much (millimetres; negative is inward). */
+  onResize: (index: number, face: PartFace, delta: number) => void;
 }
 
 interface Built {
@@ -57,7 +62,7 @@ function boundsRadius(parts: readonly BuildPart[]): { centre: V3; radius: number
   return { centre: [(lo[0]! + hi[0]!) / 2, (lo[1]! + hi[1]!) / 2, (lo[2]! + hi[2]!) / 2], radius: Math.max(20, Math.hypot(hi[0]! - lo[0]!, hi[1]! - lo[1]!, hi[2]! - lo[2]!) / 2) };
 }
 
-function Scene({ parts, selected, onSelect, onMove }: Props) {
+function Scene({ parts, selected, onSelect, onMove, onResize }: Props) {
   const invalidate = useThree((s) => s.invalidate);
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -68,13 +73,16 @@ function Scene({ parts, selected, onSelect, onMove }: Props) {
     if (c) c.enabled = on;
   }, [get]);
   const [preview, setPreview] = useState<({ index: number } & Delta) | null>(null);
+  const [resizing, setResizing] = useState<{ index: number; face: PartFace; delta: number } | null>(null);
   const drag = useRef<{ index: number; mode: DragMode; plane: DragPlane; start: V3 } | null>(null);
   // The view starts where the model is; it is not moved when a part is.
   const [initial] = useState(() => boundsRadius(parts));
 
-  const built = useMemo(() => parts.map(buildGeometry), [parts]);
+  // While a handle is dragged the part is shown at its new size (the model itself changes when the drag ends).
+  const shown = useMemo(() => (resizing ? resizeBuildPart(parts, resizing.index, resizing.face, resizing.delta, GRID_MM) : parts), [parts, resizing]);
+  const built = useMemo(() => shown.map(buildGeometry), [shown]);
   useEffect(() => () => built.forEach((b) => { b.geometry.dispose(); b.edges.dispose(); }), [built]);
-  useEffect(() => invalidate(), [built, selected, preview, invalidate]);
+  useEffect(() => invalidate(), [built, selected, preview, resizing, invalidate]);
 
   const finish = useCallback(() => {
     drag.current = null;
@@ -123,7 +131,47 @@ function Scene({ parts, selected, onSelect, onMove }: Props) {
     window.addEventListener('pointercancel', up);
   };
 
+  /** Dragging a handle on a face of the selected part: the face follows the pointer along its own axis. */
+  const beginResize = (event: ThreeEvent<PointerEvent>, index: number, face: PartFace) => {
+    event.stopPropagation();
+    const part = parts[index]!;
+    const axes = partAxes(part);
+    const outward = face[0] === 'x' ? axes.x : face[0] === 'y' ? axes.y : axes.z;
+    const sign = face[1] === '+' ? 1 : -1;
+    const direction = modelToScene([outward[0] * sign, outward[1] * sign, outward[2] * sign]);
+    const point = modelToScene(partFaceCentre(part, face));
+    const o = event.ray.origin;
+    const d = event.ray.direction;
+    const start = axisParameter([o.x, o.y, o.z], [d.x, d.y, d.z], point, direction);
+    if (start === null) return;
+    orbit(false);
+
+    const raycaster = new THREE.Raycaster();
+    const move = (e: PointerEvent) => {
+      const rect = gl.domElement.getBoundingClientRect();
+      raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+      const r = raycaster.ray;
+      const now = axisParameter([r.origin.x, r.origin.y, r.origin.z], [r.direction.x, r.direction.y, r.direction.z], point, direction);
+      if (now !== null) setResizing({ index, face, delta: now - start });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      setResizing((r) => {
+        // A click that did not move is nothing.
+        if (r && Math.abs(r.delta) >= 0.5) onResize(r.index, r.face, r.delta);
+        return null;
+      });
+      orbit(true);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
   const distance = initial.radius * 4.6;
+  const handleSize = Math.max(3, initial.radius * 0.06);
   const gridSize = Math.ceil((initial.radius * 8) / 100) * 100;
   return (
     <>
@@ -145,6 +193,12 @@ function Scene({ parts, selected, onSelect, onMove }: Props) {
               <lineSegments geometry={b.edges}>
                 <lineBasicMaterial color={isSelected ? '#7c3aed' : '#333333'} />
               </lineSegments>
+              {isSelected && PART_FACES.map((face) => (
+                <mesh key={face} position={partFaceCentre(shown[i]!, face)} onPointerDown={(e) => beginResize(e, i, face)} onClick={(e) => e.stopPropagation()}>
+                  <boxGeometry args={[handleSize, handleSize, handleSize]} />
+                  <meshBasicMaterial color={resizing?.index === i && resizing.face === face ? '#f59e0b' : '#ffffff'} depthTest={false} transparent opacity={0.95} />
+                </mesh>
+              ))}
             </group>
           );
         })}
@@ -154,7 +208,10 @@ function Scene({ parts, selected, onSelect, onMove }: Props) {
   );
 }
 
-/** The parts of a model built from parts, in 3D: click one to select it, drag it to move it on the ground, hold Shift and drag to lift it. */
+/**
+ * The parts of a model built from parts, in 3D: click one to select it, drag it to move it on the ground, hold Shift and drag to lift it. The selected
+ * part has a square handle in the middle of each of its faces: drag one to make the part wider, deeper or taller (the opposite face stays where it is).
+ */
 export default function PartsView3D(props: Props) {
   const t = useT();
   const webgl = useMemo(() => (typeof document === 'undefined' ? true : isWebglAvailable()), []);
@@ -162,12 +219,12 @@ export default function PartsView3D(props: Props) {
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-[var(--studio-ink-secondary)]">{t('This browser cannot show 3D here. The pattern and the pages work as usual.')}</div>;
   }
   return (
-    <div className="relative h-full w-full" aria-label={t('The parts in 3D. Drag a part to move it, hold Shift to lift it, drag the background to turn the view.')} role="img">
+    <div className="relative h-full w-full" aria-label={t('The parts in 3D. Drag a part to move it, hold Shift to lift it, drag a square handle on the selected part to change its size, drag the background to turn the view.')} role="img">
       <Canvas frameloop="demand" onPointerMissed={() => props.onSelect(null)} dpr={[1, 2]}>
         <Scene {...props} />
       </Canvas>
       <p className="pointer-events-none absolute left-2 top-2 max-w-[22rem] rounded-md bg-[var(--studio-surface)]/90 px-2 py-1 text-xs text-[var(--studio-ink-secondary)]">
-        {t('Drag a part to move it. Hold Shift to lift it. Drag the background to turn the view.')}
+        {t('Drag a part to move it. Hold Shift to lift it. Drag a square handle on the selected part to change its size. Drag the background to turn the view.')}
       </p>
     </div>
   );

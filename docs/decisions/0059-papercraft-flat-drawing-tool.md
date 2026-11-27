@@ -33,7 +33,7 @@ Silhouette or print it.
 
 ## Consequences
 
-- Curves are polygons (a circle is up to 200 sides). A real Bézier curve is not supported.
+- Curves are polygons (a circle is up to 200 sides). A Bézier curve with handles is in ADR 0065.
 - One sheet per drawing; several pages are made by several drawings.
 - **Catalog** (added; `drawCatalog.ts`, `DrawCatalogPanel.tsx`): “Save as a template” puts the drawing in the template catalog (ADR 0057) as a Papercraft JSON template with the field `Kind: drawing` (so the studio's “From the catalog” does not offer it as a design), plus a small SVG picture; the id comes from the name and never replaces another template. “Drawings from the catalog” in the drawing tool lists the published ones and opens them (after a confirm if something is drawn). Both only show where there is a catalog. A failed picture upload is reported but does not fail the save.
 - Fixed on the way: the first click on the sheet was read after the canvas took the focus, and the focus could scroll the page, so the first corner landed in the wrong place on a narrow screen; the point is now read first and the focus does not scroll.
@@ -50,4 +50,4 @@ Silhouette or print it.
 - **Smooth curves:** an item (a cut or a fold line with three or more points) can be `smooth`: its points are control points and the line is a centripetal
   Catmull-Rom curve through them (closed for a closed cut), cut into straight pieces about a millimetre long (`flattenItem`). The cutting files, hit
   tests, the checks and the area use the flattened line; the handles stay on the control points. The outline tool has “Draws a” (cut or a fold line), “Smooth curve”
-  and “Leave it open”, and a selection can be made smooth or straight. A glue tab cannot be put on a smooth edge. The curve is a spline, not a Bézier with handles.
+  and “Leave it open”, and a selection can be made smooth or straight. A glue tab cannot be put on a smooth edge. The curve is a spline, not a Bézier with handles (Bézier handles were added later: ADR 0065).

@@ -42,3 +42,18 @@ export function dragDelta(mode: DragMode, startHit: V3, hit: V3): { dx: number; 
   const b = sceneToModel(hit);
   return mode === 'ground' ? { dx: b[0] - a[0], dy: b[1] - a[1], dz: 0 } : { dx: 0, dy: 0, dz: b[2] - a[2] };
 }
+
+/**
+ * How far along a line a ray points, in the units of the line's direction: the place on the line (a point and a direction of length 1) that
+ * is closest to the ray, measured from the point. This is how far a resize handle has been dragged along its axis. Null when the ray runs
+ * parallel to the line (nothing to measure).
+ */
+export function axisParameter(origin: V3, direction: V3, axisPoint: V3, axisDirection: V3): number | null {
+  const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const w: V3 = [axisPoint[0] - origin[0], axisPoint[1] - origin[1], axisPoint[2] - origin[2]];
+  const b = dot(axisDirection, direction);
+  const c = dot(direction, direction);
+  const denominator = dot(axisDirection, axisDirection) * c - b * b;
+  if (Math.abs(denominator) < 1e-9 * Math.max(1, c)) return null;
+  return (b * dot(direction, w) - c * dot(axisDirection, w)) / denominator;
+}

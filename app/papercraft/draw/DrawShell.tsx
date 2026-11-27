@@ -25,6 +25,7 @@ import {
   rotateItems,
   scaleItems,
   serializeDoc,
+  setBezier,
   setSmooth,
   setText,
   signedArea,
@@ -284,6 +285,14 @@ export default function DrawShell() {
                 <button type="button" className={buttonClass} onClick={() => edit(setSmooth(doc, selection, !selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 3).every((i) => i.smooth)))}>
                   {selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 3).every((i) => i.smooth) ? t('Make it straight') : t('Make it a smooth curve')}
                 </button>
+              )}
+              {selectedItems.some((i) => i.kind !== 'text' && i.points.length >= 2) && (
+                <button type="button" className={buttonClass} title={t('Each point gets handles you can drag to bend the line, as in a drawing program.')} onClick={() => edit(setBezier(doc, selection, !selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 2).every((i) => i.handles)))}>
+                  {selectedItems.filter((i) => i.kind !== 'text' && i.points.length >= 2).every((i) => i.handles) ? t('Remove the handles') : t('Edit with Bézier handles')}
+                </button>
+              )}
+              {only?.handles && (
+                <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.')}</p>
               )}
               {doc.pageCount > 1 && (
                 <SelectField<string>

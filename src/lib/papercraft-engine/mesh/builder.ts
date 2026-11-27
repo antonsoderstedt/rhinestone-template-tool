@@ -178,6 +178,52 @@ export function turnBuildPart(parts: BuildPart[], index: number, axis: 'x' | 'y'
   return parts.map((p, i) => (i === index ? clampPart({ ...p, [key]: wrap(p[key] + degrees) }) : p));
 }
 
+// ─── Resizing parts ───────────────────────────────────────────────────────────
+
+/** The six faces of a part's box as seen from the part itself (x and y are across, z is its height), before the part is turned. */
+export type PartFace = 'x+' | 'x-' | 'y+' | 'y-' | 'z+' | 'z-';
+export const PART_FACES: readonly PartFace[] = ['x+', 'x-', 'y+', 'y-', 'z+', 'z-'];
+
+/** The three directions of a part in the model: its own x, y and z, turned the way the part is turned. */
+export function partAxes(part: BuildPart): { x: Vec3; y: Vec3; z: Vec3 } {
+  const rx = part.rotX * RAD;
+  const ry = part.rotY * RAD;
+  const rz = part.rotZ * RAD;
+  return { x: turn([1, 0, 0], rx, ry, rz), y: turn([0, 1, 0], rx, ry, rz), z: turn([0, 0, 1], rx, ry, rz) };
+}
+
+/** The middle of a face of the part, in the model: where its handle is (on the slope of a side that slopes in). The top of a cone or a pyramid is its tip. */
+export function partFaceCentre(input: BuildPart, face: PartFace): Vec3 {
+  const part = clampPart(input);
+  // A side that slopes in (a cone, a pyramid, a frustum) is half as far out at its middle as at its base plus its top.
+  const k = (1 + topFactor(part)) / 2;
+  const local: Vec3 = face === 'x+' ? [(part.width / 2) * k, 0, part.height / 2] : face === 'x-' ? [(-part.width / 2) * k, 0, part.height / 2] : face === 'y+' ? [0, (part.depth / 2) * k, part.height / 2] : face === 'y-' ? [0, (-part.depth / 2) * k, part.height / 2] : face === 'z+' ? [0, 0, part.height] : [0, 0, 0];
+  const q = turn(local, part.rotX * RAD, part.rotY * RAD, part.rotZ * RAD);
+  return [q[0] + part.x, q[1] + part.y, q[2] + part.z];
+}
+
+/**
+ * One face of a part moved by `delta` millimetres, outward (a negative delta moves it in): the width, the depth or the height changes and the opposite
+ * face stays where it is, so the part grows or shrinks away from it (the base stays put when the top is moved). The new size is rounded to `gridMm`
+ * (0 is no rounding) and kept within `PART_LIMITS.size`, so a face stops at the limit. A part that does not exist leaves the list as it is.
+ */
+export function resizeBuildPart(parts: BuildPart[], index: number, face: PartFace, delta: number, gridMm = 0): BuildPart[] {
+  if (index < 0 || index >= parts.length || !Number.isFinite(delta) || !PART_FACES.includes(face)) return parts;
+  const part = clampPart(parts[index]!);
+  const dimension = face[0] === 'x' ? 'width' : face[0] === 'y' ? 'depth' : 'height';
+  const sign = face[1] === '+' ? 1 : -1;
+  const { min, max } = PART_LIMITS.size;
+  const from = part[dimension];
+  const to = Math.min(max, Math.max(min, snapTo(from + delta, gridMm)));
+  const grown = to - from;
+  const axes = partAxes(part);
+  // The centre of the base moves by half of what the face moved (across), or by all of it when the bottom moves; the top moves nothing.
+  const shift = face === 'z+' ? 0 : face === 'z-' ? -grown : (sign * grown) / 2;
+  const axis = face[0] === 'x' ? axes.x : face[0] === 'y' ? axes.y : axes.z;
+  const next = clampPart({ ...part, [dimension]: to, x: part.x + axis[0] * shift, y: part.y + axis[1] * shift, z: part.z + axis[2] * shift });
+  return parts.map((p, i) => (i === index ? next : p));
+}
+
 // ─── Parametric templates ─────────────────────────────────────────────────────
 
 export interface TemplateParam {

@@ -55,4 +55,4 @@ editor follow separately.
   is only a selection). The position is rounded to 1 mm. Buttons turn the selected part 15° left or right and put it down on the ground.
 - The maths is pure and tested (`partsDrag.ts`: model <-> scene coordinates, the plane a drag moves on, ray-plane hit, the move in millimetres) and the changes are engine functions (`moveBuildPart`, `turnBuildPart`: clamped, snapped to a grid).
   A drag on the ground moves on the horizontal plane at the height of the part; a lift uses a vertical plane facing the camera (not possible when the camera looks straight down).
-- Checked in the running studio with synthetic pointer events on the WebGL canvas (selection, ground drag, Shift-lift); not with a real mouse or touch screen. No resizing handles: sizes are still typed.
+- Checked in the running studio with synthetic pointer events on the WebGL canvas (selection, ground drag, Shift-lift); not with a real mouse or touch screen. No resizing handles at first: sizes were typed (the handles are in ADR 0065).
