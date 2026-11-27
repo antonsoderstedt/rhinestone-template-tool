@@ -19,7 +19,7 @@
 
 import { checkAccess } from './access';
 import { FONT_CATEGORIES, LIBRARY_ID_PATTERN, LIBRARY_KINDS, isLibraryKind, parseIds, parsePatch, type LibraryOverride } from '../src/lib/library/library';
-import { emptyItems, parseItem, type LibraryItems } from '../src/lib/library/libraryItems';
+import { UPLOAD_ID_PREFIX, emptyItems, parseItem, type LibraryItems } from '../src/lib/library/libraryItems';
 import { chunkText } from './sync';
 import type { D1Database, SyncEnv } from './types';
 
@@ -139,6 +139,8 @@ export async function handleLibrary(request: Request, env: SyncEnv, fetcher: typ
     const kind = searchParams.get('kind');
     const id = searchParams.get('id') ?? '';
     if (!isLibraryKind(kind) || !LIBRARY_ID_PATTERN.test(id)) return json({ error: 'Bad kind or id.' }, 400);
+    // Only an uploaded item can be deleted; an item of the built library is hidden instead (its overrides are not touched here).
+    if (!id.startsWith(UPLOAD_ID_PREFIX)) return json({ error: 'Only an uploaded item can be deleted.' }, 400);
     await db.batch([
       db.prepare('DELETE FROM library_chunks WHERE kind = ? AND id = ?').bind(kind, id),
       db.prepare('DELETE FROM library_items WHERE kind = ? AND id = ?').bind(kind, id),
