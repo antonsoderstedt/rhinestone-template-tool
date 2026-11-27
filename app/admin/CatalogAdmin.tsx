@@ -86,7 +86,7 @@ export default function CatalogAdmin() {
       case 'name': return t('Give the template a name.');
       case 'id': return t('The id may only have a–z, 0–9, dot, dash and underscore.');
       case 'format': return t('That file type does not fit this studio.');
-      case 'project-name': return t('A Rhinestone project file is named something.rhinestone.json: use “Save project file” in the studio.');
+      case 'project-name': return draft?.studio === 'htv' ? t('An HTV design file is named something.htv.json: use “Save design file” in the HTV studio.') : t('A Rhinestone project file is named something.rhinestone.json: use “Save project file” in the studio.');
       case 'publish-without-file': return t('Add a file before you publish the template.');
     }
   };
@@ -279,7 +279,7 @@ export default function CatalogAdmin() {
             </div>
 
             <div className="md:col-span-2">
-              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone: an SVG or a saved project file (.rhinestone.json). HTV: an SVG.')} /></label>
+              <label htmlFor="tpl-file" className={label}>{t('File')}<Hint text={t('Papercraft: an OBJ, STL or GLB model, a PDF pattern, an SVG or a saved JSON. Rhinestone: an SVG or a saved project file (.rhinestone.json). HTV: an SVG or a saved design file (.htv.json).')} /></label>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-border/80 bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-surface-raised">
                   <Upload className="h-4 w-4" aria-hidden="true" /> {file ? t('Choose another file') : existing?.file ? t('Replace the file') : t('Choose a file')}

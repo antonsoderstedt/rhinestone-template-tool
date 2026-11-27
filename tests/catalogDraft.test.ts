@@ -32,6 +32,8 @@ describe('catalog draft', () => {
     expect(draftProblems({ ...emptyDraft('htv'), name: 'X' }, 'model.obj', false)).toContain('format');
     expect(draftProblems({ ...emptyDraft('rhinestone'), name: 'X' }, 'star.json', false)).toEqual(['project-name']);
     expect(draftProblems({ ...emptyDraft('rhinestone'), name: 'X' }, 'star.rhinestone.json', false)).toEqual([]);
+    expect(draftProblems({ ...emptyDraft('htv'), name: 'X' }, 'team.json', false)).toEqual(['project-name']);
+    expect(draftProblems({ ...emptyDraft('htv'), name: 'X' }, 'team.htv.json', false)).toEqual([]);
     expect(draftProblems({ ...emptyDraft('papercraft'), name: 'X' }, 'design.json', false)).toEqual([]);
     expect(draftProblems({ ...emptyDraft(), name: 'X', published: true }, null, false)).toContain('publish-without-file');
     expect(draftProblems({ ...emptyDraft(), name: 'X', published: true }, null, true)).toEqual([]);

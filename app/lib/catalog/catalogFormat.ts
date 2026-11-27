@@ -8,10 +8,13 @@ export type CatalogStudio = (typeof CATALOG_STUDIOS)[number];
 
 export const STUDIO_NAMES: Record<CatalogStudio, string> = { rhinestone: 'Rhinestone', htv: 'HTV', papercraft: 'Papercraft' };
 
+/** What an HTV design file is named (ADR 0064); here so that the catalog code needs nothing of the HTV studio. */
+export const HTV_DESIGN_SUFFIX = '.htv.json';
+
 /** The formats a studio can use from the catalog. */
 export const STUDIO_FORMATS: Record<CatalogStudio, readonly string[]> = {
   rhinestone: ['svg', 'json'],
-  htv: ['svg'],
+  htv: ['svg', 'json'],
   papercraft: ['obj', 'stl', 'glb', 'pdf', 'svg', 'json'],
 };
 

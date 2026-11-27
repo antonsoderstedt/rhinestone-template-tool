@@ -14,8 +14,9 @@ for them in the admin panel too.
     the project takes the template's name), and a **`.rhinestone.json` project file** (the file “Save project file” makes) opens
     as a project through the same `applyProjectToEditor` as “Open project file”.
   - **HTV:** an **SVG** is added as a vector layer through the same import as a picked SVG (`handleImportFile`).
-  - HTV has no design file format (its designs live in the browser's vault), so the admin panel now offers only SVG for HTV
-    (`STUDIO_FORMATS.htv`). A test keeps the admin's list and `OPEN_FORMATS` equal.
+  - HTV had no design file format (its designs lived in the browser's vault), so the admin panel offered only SVG for HTV
+    (`STUDIO_FORMATS.htv`); an HTV design file and saving as a template are now in ADR 0064. A test keeps the admin's list and
+    `OPEN_FORMATS` equal.
 - **A Rhinestone JSON template must be named `….rhinestone.json`** (what “Save project file” makes): only those are listed, and the admin panel refuses another JSON name for Rhinestone with a message that says so (a papercraft JSON is unaffected).
 - **Only published templates of the studio's own kind with a file it can open** are listed; a draft, a template for another studio and
   a file of another type are not.

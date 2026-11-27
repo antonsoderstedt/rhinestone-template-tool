@@ -12,10 +12,10 @@ const fieldClass =
 export type SaveCatalogResult = SaveTemplateResult | { ok: false; reason: 'nothing' };
 
 /**
- * “Save as a catalog template”: keeps the design on the screen in the site's template catalog (ADR 0061) so it can be started from again
+ * “Save as a catalog template” (Rhinestone and HTV): keeps the design on the screen in the site's template catalog (ADR 0061, 0064) so it can be started from again
  * on any device. A new template every time, never one that replaces another. Renders nothing where there is no catalog.
  */
-export default function SaveCatalogTemplate({ currentName, canSave, save, onSaved }: { currentName: string; canSave: boolean; save: (options: SaveTemplateOptions, existingIds: string[]) => Promise<SaveCatalogResult>; onSaved: () => void }) {
+export default function SaveCatalogTemplate({ studio = 'rhinestone', currentName, canSave, save, onSaved }: { studio?: 'rhinestone' | 'htv'; currentName: string; canSave: boolean; save: (options: SaveTemplateOptions, existingIds: string[]) => Promise<SaveCatalogResult>; onSaved: () => void }) {
   const t = useT();
   const [templates, setTemplates] = useState<CatalogTemplate[] | null>(null);
   const [name, setName] = useState('');
@@ -25,19 +25,19 @@ export default function SaveCatalogTemplate({ currentName, canSave, save, onSave
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   const refresh = useCallback(async () => {
-    const result = await listCatalog({ studio: 'rhinestone', all: true });
+    const result = await listCatalog({ studio, all: true });
     if (result.ok) setTemplates(result.value);
-  }, []);
+  }, [studio]);
 
   useEffect(() => {
     let cancelled = false;
-    void listCatalog({ studio: 'rhinestone', all: true }).then((result) => {
+    void listCatalog({ studio, all: true }).then((result) => {
       if (!cancelled && result.ok) setTemplates(result.value);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [studio]);
 
   const categories = useMemo(() => [...new Set((templates ?? []).map((tpl) => tpl.category).filter(Boolean))].sort(), [templates]);
   if (templates === null) return null;
@@ -49,7 +49,7 @@ export default function SaveCatalogTemplate({ currentName, canSave, save, onSave
     const result = await save({ name: chosen, category, published }, templates.map((tpl) => tpl.id));
     setSaving(false);
     if (result.ok) {
-      track('template_saved', {}, 'rhinestone');
+      track('template_saved', {}, studio);
       setNote(
         result.value.previewSaved
           ? { kind: 'ok', text: t('Saved “{name}” in the catalog.', { name: chosen }) }
