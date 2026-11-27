@@ -381,7 +381,7 @@ describe('smooth curves', () => {
     doc = addItem(doc, { kind: 'valley', points: [[0, 0], [5, 5]], closed: false, smooth: true }).doc;
     doc = addItem(doc, { kind: 'text', points: [[5, 5]], closed: false, text: '1', smooth: true }).doc;
     expect(doc.items.map((i) => i.smooth === true)).toEqual([true, false, false]);
-    expect(setSmooth(doc, [1, 2, 3], false).items[0]!.smooth).toBeUndefined();
+    expect('smooth' in setSmooth(doc, [1, 2, 3], false).items[0]!).toBe(false);
     expect(setSmooth(doc, [1, 2, 3], true).items.map((i) => i.smooth === true)).toEqual([true, false, false]);
   });
 

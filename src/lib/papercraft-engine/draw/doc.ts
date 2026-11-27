@@ -365,7 +365,13 @@ export function flipFolds(doc: DrawDoc, ids: readonly number[]): DrawDoc {
 
 /** Makes items smooth curves through their points, or straight pieces between them again. A text, and an item with fewer than three points, stays as it is. */
 export function setSmooth(doc: DrawDoc, ids: readonly number[], smooth: boolean): DrawDoc {
-  return mapItems(doc, ids, (i) => (i.kind === 'text' || i.points.length < 3 ? i : { ...i, smooth }));
+  return mapItems(doc, ids, (i) => {
+    if (i.kind === 'text' || i.points.length < 3) return i;
+    // Straight is no flag at all, so an item is either smooth or has no `smooth` (never `false`).
+    const { smooth: _was, ...rest } = i;
+    void _was;
+    return smooth ? { ...rest, smooth: true } : rest;
+  });
 }
 
 export function setText(doc: DrawDoc, id: number, patch: { text?: string; heightMm?: number }): DrawDoc {

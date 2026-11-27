@@ -7,6 +7,7 @@ import {
   PAGE_PRESETS,
   addPage,
   boundsOf,
+  DRAW_LIMITS,
   drawProblems,
   drawingsOf,
   duplicateItems,
@@ -365,7 +366,7 @@ export default function DrawShell() {
                 {t('Page {n}', { n: i + 1 })}
               </button>
             ))}
-            <button type="button" className={buttonClass} disabled={doc.pageCount >= 20} title={t('Add a page: another sheet of the same size.')} onClick={() => { edit(addPage(doc)); setPageAt(doc.pageCount); }}>+ {t('Add a page')}</button>
+            <button type="button" className={buttonClass} disabled={doc.pageCount >= DRAW_LIMITS.pages} title={t('Add a page: another sheet of the same size.')} onClick={() => { edit(addPage(doc)); setPageAt(doc.pageCount); }}>+ {t('Add a page')}</button>
             {doc.pageCount > 1 && (
               <button type="button" className={`${buttonClass} text-red-300`} title={t('Remove this page and what is on it.')} onClick={() => { if (!doc.items.some((i) => i.page === page) || window.confirm(t('Remove page {n} and everything on it?', { n: page + 1 }))) { edit(removePage(doc, page), []); } }}>{t('Remove this page')}</button>
             )}
