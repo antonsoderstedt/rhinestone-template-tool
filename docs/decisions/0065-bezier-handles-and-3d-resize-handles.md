@@ -47,7 +47,19 @@ turned the parts of a model but had "no resizing handles: sizes are still typed"
 ## Consequences
 
 - A Bézier curve is cut as a polyline like every curve here: a cutter or an SVG path takes straight pieces. The pieces are about a millimetre long.
-- There is no way yet to add or remove a point of a Bézier curve (the outline tool is for new lines); an item's points are those it was drawn with.
+- Points can be added and removed (the update below).
 - The Build view changes the size of a part, not its proportions together; each handle changes one dimension. A cylinder's width and depth are its two diameters.
 - Checked in the running studio: the handles of a converted spline, dragging one (the curve peaks where the handle was pulled), undo and redo, Alt-drag, double-click on a point, and a
   Cricut SVG from the curve; in the Build view a real mouse drag of a handle made a cube wider with the opposite face staying put. Nothing has been cut on a machine or folded.
+
+## Update: adding and removing points
+
+- **Add** (`insertPoint`, `nearestOnItem`): double-clicking the line of the selected item puts a new point there. `nearestOnItem` finds the piece and how far along it the click is
+  (straight pieces by projection; a Bézier piece by a coarse search of 48 steps and a finer one of 32 between the two best, so it is deterministic). On a **Bézier curve the piece is cut
+  in two with de Casteljau, so the curve does not change** (the two new handles and the two changed ones are those of the halves); a **smooth curve first becomes the Bézier curve that has its
+  shape** (`autoHandles`), then gets the point; a straight line gets the point on the straight piece. Nothing is added within 2 % of an end of the piece, on a text, past the 2000 points an item
+  may have, or on a piece that is not there. The piece that closes a closed shape works too (the point goes last).
+- **Remove** (`removePoint`): Ctrl- or Cmd-click on a point of the selected item takes it, and its handles, away; the line then runs from the point before to the point after, so the shape changes
+  (with handles, the neighbours keep theirs). A line keeps at least two points and a closed shape three. A smooth line left with two points is straight.
+- Double-click on a *point* of a Bézier curve still switches it between corner and smooth; on the *line* it adds a point. Both are single steps in the history.
+- Checked in the running page with synthetic pointer events: a square got a fifth point and lost one again; a smooth curve became a Bézier curve with a new point that moved the line by 0.008 mm at most.
