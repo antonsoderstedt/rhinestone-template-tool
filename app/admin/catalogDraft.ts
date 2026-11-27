@@ -1,6 +1,7 @@
 /** The form of one template in the admin panel: what is typed, and the step from it to the details the server stores. */
 
 import { formatOfFileName, idFromName, STUDIO_FORMATS, type CatalogStudio } from '../lib/catalog/catalogFormat';
+import { RHINESTONE_PROJECT_SUFFIX } from '../lib/catalog/studioCatalog';
 import type { CatalogDetails, CatalogTemplate } from '../lib/catalog/catalogClient';
 
 export interface FieldRow { key: string; value: string }
@@ -69,7 +70,7 @@ export function detailsOf(draft: CatalogDraft, formatFromFile: string | null): C
   };
 }
 
-export type DraftProblem = 'name' | 'id' | 'format' | 'publish-without-file';
+export type DraftProblem = 'name' | 'id' | 'format' | 'project-name' | 'publish-without-file';
 
 /** What is wrong with the form before it is sent. `fileName` is the file chosen now, if any; `hasFile` says the template already has one. */
 export function draftProblems(draft: CatalogDraft, fileName: string | null, hasFile: boolean): DraftProblem[] {
@@ -78,6 +79,8 @@ export function draftProblems(draft: CatalogDraft, fileName: string | null, hasF
   const id = draft.isNew ? (draft.id.trim() || idFromName(draft.name)) : draft.id;
   if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(id)) problems.push('id');
   if (fileName && !STUDIO_FORMATS[draft.studio].includes(formatOfFileName(fileName))) problems.push('format');
+  // Rhinestone opens a project from the catalog only when it is named like the studio names its project files.
+  else if (fileName && draft.studio === 'rhinestone' && formatOfFileName(fileName) === 'json' && !fileName.toLowerCase().endsWith(RHINESTONE_PROJECT_SUFFIX)) problems.push('project-name');
   if (draft.published && !fileName && !hasFile) problems.push('publish-without-file');
   return problems;
 }

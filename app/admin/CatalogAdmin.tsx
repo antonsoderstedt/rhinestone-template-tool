@@ -86,6 +86,7 @@ export default function CatalogAdmin() {
       case 'name': return t('Give the template a name.');
       case 'id': return t('The id may only have a–z, 0–9, dot, dash and underscore.');
       case 'format': return t('That file type does not fit this studio.');
+      case 'project-name': return t('A Rhinestone project file is named something.rhinestone.json: use “Save project file” in the studio.');
       case 'publish-without-file': return t('Add a file before you publish the template.');
     }
   };

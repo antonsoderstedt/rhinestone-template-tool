@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import CatalogTemplates from '../app/components/CatalogTemplates';
 import type { CatalogTemplate } from '../app/lib/catalog/catalogClient';
 import { STUDIO_FORMATS } from '../app/lib/catalog/catalogFormat';
-import { OPEN_FORMATS, catalogTemplateFile, openableTemplates, searchTemplates } from '../app/lib/catalog/studioCatalog';
+import { OPEN_FORMATS, catalogTemplateFile, isOpenableFileName, openableTemplates, searchTemplates } from '../app/lib/catalog/studioCatalog';
 
 const make = (over: Partial<CatalogTemplate> & { id: string }): CatalogTemplate => ({
   studio: 'rhinestone', format: 'svg', name: over.id, description: '', category: '', tags: [], licence: '', fields: {}, published: true,
@@ -15,6 +15,7 @@ describe('openableTemplates', () => {
   const all = [
     make({ id: 'star' }),
     make({ id: 'project', format: 'json', file: { name: 'p.rhinestone.json', type: 'application/json', chars: 5 } }),
+    make({ id: 'plain-json', format: 'json', file: { name: 'other.json', type: 'application/json', chars: 5 } }),
     make({ id: 'draft', published: false }),
     make({ id: 'nofile', file: null }),
     make({ id: 'model', file: { name: 'm.obj', type: 'model/obj', chars: 5 } }),
@@ -26,6 +27,15 @@ describe('openableTemplates', () => {
   it('takes the published templates of the studio that have a file it can open', () => {
     expect(openableTemplates('rhinestone', all).map((t) => t.id)).toEqual(['star', 'project']);
     expect(openableTemplates('htv', all).map((t) => t.id)).toEqual(['htv-shirt']);
+  });
+
+  it('opens a JSON template in Rhinestone only when it is named like a project file', () => {
+    expect(isOpenableFileName('rhinestone', 'star.rhinestone.json')).toBe(true);
+    expect(isOpenableFileName('rhinestone', 'STAR.RHINESTONE.JSON')).toBe(true);
+    expect(isOpenableFileName('rhinestone', 'star.json')).toBe(false);
+    expect(isOpenableFileName('rhinestone', 'star.svg')).toBe(true);
+    expect(isOpenableFileName('htv', 'star.rhinestone.json')).toBe(false);
+    expect(isOpenableFileName('htv', 'heart.svg')).toBe(true);
   });
 
   it('agrees with what the admin panel lets the owner upload for each studio', () => {

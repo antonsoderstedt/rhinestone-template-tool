@@ -15,9 +15,19 @@ export const OPEN_FORMATS: Record<SvgStudio, readonly string[]> = {
   htv: ['svg'],
 };
 
-/** The templates the studio can open: its own, published, with a file of a type it can open. */
+/** What “Save project file” in the Rhinestone studio names its files; a Rhinestone JSON template must be one of those. */
+export const RHINESTONE_PROJECT_SUFFIX = '.rhinestone.json';
+
+/** Whether the studio can open a file of this name from the catalog (an SVG; for Rhinestone also a `.rhinestone.json` project). */
+export function isOpenableFileName(studio: SvgStudio, fileName: string): boolean {
+  const format = formatOfFileName(fileName);
+  if (!OPEN_FORMATS[studio].includes(format)) return false;
+  return format !== 'json' || fileName.toLowerCase().endsWith(RHINESTONE_PROJECT_SUFFIX);
+}
+
+/** The templates the studio can open: its own, published, with a file it can open. */
 export function openableTemplates(studio: SvgStudio, templates: readonly CatalogTemplate[]): CatalogTemplate[] {
-  return templates.filter((tpl) => tpl.studio === studio && tpl.published && tpl.file !== null && OPEN_FORMATS[studio].includes(formatOfFileName(tpl.file.name)));
+  return templates.filter((tpl) => tpl.studio === studio && tpl.published && tpl.file !== null && isOpenableFileName(studio, tpl.file.name));
 }
 
 /** Templates that match what was typed (name, category, tags, description). */

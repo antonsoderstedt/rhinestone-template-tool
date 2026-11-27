@@ -1622,13 +1622,14 @@ export default function EditorShell() {
   /** A template from the site's catalog: an SVG opens as artwork (like a library asset), a saved project as a project. */
   const handleOpenCatalogFile = useCallback(async (file: File, template: CatalogTemplate): Promise<boolean> => {
     try {
-      const text = await file.text();
       if (formatOfFileName(file.name) === 'json') {
+        // The size is checked before the file is read into memory.
         if (file.size > MAX_PROJECT_FILE_BYTES) return false;
-        applyProjectToEditor(readProjectJson(text));
+        applyProjectToEditor(readProjectJson(await file.text()));
         // The catalog template is not one of "My Designs": saving must not overwrite one of those.
         setActiveLibraryTemplateId(null);
       } else {
+        const text = await file.text();
         const validation = validateAssetUpload({ fileName: file.name, mimeType: 'image/svg+xml', sizeBytes: file.size, svgText: text });
         if (!validation.valid) return false;
         dispatch({ type: 'SET_PROJECT_NAME', name: template.name });
