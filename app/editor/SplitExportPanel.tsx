@@ -15,6 +15,7 @@ import {
 import { createZip } from '../lib/zip';
 
 import { useT } from '../lib/i18n';
+import { trackExport } from '../lib/tracking/track';
 type MatChoice = '12x12' | '12x24';
 
 const MATS: Record<MatChoice, { label: string; short: string; long: number }> = {
@@ -42,6 +43,7 @@ function triggerDownload(blob: Blob, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+  trackExport(filename);
 }
 
 const fmt = (mm: number) => `${(mm / 10).toFixed(1)} cm`;

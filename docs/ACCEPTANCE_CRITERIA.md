@@ -685,7 +685,24 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [ ] Checked on the deployed private site behind Cloudflare Access
 - [x] Papercraft: published OBJ/STL/GLB models of the catalog are listed under “From the catalog” and open like an imported file (nothing shows where there is no catalog)
 - [ ] Rhinestone and HTV read the published templates
-- [ ] Statistics, tracking and metadata settings (later parts)
+- [x] Statistics and tracking: see the next section (metadata settings are still to do)
+
+---
+
+## Statistics and tracking (ADR 0060)
+
+- [x] `/api/track/*` and the statistics routes of `/api/admin/*` refuse a request without a valid Access token (tested)
+- [x] An event is checked before it is stored: name, path, label, at most 8 small props, a random session id; the studio is worked out by the Worker (tested)
+- [x] No IP address and no user agent is stored; the login is a 16-character one-way hash (tested)
+- [x] Settings (own events on/off, GA4 id, GTM id, Do Not Track, retention 7–730 days) are validated and used at once (tested)
+- [x] Nothing is stored when own events are off; events older than the retention are deleted, at most once an hour (tested)
+- [x] Statistics over 7/30/90/365 days come from the database's own counts; “Delete all events” empties the table (tested)
+- [x] A browser with Do Not Track / Global Privacy Control is not counted anywhere (own database, GA4, GTM) when the owner respects it (tested)
+- [x] GA4 and GTM scripts load only for a valid id, only on the private site, and only after the settings say so (tested)
+- [x] `/admin` has the tabs Templates, Statistics and Tracking; checked in the running page on the local Worker
+- [ ] Checked on the deployed private site behind Cloudflare Access
+- [ ] Events seen in a real Google Analytics / Tag Manager account (needs the owner's ids)
+- [ ] Metadata settings (title, description, social picture) — a later part
 
 ---
 
