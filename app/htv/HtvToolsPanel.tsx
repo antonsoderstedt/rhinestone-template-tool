@@ -12,6 +12,7 @@ import { HTV_COLOR_PALETTES } from './htvColorPalettes';
 import { getHtvColor } from './htvMaterialCatalog';
 import ShapeThumbnail from './ShapeThumbnail';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
+import CatalogTemplates from '../components/CatalogTemplates';
 
 import { useT } from '../lib/i18n';
 interface HtvToolsPanelProps {
@@ -20,6 +21,8 @@ interface HtvToolsPanelProps {
   libraryAssets: WorkspaceAsset[];
   onAddText: () => void;
   onImportFile: (file: File) => void;
+  /** Opens an SVG from the site's catalog as a layer; false when it could not be opened. */
+  onOpenCatalogFile: (file: File) => Promise<boolean>;
   onAddShape: (shapeId: HtvShapeId) => void;
   onAddTemplate: (templateId: HtvDesignTemplateId) => void;
   onAddLibraryAsset: (assetId: string) => void;
@@ -44,7 +47,7 @@ function PanelSection({ title, icon, children, defaultOpen = true }: { title: st
   );
 }
 
-export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
+export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onOpenCatalogFile, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
   const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeGarmentColor = getGarmentColor(state.garment.colorId);
@@ -102,6 +105,12 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
           </button>
         </div>
       </PanelSection>
+
+      <CatalogTemplates
+        studio="htv"
+        onOpen={(file) => onOpenCatalogFile(file)}
+        wrap={(content) => <PanelSection title={t('From the catalog')} icon={<LibraryBig className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>{content}</PanelSection>}
+      />
 
       <PanelSection title={t('Workspace library')} icon={<LibraryBig className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>
         {recentLibraryAssets.length === 0 ? (

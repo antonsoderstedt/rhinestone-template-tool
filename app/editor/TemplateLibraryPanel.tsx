@@ -3,6 +3,8 @@
 import { FolderOpen, Heart, HeartOff, LibraryBig, Save, Trash2 } from 'lucide-react';
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import type { TemplateLibraryEntry } from '@/src/lib/rhinestone-engine/index';
+import CatalogTemplates from '../components/CatalogTemplates';
+import type { CatalogTemplate } from '../lib/catalog/catalogClient';
 
 import { useT } from '../lib/i18n';
 interface TemplateLibraryPanelProps {
@@ -18,6 +20,8 @@ interface TemplateLibraryPanelProps {
   onDelete: (templateId: string) => void;
   onRename: (templateId: string) => void;
   onDuplicate: (templateId: string) => void;
+  /** Opens a template from the site's catalog (an SVG or a saved project); false when it could not be opened. */
+  onOpenCatalogFile: (file: File, template: CatalogTemplate) => boolean | Promise<boolean>;
 }
 
 export default function TemplateLibraryPanel({
@@ -33,6 +37,7 @@ export default function TemplateLibraryPanel({
   onDelete,
   onRename,
   onDuplicate,
+  onOpenCatalogFile,
 }: TemplateLibraryPanelProps) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
@@ -238,6 +243,16 @@ export default function TemplateLibraryPanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <CatalogTemplates
+            studio="rhinestone"
+            onOpen={onOpenCatalogFile}
+            wrap={(content) => (
+              <div className="mb-4">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--studio-ink-muted)]">{t('From the catalog')}</h3>
+                {content}
+              </div>
+            )}
+          />
           {builtInEntries.length === 0 && userEntries.length === 0 ? (
             <div className="rounded-md border border-dashed border-[var(--studio-border)] px-4 py-8 text-center">
               <p className="text-sm font-medium text-[var(--studio-ink-secondary)]">{t('No saved designs yet.')}</p>

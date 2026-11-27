@@ -186,7 +186,7 @@ export default function HtvShell() {
     dispatch({ type: 'ADD_LAYERS', layers: [newLayer] });
   }, [state.layers, createLayerId]);
 
-  const handleImportFile = useCallback(async (file: File) => {
+  const handleImportFile = useCallback(async (file: File): Promise<boolean> => {
     const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
     try {
       if (isSvg) {
@@ -194,7 +194,7 @@ export default function HtvShell() {
         const raw = svgStringToPolylines(text);
         if (raw.length === 0) {
           setToast({ message: 'This SVG had no shapes the importer could read.', tone: 'warning' });
-          return;
+          return false;
         }
         const { polylines, widthMm, heightMm } = centerPolylines(raw);
         const layer = createHtvVectorLayer({
@@ -207,7 +207,7 @@ export default function HtvShell() {
           sourceKind: 'svg-upload',
         });
         dispatch({ type: 'ADD_LAYERS', layers: [layer] });
-        return;
+        return true;
       }
 
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -218,8 +218,10 @@ export default function HtvShell() {
       });
       const image = await decodeRasterImageDataUrl(dataUrl);
       setPendingImage({ image, previewDataUrl: dataUrl });
+      return true;
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Could not import this file.', tone: 'error' });
+      return false;
     }
   }, [createLayerId, state.garment.placementZone]);
 
@@ -618,6 +620,7 @@ export default function HtvShell() {
             libraryAssets={libraryAssets}
             onAddText={(...args) => { showInspectorOnPhone(); return handleAddText(...args); }}
             onImportFile={(...args) => { showInspectorOnPhone(); return handleImportFile(...args); }}
+            onOpenCatalogFile={(file) => { showInspectorOnPhone(); return handleImportFile(file); }}
             onAddShape={(...args) => { showInspectorOnPhone(); return handleAddShape(...args); }}
             onAddTemplate={(...args) => { showInspectorOnPhone(); return handleAddTemplate(...args); }}
             onAddLibraryAsset={(...args) => { showInspectorOnPhone(); return handleAddLibraryAsset(...args); }}
