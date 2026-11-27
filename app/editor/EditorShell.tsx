@@ -102,6 +102,7 @@ import {
 } from './projectPersistence';
 import { decodeRasterImageDataUrl } from '../lib/rasterImageDecode';
 import { buildProjectFilename, downloadProject, readProjectFile } from '../lib/projectUtils';
+import { trackExport } from '../lib/tracking/track';
 import { findAssetById, readActiveCalibrationProfile, readWorkspaceSettings } from '../lib/workspaceVault';
 import { generateAndResolveTemplate } from './generateAndResolveTemplate';
 import {
@@ -974,6 +975,7 @@ export default function EditorShell() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    trackExport(filename);
     setExportDialogOpen(false);
     setToast({
       message: options.uncalibratedOverride

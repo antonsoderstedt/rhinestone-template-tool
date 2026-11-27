@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { useT } from '../lib/i18n';
+import { trackExport } from '../lib/tracking/track';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SvgExportActionsProps {
@@ -38,6 +39,7 @@ export default function SvgExportActions({
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    trackExport(filename);
   }
 
   async function handleCopy() {

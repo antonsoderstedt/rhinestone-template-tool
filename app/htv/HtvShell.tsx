@@ -63,6 +63,7 @@ import {
 } from '../lib/workspaceVault';
 
 import { useT } from '../lib/i18n';
+import { trackExport } from '../lib/tracking/track';
 const DEFAULT_TEXT_FONT_ID = listOutlineFonts().find((f) => !f.isLegacy)?.fontId ?? '';
 
 export default function HtvShell() {
@@ -421,6 +422,7 @@ export default function HtvShell() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    trackExport(filename);
     setExportDialogOpen(false);
     setToast({ message: `Exported ${htvExportFresh.layerCount} layer(s) as SVG.`, tone: 'success' });
   }, [htvExportFresh]);

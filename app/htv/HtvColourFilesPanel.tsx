@@ -7,6 +7,7 @@ import { createHtvColourFiles, buildColourFilesNote, type HtvColourFile, type Ht
 import type { HtvLayer } from './HtvState';
 
 import { useT } from '../lib/i18n';
+import { trackExport } from '../lib/tracking/track';
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -14,6 +15,7 @@ function triggerDownload(blob: Blob, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+  trackExport(filename);
 }
 
 const safe = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'colour';

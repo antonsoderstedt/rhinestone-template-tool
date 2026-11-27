@@ -9,6 +9,7 @@ import {
   type PapercraftResult,
 } from '@/src/lib/papercraft-engine';
 import { createZip } from '../lib/zip';
+import { trackExport } from '../lib/tracking/track';
 
 /** A safe base for file names, from the project name. */
 export function exportBaseName(projectName: string): string {
@@ -86,4 +87,5 @@ export function downloadExportFile(file: ExportFile): void {
   a.download = file.fileName;
   a.click();
   URL.revokeObjectURL(url);
+  trackExport(file.fileName);
 }

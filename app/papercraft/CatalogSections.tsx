@@ -6,6 +6,7 @@ import CatalogPreview from '../components/CatalogPreview';
 import { useT } from '../lib/i18n';
 import { Section } from './fields';
 import { catalogDesignState, catalogModelFile, catalogModels, entryKindOf, saveDesignAsTemplate, searchCatalogModels } from './papercraftCatalog';
+import { track } from '../lib/tracking/track';
 import type { PapercraftState } from './papercraftState';
 
 const SEARCH_FROM = 8;
@@ -69,6 +70,7 @@ export default function CatalogSections({ state, onImportFile, onLoadState }: { 
     }
     setLoadingId(null);
     setFailed(!ok);
+    if (ok) track('catalog_template_used', { kind: entryKindOf(template) ?? 'model' }, template.id);
   };
 
   const save = async () => {
@@ -78,6 +80,7 @@ export default function CatalogSections({ state, onImportFile, onLoadState }: { 
     const result = await saveDesignAsTemplate(state, { name: chosen, category, published }, templates.map((tpl) => tpl.id));
     setSaving(false);
     if (result.ok) {
+      track('template_saved', {}, 'design');
       setNote(
         result.value.previewSaved
           ? { kind: 'ok', text: t('Saved “{name}” in the catalog.', { name: chosen }) }

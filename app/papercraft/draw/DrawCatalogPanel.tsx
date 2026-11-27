@@ -7,6 +7,7 @@ import { listCatalog, type CatalogTemplate } from '../../lib/catalog/catalogClie
 import { useT } from '../../lib/i18n';
 import { Section } from '../fields';
 import { catalogDrawingDoc, drawingEntries, saveDrawingAsTemplate } from './drawCatalog';
+import { track } from '../../lib/tracking/track';
 
 const fieldClass =
   'h-9 w-full rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 text-sm text-[var(--studio-ink)] focus-visible:ring-2 focus-visible:ring-violet-400';
@@ -51,8 +52,10 @@ export default function DrawCatalog({ doc, onOpen }: { doc: DrawDoc; onOpen: (do
     setFailed(false);
     const opened = await catalogDrawingDoc(template);
     setLoadingId(null);
-    if (opened) onOpen(opened);
-    else setFailed(true);
+    if (opened) {
+      onOpen(opened);
+      track('catalog_template_used', { kind: 'drawing' }, template.id);
+    } else setFailed(true);
   };
 
   const save = async () => {
@@ -62,6 +65,7 @@ export default function DrawCatalog({ doc, onOpen }: { doc: DrawDoc; onOpen: (do
     const result = await saveDrawingAsTemplate(doc, { name: chosen, category, published }, templates.map((tpl) => tpl.id));
     setSaving(false);
     if (result.ok) {
+      track('template_saved', {}, 'drawing');
       setNote(
         result.value.previewSaved
           ? { kind: 'ok', text: t('Saved “{name}” in the catalog.', { name: chosen }) }
