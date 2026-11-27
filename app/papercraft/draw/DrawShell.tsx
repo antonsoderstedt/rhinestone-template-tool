@@ -31,6 +31,7 @@ import { useStudioTheme } from '../../lib/studioTheme';
 import { CheckField, LengthField, NumberField, Section, SelectField } from '../fields';
 import { downloadExportFile, exportBaseName } from '../papercraftExport';
 import DrawCanvas from './DrawCanvas';
+import DrawCatalogPanel from './DrawCatalogPanel';
 import { readDrawDraft, writeDrawDraft } from './drawDraft';
 import { drawReducer, initialDrawState } from './drawState';
 import { DEFAULT_TOOL_OPTIONS, type DrawTool, type ToolOptions } from './drawTools';
@@ -285,6 +286,8 @@ export default function DrawShell() {
               </ul>
             )}
           </Section>
+
+          <DrawCatalogPanel doc={doc} onOpen={(opened) => { dispatch({ type: 'REPLACE', doc: opened }); setMessage(null); }} />
 
           <Section title={t('Save and download')}>
             <CheckField label={t('Make the file only as big as the drawing')} tip={t('For the cutting machine: the sheet is cut down to the drawing plus a small margin, so the machine does not think the whole mat is used.')} checked={crop} onChange={setCrop} />

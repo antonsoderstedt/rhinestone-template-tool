@@ -112,8 +112,9 @@ export default function DrawCanvas({ doc, selection, tool, options, dispatch, on
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    box.current?.focus();
+    // The point is read before the canvas takes the focus, and the focus does not scroll the page (a scroll would move the sheet under the pointer).
     const raw = toMm(e);
+    box.current?.focus({ preventScroll: true });
     if (e.button === 1 || (e.button === 0 && spaceDown.current)) {
       gesture.current = { kind: 'pan', startClient: [e.clientX, e.clientY], startView: v };
       (e.target as Element).setPointerCapture?.(e.pointerId);

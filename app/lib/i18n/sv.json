@@ -1769,5 +1769,11 @@
   "Start a new drawing? The one you have now is lost unless you saved a file.": "Börja en ny ritning? Den du har nu går förlorad om du inte sparat en fil.",
   "New drawing": "Ny ritning",
   "The drawing is also kept in this browser, so it is here next time.": "Ritningen sparas också i den här webbläsaren, så den finns kvar nästa gång.",
-  "Want to draw your own pattern flat? Open the drawing tool": "Vill du rita ett eget mönster platt? Öppna ritverktyget"
+  "Want to draw your own pattern flat? Open the drawing tool": "Vill du rita ett eget mönster platt? Öppna ritverktyget",
+  "Open this drawing? The one you have now is lost unless you saved it.": "Öppna den här ritningen? Den du har nu går förlorad om du inte sparat den.",
+  "Draw something first.": "Rita något först.",
+  "The drawing could not be fetched from the catalog.": "Ritningen gick inte att hämta från katalogen.",
+  "Drawings from the catalog": "Ritningar från katalogen",
+  "Keep this drawing in your catalog so you can start from it again, from this tool.": "Spara den här ritningen i din katalog så att du kan börja från den igen, från det här verktyget.",
+  "Show it under “Drawings from the catalog”": "Visa den under ”Ritningar från katalogen”"
 }

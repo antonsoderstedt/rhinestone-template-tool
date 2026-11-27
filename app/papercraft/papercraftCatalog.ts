@@ -8,10 +8,19 @@ import { thumbnailPolygons, thumbnailSvg } from './papercraftThumbnail';
 /** What the studio can take from the catalog: a 3D model file (OBJ, STL, GLB), or a whole design saved as a template (JSON). */
 export type CatalogEntryKind = 'model' | 'design';
 
-export function entryKindOf(template: Pick<CatalogTemplate, 'file'>): CatalogEntryKind | null {
+/** What a saved JSON template is: a design of the studio, or a flat drawing of the drawing tool (told apart by its `Kind` field). */
+export const KIND_FIELD = 'Kind';
+export const DRAWING_KIND = 'drawing';
+
+export function isDrawingTemplate(template: Pick<CatalogTemplate, 'fields'>): boolean {
+  return template.fields?.[KIND_FIELD] === DRAWING_KIND;
+}
+
+export function entryKindOf(template: Pick<CatalogTemplate, 'file'> & Partial<Pick<CatalogTemplate, 'fields'>>): CatalogEntryKind | null {
   if (!template.file) return null;
   const format = formatOfFileName(template.file.name);
-  if (format === 'json') return 'design';
+  // A flat drawing opens in the drawing tool, not in the studio.
+  if (format === 'json') return template.fields && isDrawingTemplate({ fields: template.fields }) ? null : 'design';
   return PAPERCRAFT_MODEL_FORMATS.includes(format) ? 'model' : null;
 }
 

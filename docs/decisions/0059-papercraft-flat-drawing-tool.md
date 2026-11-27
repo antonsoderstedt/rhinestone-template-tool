@@ -35,6 +35,7 @@ Silhouette or print it.
 
 - Curves are polygons (a circle is up to 200 sides). A real Bézier curve is not supported.
 - One sheet per drawing; several pages are made by several drawings.
-- A drawing is not yet saved in the template catalog (ADR 0057), only as a file.
+- **Catalog** (added; `drawCatalog.ts`, `DrawCatalogPanel.tsx`): “Save as a template” puts the drawing in the template catalog (ADR 0057) as a Papercraft JSON template with the field `Kind: drawing` (so the studio's “From the catalog” does not offer it as a design), plus a small SVG picture; the id comes from the name and never replaces another template. “Drawings from the catalog” in the drawing tool lists the published ones and opens them (after a confirm if something is drawn). Both only show where there is a catalog. A failed picture upload is reported but does not fail the save.
+- Fixed on the way: the first click on the sheet was read after the canvas took the focus, and the focus could scroll the page, so the first corner landed in the wrong place on a narrow screen; the point is now read first and the focus does not scroll.
 - The mouse editing was checked with synthetic pointer events in the running page (rectangle, tab, outline, number, move, undo, four downloads),
   not with a real mouse or touch screen; nothing has been cut on a machine.
