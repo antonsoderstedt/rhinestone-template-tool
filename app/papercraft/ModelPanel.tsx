@@ -27,6 +27,9 @@ interface ModelPanelProps {
   onImportFile: (file: File) => void;
   /** A whole design from the catalog (a saved template). */
   onLoadState: (state: PapercraftState) => void;
+  /** The part of a model built from parts that is selected (in the Build view too). */
+  selectedPart: number | null;
+  onSelectPart: (index: number | null) => void;
   onFillHoles: () => void;
   onFlipFaces: () => void;
   /** True while a model is being simplified (a heavy one takes a few seconds). */
@@ -35,7 +38,7 @@ interface ModelPanelProps {
   onRestoreOriginal: () => void;
 }
 
-export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onLoadState, onFillHoles, onFlipFaces, simplifying, onSimplify, onRestoreOriginal }: ModelPanelProps) {
+export default function ModelPanel({ state, dispatch, report, solid, importError, onImportFile, onLoadState, selectedPart, onSelectPart, onFillHoles, onFlipFaces, simplifying, onSimplify, onRestoreOriginal }: ModelPanelProps) {
   const t = useT();
   const unit = useUnit();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -161,7 +164,7 @@ export default function ModelPanel({ state, dispatch, report, solid, importError
 
       <ShapeSection source={state.source} dispatch={dispatch} />
 
-      <BuilderSection source={state.source} dispatch={dispatch} />
+      <BuilderSection source={state.source} dispatch={dispatch} selectedPart={selectedPart} onSelectPart={onSelectPart} />
 
       {state.source.kind === 'file' && solid && (
         <Section title={t('Check your model')}>

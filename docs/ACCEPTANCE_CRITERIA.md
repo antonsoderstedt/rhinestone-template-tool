@@ -700,6 +700,7 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Several pages per drawing (PDF with all pages, SVG/DXF per page) and smooth curves through points (tested; checked in the running page with synthetic events)
 - [ ] A drawing cut on a real machine
 - [x] Save a drawing in the catalog and open it from “Drawings from the catalog” (checked on the local Worker); the studio does not list drawings
+- [x] Move the parts of a built model with the mouse in the Build view: select, drag on the ground, Shift-drag to lift (math tested; checked in the running studio with synthetic pointer events)
 - [ ] A real model built from one of the templates has been folded and glued
 
 ---

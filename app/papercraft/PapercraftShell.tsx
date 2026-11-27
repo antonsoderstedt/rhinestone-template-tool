@@ -4,7 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState
 import dynamic from 'next/dynamic';
 import { Download, Pause, Play, SlidersHorizontal, Shapes } from 'lucide-react';
 import { buildPapercraftDesignEntry, readWorkspaceVault, writeWorkspaceVault } from '../lib/workspaceVault';
-import { fillHoles, flipFaces, reportSolid, simplifyMesh } from '@/src/lib/papercraft-engine';
+import { fillHoles, flipFaces, longestSide, meshOfRecipe, moveBuildPart, reportSolid, simplifyMesh, turnBuildPart, type BuildPart } from '@/src/lib/papercraft-engine';
 import { useStudioTheme } from '../lib/studioTheme';
 import MobileStudioBar from '../components/MobileStudioBar';
 import { useT } from '../lib/i18n';
@@ -26,6 +26,7 @@ import { readPapercraftVersions, recordPapercraftVersion, type PapercraftVersion
 
 // three.js is loaded when the 3D view is first opened.
 const Model3D = dynamic(() => import('./Model3D'), { ssr: false });
+const PartsView3D = dynamic(() => import('./PartsView3D'), { ssr: false });
 
 export default function PapercraftShell() {
   const t = useT();
@@ -47,6 +48,21 @@ export default function PapercraftShell() {
   // A saved design named in the address that is not there (deleted here or on another device) says so.
   const [toast, setToast] = useState<string | null>(() => (boot.from === 'missing-design' ? t('That saved model was not found. It may have been deleted.') : null));
   const [playing, setPlaying] = useState(false);
+  /** The part of a model built from parts that is selected in the Build view and in the Model panel. */
+  const [buildPartAt, setBuildPart] = useState<number | null>(null);
+
+  // A model built from parts can be edited with the mouse in the Build view.
+  const buildParts: BuildPart[] | null = state.source.kind === 'file' && state.source.recipe?.kind === 'parts' ? state.source.recipe.parts : null;
+  const buildPart = buildParts && buildPartAt !== null && buildPartAt < buildParts.length ? buildPartAt : null;
+  const view = state.view === 'build' && !buildParts ? 'pattern' : state.view;
+  const changeBuildParts = useCallback(
+    (next: BuildPart[]) => {
+      const recipe = { kind: 'parts' as const, parts: next };
+      const mesh = meshOfRecipe(recipe);
+      if (mesh) dispatch({ type: 'SET_RECIPE', recipe, mesh, sizeMm: longestSide(mesh) });
+    },
+    [],
+  );
 
   // Only the things that decide the pattern: turning the 3D view or the fold slider never recomputes it.
   const { source, size, paper, pattern, edits, detailPct, layout } = state;
@@ -310,7 +326,8 @@ export default function PapercraftShell() {
     <div data-theme={theme} className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--studio-bg)] text-[var(--studio-ink)]">
       <PapercraftTopbar
         projectName={state.projectName}
-        view={state.view}
+        view={view}
+        canBuild={buildParts !== null}
         canExport={Boolean(run)}
         canSave={canSave}
         dirty={dirty}
@@ -325,7 +342,7 @@ export default function PapercraftShell() {
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={`order-2 min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--studio-border)] max-lg:h-[44dvh] ${mobilePanel !== 'model' ? 'max-lg:hidden' : ''} lg:order-none lg:h-full lg:w-[272px] lg:border-t-0`}>
-          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onLoadState={(loaded) => dispatchModelChange({ type: 'LOAD_STATE', state: loaded })} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} simplifying={simplifying} onSimplify={simplifyModel} onRestoreOriginal={restoreOriginal} />
+          <ModelPanel state={state} dispatch={dispatchModelChange} report={report} solid={run?.solid ?? null} importError={importError} onImportFile={importFile} onLoadState={(loaded) => dispatchModelChange({ type: 'LOAD_STATE', state: loaded })} selectedPart={buildPart} onSelectPart={setBuildPart} onFillHoles={closeHoles} onFlipFaces={turnInsideOut} simplifying={simplifying} onSimplify={simplifyModel} onRestoreOriginal={restoreOriginal} />
         </div>
 
         <main
@@ -341,9 +358,22 @@ export default function PapercraftShell() {
           }}
         >
           <h1 className="sr-only">{t('Papercraft Studio')}</h1>
-          {run && state.view === 'pattern' && <PatternView run={run} selectedPartId={state.selectedPartId} onSelectPart={selectPart} onToggleEdge={toggleEdge} colourParts={state.colourParts} />}
-          {run && state.view === 'pages' && <PagesView run={run} cover={cover} layout={state.layout} dispatch={dispatch} selectedPartId={state.selectedPartId} onSelectPart={selectPart} />}
-          {run && state.view === 'model' && (
+          {run && view === 'pattern' && <PatternView run={run} selectedPartId={state.selectedPartId} onSelectPart={selectPart} onToggleEdge={toggleEdge} colourParts={state.colourParts} />}
+          {run && view === 'pages' && <PagesView run={run} cover={cover} layout={state.layout} dispatch={dispatch} selectedPartId={state.selectedPartId} onSelectPart={selectPart} />}
+          {buildParts && view === 'build' && (
+            <div className="flex h-full flex-col">
+              <div className="min-h-0 flex-1">
+                <PartsView3D parts={buildParts} selected={buildPart} onSelect={setBuildPart} onMove={(index, delta) => changeBuildParts(moveBuildPart(buildParts, index, delta, 1))} />
+              </div>
+              <div className="flex flex-wrap items-center gap-2 border-t border-[var(--studio-border)] bg-[var(--studio-surface)] px-4 py-2 text-xs text-[var(--studio-ink-secondary)]">
+                <span>{buildPart === null ? t('Click a part to select it.') : t('Part {n} is selected.', { n: buildPart + 1 })}</span>
+                <button type="button" disabled={buildPart === null} onClick={() => buildPart !== null && changeBuildParts(turnBuildPart(buildParts, buildPart, 'z', 15))} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 font-medium hover:bg-[var(--studio-surface-hover)] disabled:opacity-40">{t('Turn left 15°')}</button>
+                <button type="button" disabled={buildPart === null} onClick={() => buildPart !== null && changeBuildParts(turnBuildPart(buildParts, buildPart, 'z', -15))} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 font-medium hover:bg-[var(--studio-surface-hover)] disabled:opacity-40">{t('Turn right 15°')}</button>
+                <button type="button" disabled={buildPart === null} onClick={() => buildPart !== null && changeBuildParts(moveBuildPart(buildParts, buildPart, { dx: 0, dy: 0, dz: -buildParts[buildPart]!.z }))} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-2 py-1.5 font-medium hover:bg-[var(--studio-surface-hover)] disabled:opacity-40">{t('Down to the ground')}</button>
+              </div>
+            </div>
+          )}
+          {run && view === 'model' && (
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
                 <Model3D run={run} fold={state.fold} selectedPartId={state.selectedPartId} onSelectPart={selectPart} colourParts={state.colourParts} />

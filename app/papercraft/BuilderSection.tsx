@@ -33,7 +33,7 @@ const smallButton =
  * simple parts (boxes, cylinders, cones, pyramids) that each have a size, a place and a turn. The recipe is kept with the model, so it can be
  * changed again after it was saved.
  */
-export default function BuilderSection({ source, dispatch }: { source: PapercraftState['source']; dispatch: React.Dispatch<PapercraftAction> }) {
+export default function BuilderSection({ source, dispatch, selectedPart, onSelectPart }: { source: PapercraftState['source']; dispatch: React.Dispatch<PapercraftAction>; selectedPart: number | null; onSelectPart: (index: number | null) => void }) {
   const t = useT();
   const recipe = source.kind === 'file' ? source.recipe : undefined;
 
@@ -102,8 +102,8 @@ export default function BuilderSection({ source, dispatch }: { source: Papercraf
       {parts && (
         <div className="space-y-2 border-t border-[var(--studio-border)] pt-3">
           {parts.map((part, index) => (
-            <details key={index} open={parts.length <= 2 || index === parts.length - 1} className="rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]">
-              <summary className="cursor-pointer px-2.5 py-2 text-xs font-semibold text-[var(--studio-ink)]">{index + 1}. {t(KIND_LABELS[part.kind])}</summary>
+            <details key={index} open={parts.length <= 2 || index === parts.length - 1 || selectedPart === index} className={`rounded-md border bg-[var(--studio-well)] ${selectedPart === index ? 'border-violet-400/70' : 'border-[var(--studio-border)]'}`}>
+              <summary onClick={() => onSelectPart(index)} className="cursor-pointer px-2.5 py-2 text-xs font-semibold text-[var(--studio-ink)]">{index + 1}. {t(KIND_LABELS[part.kind])}</summary>
               <div className="space-y-2.5 border-t border-[var(--studio-border)] px-2.5 py-2.5">
                 <SelectField<PartKind>
                   label={t('Kind')}
@@ -155,6 +155,7 @@ export default function BuilderSection({ source, dispatch }: { source: Papercraf
               </button>
             ))}
           </div>
+          <p className="text-xs text-[var(--studio-ink-subtle)]">{t('To move the parts with the mouse, open the Build view above the model.')}</p>
           <p className="text-xs text-[var(--studio-ink-subtle)]">{t('A new part is put on top of the others. Parts are separate pieces: leave the ends open where two parts are glued together.')}</p>
         </div>
       )}

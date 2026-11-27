@@ -159,6 +159,25 @@ export function buildParts(parts: readonly BuildPart[]): RawMesh {
   return { positions, faces };
 }
 
+// ─── Moving parts ─────────────────────────────────────────────────────────────
+
+const snapTo = (n: number, grid: number) => (grid > 0 ? Math.round(n / grid) * grid + 0 : n);
+
+/** One part moved by (dx, dy, dz), its place rounded to `gridMm` (0 is no rounding) and kept in range. A part that does not exist leaves the list as it is. */
+export function moveBuildPart(parts: readonly BuildPart[], index: number, delta: { dx: number; dy: number; dz: number }, gridMm = 0): BuildPart[] {
+  if (index < 0 || index >= parts.length) return [...parts];
+  const d = { dx: Number.isFinite(delta.dx) ? delta.dx : 0, dy: Number.isFinite(delta.dy) ? delta.dy : 0, dz: Number.isFinite(delta.dz) ? delta.dz : 0 };
+  return parts.map((p, i) => (i === index ? clampPart({ ...p, x: snapTo(p.x + d.dx, gridMm), y: snapTo(p.y + d.dy, gridMm), z: snapTo(p.z + d.dz, gridMm) }) : p));
+}
+
+/** One part turned by `degrees` about its x, y or z axis (added to its turn, kept between -180 and 180). */
+export function turnBuildPart(parts: readonly BuildPart[], index: number, axis: 'x' | 'y' | 'z', degrees: number): BuildPart[] {
+  if (index < 0 || index >= parts.length || !Number.isFinite(degrees)) return [...parts];
+  const key = axis === 'x' ? 'rotX' : axis === 'y' ? 'rotY' : 'rotZ';
+  const wrap = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
+  return parts.map((p, i) => (i === index ? clampPart({ ...p, [key]: wrap(p[key] + degrees) }) : p));
+}
+
 // ─── Parametric templates ─────────────────────────────────────────────────────
 
 export interface TemplateParam {

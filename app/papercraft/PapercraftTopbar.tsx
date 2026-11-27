@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, FileText, Layers, Save, Scissors, Shapes } from 'lucide-react';
+import { Box, FileText, Layers, Move3d, Save, Scissors, Shapes } from 'lucide-react';
 import type { StudioTheme } from '../lib/studioTheme';
 import StudioThemeToggle from '../components/StudioThemeToggle';
 import { useT } from '../lib/i18n';
@@ -9,6 +9,8 @@ import type { PapercraftAction, PapercraftView } from './papercraftState';
 interface PapercraftTopbarProps {
   projectName: string;
   view: PapercraftView;
+  /** The model is built from parts: the Build view is offered. */
+  canBuild: boolean;
   canExport: boolean;
   canSave: boolean;
   /** There are changes that are not saved. */
@@ -22,12 +24,13 @@ interface PapercraftTopbarProps {
   onToggleTheme: () => void;
 }
 
-export default function PapercraftTopbar({ projectName, view, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, onExportSilhouette, theme, onToggleTheme }: PapercraftTopbarProps) {
+export default function PapercraftTopbar({ projectName, view, canBuild, canExport, canSave, dirty, onSave, dispatch, onExportPdf, onExportCricut, onExportSilhouette, theme, onToggleTheme }: PapercraftTopbarProps) {
   const t = useT();
   const views: { id: PapercraftView; label: string; tip: string; icon: typeof Box }[] = [
     { id: 'model', label: t('3D model'), tip: t('See the finished model in 3D and fold it up.'), icon: Box },
     { id: 'pattern', label: t('Pattern'), tip: t('See the flat parts. Click an edge to change a fold into a cut, or the other way round.'), icon: Shapes },
     { id: 'pages', label: t('Pages'), tip: t('See how the parts are placed on the pages that are printed or cut.'), icon: Layers },
+    ...(canBuild ? [{ id: 'build' as const, label: t('Build'), tip: t('Move the parts of your model with the mouse: drag a part, hold Shift to lift it.'), icon: Move3d }] : []),
   ];
   return (
     <section aria-label={t('Project actions')} className="border-b border-[var(--studio-border)] bg-[var(--studio-surface)] text-[var(--studio-ink)]">

@@ -1794,5 +1794,15 @@
   "Add a page": "Lägg till en sida",
   "Remove this page and what is on it.": "Ta bort den här sidan och det som finns på den.",
   "Remove page {n} and everything on it?": "Ta bort sida {n} och allt på den?",
-  "Remove this page": "Ta bort den här sidan"
+  "Remove this page": "Ta bort den här sidan",
+  "Click a part to select it.": "Klicka på en del för att markera den.",
+  "Part {n} is selected.": "Del {n} är markerad.",
+  "Turn left 15°": "Vrid 15° vänster",
+  "Turn right 15°": "Vrid 15° höger",
+  "Down to the ground": "Ner på marken",
+  "Build": "Bygg",
+  "Move the parts of your model with the mouse: drag a part, hold Shift to lift it.": "Flytta delarna i din modell med musen: dra en del, håll Skift för att lyfta den.",
+  "The parts in 3D. Drag a part to move it, hold Shift to lift it, drag the background to turn the view.": "Delarna i 3D. Dra en del för att flytta den, håll Skift för att lyfta den, dra i bakgrunden för att vrida vyn.",
+  "Drag a part to move it. Hold Shift to lift it. Drag the background to turn the view.": "Dra en del för att flytta den. Håll Skift för att lyfta den. Dra i bakgrunden för att vrida vyn.",
+  "To move the parts with the mouse, open the Build view above the model.": "Öppna vyn Bygg ovanför modellen för att flytta delarna med musen."
 }

@@ -46,3 +46,13 @@ editor follow separately.
   saved templates (JSON, opened as a whole design through `LOAD_STATE`; a JSON file that is not one of ours is refused). Opening one starts a new unsaved design.
   The section only shows where there is a catalog.
 - Not in this part: a flat 2D pattern editor, a 3D drag editor for the parts.
+
+## Update: moving parts with the mouse (Build view)
+
+- A model built from parts has a fourth view, **Build** (`PartsView3D.tsx`, three.js like the 3D model view): the parts are shown as they are made (each its own colour,
+  outlines, a ground grid) and not as the unfolded model, so no mapping from the cleaned solid back to the parts is needed. Click a part to select it (it is also selected in the Model panel's part list), **drag** it to move it on the ground,
+  hold **Shift** and drag to **lift** it. While a part is dragged the view-turning controls are off; the part follows the pointer and one change is made when the pointer is let go (a click that does not move
+  is only a selection). The position is rounded to 1 mm. Buttons turn the selected part 15° left or right and put it down on the ground.
+- The maths is pure and tested (`partsDrag.ts`: model <-> scene coordinates, the plane a drag moves on, ray-plane hit, the move in millimetres) and the changes are engine functions (`moveBuildPart`, `turnBuildPart`: clamped, snapped to a grid).
+  A drag on the ground moves on the horizontal plane at the height of the part; a lift uses a vertical plane facing the camera (not possible when the camera looks straight down).
+- Checked in the running studio with synthetic pointer events on the WebGL canvas (selection, ground drag, Shift-lift); not with a real mouse or touch screen. No resizing handles: sizes are still typed.
