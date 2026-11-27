@@ -7,7 +7,7 @@ export { extrudeShape, latheShape, shapeOutline, simplifyOutline, rasterizeShape
 export { extrudeFaces, ringSweep, type LimbStep, type LimbOp, type RingSection, type RingSweep, type RingProfile } from './mesh/limbs';
 export {
   PART_KINDS, PART_OPENS, PART_LIMITS, PARAMETRIC_TEMPLATES, defaultPart, clampPart, partMesh, buildParts, findTemplate, templateValues,
-  partsOfRecipe, meshOfRecipe, recipeOfTemplate, longestSide,
+  partsOfRecipe, meshOfRecipe, recipeOfTemplate, longestSide, moveBuildPart, turnBuildPart,
   type BuildPart, type PartKind, type PartOpen, type ParametricTemplate, type TemplateParam, type ModelRecipe,
 } from './mesh/builder';
 export { simplifyMesh, type SimplifyOptions, type SimplifyResult } from './mesh/simplify';

@@ -3,7 +3,8 @@ import { findBuiltInModel } from './papercraftModels';
 
 export type PaperPreset = 'a3' | 'a4' | 'a5' | 'letter' | 'tabloid' | 'cricut12x12' | 'cricut12x24' | 'custom';
 export type SizeBy = 'height' | 'width' | 'depth' | 'largest';
-export type PapercraftView = 'model' | 'pattern' | 'pages';
+/** `build` shows the parts of a model made from parts, to move with the mouse; it is only there for such a model. */
+export type PapercraftView = 'model' | 'pattern' | 'pages' | 'build';
 
 export type ModelSource =
   | { kind: 'builtin'; id: string }

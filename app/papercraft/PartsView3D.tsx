@@ -1,0 +1,174 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
+import { partMesh, type BuildPart } from '@/src/lib/papercraft-engine';
+import { isWebglAvailable } from '../htv/webglSupport';
+import { useT } from '../lib/i18n';
+import { partColor } from './papercraftColors';
+import { dragDelta, dragPlane, rayPlaneHit, type DragMode, type DragPlane, type V3 } from './partsDrag';
+
+interface Delta {
+  dx: number;
+  dy: number;
+  dz: number;
+}
+
+interface Props {
+  parts: BuildPart[];
+  selected: number | null;
+  onSelect: (index: number | null) => void;
+  /** The part was dragged by this much (millimetres, in the model). */
+  onMove: (index: number, delta: Delta) => void;
+}
+
+interface Built {
+  geometry: THREE.BufferGeometry;
+  edges: THREE.BufferGeometry;
+}
+
+/** A part as triangles (its faces are flat and convex, so a fan is right) and as outline segments. */
+function buildGeometry(part: BuildPart): Built {
+  const mesh = partMesh(part);
+  const tri: number[] = [];
+  const lines: number[] = [];
+  for (const face of mesh.faces) {
+    for (let k = 1; k + 1 < face.length; k++) tri.push(...mesh.positions[face[0]!]!, ...mesh.positions[face[k]!]!, ...mesh.positions[face[k + 1]!]!);
+    face.forEach((v, k) => lines.push(...mesh.positions[v]!, ...mesh.positions[face[(k + 1) % face.length]!]!));
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tri, 3));
+  geometry.computeVertexNormals();
+  const edges = new THREE.BufferGeometry();
+  edges.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
+  return { geometry, edges };
+}
+
+function boundsRadius(parts: readonly BuildPart[]): { centre: V3; radius: number } {
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (const p of parts) for (const v of partMesh(p).positions) for (let k = 0; k < 3; k++) {
+    lo[k] = Math.min(lo[k]!, v[k]!);
+    hi[k] = Math.max(hi[k]!, v[k]!);
+  }
+  if (lo[0]! > hi[0]!) return { centre: [0, 0, 0], radius: 50 };
+  return { centre: [(lo[0]! + hi[0]!) / 2, (lo[1]! + hi[1]!) / 2, (lo[2]! + hi[2]!) / 2], radius: Math.max(20, Math.hypot(hi[0]! - lo[0]!, hi[1]! - lo[1]!, hi[2]! - lo[2]!) / 2) };
+}
+
+function Scene({ parts, selected, onSelect, onMove }: Props) {
+  const invalidate = useThree((s) => s.invalidate);
+  const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
+  const get = useThree((s) => s.get);
+  /** The turn-the-view controls are switched off while a part is dragged, so the same drag does not turn the view. */
+  const orbit = useCallback((on: boolean) => {
+    const c = get().controls as { enabled: boolean } | null;
+    if (c) c.enabled = on;
+  }, [get]);
+  const [preview, setPreview] = useState<({ index: number } & Delta) | null>(null);
+  const drag = useRef<{ index: number; mode: DragMode; plane: DragPlane; start: V3 } | null>(null);
+  // The view starts where the model is; it is not moved when a part is.
+  const [initial] = useState(() => boundsRadius(parts));
+
+  const built = useMemo(() => parts.map(buildGeometry), [parts]);
+  useEffect(() => () => built.forEach((b) => { b.geometry.dispose(); b.edges.dispose(); }), [built]);
+  useEffect(() => invalidate(), [built, selected, preview, invalidate]);
+
+  const finish = useCallback(() => {
+    drag.current = null;
+    orbit(true);
+    setPreview(null);
+  }, [orbit]);
+
+  const begin = (event: ThreeEvent<PointerEvent>, index: number) => {
+    event.stopPropagation();
+    onSelect(index);
+    const part = parts[index]!;
+    const mode: DragMode = event.shiftKey ? 'lift' : 'ground';
+    const direction = camera.getWorldDirection(new THREE.Vector3());
+    const plane = dragPlane(mode, [part.x, part.y, part.z], [direction.x, direction.y, direction.z]);
+    if (!plane) return;
+    const o = event.ray.origin;
+    const d = event.ray.direction;
+    const start = rayPlaneHit([o.x, o.y, o.z], [d.x, d.y, d.z], plane);
+    if (!start) return;
+    drag.current = { index, mode, plane, start };
+    orbit(false);
+
+    const raycaster = new THREE.Raycaster();
+    const move = (e: PointerEvent) => {
+      const g = drag.current;
+      if (!g) return;
+      const rect = gl.domElement.getBoundingClientRect();
+      raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+      const r = raycaster.ray;
+      const hit = rayPlaneHit([r.origin.x, r.origin.y, r.origin.z], [r.direction.x, r.direction.y, r.direction.z], g.plane);
+      if (hit) setPreview({ index: g.index, ...dragDelta(g.mode, g.start, hit) });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      setPreview((p) => {
+        // A click that did not move is only a selection.
+        if (p && Math.hypot(p.dx, p.dy, p.dz) >= 0.5) onMove(p.index, { dx: p.dx, dy: p.dy, dz: p.dz });
+        return null;
+      });
+      finish();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
+  const distance = initial.radius * 4.6;
+  const gridSize = Math.ceil((initial.radius * 8) / 100) * 100;
+  return (
+    <>
+      <PerspectiveCamera makeDefault fov={40} near={initial.radius / 50} far={initial.radius * 80} position={[distance * 0.7, distance * 0.6, distance * 0.8]} />
+      <ambientLight intensity={0.75} />
+      <directionalLight position={[initial.radius * 2, initial.radius * 3, initial.radius * 2]} intensity={1.6} />
+      <directionalLight position={[-initial.radius * 2, -initial.radius, -initial.radius * 2]} intensity={0.5} />
+      <gridHelper args={[gridSize, gridSize / 10, '#7c3aed', '#8884']} />
+      {/* The model is z-up; three.js is y-up. */}
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        {built.map((b, i) => {
+          const isSelected = selected === i;
+          const offset = preview && preview.index === i ? preview : { dx: 0, dy: 0, dz: 0 };
+          return (
+            <group key={i} position={[offset.dx, offset.dy, offset.dz]}>
+              <mesh geometry={b.geometry} onPointerDown={(e) => begin(e, i)} onClick={(e) => e.stopPropagation()}>
+                <meshStandardMaterial color={partColor(i + 1, isSelected ? 74 : 60)} emissive={isSelected ? '#553300' : '#000000'} side={THREE.DoubleSide} flatShading polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
+              </mesh>
+              <lineSegments geometry={b.edges}>
+                <lineBasicMaterial color={isSelected ? '#7c3aed' : '#333333'} />
+              </lineSegments>
+            </group>
+          );
+        })}
+      </group>
+      <OrbitControls makeDefault enableDamping={false} />
+    </>
+  );
+}
+
+/** The parts of a model built from parts, in 3D: click one to select it, drag it to move it on the ground, hold Shift and drag to lift it. */
+export default function PartsView3D(props: Props) {
+  const t = useT();
+  const webgl = useMemo(() => (typeof document === 'undefined' ? true : isWebglAvailable()), []);
+  if (!webgl) {
+    return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-[var(--studio-ink-secondary)]">{t('This browser cannot show 3D here. The pattern and the pages work as usual.')}</div>;
+  }
+  return (
+    <div className="relative h-full w-full" aria-label={t('The parts in 3D. Drag a part to move it, hold Shift to lift it, drag the background to turn the view.')} role="img">
+      <Canvas frameloop="demand" onPointerMissed={() => props.onSelect(null)} dpr={[1, 2]}>
+        <Scene {...props} />
+      </Canvas>
+      <p className="pointer-events-none absolute left-2 top-2 max-w-[22rem] rounded-md bg-[var(--studio-surface)]/90 px-2 py-1 text-xs text-[var(--studio-ink-secondary)]">
+        {t('Drag a part to move it. Hold Shift to lift it. Drag the background to turn the view.')}
+      </p>
+    </div>
+  );
+}
