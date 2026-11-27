@@ -698,7 +698,7 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Save the model as a template in the catalog (JSON design + picture); it opens again from “From the catalog” with its recipe, size and settings (checked on the local Worker)
 - [x] Draw the pattern flat in 2D (`/papercraft/draw`, ADR 0059): outlines, fold lines, glue tabs, numbers; Cricut SVG, Silhouette DXF, PDF and JSON download (checked with synthetic pointer events in the running page)
 - [ ] A drawing cut on a real machine
-- [ ] Save a drawing in the catalog
+- [x] Save a drawing in the catalog and open it from “Drawings from the catalog” (checked on the local Worker); the studio does not list drawings
 - [ ] A real model built from one of the templates has been folded and glued
 
 ---
