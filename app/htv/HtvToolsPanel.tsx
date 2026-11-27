@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useRef } from 'react';
-import { LibraryBig, Palette, Shapes, Shirt, Sparkles, Type, Upload } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { Download, LibraryBig, Palette, Shapes, Shirt, Sparkles, Type, Upload } from 'lucide-react';
 import type { HtvAction, HtvState } from './HtvState';
 import { GARMENTS, GARMENT_COLORS, getGarmentColor, type GarmentSize, type GarmentType } from '../components/garmentPreview/garmentCatalog';
 import { getPlacementsForGarmentType, type HtvPlacementZone } from './htvPlacementZones';
@@ -13,6 +13,8 @@ import { getHtvColor } from './htvMaterialCatalog';
 import ShapeThumbnail from './ShapeThumbnail';
 import type { WorkspaceAsset } from '../lib/workspaceVault';
 import CatalogTemplates from '../components/CatalogTemplates';
+import SaveCatalogTemplate, { type SaveCatalogResult } from '../editor/SaveCatalogTemplate';
+import type { SaveTemplateOptions } from '../lib/catalog/saveTemplate';
 
 import { useT } from '../lib/i18n';
 interface HtvToolsPanelProps {
@@ -21,8 +23,14 @@ interface HtvToolsPanelProps {
   libraryAssets: WorkspaceAsset[];
   onAddText: () => void;
   onImportFile: (file: File) => void;
-  /** Opens an SVG from the site's catalog as a layer; false when it could not be opened. */
+  /** Opens an SVG (as a layer) or an `.htv.json` design from the site's catalog; false when it could not be opened. */
   onOpenCatalogFile: (file: File) => Promise<boolean>;
+  /** Downloads the design as an `.htv.json` file. */
+  onSaveDesignFile: () => void;
+  /** There is something in the design to save. */
+  canSaveDesign: boolean;
+  /** Keeps the design in the site's template catalog. */
+  onSaveCatalogTemplate: (options: SaveTemplateOptions, existingIds: string[]) => Promise<SaveCatalogResult>;
   onAddShape: (shapeId: HtvShapeId) => void;
   onAddTemplate: (templateId: HtvDesignTemplateId) => void;
   onAddLibraryAsset: (assetId: string) => void;
@@ -47,9 +55,10 @@ function PanelSection({ title, icon, children, defaultOpen = true }: { title: st
   );
 }
 
-export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onOpenCatalogFile, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
+export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddText, onImportFile, onOpenCatalogFile, onSaveDesignFile, canSaveDesign, onSaveCatalogTemplate, onAddShape, onAddTemplate, onAddLibraryAsset, designSurface, onToggleDesignSurface, placementOverlayMode, onTogglePlacementOverlayMode }: HtvToolsPanelProps) {
   const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [catalogVersion, setCatalogVersion] = useState(0);
   const activeGarmentColor = getGarmentColor(state.garment.colorId);
   const placementDefinitions = useMemo(() => getPlacementsForGarmentType(state.garment.type), [state.garment.type]);
   const garmentDefinition = useMemo(() => GARMENTS.find((garment) => garment.id === state.garment.type) ?? GARMENTS[0]!, [state.garment.type]);
@@ -76,7 +85,7 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
       <input
         ref={fileInputRef}
         type="file"
-        accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"
+        accept=".svg,.png,.jpg,.jpeg,.json,image/svg+xml,image/png,image/jpeg,application/json"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -101,12 +110,27 @@ export default function HtvToolsPanel({ state, dispatch, libraryAssets, onAddTex
           >
             <Upload className="h-4 w-4 text-violet-300" />
             <span className="text-sm font-medium text-[var(--studio-ink)]">{t('Import')}</span>
-            <span className="text-xs text-[var(--studio-ink-subtle)]">{t('SVG, PNG, or JPEG')}</span>
+            <span className="text-xs text-[var(--studio-ink-subtle)]">{t('SVG, PNG, JPEG or a design file')}</span>
           </button>
         </div>
       </PanelSection>
 
+      <PanelSection title={t('Save the design')} icon={<Download className="h-4 w-4 text-[var(--studio-ink-subtle)]" />} defaultOpen={false}>
+        <p className="text-xs text-[var(--studio-ink-subtle)]">{t('A design file (.htv.json) holds every layer, the garment and the placement. Open it again with Import, on any device.')}</p>
+        <button
+          type="button"
+          disabled={!canSaveDesign}
+          onClick={onSaveDesignFile}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)] px-3 py-2 text-sm font-medium text-[var(--studio-ink)] transition hover:border-[var(--studio-border-strong)] hover:bg-[var(--studio-surface-hover)] disabled:opacity-60"
+        >
+          <Download className="h-4 w-4 text-violet-300" aria-hidden="true" />
+          {t('Save design file')}
+        </button>
+        <SaveCatalogTemplate studio="htv" currentName={state.projectName} canSave={canSaveDesign} save={onSaveCatalogTemplate} onSaved={() => setCatalogVersion((v) => v + 1)} />
+      </PanelSection>
+
       <CatalogTemplates
+        key={catalogVersion}
         studio="htv"
         onOpen={(file) => onOpenCatalogFile(file)}
         wrap={(content) => <PanelSection title={t('From the catalog')} icon={<LibraryBig className="h-4 w-4 text-[var(--studio-ink-subtle)]" />}>{content}</PanelSection>}

@@ -5,7 +5,7 @@
  */
 
 import { fetchCatalogFile, type CatalogTemplate } from './catalogClient';
-import { formatOfFileName, mimeOfFormat } from './catalogFormat';
+import { HTV_DESIGN_SUFFIX, formatOfFileName, mimeOfFormat } from './catalogFormat';
 import { saveTemplateToCatalog, type SaveTemplateOptions, type SaveTemplateResult } from './saveTemplate';
 
 export type SvgStudio = 'rhinestone' | 'htv';
@@ -13,17 +13,20 @@ export type SvgStudio = 'rhinestone' | 'htv';
 /** The file types each studio can open from the catalog. */
 export const OPEN_FORMATS: Record<SvgStudio, readonly string[]> = {
   rhinestone: ['svg', 'json'],
-  htv: ['svg'],
+  htv: ['svg', 'json'],
 };
 
 /** What “Save project file” in the Rhinestone studio names its files; a Rhinestone JSON template must be one of those. */
 export const RHINESTONE_PROJECT_SUFFIX = '.rhinestone.json';
 
-/** Whether the studio can open a file of this name from the catalog (an SVG; for Rhinestone also a `.rhinestone.json` project). */
+/** What each studio's own JSON files are named: a JSON template of a studio must end like this to be listed (ADR 0061, 0064). */
+export const PROJECT_SUFFIX: Record<SvgStudio, string> = { rhinestone: RHINESTONE_PROJECT_SUFFIX, htv: HTV_DESIGN_SUFFIX };
+
+/** Whether the studio can open a file of this name from the catalog (an SVG; also a saved project: `.rhinestone.json`, `.htv.json`). */
 export function isOpenableFileName(studio: SvgStudio, fileName: string): boolean {
   const format = formatOfFileName(fileName);
   if (!OPEN_FORMATS[studio].includes(format)) return false;
-  return format !== 'json' || fileName.toLowerCase().endsWith(RHINESTONE_PROJECT_SUFFIX);
+  return format !== 'json' || fileName.toLowerCase().endsWith(PROJECT_SUFFIX[studio]);
 }
 
 /** The templates the studio can open: its own, published, with a file it can open. */
@@ -47,6 +50,19 @@ export async function catalogTemplateFile(template: CatalogTemplate, fetcher: ty
 
 /** The most characters of a project file the studio opens from the catalog (`MAX_PROJECT_FILE_BYTES`, 20 MB). */
 const MAX_PROJECT_CHARS = 20 * 1024 * 1024;
+
+/**
+ * Saves the current HTV design as a template: the design file (named `<id>.htv.json`, so the studio lists it again) and a small SVG
+ * picture of the cut shapes. A new template, never one that replaces another.
+ */
+export function saveHtvTemplate(designJson: string, previewSvg: string | null, options: SaveTemplateOptions, existingIds: Iterable<string>, fetcher: typeof fetch = fetch): Promise<SaveTemplateResult> {
+  return saveTemplateToCatalog(
+    { studio: 'htv', fileName: (id) => `${id}${HTV_DESIGN_SUFFIX}`, text: designJson, previewSvg, maxChars: MAX_PROJECT_CHARS, fields: { 'Made in': 'HTV Studio' } },
+    options,
+    existingIds,
+    fetcher,
+  );
+}
 
 /**
  * Saves the current Rhinestone design as a template: the project file (named `<id>.rhinestone.json`, so the studio lists it again),
