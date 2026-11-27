@@ -15,6 +15,9 @@ export interface LibraryOverride {
   category: string;
 }
 
+/** The categories a font can have: the engine's own list; anything else is shown as Uploads. */
+export const FONT_CATEGORIES = ['Block', 'Condensed', 'Varsity', 'Bubble', 'Serif', 'Gothic', 'Script', 'Handwritten', 'Display', 'Uploads'] as const;
+
 export const LIBRARY_LIMITS = { name: 120, category: 60, id: 120, batch: 200 } as const;
 export const LIBRARY_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/;
 

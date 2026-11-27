@@ -2,7 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
-import { applyFontOverlay } from '@/src/lib/library/library';
+import { fontsWithUploads } from '@/src/lib/library/libraryItems';
 import { useRouter } from 'next/navigation';
 import { Search, Star, Upload } from 'lucide-react';
 import { inspectFontBytes, listOutlineFonts, repairFontBytes, type StoneSizeId } from '@/src/lib/rhinestone-engine/index';
@@ -19,7 +19,7 @@ import {
 import { WorkspaceEmptyState, WorkspacePage, WorkspaceSurface, workspaceInputClassName, workspaceSelectClassName } from '../components/workspace/WorkspaceChrome';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useT } from '../lib/i18n';
-import { loadLibraryOverlay } from '../lib/library/libraryClient';
+import { loadLibrary } from '../lib/library/libraryClient';
 import { useFontPreviewLoader, type FontPreviewSpec } from './useFontPreviewLoader';
 import FontCard, { type UploadedFontPatch } from './FontCard';
 import {
@@ -97,6 +97,8 @@ interface LibraryCatalogFont {
   variant: string;
   category: string;
   bytes: number;
+  /** Where the file is when it is not in the library folder (a font uploaded in the admin panel). */
+  url?: string;
 }
 
 function persistVault(nextVault: WorkspaceVault, setVault: React.Dispatch<React.SetStateAction<WorkspaceVault>>) {
@@ -131,13 +133,15 @@ export default function FontsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [response, overlay] = await Promise.all([fetch(withBasePath('/font-library/catalog.json')), loadLibraryOverlay()]);
-        if (!response.ok) return;
-        const catalog = (await response.json()) as { fonts?: LibraryCatalogFont[]; excluded?: number };
-        if (cancelled || !Array.isArray(catalog.fonts)) return;
-        // The owner's changes from the admin panel: hidden fonts are not listed, names and categories are the owner's.
-        setLibraryFonts(applyFontOverlay(catalog.fonts, overlay).filter((font) => !font.hidden));
-        setExcludedCount(catalog.excluded ?? 0);
+        const [response, library] = await Promise.all([fetch(withBasePath('/font-library/catalog.json')), loadLibrary()]);
+        const catalog = response.ok ? ((await response.json()) as { fonts?: LibraryCatalogFont[]; excluded?: number }) : null;
+        if (cancelled) return;
+        // The owner's changes from the admin panel: hidden fonts are not listed, names and categories are the owner's, and the fonts
+        // uploaded there are added.
+        const listed = fontsWithUploads<LibraryCatalogFont>(Array.isArray(catalog?.fonts) ? catalog.fonts : [], library.items, library.overlay, (item, url) => ({ id: item.id, name: item.name, family: item.family || item.name, variant: '', category: item.category || 'Uploads', bytes: 0, url })).filter((font) => !font.hidden);
+        if (listed.length === 0) return;
+        setLibraryFonts(listed);
+        setExcludedCount(catalog?.excluded ?? 0);
       } catch {
         // No font library here.
       }
@@ -212,7 +216,7 @@ export default function FontsPage() {
         archived: preference.archived,
         tags: preference.tags,
         isBuiltInSimple: false,
-        fontUrl: withBasePath(`/font-library/f/${font.id}.woff`),
+        fontUrl: withBasePath(font.url ?? `/font-library/f/${font.id}.woff`),
         fontWeight: 400,
         fontStyle: 'normal' as const,
         note: 'From your font library. Review outline quality before production cutting.',
