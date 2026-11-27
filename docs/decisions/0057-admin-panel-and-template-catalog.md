@@ -35,7 +35,7 @@ This is a program of several parts; the first part, decided with the owner, is *
   edit / delete, and a form with file and picture upload. Where there is no catalog (GitHub Pages, `next dev`) the page says so.
 - **Papercraft reads the catalog** (added): the Model panel has a “From the catalog” section (`app/papercraft/CatalogModels.tsx`) with the published Papercraft templates that have an OBJ, STL or GLB file; a click fetches the file and runs it through the same import as a file the person picked. It renders nothing where there is no catalog or nothing published.
 - **Rhinestone and HTV read the catalog** (added, ADR 0061). **Statistics and tracking** are ADR 0060.
-- **Not in this part, planned next:** metadata settings (done in ADR 0062), and managing the other content (designs, fonts, library).
+- **Not in this part, planned next:** metadata settings (done in ADR 0062), and managing the other content (designs, fonts, library; hiding and renaming is ADR 0063).
 
 ## Consequences
 

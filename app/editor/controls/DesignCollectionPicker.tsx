@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid } from 'lucide-react';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
 import { compactToDots, compactToSvg, type CompactDesign } from '@/src/lib/rhinestone-engine/index';
+import { applyDesignOverlay } from '@/src/lib/library/library';
 import { useT } from '../../lib/i18n';
+import { loadLibraryOverlay } from '../../lib/library/libraryClient';
 import { editorFieldLabelClassName, editorSelectClassName } from './controlStyles';
 
 /** One design in the collection built by `npm run import:designs` (see scripts/import-design-bundle.ts). */
@@ -24,9 +26,12 @@ const PAGE_SIZE = 24;
 let cachedIndex: Promise<DesignCollectionEntry[] | null> | null = null;
 
 function loadIndex(): Promise<DesignCollectionEntry[] | null> {
-  cachedIndex ??= fetch(`${BASE}/index.json`)
-    .then((response) => (response.ok ? (response.json() as Promise<{ designs?: DesignCollectionEntry[] }>) : null))
-    .then((payload) => (payload && Array.isArray(payload.designs) ? payload.designs : null))
+  // The owner's changes from the admin panel (hidden designs, titles, categories) are put on top of the library's own list.
+  cachedIndex ??= Promise.all([
+    fetch(`${BASE}/index.json`).then((response) => (response.ok ? (response.json() as Promise<{ designs?: DesignCollectionEntry[] }>) : null)),
+    loadLibraryOverlay(),
+  ])
+    .then(([payload, overlay]) => (payload && Array.isArray(payload.designs) ? applyDesignOverlay(payload.designs, overlay) : null))
     .catch(() => null);
   return cachedIndex;
 }

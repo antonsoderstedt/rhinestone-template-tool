@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { withBasePath } from '@/src/lib/rhinestone-engine/deploy/basePath';
+import { applyFontOverlay } from '@/src/lib/library/library';
 import { useRouter } from 'next/navigation';
 import { Search, Star, Upload } from 'lucide-react';
 import { inspectFontBytes, listOutlineFonts, repairFontBytes, type StoneSizeId } from '@/src/lib/rhinestone-engine/index';
@@ -18,6 +19,7 @@ import {
 import { WorkspaceEmptyState, WorkspacePage, WorkspaceSurface, workspaceInputClassName, workspaceSelectClassName } from '../components/workspace/WorkspaceChrome';
 import { DEFAULT_PREVIEW_TEXT } from '../lib/fontLaunch';
 import { useT } from '../lib/i18n';
+import { loadLibraryOverlay } from '../lib/library/libraryClient';
 import { useFontPreviewLoader, type FontPreviewSpec } from './useFontPreviewLoader';
 import FontCard, { type UploadedFontPatch } from './FontCard';
 import {
@@ -129,11 +131,12 @@ export default function FontsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const response = await fetch(withBasePath('/font-library/catalog.json'));
+        const [response, overlay] = await Promise.all([fetch(withBasePath('/font-library/catalog.json')), loadLibraryOverlay()]);
         if (!response.ok) return;
         const catalog = (await response.json()) as { fonts?: LibraryCatalogFont[]; excluded?: number };
         if (cancelled || !Array.isArray(catalog.fonts)) return;
-        setLibraryFonts(catalog.fonts);
+        // The owner's changes from the admin panel: hidden fonts are not listed, names and categories are the owner's.
+        setLibraryFonts(applyFontOverlay(catalog.fonts, overlay).filter((font) => !font.hidden));
         setExcludedCount(catalog.excluded ?? 0);
       } catch {
         // No font library here.

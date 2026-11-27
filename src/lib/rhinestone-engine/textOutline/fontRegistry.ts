@@ -301,8 +301,11 @@ export interface FontCatalogFont {
   name: string;
   family?: string;
   category?: string;
+  /** Left out of the lists a person picks from, but still found by its id (a saved design may use it). */
+  hidden?: boolean;
 }
 
+let hiddenCatalogIds: ReadonlySet<string> = new Set();
 let catalogFonts: UploadedWorkspaceFontRecord[] = [];
 let catalogAliases: Readonly<Record<string, string>> = {};
 let catalogRevision = 0;
@@ -318,6 +321,7 @@ export function setFontCatalog(fonts: readonly FontCatalogFont[], aliases: Reado
     previewFamily: `FontLibrary_${font.id}`,
     assetUrl: withBasePath(`${assetBase}/${font.id}.woff`),
   }));
+  hiddenCatalogIds = new Set(fonts.filter((font) => font.hidden).map((font) => font.id));
   catalogAliases = aliases;
   catalogRevision++;
   for (const listener of catalogListeners) listener();
@@ -398,8 +402,15 @@ export function listUploadedOutlineFonts(): readonly OutlineFontDefinition[] {
   return list;
 }
 
-export function listOutlineFonts(): readonly OutlineFontDefinition[] {
+/** Every font there is, hidden ones too: what a font id in a saved design is looked up in. */
+function listAllOutlineFonts(): readonly OutlineFontDefinition[] {
   return [...OUTLINE_FONT_REGISTRY, ...listUploadedOutlineFonts()];
+}
+
+/** The fonts a person can pick: the library fonts the owner has hidden are left out (see `getOutlineFontDefinition` for lookups). */
+export function listOutlineFonts(): readonly OutlineFontDefinition[] {
+  const all = listAllOutlineFonts();
+  return hiddenCatalogIds.size === 0 ? all : all.filter((font) => !hiddenCatalogIds.has(font.fontId));
 }
 
 export function getOutlineFontDefinition(fontId: string | undefined | null): OutlineFontDefinition {
@@ -407,7 +418,7 @@ export function getOutlineFontDefinition(fontId: string | undefined | null): Out
     return FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
   }
   const wanted = resolveFontAlias(fontId);
-  return listOutlineFonts().find((font) => font.fontId === wanted)
+  return listAllOutlineFonts().find((font) => font.fontId === wanted)
     ?? FONT_MAP.get(LEGACY_OUTLINE_FONT_ID)!;
 }
 
