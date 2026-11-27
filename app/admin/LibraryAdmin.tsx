@@ -393,6 +393,8 @@ function LibraryRowView({ row, kind, checked, onToggle, editing, setEditing, onS
           <td className="px-3 py-2">
             {kind === 'font' ? (
               <select aria-label={t('Category')} className={workspaceSelectClassName} value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
+                {/* A font with no category (the library gave it none) has the empty choice, so the select always has a matching option. */}
+                <option value="">{t('The library’s own')}</option>
                 {[...new Set([editing.category, ...FONT_CATEGORIES])].filter(Boolean).map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             ) : (

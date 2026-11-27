@@ -41,7 +41,10 @@ export function prepareDesign(svgText: string, fileName: string): DesignPrepared
   } catch {
     return { ok: false, reason: 'unreadable' };
   }
-  if (result.stones.length === 0 || result.widthMm <= 0 || result.heightMm <= 0 || result.widthMm > 3000 || result.heightMm > 3000) return { ok: false, reason: 'no-stones' };
+  if (result.stones.length === 0) return { ok: false, reason: 'no-stones' };
+  // Stones but no usable size: the file is not a template the studios can place. A huge one is too large, not "without stones".
+  if (!(result.widthMm > 0) || !(result.heightMm > 0)) return { ok: false, reason: 'unreadable' };
+  if (result.widthMm > 3000 || result.heightMm > 3000) return { ok: false, reason: 'too-large' };
   const data = JSON.stringify(compactFromStones(result.stones));
   if (data.length > ITEM_LIMITS.designChars) return { ok: false, reason: 'too-large' };
   return {

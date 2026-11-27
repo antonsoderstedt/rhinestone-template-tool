@@ -59,6 +59,10 @@ describe('parseItem', () => {
     expect(parseItem({ ...font, format: 'woff2' })).toMatchObject({ ok: false });
     expect(parseItem({ ...font, format: 'ttf', category: 'Fancy' })).toMatchObject({ ok: false });
     expect(parseItem({ ...font, format: 'ttf', data: 'AAA' })).toMatchObject({ ok: false });
+    // four characters that are not base64 pass a length check, and would fail only when the font is asked for
+    expect(parseItem({ ...font, format: 'ttf', data: '@@@@' })).toMatchObject({ ok: false, error: 'The font file is damaged.' });
+    expect(parseItem({ ...font, format: 'ttf', data: 'AA=A' })).toMatchObject({ ok: false });
+    expect(parseItem({ ...font, format: 'ttf', data: 'AAA=' })).toMatchObject({ ok: true });
     expect(parseItem({ ...font, format: 'ttf', data: 'A'.repeat(ITEM_LIMITS.fontChars + 4) })).toMatchObject({ ok: false });
   });
 });
@@ -205,6 +209,13 @@ describe('the overlay answer and deleting', () => {
     expect((await handleLibrary(request('/api/admin/library/item?kind=font&id=../x', { method: 'DELETE' }), env(fakeDb().db), fetch, () => NOW)).status).toBe(400);
   });
 
+  it('refuses to delete an item of the built library (it is hidden instead) and touches nothing', async () => {
+    const { db, calls } = fakeDb();
+    const response = await handleLibrary(request('/api/admin/library/item?kind=design&id=1-cute-animals-714ceb', { method: 'DELETE' }), env(db), fetch, () => NOW);
+    expect(response.status).toBe(400);
+    expect(calls.some((c) => c.query.startsWith('DELETE'))).toBe(false);
+  });
+
   it('only accepts a known font category when a font is changed', async () => {
     const patch = (category: string, kind = 'font') => request('/api/admin/library/overrides', { method: 'PUT', body: JSON.stringify({ kind, ids: ['a'], patch: { category } }) });
     expect((await handleLibrary(patch('Fancy'), env(fakeDb().db), fetch, () => NOW)).status).toBe(400);
@@ -225,6 +236,11 @@ describe('preparing a design', () => {
     if (!prepared.ok) return;
     expect(prepared.design.widthMm).toBeCloseTo(9.3, 1);
     expect(JSON.parse(prepared.data)).toMatchObject({ v: 1 });
+  });
+
+  it('says "too large" for a template over 3 metres, not "no stones"', () => {
+    const wide = '<svg xmlns="http://www.w3.org/2000/svg" width="4000mm" height="100mm" viewBox="0 0 400000 10000"><circle cx="5000" cy="4000" r="165"/><circle cx="395000" cy="4000" r="165"/></svg>';
+    expect(prepareDesign(wide, 'wide.svg')).toEqual({ ok: false, reason: 'too-large' });
   });
 
   it('refuses an SVG with no stones, a broken one and an unsafe one', () => {
