@@ -26,6 +26,10 @@ import dynamic from 'next/dynamic';
 import WorkspaceModeBanner from '../components/WorkspaceModeBanner';
 import HtvColourFilesPanel from './HtvColourFilesPanel';
 import { createHtvSvgExport, type HtvExportOptions } from './htvExport';
+import { MAX_HTV_DESIGN_BYTES, htvDesignFileName, isHtvDesignFileName, parseHtvDesign, serializeHtvDesign } from './htvDesignFile';
+import { saveHtvTemplate } from '../lib/catalog/studioCatalog';
+import type { SaveTemplateOptions } from '../lib/catalog/saveTemplate';
+import type { SaveCatalogResult } from '../editor/SaveCatalogTemplate';
 // Loaded when first needed: three.js alone is ~300 KiB and most visits never open the 3D tab or the export dialog.
 const HtvGarment3D = dynamic(() => import('./HtvGarment3D'), { ssr: false });
 const ExportDialog = dynamic(() => import('../components/ExportDialog'));
@@ -187,6 +191,27 @@ export default function HtvShell() {
   }, [state.layers, createLayerId]);
 
   const handleImportFile = useCallback(async (file: File): Promise<boolean> => {
+    if (isHtvDesignFileName(file.name)) {
+      // A saved HTV design: it replaces the design on the screen, as opening one from My Designs does.
+      if (file.size > MAX_HTV_DESIGN_BYTES) {
+        setToast({ message: t('This design file is too large to open.'), tone: 'error' });
+        return false;
+      }
+      const parsed = parseHtvDesign(await file.text());
+      if (!parsed.ok) {
+        const reason = parsed.reason === 'newer'
+          ? t('This design file was made by a newer version of the studio.')
+          : parsed.reason === 'invalid'
+            ? t('This design file is damaged: {why}', { why: parsed.detail ?? '' })
+            : t('This is not an HTV design file.');
+        setToast({ message: reason, tone: 'error' });
+        return false;
+      }
+      dispatch({ type: 'LOAD_STATE', state: parsed.state });
+      setActiveSavedDesignId(null);
+      setToast({ message: t('Opened “{name}”.', { name: parsed.state.projectName }), tone: 'success' });
+      return true;
+    }
     const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
     try {
       if (isSvg) {
@@ -223,7 +248,7 @@ export default function HtvShell() {
       setToast({ message: err instanceof Error ? err.message : 'Could not import this file.', tone: 'error' });
       return false;
     }
-  }, [createLayerId, state.garment.placementZone]);
+  }, [createLayerId, state.garment.placementZone, t]);
 
   const refreshLibraryAssets = useCallback(() => {
     const vault = readWorkspaceVault();
@@ -291,6 +316,35 @@ export default function HtvShell() {
     dispatch({ type: 'ADD_LAYERS', layers: [layer] });
     setPendingImage(null);
   }, [createLayerId, state.garment.placementZone]);
+
+  /** Downloads the design as an `.htv.json` file, to keep, move to another device or send. */
+  const handleDownloadDesignFile = useCallback(() => {
+    const filename = htvDesignFileName(state.projectName || 'htv-design');
+    const url = URL.createObjectURL(new Blob([serializeHtvDesign(state)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    trackExport(filename);
+    setToast({ message: t('Saved the design file {name}.', { name: filename }), tone: 'success' });
+  }, [state, t]);
+
+  /** Keeps the design in the site's template catalog: the design file and a small picture of the cut shapes. */
+  const handleSaveCatalogTemplate = useCallback(async (options: SaveTemplateOptions, existingIds: string[]): Promise<SaveCatalogResult> => {
+    if (state.layers.length === 0) return { ok: false, reason: 'nothing' };
+    const name = options.name.trim() || state.projectName;
+    // The picture shows the layers of the placement being worked on (or all of them when that one is empty); a design with nothing to
+    // draw (only hidden layers) is still saved, without a picture.
+    const onPlacement = state.layers.filter((layer) => layer.placementId === state.garment.placementZone);
+    let preview: string | null = null;
+    try {
+      preview = (await createHtvSvgExport(onPlacement.length > 0 ? onPlacement : state.layers, name, { marginMm: 2 })).svg;
+    } catch {
+      preview = null;
+    }
+    return saveHtvTemplate(serializeHtvDesign({ ...state, projectName: name }), preview, options, existingIds);
+  }, [state]);
 
   const handleSaveDesign = useCallback(() => {
     const vault = readWorkspaceVault();
@@ -621,6 +675,9 @@ export default function HtvShell() {
             onAddText={(...args) => { showInspectorOnPhone(); return handleAddText(...args); }}
             onImportFile={(...args) => { showInspectorOnPhone(); return handleImportFile(...args); }}
             onOpenCatalogFile={(file) => { showInspectorOnPhone(); return handleImportFile(file); }}
+            onSaveDesignFile={handleDownloadDesignFile}
+            canSaveDesign={state.layers.length > 0}
+            onSaveCatalogTemplate={handleSaveCatalogTemplate}
             onAddShape={(...args) => { showInspectorOnPhone(); return handleAddShape(...args); }}
             onAddTemplate={(...args) => { showInspectorOnPhone(); return handleAddTemplate(...args); }}
             onAddLibraryAsset={(...args) => { showInspectorOnPhone(); return handleAddLibraryAsset(...args); }}

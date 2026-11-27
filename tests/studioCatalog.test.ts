@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import CatalogTemplates from '../app/components/CatalogTemplates';
 import type { CatalogTemplate } from '../app/lib/catalog/catalogClient';
 import { STUDIO_FORMATS } from '../app/lib/catalog/catalogFormat';
-import { OPEN_FORMATS, catalogTemplateFile, isOpenableFileName, openableTemplates, saveRhinestoneTemplate, searchTemplates } from '../app/lib/catalog/studioCatalog';
+import { OPEN_FORMATS, catalogTemplateFile, isOpenableFileName, openableTemplates, saveHtvTemplate, saveRhinestoneTemplate, searchTemplates } from '../app/lib/catalog/studioCatalog';
 
 const make = (over: Partial<CatalogTemplate> & { id: string }): CatalogTemplate => ({
   studio: 'rhinestone', format: 'svg', name: over.id, description: '', category: '', tags: [], licence: '', fields: {}, published: true,
@@ -21,12 +21,13 @@ describe('openableTemplates', () => {
     make({ id: 'model', file: { name: 'm.obj', type: 'model/obj', chars: 5 } }),
     make({ id: 'htv-shirt', studio: 'htv' }),
     make({ id: 'htv-json', studio: 'htv', file: { name: 'x.json', type: 'application/json', chars: 5 } }),
+    make({ id: 'htv-design', studio: 'htv', file: { name: 'team.htv.json', type: 'application/json', chars: 5 } }),
     make({ id: 'paper', studio: 'papercraft' }),
   ];
 
   it('takes the published templates of the studio that have a file it can open', () => {
     expect(openableTemplates('rhinestone', all).map((t) => t.id)).toEqual(['star', 'project']);
-    expect(openableTemplates('htv', all).map((t) => t.id)).toEqual(['htv-shirt']);
+    expect(openableTemplates('htv', all).map((t) => t.id)).toEqual(['htv-shirt', 'htv-design']);
   });
 
   it('opens a JSON template in Rhinestone only when it is named like a project file', () => {
@@ -36,6 +37,13 @@ describe('openableTemplates', () => {
     expect(isOpenableFileName('rhinestone', 'star.svg')).toBe(true);
     expect(isOpenableFileName('htv', 'star.rhinestone.json')).toBe(false);
     expect(isOpenableFileName('htv', 'heart.svg')).toBe(true);
+  });
+
+  it('opens a JSON template in HTV only when it is named like a design file, and not in Rhinestone', () => {
+    expect(isOpenableFileName('htv', 'team.htv.json')).toBe(true);
+    expect(isOpenableFileName('htv', 'TEAM.HTV.JSON')).toBe(true);
+    expect(isOpenableFileName('htv', 'team.json')).toBe(false);
+    expect(isOpenableFileName('rhinestone', 'team.htv.json')).toBe(false);
   });
 
   it('agrees with what the admin panel lets the owner upload for each studio', () => {
@@ -120,5 +128,32 @@ describe('saveRhinestoneTemplate', () => {
     const options = { name: 'Star', category: '', published: true };
     expect(await saveRhinestoneTemplate('{}', '<svg/>', options, [], recorder(true))).toEqual({ ok: true, value: { id: 'star', previewSaved: false } });
     expect((await saveRhinestoneTemplate('{}', '<svg/>', options, [], recorder(false, true))).ok).toBe(false);
+  });
+});
+
+describe('saveHtvTemplate', () => {
+  const calls: { url: string; body: string }[] = [];
+  const recorder = (): typeof fetch =>
+    (async (url: RequestInfo | URL, init?: RequestInit) => {
+      calls.push({ url: String(url), body: String(init?.body ?? '') });
+      return new Response('{"ok":true}', { headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+
+  it('saves the details, a .htv.json design file and a picture, found again by the HTV studio', async () => {
+    calls.length = 0;
+    const result = await saveHtvTemplate('{"format":"x"}', '<svg/>', { name: 'Team shirt', category: 'Teams', published: true }, ['team-shirt'], recorder());
+    expect(result).toEqual({ ok: true, value: { id: 'team-shirt-2', previewSaved: true } });
+    expect(JSON.parse(calls[0]!.body)).toMatchObject({ id: 'team-shirt-2', studio: 'htv', format: 'json', fields: { 'Made in': 'HTV Studio' } });
+    const name = decodeURIComponent(/name=([^&]+)/.exec(calls[1]!.url)![1]!);
+    expect(name).toBe('team-shirt-2.htv.json');
+    expect(isOpenableFileName('htv', name)).toBe(true);
+    expect(calls[1]!.body).toBe('{"format":"x"}');
+  });
+
+  it('refuses no name and a design too big to open again', async () => {
+    calls.length = 0;
+    expect(await saveHtvTemplate('{}', null, { name: ' ', category: '', published: false }, [], recorder())).toEqual({ ok: false, reason: 'no-name' });
+    expect(await saveHtvTemplate('x'.repeat(20 * 1024 * 1024 + 1), null, { name: 'Big', category: '', published: false }, [], recorder())).toEqual({ ok: false, reason: 'too-big' });
+    expect(calls).toHaveLength(0);
   });
 });
