@@ -758,6 +758,11 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] CI runs them in a job of its own and keeps the report when one fails
 - [ ] The 3D resize handles and turn rings, touch input, and Firefox/Safari are not in the automated run (checked by hand; `scripts/e2e-smoke.mjs` covers other browsers by hand)
 
+## Smaller editor files (ADR 0069)
+
+- [x] `EditorPropertiesPanel` (2,122 → 184 lines) and `EditorState` (1,555 → 753) are split without a change of behaviour; `EditorCanvas` (1,889 → 1,694) and `EditorShell` (2,288 → 2,079) lose their helpers, chrome and three parts of the picture; type check, lint, 2,855 unit tests and 15 end-to-end tests on a fresh build pass
+- [ ] The stone generation effect and the pointer handlers are still inside `EditorShell` and `EditorCanvas` (moving them needs a test of the request race first)
+
 ## Papercraft: own models (ADR 0058)
 
 - [x] Parts (box, cylinder, cone, pyramid, frustum) are closed solids with outward faces; open ends leave out the lid (tested)
