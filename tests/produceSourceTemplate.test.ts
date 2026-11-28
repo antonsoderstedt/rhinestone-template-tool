@@ -52,6 +52,39 @@ describe('produceSourceTemplate', () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  // A request that was outdated while it waited must not write warnings into the tool state either (ADR 0070):
+  // the newer request owns the state. The stored warnings differ from the result on purpose, so a dispatch would happen if nothing stopped it.
+  it.each([
+    ['rhinestone-font', 'UPDATE_RHINESTONE_FONT_TOOL', () => withTool('rhinestone-font', { rhinestoneFontTool: { ...DEFAULT_EDITOR_STATE.rhinestoneFontTool, text: 'HI', warnings: ['old'] } })],
+    ['svg-alphabet', 'UPDATE_SVG_ALPHABET_TOOL', () => withTool('svg-alphabet', { svgAlphabetTool: { ...DEFAULT_EDITOR_STATE.svgAlphabetTool, text: 'HI', warnings: ['old'] } })],
+    ['letter-stencil', 'UPDATE_LETTER_STENCIL_TOOL', () => withTool('letter-stencil', { letterStencilTool: { ...DEFAULT_EDITOR_STATE.letterStencilTool, text: 'HI', warnings: ['old'] } })],
+  ] as const)('%s: an outdated request dispatches no warnings, a current one does', async (_name, actionType, makeState) => {
+    const state = makeState();
+    // current request: the stale warnings are replaced
+    const current = run(state);
+    await current.promise;
+    expect(current.dispatch.mock.calls.map(([a]) => a.type)).toContain(actionType);
+
+    // outdated request: a newer one starts while this one waits
+    let latest = 1;
+    const dispatch = vi.fn();
+    const promise = produceSourceTemplate({
+      state,
+      sourceTool: getSourcePanelTool(state),
+      gridTool: state.gridTool,
+      textTool: state.textTool,
+      svgTool: state.svgTool,
+      requestId: 1,
+      currentRequestId: () => latest,
+      setOutlineFontStatus: vi.fn(),
+      setArtworkInfo: vi.fn(),
+      dispatch,
+    });
+    latest = 2;
+    expect(await promise).toBe(SKIP_GENERATION);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it('skips a source tool with no text, and a tool that makes no stones', async () => {
     expect(await run(withTool('rhinestone-font', { rhinestoneFontTool: { ...DEFAULT_EDITOR_STATE.rhinestoneFontTool, text: '   ' } })).promise).toBe(SKIP_GENERATION);
     expect(await run(withTool('svg-alphabet', { svgAlphabetTool: { ...DEFAULT_EDITOR_STATE.svgAlphabetTool, text: '' } })).promise).toBe(SKIP_GENERATION);
