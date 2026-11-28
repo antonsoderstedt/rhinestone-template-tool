@@ -20,7 +20,8 @@
     "deploy:cloudflare": "scripts/deploy-private.sh",
     "deploy:cloudflare:libs": "scripts/deploy-private.sh --with-libs",
     "backup:d1": "scripts/backup-d1.sh",
-    "restore:d1": "scripts/backup-d1.sh restore"
+    "restore:d1": "scripts/backup-d1.sh restore",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -51,6 +52,7 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.3",
     "@types/clipper-lib": "^6.4.0",
@@ -66,7 +68,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.169.0"
   },
   "overrides": {
     "sharp": "0.35.5",

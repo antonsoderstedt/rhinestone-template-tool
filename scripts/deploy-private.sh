@@ -84,7 +84,8 @@ JSON
 
 if [ "$MODE" = "dev" ]; then
   echo "Running locally: http://localhost:8787 (no login; open it also as http://127.0.0.1:8787 to act as a second device)"
-  npx --yes wrangler@latest dev --local --port 8787 --persist-to "$WORK/.state"
+  # The version pinned in package.json (copied with node_modules), so a test run does not change when Wrangler releases.
+  npx --no-install wrangler dev --local --port 8787 --persist-to "$WORK/.state"
 else
   echo "Uploading to Cloudflare as '$NAME'..."
   npx --yes wrangler@latest deploy

@@ -53,3 +53,7 @@ next-env.d.ts
 
 # D1 backups (scripts/backup-d1.sh): contain the owner's data
 /backups/
+
+# Playwright
+/test-results/
+/playwright-report/
