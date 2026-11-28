@@ -61,10 +61,17 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "jsdom": "^29.1.1",
+    "miniflare": "^4.20260730.0",
     "subset-font": "^2.9.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "sharp": "0.35.5",
+    "miniflare": {
+      "undici": "7.30.2"
+    }
   }
 }
