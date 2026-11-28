@@ -175,6 +175,7 @@ export async function produceSourceTemplate(input: ProduceSourceTemplateInput): 
           letterSpacingMm: typeof state.rhinestoneFontTool.letterSpacingMm === 'number' ? state.rhinestoneFontTool.letterSpacingMm : defaultLetterSpacingMm,
           lineSpacingMm: typeof state.rhinestoneFontTool.lineSpacingMm === 'number' ? state.rhinestoneFontTool.lineSpacingMm : defaultLineSpacingMm,
         });
+        if (requestId !== currentRequestId()) return SKIP_GENERATION;
         template = result.template;
         // Update unsupported characters and warnings in tool state
         if (
@@ -212,6 +213,7 @@ export async function produceSourceTemplate(input: ProduceSourceTemplateInput): 
           lineSpacingMm: typeof state.svgAlphabetTool.lineSpacingMm === 'number' ? state.svgAlphabetTool.lineSpacingMm : 0,
           glyphLoader: defaultSvgAlphabetGlyphLoader,
         });
+        if (requestId !== currentRequestId()) return SKIP_GENERATION;
         template = result.template;
         if (
           JSON.stringify(state.svgAlphabetTool.unsupportedCharacters) !== JSON.stringify(result.unsupportedCharacters) ||
@@ -258,6 +260,7 @@ export async function produceSourceTemplate(input: ProduceSourceTemplateInput): 
           layoutMode: state.letterStencilTool.layoutMode,
           cutSheetGapMm: typeof state.letterStencilTool.cutSheetGapMm === 'number' ? state.letterStencilTool.cutSheetGapMm : 3,
         });
+        if (requestId !== currentRequestId()) return SKIP_GENERATION;
         template = result.template;
         if (
           JSON.stringify(state.letterStencilTool.unsupportedCharacters) !== JSON.stringify(result.unsupportedCharacters) ||

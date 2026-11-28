@@ -29,9 +29,10 @@ after the outline-text wait, after the artwork waits, and after the spacing reso
   generation on every edit). `OutlineFontStatusState` and `replaceOutlineFontStatus` moved with it.
 - **Unit tests** (`tests/produceSourceTemplate.test.ts`) cover the function with the built-in font (no network): a grid, outline text,
   an outdated request reports nothing and dispatches nothing, the skip cases, and empty text giving no template.
-- Quirk kept as it was: the font, alphabet and stencil cases dispatch their warnings (`UPDATE_*_TOOL`) before the request number is
-  checked, so an outdated request of those tools can still update the warnings of the tool (the design itself is protected). That is
-  existing behaviour and a candidate for its own fix, now that the code is in one place and has a test next to it.
+- Quirk fixed afterwards: the font, alphabet and stencil cases used to dispatch their warnings (`UPDATE_*_TOOL`) before the request
+  number was checked, so an outdated request could still overwrite the warnings of the tool (the design itself was protected). They now
+  check `requestId !== currentRequestId()` right after the wait, before anything is dispatched. A unit test per tool (stored warnings
+  that differ from the result, one current request that dispatches and one outdated request that does not) fails without the check.
 
 ## Result
 
