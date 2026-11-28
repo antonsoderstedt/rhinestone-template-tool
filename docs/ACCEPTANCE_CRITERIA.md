@@ -746,6 +746,12 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] A backup file restores: long text chunks are split into statements D1 accepts, a restore over existing data replaces it, and every row and text comes back equal (tested; the restore was run twice into a local D1 and compared with the original)
 - [ ] Restoring a file into the live database (not run on purpose; Cloudflare Time Travel is the tried route)
 
+## Worker against a real D1 (ADR 0067)
+
+- [x] The Worker runs on a real D1 (Miniflare) in the unit tests: sync, catalog, libraries, site text and statistics, with chunked texts returned whole and in order, replaced, deleted, pruned and cleared (14 tests); a deliberate fault in the chunk order fails them
+- [x] Every route refuses a request without a valid Access token (tested)
+- [ ] The Worker on Cloudflare's own D1 service (its size and time limits are not exercised by a test)
+
 ## Papercraft: own models (ADR 0058)
 
 - [x] Parts (box, cylinder, cone, pyramid, frustum) are closed solids with outward faces; open ends leave out the lid (tested)
