@@ -408,3 +408,48 @@ describe('taking a point away', () => {
     expect(next.smooth).toBeUndefined();
   });
 });
+
+// ─── Several points at once ──────────────────────────────────────────────────
+
+import { pointsInRect, removePoints } from '../src/lib/papercraft-engine';
+
+describe('choosing points with a rectangle', () => {
+  it('finds the points inside, whichever way the corners are given, and none of a text', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: true });
+    expect(pointsInRect(itemOf(doc, id), [-1, -1], [11, 5])).toEqual([0, 1]);
+    expect(pointsInRect(itemOf(doc, id), [11, 5], [-1, -1])).toEqual([0, 1]);
+    expect(pointsInRect(itemOf(doc, id), [20, 20], [30, 30])).toEqual([]);
+    expect(pointsInRect(itemOf(doc, id), [0, 0], [10, 10])).toEqual([0, 1, 2, 3]); // the edge counts
+    const text = addItem(newDoc(), { kind: 'text', points: [[5, 5]], closed: false, text: '1' });
+    expect(pointsInRect(itemOf(text.doc, text.id!), [0, 0], [10, 10])).toEqual([]);
+  });
+});
+
+describe('taking several points away together', () => {
+  it('takes them and their handles, and keeps the order of the rest', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 5], [20, 0], [30, 5], [40, 0]], smooth: true });
+    const bez = setBezier(doc, [id], true);
+    const before = itemOf(bez, id);
+    const next = itemOf(removePoints(bez, id, [1, 3]), id);
+    expect(next.points).toEqual([[0, 0], [20, 0], [40, 0]]);
+    expect(next.handles).toEqual([before.handles![0], before.handles![2], before.handles![4]]);
+  });
+
+  it('is all or nothing: not so many that a line has fewer than two points or a closed shape fewer than three', () => {
+    const line = docWith({ points: [[0, 0], [10, 0], [20, 0]] });
+    expect(itemOf(removePoints(line.doc, line.id, [0, 1]), line.id).points).toHaveLength(3);
+    expect(itemOf(removePoints(line.doc, line.id, [0]), line.id).points).toHaveLength(2);
+    const quad = docWith({ points: [[0, 0], [10, 0], [10, 10], [0, 10]], closed: true });
+    expect(itemOf(removePoints(quad.doc, quad.id, [0, 1]), quad.id).points).toHaveLength(4);
+    expect(itemOf(removePoints(quad.doc, quad.id, [0]), quad.id).points).toHaveLength(3);
+  });
+
+  it('ignores points that are not there, repeats, and a text', () => {
+    const { doc, id } = docWith({ points: [[0, 0], [10, 0], [20, 0], [30, 0]] });
+    expect(removePoints(doc, id, [])).toBe(doc);
+    expect(itemOf(removePoints(doc, id, [9, -2]), id).points).toHaveLength(4);
+    expect(itemOf(removePoints(doc, id, [1, 1]), id).points).toHaveLength(3);
+    const text = addItem(newDoc(), { kind: 'text', points: [[5, 5]], closed: false, text: '1' });
+    expect(itemOf(removePoints(text.doc, text.id!, [0]), text.id!).points).toHaveLength(1);
+  });
+});

@@ -178,6 +178,24 @@ export function turnBuildPart(parts: BuildPart[], index: number, axis: 'x' | 'y'
   return parts.map((p, i) => (i === index ? clampPart({ ...p, [key]: wrap(p[key] + degrees) }) : p));
 }
 
+/** The direction in the model each turn of a part is about: its x turn is about its own x axis (turned by the y and z turns that come after), its z turn about the model's z. */
+export function rotationAxes(part: BuildPart): { x: Vec3; y: Vec3; z: Vec3 } {
+  const ry = part.rotY * RAD;
+  const rz = part.rotZ * RAD;
+  return { x: turn([1, 0, 0], 0, ry, rz), y: turn([0, 1, 0], 0, 0, rz), z: [0, 0, 1] };
+}
+
+/**
+ * One part turned by `degrees` about its x, y or z turn, the new angle rounded to `gridDeg` (0 is no rounding) and kept between -180 and 180. This is what
+ * dragging a turn handle does; `turnBuildPart` is the same without the rounding.
+ */
+export function rotateBuildPart(parts: BuildPart[], index: number, axis: 'x' | 'y' | 'z', degrees: number, gridDeg = 0): BuildPart[] {
+  if (index < 0 || index >= parts.length || !Number.isFinite(degrees)) return parts;
+  const key = axis === 'x' ? 'rotX' : axis === 'y' ? 'rotY' : 'rotZ';
+  const wrap = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
+  return parts.map((p, i) => (i === index ? clampPart({ ...p, [key]: wrap(snapTo(p[key] + degrees, gridDeg)) }) : p));
+}
+
 // ─── Resizing parts ───────────────────────────────────────────────────────────
 
 /** The six faces of a part's box as seen from the part itself (x and y are across, z is its height), before the part is turned. */

@@ -57,3 +57,25 @@ export function axisParameter(origin: V3, direction: V3, axisPoint: V3, axisDire
   if (Math.abs(denominator) < 1e-9 * Math.max(1, c)) return null;
   return (b * dot(direction, w) - c * dot(axisDirection, w)) / denominator;
 }
+
+/**
+ * The angle, in degrees, of a point round an axis through `centre` (the axis has length 1): 0 along an arbitrary but fixed direction across the axis, growing
+ * counter-clockwise seen from where the axis points. Only differences between two angles are used (how far a turn handle was dragged).
+ */
+export function angleAround(point: V3, centre: V3, axis: V3): number {
+  const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  // A direction across the axis: from the helper axis that is least along it.
+  const helper: V3 = Math.abs(axis[0]) <= Math.abs(axis[1]) && Math.abs(axis[0]) <= Math.abs(axis[2]) ? [1, 0, 0] : Math.abs(axis[1]) <= Math.abs(axis[2]) ? [0, 1, 0] : [0, 0, 1];
+  const u0 = cross(axis, helper);
+  const ul = Math.hypot(u0[0], u0[1], u0[2]);
+  const u: V3 = [u0[0] / ul, u0[1] / ul, u0[2] / ul];
+  const v = cross(axis, u);
+  const d: V3 = [point[0] - centre[0], point[1] - centre[1], point[2] - centre[2]];
+  return (Math.atan2(dot(d, v), dot(d, u)) * 180) / Math.PI;
+}
+
+/** The difference between two angles in degrees, brought between -180 and 180 (so a drag across the seam does not jump). */
+export function angleDifference(to: number, from: number): number {
+  return ((((to - from + 180) % 360) + 360) % 360) - 180;
+}

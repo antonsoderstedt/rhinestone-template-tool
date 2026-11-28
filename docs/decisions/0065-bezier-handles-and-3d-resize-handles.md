@@ -63,3 +63,16 @@ turned the parts of a model but had "no resizing handles: sizes are still typed"
   (with handles, the neighbours keep theirs). A line keeps at least two points and a closed shape three. A smooth line left with two points is straight.
 - Double-click on a *point* of a Bézier curve still switches it between corner and smooth; on the *line* it adds a point. Both are single steps in the history.
 - Checked in the running page with synthetic pointer events: a square got a fifth point and lost one again; a smooth curve became a Bézier curve with a new point that moved the line by 0.008 mm at most.
+
+## Update: an Add-a-point tool, several points at once, and turn rings in 3D
+
+- **Add a point tool** (`DrawTool` `addpoint`, “Add a point”): click a line to put a point there, on any item (the one nearest within reach), with a dot that shows where it goes. It is the same
+  `insertPoint` as the double-click, so a Bézier curve keeps its shape.
+- **Several points** (`removePoints`, `pointsInRect`): with one item selected, **Shift-click** points to choose them, or **Shift-drag a rectangle** on the sheet or the item; the chosen points are filled and a bar
+  says how many (“Take them away”), and Delete or Backspace takes them away with their handles. It is all or nothing: if what is left would be under two points of a line or three of a closed shape, nothing is taken.
+  Escape clears the choice. A plain click on a point still drags it, and Ctrl- or Cmd-click still takes one away.
+- **Turn rings** (`rotateBuildPart`, `rotationAxes`, `angleAround`, `angleDifference`): the selected part has three thin rings, red, green and blue, round its x, y and z turns (and invisible thicker rings to
+  grab them). Dragging one turns the part by how far the pointer has gone round its axis, rounded to 5°, with a live preview and one change on release (a click that does not go round changes nothing). The axes follow the
+  part's turn order (the x turn is about the part's own x axis, turned by y and z that come after it; z is the model's up). A test checks that the mesh after a turn equals the old mesh turned about that axis through the base centre.
+  The buttons that turn a part 15° remain.
+- Checked in the running page: the tool added two points to a hexagon; a Shift-drag rectangle chose two points and Delete took them; in the Build view a real mouse drag round the blue ring turned the cube about its vertical axis.

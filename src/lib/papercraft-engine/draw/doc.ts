@@ -648,6 +648,35 @@ export function removePoint(doc: DrawDoc, id: number, index: number): DrawDoc {
   });
 }
 
+/**
+ * Takes several points away at once. It is all or nothing: if what is left would be fewer than two points of a line or three of a closed shape,
+ * nothing is taken (so a whole line is deleted as an item, not by emptying it). Handles go with their points.
+ */
+export function removePoints(doc: DrawDoc, id: number, indices: readonly number[]): DrawDoc {
+  const gone = new Set(indices.filter((k) => Number.isInteger(k)));
+  if (gone.size === 0) return doc;
+  return mapItems(doc, [id], (i) => {
+    if (i.kind === 'text') return i;
+    const keep = i.points.map((_, k) => k).filter((k) => !gone.has(k));
+    if (keep.length === i.points.length || keep.length < (i.closed ? 3 : 2)) return i;
+    return { ...i, points: keep.map((k) => i.points[k]!), ...(i.handles ? { handles: keep.map((k) => i.handles![k]!) } : {}) };
+  });
+}
+
+/** The points of an item inside a rectangle (any two opposite corners), for a marquee selection. */
+export function pointsInRect(item: Pick<DrawItem, 'points' | 'kind'>, a: Vec2, b: Vec2): number[] {
+  if (item.kind === 'text') return [];
+  const lx = Math.min(a[0], b[0]);
+  const hx = Math.max(a[0], b[0]);
+  const ly = Math.min(a[1], b[1]);
+  const hy = Math.max(a[1], b[1]);
+  const found: number[] = [];
+  item.points.forEach((p, k) => {
+    if (p[0] >= lx && p[0] <= hx && p[1] >= ly && p[1] <= hy) found.push(k);
+  });
+  return found;
+}
+
 export interface HandleHit {
   index: number;
   which: 'in' | 'out';
