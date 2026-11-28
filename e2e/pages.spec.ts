@@ -9,7 +9,8 @@ test.describe('every page opens without an error', () => {
       const errors = watchErrors(page);
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
-      await page.waitForLoadState('networkidle');
+      // Not `networkidle`: a page that keeps loading fonts in the background never reaches it. A moment is enough to catch what the page throws as it starts.
+      await page.waitForTimeout(1500);
       await expect(page.locator('main, [role=main], body').first()).toBeVisible();
       expect(await page.title()).toBe('Rhinestone Template Tool');
       expect(errors).toEqual([]);

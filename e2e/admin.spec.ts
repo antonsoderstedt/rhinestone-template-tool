@@ -65,7 +65,7 @@ test('upload a design to the library, hide it, and delete it', async ({ page }) 
 
 test('statistics count a visit', async ({ page }) => {
   await page.goto('/htv/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1500); // the visit is sent a moment after the page has opened
   await page.goto('/admin/');
   const stats = (await (await page.request.get('/api/admin/stats?days=1')).json()) as { totals: { pageViews: number } };
   expect(stats.totals.pageViews).toBeGreaterThan(0);
