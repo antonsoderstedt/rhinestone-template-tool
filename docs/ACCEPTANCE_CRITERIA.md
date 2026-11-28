@@ -761,7 +761,8 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 ## Smaller editor files (ADR 0069)
 
 - [x] `EditorPropertiesPanel` (2,122 → 184 lines) and `EditorState` (1,555 → 753) are split without a change of behaviour; `EditorCanvas` (1,889 → 1,694) and `EditorShell` (2,288 → 2,079) lose their helpers, chrome and three parts of the picture; type check, lint, 2,855 unit tests and 15 end-to-end tests on a fresh build pass
-- [ ] The stone generation effect and the pointer handlers are still inside `EditorShell` and `EditorCanvas` (moving them needs a test of the request race first)
+- [x] The stone generation moved out of `EditorShell` (ADR 0070) after a test of the request race was written against the old code (`e2e/generation-race.spec.ts`; it fails when the stale-request guards are removed); `EditorShell` 2,079 → 1,821 lines
+- [ ] The pointer handlers of `EditorCanvas` and the project loading in `EditorShell` are still inside the components
 
 ## Papercraft: own models (ADR 0058)
 
