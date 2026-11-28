@@ -739,6 +739,13 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 
 ---
 
+## Backup and dependencies (ADR 0066)
+
+- [x] `npm audit` reports no vulnerabilities (Next 16.4.6 and the transitive fixes); type check, unit tests and the static build pass; the three studios open on the local Worker with no console errors
+- [x] `npm run backup:d1` writes an export of the live database to the git-ignored `backups/` folder, refuses one with no tables, and keeps the newest 20 (run against the live database, read-only)
+- [x] A backup file restores: long text chunks are split into statements D1 accepts, a restore over existing data replaces it, and every row and text comes back equal (tested; the restore was run twice into a local D1 and compared with the original)
+- [ ] Restoring a file into the live database (not run on purpose; Cloudflare Time Travel is the tried route)
+
 ## Papercraft: own models (ADR 0058)
 
 - [x] Parts (box, cylinder, cone, pyramid, frustum) are closed solids with outward faces; open ends leave out the lid (tested)

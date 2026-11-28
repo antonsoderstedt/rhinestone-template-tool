@@ -50,3 +50,6 @@ next-env.d.ts
 /public/design-library/
 /public/font-library/
 .env.cloudflare
+
+# D1 backups (scripts/backup-d1.sh): contain the owner's data
+/backups/
