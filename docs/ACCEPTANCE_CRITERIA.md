@@ -752,6 +752,12 @@ ADR 0056 · Tests: `tests/papercraftBuildOrder.test.ts`.
 - [x] Every route refuses a request without a valid Access token (tested)
 - [ ] The Worker on Cloudflare's own D1 service (its size and time limits are not exercised by a test)
 
+## End-to-end tests (ADR 0068)
+
+- [x] `npm run test:e2e` drives the real build on the real Worker and a local D1 in a browser: every page opens without an error, a name exports as a Cricut-safe SVG, the drawing tool works with a real mouse (add points, choose several, take them away, undo), an HTV design file saves and opens again, the admin panel changes the site title and uploads, hides and deletes a library design, statistics count a visit, and the 3D Build view draws (15 tests)
+- [x] CI runs them in a job of its own and keeps the report when one fails
+- [ ] The 3D resize handles and turn rings, touch input, and Firefox/Safari are not in the automated run (checked by hand; `scripts/e2e-smoke.mjs` covers other browsers by hand)
+
 ## Papercraft: own models (ADR 0058)
 
 - [x] Parts (box, cylinder, cone, pyramid, frustum) are closed solids with outward faces; open ends leave out the lid (tested)
