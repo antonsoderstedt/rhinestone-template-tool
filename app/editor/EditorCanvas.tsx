@@ -3,44 +3,25 @@
 import type { PlacedShape } from '@/src/lib/rhinestone-engine/index';
 import { isNudgeKey, nudgeMoves } from './nudge';
 import { visibleStonesForView } from './visibleStones';
-import { AB_COLOUR, applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
+import { applyDesignColour, gemShades, stoneColourOf } from './stoneColours';
 import { describeDesignForScreenReader } from './editorUi';
 import { PART_SNAP_MM, boundsOfStones, partsStones, snapOffset } from './designParts';
-
-import { Expand, Gem, Grid2X2, Hand, Minus, Plus, Scan } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { getRecommendedCenterDistance, getStoneSizeProfile } from '@/src/lib/rhinestone-engine/index';
 import { EditorAction, EditorState, EditableStone, ManualDrawMode } from './EditorState';
-import {
-  calculateCanvasWorkspaceBounds,
-  calculateFitViewTransform,
-  clampCanvasPan,
-  calculateDisplayedCanvasViewBox,
-  expandViewBoxToAspect,
-  MAX_CANVAS_ZOOM,
-  MIN_CANVAS_ZOOM,
-  screenToMm,
-  snapToGrid,
-  isPointNearStone,
-  interpolateLinePointsAtSpacing,
-  mmToRulerPercent,
-  CanvasTransform,
-} from './canvasCoordinates';
+import { calculateCanvasWorkspaceBounds, calculateFitViewTransform, clampCanvasPan, calculateDisplayedCanvasViewBox, expandViewBoxToAspect, MAX_CANVAS_ZOOM, MIN_CANVAS_ZOOM, screenToMm, snapToGrid, isPointNearStone, interpolateLinePointsAtSpacing, CanvasTransform } from './canvasCoordinates';
 import { findNearestValidStonePosition, wouldCollide } from './collisionDetection';
 import { isIgnoredKeyboardTarget } from './editorDomGuards';
 import { isActivatableControl } from '../lib/studioShortcuts';
 import { useTouchViewGestures } from '../lib/touchGestures';
 import { findSnapCandidates, type SnapGuideLine } from './alignmentGuides';
-import {
-  applyBoxSelection,
-  BOX_SELECTION_DRAG_THRESHOLD_PX,
-  createSelectionBoxMm,
-  hasExceededBoxSelectionThreshold,
-  shouldStartBoxSelection,
-} from './selectionBox';
-import { IconButton } from './ui';
-
+import { applyBoxSelection, BOX_SELECTION_DRAG_THRESHOLD_PX, createSelectionBoxMm, hasExceededBoxSelectionThreshold, shouldStartBoxSelection } from './selectionBox';
+import { CanvasToolbar } from './canvas/CanvasToolbar';
+import { CanvasRulers } from './canvas/CanvasRulers';
+import { CanvasStatus } from './canvas/CanvasStatus';
 import { useT } from '../lib/i18n';
+import { FIT_TO_SCREEN_MARGIN, FIT_TO_SCREEN_PADDING_MM, GemGradient, RULER_BAND_PX, RULER_TARGET_LABEL_COUNT, SELECTION_MEASURE_OFFSET_MM, STONE_STROKE_MM, gemId, getStoneCanvasColor, pickNiceRulerStep, polylineToPathData } from './canvas/canvasHelpers';
+
 interface EditorCanvasProps {
   state: EditorState;
   dispatch: React.Dispatch<EditorAction>;
@@ -49,75 +30,6 @@ interface EditorCanvasProps {
   artworkSource?: PlacedShape[] | null;
   fitRequestId?: number;
   onManualViewChange?: (view: { zoom: number; panX: number; panY: number }) => void;
-}
-
-/** Width of the line drawn around a stone, in mm. The line sits inside the hole so the picture is to scale. */
-const STONE_STROKE_MM = 0.22;
-
-const RULER_BAND_PX = 32;
-const RULER_NICE_STEPS_MM = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
-const RULER_TARGET_LABEL_COUNT = 14;
-const SELECTION_MEASURE_OFFSET_MM = 18;
-const FIT_TO_SCREEN_PADDING_MM = 20;
-const FIT_TO_SCREEN_MARGIN = 0.92;
-
-// Rounds up to a "nice" 1/2/5 step so ruler ticks/labels never crowd together at low zoom.
-function pickNiceRulerStep(rawStepMm: number): number {
-  for (const step of RULER_NICE_STEPS_MM) {
-    if (step >= rawStepMm) return step;
-  }
-  return RULER_NICE_STEPS_MM[RULER_NICE_STEPS_MM.length - 1];
-}
-
-function buildRulerTickValues(start: number, end: number, stepMm: number): number[] {
-  const first = Math.ceil(start / stepMm) * stepMm;
-  const ticks: number[] = [];
-  for (let value = first; value <= end; value += stepMm) {
-    ticks.push(value);
-  }
-  return ticks;
-}
-
-/** `M x y L x y … Z` for one polyline. */
-function polylineToPathData(polyline: { points: ReadonlyArray<{ x: number; y: number }>; closed?: boolean }): string {
-  if (polyline.points.length === 0) return '';
-  const [first, ...rest] = polyline.points;
-  return `M${first!.x.toFixed(2)} ${first!.y.toFixed(2)}${rest.map((p) => `L${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join('')}${polyline.closed ? 'Z' : ''}`;
-}
-
-const gemId = (hex: string) => `gem-${hex.replace('#', '').toLowerCase()}`;
-
-/** The gradient a shiny stone of this colour is filled with: a highlight up and to the left, the colour, a darker rim. */
-function GemGradient({ hex }: { hex: string }) {
-  if (hex.toLowerCase() === AB_COLOUR) {
-    return (
-      <radialGradient id={gemId(hex)} cx="0.38" cy="0.32" r="0.8">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.3" stopColor="#f7d9ff" />
-        <stop offset="0.55" stopColor="#b9d9ff" />
-        <stop offset="0.8" stopColor="#c4f2e0" />
-        <stop offset="1" stopColor="#9a8ad6" />
-      </radialGradient>
-    );
-  }
-  const shades = gemShades(hex);
-  return (
-    <radialGradient id={gemId(hex)} cx="0.38" cy="0.32" r="0.8">
-      <stop offset="0" stopColor={shades.highlight} />
-      <stop offset="0.4" stopColor={shades.body} />
-      <stop offset="1" stopColor={shades.rim} />
-    </radialGradient>
-  );
-}
-
-function getStoneCanvasColor(stone: EditableStone, showStoneColours: boolean): string {
-  if (showStoneColours) {
-    const colour = stoneColourOf(stone);
-    if (colour) return colour;
-  }
-  if (typeof stone.metadata?.fill === 'string') return stone.metadata.fill;
-  if (typeof stone.metadata?.stroke === 'string') return stone.metadata.stroke;
-  return '#8b5cf6';
 }
 
 export default function EditorCanvas({
@@ -1386,47 +1298,18 @@ export default function EditorCanvas({
         </div>
       </div>
 
-      <div className="absolute right-4 top-4 z-10 flex gap-1 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 p-1 shadow-md backdrop-blur-sm lg:flex-col lg:p-1.5">
-        <IconButton onClick={handleZoomIn} title={t('Zoom in')} aria-label={t('Zoom in')}>
-          <Plus className="h-4 w-4" />
-        </IconButton>
-        <IconButton onClick={handleZoomOut} title={t('Zoom out')} aria-label={t('Zoom out')}>
-          <Minus className="h-4 w-4" />
-        </IconButton>
-        <IconButton onClick={handleZoomReset} title={t('Reset zoom to 100%')} aria-label={t('Reset zoom')}>
-          <Scan className="h-4 w-4" />
-        </IconButton>
-        <IconButton onClick={handleFitToScreen} title={t('Fit the design to the current canvas view')} aria-label={t('Fit to screen')}>
-          <Expand className="h-4 w-4" />
-        </IconButton>
-        <div className="mx-1 w-px bg-border lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
-        <IconButton
-          onClick={() => setPanMode((on) => !on)}
-          intent={panMode ? 'active' : 'default'}
-          title={panMode ? 'Stop moving the view with one finger' : 'Move the view with one finger or the mouse'}
-          aria-label={t('Toggle hand tool')}
-          aria-pressed={panMode}
-        >
-          <Hand className="h-4 w-4" />
-        </IconButton>
-        <IconButton
-          onClick={() => dispatch({ type: 'UPDATE_CANVAS', updates: { realisticStones: !state.canvas.realisticStones } })}
-          intent={state.canvas.realisticStones ? 'active' : 'default'}
-          title={state.canvas.realisticStones ? 'Show flat holes' : 'Show shiny stones'}
-          aria-label={t('Toggle shiny stones')}
-          aria-pressed={state.canvas.realisticStones}
-        >
-          <Gem className="h-4 w-4" />
-        </IconButton>
-        <IconButton
-          onClick={toggleGrid}
-          intent={state.canvas.showGrid ? 'active' : 'default'}
-          title={state.canvas.showGrid ? 'Hide grid overlay' : 'Show grid overlay'}
-          aria-label={t('Toggle grid')}
-        >
-          <Grid2X2 className="h-4 w-4" />
-        </IconButton>
-      </div>
+      <CanvasToolbar
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+        onFitToScreen={handleFitToScreen}
+        panMode={panMode}
+        onTogglePanMode={() => setPanMode((on) => !on)}
+        realisticStones={state.canvas.realisticStones}
+        onToggleRealisticStones={() => dispatch({ type: 'UPDATE_CANVAS', updates: { realisticStones: !state.canvas.realisticStones } })}
+        showGrid={state.canvas.showGrid}
+        onToggleGrid={toggleGrid}
+      />
 
       {/* SVG Canvas */}
       <div className="h-full w-full p-4 lg:p-8">
@@ -1437,49 +1320,7 @@ export default function EditorCanvas({
             gridTemplateRows: state.canvas.showRulers ? `${RULER_BAND_PX}px 1fr` : '1fr',
           }}
         >
-          {state.canvas.showRulers && (
-            <>
-              <div className="border-b border-r border-[var(--studio-border)] bg-[var(--studio-well)]" style={{ gridColumn: 1, gridRow: 1 }} />
-              <div
-                className="relative overflow-hidden border-b border-[var(--studio-border)] bg-[var(--studio-well)]"
-                style={{ gridColumn: 2, gridRow: 1 }}
-              >
-                {buildRulerTickValues(viewBox.x, viewBox.x + viewBox.width, rulerTickStepMm).map((tick) => (
-                  <div
-                    key={`overlay-top-${tick}`}
-                    className="pointer-events-none absolute inset-y-0"
-                    style={{ left: mmToRulerPercent(tick, viewBox.x, viewBox.width) }}
-                  >
-                    <div className={`w-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'h-full' : 'h-2.5'} self-end`} />
-                    {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
-                        {Math.round(tick)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div
-                className="relative overflow-hidden border-r border-[var(--studio-border)] bg-[var(--studio-well)]"
-                style={{ gridColumn: 1, gridRow: 2 }}
-              >
-                {buildRulerTickValues(viewBox.y, viewBox.y + viewBox.height, rulerTickStepMm).map((tick) => (
-                  <div
-                    key={`overlay-left-${tick}`}
-                    className="pointer-events-none absolute inset-x-0"
-                    style={{ top: mmToRulerPercent(tick, viewBox.y, viewBox.height) }}
-                  >
-                    <div className={`h-px bg-[var(--studio-surface-hover)] ${tick % rulerLabelStepMm === 0 ? 'w-full' : 'w-2.5'} justify-self-end`} />
-                    {tick % rulerLabelStepMm === 0 && (
-                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-xs font-medium leading-none text-[var(--studio-ink-subtle)]">
-                        {Math.round(tick)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          {state.canvas.showRulers && <CanvasRulers viewBox={viewBox} tickStepMm={rulerTickStepMm} labelStepMm={rulerLabelStepMm} />}
 
           <div
             ref={viewportRef}
@@ -1847,43 +1688,7 @@ export default function EditorCanvas({
         </div>
       </div>
 
-      {stones.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-8 text-center">
-          <p className="text-base font-semibold text-[var(--studio-ink-secondary)]">{t('Nothing here yet')}</p>
-          <p className="max-w-sm text-sm text-[var(--studio-ink-muted)]">{t('Type a text, upload artwork or pick a starter in the panel on the right.')}</p>
-        </div>
-      )}
-
-      {/* Zoom Indicator */}
-      <div className="absolute bottom-3 right-3 rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-2.5 py-1 text-xs font-medium tabular-nums text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:right-4">
-        {Math.round(state.canvas.zoom * 100)}%
-      </div>
-
-      {/* Manual Tool Status */}
-      {state.activeTool === 'manual' && (
-        <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
-          <div>Click to place {state.manualTool.addStoneSize} stone</div>
-          {state.manualTool.snapToGrid && (
-            <div className="mt-1 text-[var(--studio-ink-muted)]">Snap: {state.manualTool.gridSnapSize}mm grid</div>
-          )}
-          {hoverPosition && (
-            <div className="mt-1 font-mono tabular-nums text-[var(--studio-ink-muted)]">
-              X {hoverPosition.x.toFixed(1)} mm · Y {hoverPosition.y.toFixed(1)} mm
-            </div>
-          )}
-          {hoverSuggestedFrom && state.manualTool.interactionMode === 'place' && (
-            <div className="mt-1 text-warning-600">{t('Smart assist nudged this stone to a safer spot.')}</div>
-          )}
-        </div>
-      )}
-
-      {/* Select Tool Status */}
-      {state.activeTool === 'select' && state.selectedStoneIds.size > 0 && (
-        <div className="absolute bottom-3 left-3 max-w-[calc(100%-6rem)] rounded-md border border-[var(--studio-border)] bg-[var(--studio-well)]/90 px-3 py-2 text-xs text-[var(--studio-ink-muted)] shadow-sm backdrop-blur-sm lg:bottom-4 lg:left-4">
-          {state.selectedStoneIds.size} stone{state.selectedStoneIds.size > 1 ? 's' : ''} selected
-          <div className="mt-1 text-[var(--studio-ink-muted)]">{t('Delete or drag to move')}</div>
-        </div>
-      )}
+      <CanvasStatus state={state} stoneCount={stones.length} hoverPosition={hoverPosition} hoverSuggestedFrom={hoverSuggestedFrom} />
     </div>
   );
 }
