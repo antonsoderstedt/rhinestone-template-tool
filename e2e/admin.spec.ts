@@ -6,7 +6,10 @@ test.describe.configure({ mode: 'serial' });
 // A run that stopped half way can leave its upload behind: take away anything this file uploaded before it starts.
 test.beforeAll(async ({ request }) => {
   const library = (await (await request.get('/api/library/overlay')).json()) as { items: { design: { id: string }[] } };
-  for (const item of library.items.design.filter((i) => i.id.startsWith('upload-e2e'))) await request.delete(`/api/admin/library/item?kind=design&id=${item.id}`);
+  for (const item of library.items.design.filter((i) => i.id.startsWith('upload-e2e'))) {
+    const response = await request.delete(`/api/admin/library/item?kind=design&id=${item.id}`);
+    expect(response.status(), `taking away ${item.id}`).toBe(200);
+  }
 });
 
 test('the site title set in the admin panel shows on the studios', async ({ page }) => {

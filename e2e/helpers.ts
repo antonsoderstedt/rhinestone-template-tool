@@ -8,9 +8,11 @@ export function watchErrors(page: Page): string[] {
   page.on('console', (m) => {
     if (m.type() !== 'error') return;
     const text = m.text();
-    // A missing favicon or an optional file (such as the local libraries, which CI does not have) is not a fault of the page.
-    if (/favicon|Failed to load resource.*(404|403)/.test(text)) return;
-    errors.push(`console: ${text.slice(0, 200)}`);
+    // Only two failed requests are not a fault of the page: the favicon, and the owner's libraries (which exist on one computer and
+    // not in CI). A missing script, style or any other file still fails the test.
+    const url = m.location().url;
+    if (/\/favicon\.[a-z]+$/.test(url) || /\/(design-library|font-library)\//.test(url)) return;
+    errors.push(`console: ${text.slice(0, 200)}${url ? ` (${url})` : ''}`);
   });
   return errors;
 }

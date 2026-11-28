@@ -68,7 +68,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.169.0"
   },
   "overrides": {
     "sharp": "0.35.5",

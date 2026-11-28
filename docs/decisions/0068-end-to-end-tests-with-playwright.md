@@ -26,6 +26,7 @@ now that was checked by hand, once, after each feature (and only with synthetic 
 - **Tests set their own language and unit.** The app keeps both on the server so that they follow the owner between devices, so any
   other browser open on the same server (a developer's own tab, an earlier run) can change them. A fixture (`e2e/fixtures.ts`) sets
   English and millimetres before every test.
+- **Reproducible.** `wrangler` is a dev dependency, and `--dev` runs that version (`npx --no-install`), so a test run does not change when Wrangler releases. Deploying still uses the latest Wrangler, as before. The console-error check ignores only a failed favicon and the owner's libraries (`/design-library/`, `/font-library/`, which CI does not have); a missing script or style fails a test.
 - **CI** has a job of its own (`e2e`, Node 22, Playwright's Chromium with software WebGL), so a browser problem never hides the unit
   test result. A failing run keeps the report and traces as an artifact for 7 days.
 - **Locally**: `E2E_CHANNEL=chrome npm run test:e2e` uses the installed Chrome (no download). The tests reuse a server that is already
