@@ -4,7 +4,7 @@ import { createStoneGridTemplate, createAllOverTemplate, createOutlineTextTempla
 import type { RhinestoneTemplate } from '@/src/lib/rhinestone-engine/index';
 import { generateRasterArtwork, type ArtworkInfo } from '../artworkGeneration';
 import { generateSvgArtworkAsync } from '../artworkWorkerClient';
-import { getSourcePanelTool } from '../editorUi';
+import type { getSourcePanelTool } from '../editorUi';
 import { decodeRasterImageDataUrl } from '../../lib/rasterImageDecode';
 
 export type OutlineFontStatusState = { status: 'idle' | 'loading' | 'error'; message: string | null; fontId: string };

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_EDITOR_STATE, type EditorState } from '../app/editor/EditorState';
+import { getSourcePanelTool } from '../app/editor/editorUi';
 import { SKIP_GENERATION, produceSourceTemplate, replaceOutlineFontStatus, type OutlineFontStatusState } from '../app/editor/generation/produceSourceTemplate';
 
 /** The generation of stones for the active source tool, with the checks that keep an outdated request from changing anything (ADR 0070). */
@@ -9,7 +10,7 @@ function run(state: EditorState, over: { requestId?: number; latest?: number } =
   const setArtworkInfo = vi.fn();
   const promise = produceSourceTemplate({
     state,
-    sourceTool: state.activeTool === 'select' ? 'text' : (state.activeTool as never),
+    sourceTool: getSourcePanelTool(state), // the same derivation as the editor uses
     gridTool: state.gridTool,
     textTool: state.textTool,
     svgTool: state.svgTool,
