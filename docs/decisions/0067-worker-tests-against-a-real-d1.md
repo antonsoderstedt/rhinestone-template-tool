@@ -22,6 +22,7 @@ one of those would only show on the live site.
   value falls back to the default); statistics (events stored, counted per studio, pruned by retention, cleared, nothing stored when
   switched off); and that all nine tables exist.
 - **It has teeth.** Reversing the chunk order in `worker/sync.ts` fails the new test; the old recording test did not notice.
+- **CI runs Node 22.** Miniflare 4 requires Node 22 or later (it was on 20, and the tests happened to pass); `.github/workflows/ci.yml` now uses 22.
 - **The old tests stay.** They are fast and check exactly which statements are asked and with what; the new ones check what the
   statements *do*.
 - **Dev dependency hygiene.** Miniflare pins an older `undici` and `sharp` with advisories. Both are raised with `overrides` in

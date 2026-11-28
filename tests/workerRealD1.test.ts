@@ -109,9 +109,15 @@ describe('catalog', () => {
 
   it('refuses a file for a template that does not exist, and a delete takes the chunks with it', async () => {
     expect((await send('PUT', '/api/admin/file?id=nope&part=file&name=a.obj&type=x', 'x')).status).toBe(404);
-    expect((await send('DELETE', '/api/admin/template?id=my-box')).status).toBe(200);
-    expect(await count('catalog_chunks', "id = 'my-box'")).toBe(0);
-    expect(await count('catalog_templates', "id = 'my-box'")).toBe(0);
+    // Its own template and file, so the test stands alone and the chunks to be removed are known to be there.
+    await send('PUT', '/api/admin/template', { ...details, id: 'to-delete' });
+    await send('PUT', '/api/admin/file?id=to-delete&part=file&name=d.obj&type=x', longText(650_000));
+    await send('PUT', '/api/admin/file?id=to-delete&part=preview&name=d.svg&type=image%2Fsvg%2Bxml', '<svg/>');
+    expect(await count('catalog_chunks', "id = 'to-delete'")).toBe(4);
+    expect((await send('DELETE', '/api/admin/template?id=to-delete')).status).toBe(200);
+    expect(await count('catalog_chunks', "id = 'to-delete'")).toBe(0);
+    expect(await count('catalog_templates', "id = 'to-delete'")).toBe(0);
+    await send('DELETE', '/api/admin/template?id=my-box');
   });
 });
 
