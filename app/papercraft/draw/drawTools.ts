@@ -1,6 +1,6 @@
 import type { TabOptions } from '@/src/lib/papercraft-engine';
 
-export type DrawTool = 'select' | 'polygon' | 'rect' | 'ngon' | 'fold' | 'tab' | 'number';
+export type DrawTool = 'select' | 'polygon' | 'rect' | 'ngon' | 'fold' | 'tab' | 'number' | 'addpoint';
 
 export interface ToolOptions {
   /** The sides of the regular polygon (many sides make a circle). */

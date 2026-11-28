@@ -182,3 +182,75 @@ describe('dragging a handle along its axis', () => {
     expect(axisParameter([0, 0, 5], [1, 0, 0], [0, 0, 0], [1, 0, 0])).toBeNull();
   });
 });
+
+import { angleAround, angleDifference } from '../app/papercraft/partsDrag';
+import { rotateBuildPart, rotationAxes } from '../src/lib/papercraft-engine';
+
+describe('turning a part with a ring', () => {
+  /** A point turned by `deg` about an axis (length 1) through `centre`, by Rodrigues' formula (right-handed). */
+  const about = (p: readonly number[], centre: readonly number[], axis: readonly number[], deg: number): number[] => {
+    const a = (deg * Math.PI) / 180;
+    const v = [p[0]! - centre[0]!, p[1]! - centre[1]!, p[2]! - centre[2]!];
+    const k = axis;
+    const dot = v[0]! * k[0]! + v[1]! * k[1]! + v[2]! * k[2]!;
+    const cross = [k[1]! * v[2]! - k[2]! * v[1]!, k[2]! * v[0]! - k[0]! * v[2]!, k[0]! * v[1]! - k[1]! * v[0]!];
+    return [0, 1, 2].map((i) => centre[i]! + v[i]! * Math.cos(a) + cross[i]! * Math.sin(a) + k[i]! * dot * (1 - Math.cos(a)));
+  };
+
+  it('turns the part about the axis the ring is round (the mesh is the old mesh turned about that axis)', () => {
+    const start = { ...defaultPart('box'), width: 30, depth: 20, height: 12, x: 10, y: -5, z: 3, rotX: 20, rotY: -35, rotZ: 50 };
+    for (const axis of ['x', 'y', 'z'] as const) {
+      const turned = rotateBuildPart([start], 0, axis, 30)[0]!;
+      const direction = rotationAxes(start)[axis];
+      const before = partMesh(start).positions;
+      const after = partMesh(turned).positions;
+      before.forEach((p, i) => {
+        const expected = about(p, [start.x, start.y, start.z], direction, 30);
+        for (let k = 0; k < 3; k++) expect(after[i]![k]!).toBeCloseTo(expected[k]!, 6);
+      });
+    }
+  });
+
+  it('rounds the new angle to the grid, keeps it between -180 and 180 and leaves other parts and bad numbers alone', () => {
+    const parts = [defaultPart('box'), defaultPart('box')];
+    expect(rotateBuildPart(parts, 0, 'z', 33, 5)[0]!.rotZ).toBe(35);
+    expect(rotateBuildPart([{ ...parts[0]!, rotZ: 170 }], 0, 'z', 30, 5)[0]!.rotZ).toBe(-160);
+    expect(rotateBuildPart(parts, 0, 'x', 12.3, 0)[0]!.rotX).toBeCloseTo(12.3, 9);
+    expect(rotateBuildPart(parts, 0, 'z', 10)[1]).toBe(parts[1]);
+    expect(rotateBuildPart(parts, 4, 'z', 10)).toBe(parts);
+    expect(rotateBuildPart(parts, 0, 'z', NaN)).toBe(parts);
+  });
+
+  it('knows the axes: z is up, y is the part’s y turned about z, x is turned by y and z', () => {
+    const a = rotationAxes({ ...defaultPart('box'), rotZ: 90 });
+    expect(a.z).toEqual([0, 0, 1]);
+    expect(a.y[0]).toBeCloseTo(-1, 9);
+    expect(a.x[1]).toBeCloseTo(1, 9);
+  });
+
+  it('measures how far the pointer has gone round an axis, counter-clockwise seen from where the axis points', () => {
+    const up: [number, number, number] = [0, 1, 0];
+    const centre: [number, number, number] = [0, 0, 0];
+    const a0 = angleAround([10, 0, 0], centre, up);
+    const quarter = angleAround([0, 0, -10], centre, up); // a quarter turn counter-clockwise about +y seen from above takes x to -z
+    expect(angleDifference(quarter, a0)).toBeCloseTo(90, 6);
+    expect(Math.abs(angleDifference(angleAround([-10, 0, 0], centre, up), a0))).toBeCloseTo(180, 6);
+  });
+
+  it('does not jump when the pointer goes across the seam', () => {
+    expect(angleDifference(-170, 170)).toBeCloseTo(20, 9);
+    expect(angleDifference(170, -170)).toBeCloseTo(-20, 9);
+    expect(angleDifference(10, 10)).toBe(0);
+  });
+
+  it('gives the same difference whatever the axis points to', () => {
+    for (const axis of [[1, 0, 0], [0, 0, 1], [0.6, 0.8, 0]] as const) {
+      const n = Math.hypot(...axis);
+      const k: [number, number, number] = [axis[0] / n, axis[1] / n, axis[2] / n];
+      // a point across the axis, and the same point turned 40 degrees about it
+      const across: [number, number, number] = k[0] === 1 ? [0, 5, 0] : k[2] === 1 ? [5, 0, 0] : [0, 0, 5];
+      const turned = about(across, [0, 0, 0], k, 40) as [number, number, number];
+      expect(angleDifference(angleAround(turned, [0, 0, 0], k), angleAround(across, [0, 0, 0], k))).toBeCloseTo(40, 6);
+    }
+  });
+});

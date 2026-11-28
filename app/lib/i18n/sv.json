@@ -1981,5 +1981,12 @@
   "Remove the handles": "Ta bort handtagen",
   "Edit with Bézier handles": "Redigera med Bézier-handtag",
   "Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.": "Dra i ett runt handtag för att böja kurvan. Håll Alt för att flytta ett handtag för sig. Dubbelklicka på en punkt för att göra den till ett hörn eller ge den handtag.",
-  "Double-click the line to add a point there. Ctrl- or Cmd-click a point to take it away.": "Dubbelklicka på linjen för att lägga till en punkt där. Ctrl- eller Cmd-klicka på en punkt för att ta bort den."
+  "Double-click the line to add a point there. Ctrl- or Cmd-click a point to take it away.": "Dubbelklicka på linjen för att lägga till en punkt där. Ctrl- eller Cmd-klicka på en punkt för att ta bort den.",
+  "The parts in 3D. Drag a part to move it, hold Shift to lift it, drag a square handle on the selected part to change its size, drag a coloured ring to turn it, drag the background to turn the view.": "Delarna i 3D. Dra en del för att flytta den, håll Skift för att lyfta den, dra i ett fyrkantigt handtag på den valda delen för att ändra storleken, dra i en färgad ring för att vrida den, dra i bakgrunden för att vrida vyn.",
+  "Drag a part to move it. Hold Shift to lift it. Drag a square handle on the selected part to change its size. Drag a coloured ring to turn it. Drag the background to turn the view.": "Dra en del för att flytta den. Håll Skift för att lyfta den. Dra i ett fyrkantigt handtag på den valda delen för att ändra storleken. Dra i en färgad ring för att vrida den. Dra i bakgrunden för att vrida vyn.",
+  "{n} points chosen": "{n} punkter valda",
+  "Take them away": "Ta bort dem",
+  "Add a point": "Lägg till en punkt",
+  "Click a line to put a new point on it. A Bézier curve keeps its shape; a smooth curve becomes the Bézier curve it would be.": "Klicka på en linje för att lägga en ny punkt på den. En Bézier-kurva behåller formen; en mjuk kurva blir den Bézier-kurva den motsvarar.",
+  "Double-click the line, or use the Add a point tool, to put a point there. Ctrl- or Cmd-click a point to take it away. Shift-click points, or Shift-drag a rectangle, to choose several and press Delete.": "Dubbelklicka på linjen, eller använd verktyget Lägg till en punkt, för att lägga en punkt där. Ctrl- eller Cmd-klicka på en punkt för att ta bort den. Skift-klicka på punkter, eller Skift-dra en rektangel, för att välja flera och tryck Delete."
 }

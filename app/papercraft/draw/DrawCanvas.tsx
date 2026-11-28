@@ -11,12 +11,14 @@ import {
   hitTest,
   insertPoint,
   nearestOnItem,
+  pointsInRect,
   pageView,
   moveItems,
   rectanglePoints,
   regularPolygonPoints,
   removeItems,
   removePoint,
+  removePoints,
   setHandle,
   setItemPoint,
   snapPoint,
@@ -53,6 +55,7 @@ interface View {
 type Gesture =
   | { kind: 'move'; start: Vec2; base: DrawDoc; ids: number[]; moved: boolean }
   | { kind: 'vertex'; base: DrawDoc; id: number; index: number }
+  | { kind: 'marquee'; start: Vec2; id: number }
   | { kind: 'handle'; base: DrawDoc; id: number; index: number; which: 'in' | 'out'; mirror: boolean }
   | { kind: 'rect' | 'ngon' | 'fold'; start: Vec2 }
   | { kind: 'pan'; startClient: [number, number]; startView: View };
@@ -75,6 +78,9 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
   /** The shape being drawn (rectangle, polygon, line) before it is let go. */
   const [draft, setDraft] = useState<{ kind: 'rect' | 'ngon' | 'fold'; a: Vec2; b: Vec2 } | null>(null);
   const [poly, setPoly] = useState<Vec2[]>([]);
+  /** The points chosen on one item (with Shift-click or a Shift-drag rectangle), to be taken away together. */
+  const [chosen, setChosen] = useState<{ id: number; indices: number[] }>({ id: -1, indices: [] });
+  const [marquee, setMarquee] = useState<{ a: Vec2; b: Vec2 } | null>(null);
 
   useEffect(() => {
     const el = box.current;
@@ -153,6 +159,17 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
         return;
       }
       const hit = hitTest(shown, raw, tol);
+      // Shift on the empty sheet or on the selected item, with one item selected: a rectangle that chooses its points.
+      if (only && only.kind !== 'text' && e.shiftKey && (!hit || (hit.id === only.id && hit.vertex === null))) {
+        gesture.current = { kind: 'marquee', start: raw, id: only.id };
+        setMarquee({ a: raw, b: raw });
+        return;
+      }
+      if (only && e.shiftKey && hit && hit.id === only.id && hit.vertex !== null) {
+        const have = chosen.id === only.id ? chosen.indices : [];
+        setChosen({ id: only.id, indices: have.includes(hit.vertex) ? have.filter((k) => k !== hit.vertex) : [...have, hit.vertex] });
+        return;
+      }
       if (!hit) {
         dispatch({ type: 'SELECT', ids: [] });
         gesture.current = { kind: 'pan', startClient: [e.clientX, e.clientY], startView: v };
@@ -170,6 +187,17 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
       const ids = e.shiftKey ? (selection.includes(hit.id) ? selection.filter((i) => i !== hit.id) : [...selection, hit.id]) : selection.includes(hit.id) ? selection : [hit.id];
       dispatch({ type: 'SELECT', ids });
       gesture.current = { kind: 'move', start: raw, base: doc, ids, moved: false };
+      return;
+    }
+
+    if (tool === 'addpoint') {
+      // A point goes on the line nearest to the click, on any item (not a number).
+      let best: { id: number; edge: number; t: number; distance: number } | null = null;
+      for (const item of shown.items) {
+        const near = nearestOnItem(item, raw);
+        if (near && near.distance <= tol && (!best || near.distance < best.distance)) best = { id: item.id, edge: near.edge, t: near.t, distance: near.distance };
+      }
+      if (best) dispatch({ type: 'EDIT', doc: insertPoint(doc, best.id, best.edge, best.t), selection: [best.id] });
       return;
     }
 
@@ -225,6 +253,10 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
       dispatch({ type: 'PREVIEW', doc: moveItems(g.base, g.ids, dx, dy) });
       return;
     }
+    if (g.kind === 'marquee') {
+      setMarquee({ a: g.start, b: raw });
+      return;
+    }
     if (g.kind === 'handle') {
       const at = g.base.items.find((i) => i.id === g.id)?.points[g.index];
       if (at) dispatch({ type: 'PREVIEW', doc: setHandle(g.base, g.id, g.index, g.which, [raw[0] - at[0], raw[1] - at[1]], g.mirror) });
@@ -243,6 +275,13 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
     gesture.current = null;
     if (!g) return;
     if (g.kind === 'pan') return;
+    if (g.kind === 'marquee') {
+      const item = shown.items.find((i) => i.id === g.id);
+      const b = toMm(e);
+      setMarquee(null);
+      if (item) setChosen({ id: g.id, indices: pointsInRect(item, g.start, b) });
+      return;
+    }
     if (g.kind === 'move' || g.kind === 'vertex' || g.kind === 'handle') {
       dispatch({ type: 'COMMIT' });
       return;
@@ -267,12 +306,24 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
     }
   };
 
+  const activeChosen = selection.length === 1 && selection[0] === chosen.id ? chosen.indices : [];
+  const takeChosenAway = () => {
+    const next = removePoints(doc, chosen.id, activeChosen);
+    if (next !== doc) dispatch({ type: 'EDIT', doc: next });
+    setChosen({ id: -1, indices: [] });
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
     if (e.key === ' ') {
       spaceDown.current = true;
       e.preventDefault();
+    } else if (e.key === 'Escape' && chosen.indices.length > 0) {
+      setChosen({ id: -1, indices: [] });
+    } else if ((e.key === 'Backspace' || e.key === 'Delete') && activeChosen.length > 0 && tool === 'select') {
+      e.preventDefault();
+      takeChosenAway();
     } else if (e.key === 'Escape') {
       if (gesture.current && gesture.current.kind !== 'pan') {
         gesture.current = null;
@@ -309,6 +360,16 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
     hover && hover.edge !== null && hoverItem && hoverItem.kind === 'cut' && hoverItem.closed && !hoverItem.smooth
       ? ([hoverItem.points[hover.edge]!, hoverItem.points[(hover.edge + 1) % hoverItem.points.length]!] as const)
       : null;
+  // Where the add-a-point tool would put a point: the place on a line nearest to the pointer, if it is close enough.
+  const addHover = (() => {
+    if (tool !== 'addpoint' || !cursor) return null;
+    let best: { at: Vec2; distance: number } | null = null;
+    for (const item of shown.items) {
+      const near = nearestOnItem(item, cursor);
+      if (near && near.distance <= tol && (!best || near.distance < best.distance)) best = near;
+    }
+    return best ? best.at : null;
+  })();
   const px = (n: number) => n / v.pxPerMm;
   const gridShown = options.gridMm > 0 && options.gridMm * v.pxPerMm >= 6;
 
@@ -401,7 +462,7 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
           {shown.items.filter((i) => i.kind === 'text' && selected.has(i.id)).map((i) => (
             <circle key={`ts${i.id}`} cx={i.points[0]![0]} cy={i.points[0]![1]} r={Math.max((i.heightMm ?? 4) * 1.2, px(10))} fill="none" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeDasharray="3 3" />
           ))}
-          {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.kind !== 'text').flatMap((i) => i.points.map((p, k) => <rect key={`${i.id}-${k}`} x={p[0] - px(4)} y={p[1] - px(4)} width={px(8)} height={px(8)} fill="#ffffff" stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />))}
+          {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.kind !== 'text').flatMap((i) => i.points.map((p, k) => <rect key={`${i.id}-${k}`} x={p[0] - px(4)} y={p[1] - px(4)} width={px(8)} height={px(8)} fill={activeChosen.includes(k) ? COLOURS.selected : '#ffffff'} stroke={COLOURS.selected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />))}
           {selected.size === 1 && shown.items.filter((i) => selected.has(i.id) && i.handles).flatMap((i) => i.handles!.flatMap((h, k) => (['in', 'out'] as const).filter((w) => h[w][0] !== 0 || h[w][1] !== 0).map((w) => {
             const p = i.points[k]!;
             const c: Vec2 = [p[0] + h[w][0], p[1] + h[w][1]];
@@ -412,6 +473,8 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
               </g>
             );
           })))}
+          {marquee && <rect x={Math.min(marquee.a[0], marquee.b[0])} y={Math.min(marquee.a[1], marquee.b[1])} width={Math.abs(marquee.b[0] - marquee.a[0])} height={Math.abs(marquee.b[1] - marquee.a[1])} fill="rgba(124,58,237,0.08)" stroke={COLOURS.draft} strokeWidth={1} vectorEffect="non-scaling-stroke" strokeDasharray="4 3" pointerEvents="none" />}
+          {addHover && <circle cx={addHover[0]} cy={addHover[1]} r={px(5)} fill={COLOURS.draft} opacity={0.7} pointerEvents="none" />}
           {hoverEdge && <line x1={hoverEdge[0][0]} y1={hoverEdge[0][1]} x2={hoverEdge[1][0]} y2={hoverEdge[1][1]} stroke={COLOURS.draft} strokeWidth={4} vectorEffect="non-scaling-stroke" strokeLinecap="round" opacity={0.6} pointerEvents="none" />}
           {draftShape}
           {poly.length > 0 && (
@@ -423,6 +486,12 @@ export default function DrawCanvas({ doc, page, selection, tool, options, dispat
         </g>
       </svg>
 
+      {activeChosen.length > 0 && (
+        <div className="absolute left-2 top-2 flex items-center gap-2 rounded-md bg-[var(--studio-surface)]/95 px-2 py-1 text-xs text-[var(--studio-ink-secondary)] shadow">
+          <span>{t('{n} points chosen', { n: activeChosen.length })}</span>
+          <button type="button" onClick={takeChosenAway} className="rounded border border-[var(--studio-border)] px-2 py-0.5 font-medium text-red-300 hover:bg-[var(--studio-surface-hover)]">{t('Take them away')}</button>
+        </div>
+      )}
       <div className="pointer-events-none absolute bottom-2 left-2 rounded-md bg-[var(--studio-surface)]/90 px-2 py-1 text-xs tabular-nums text-[var(--studio-ink-secondary)]">
         {cursor ? `${cursor[0].toFixed(1)}, ${cursor[1].toFixed(1)} mm` : '—'}
         {readout && <span className="ml-2 font-semibold text-[var(--studio-ink)]">{readout}</span>}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ArrowLeft, FileUp, Hash, Hexagon, MousePointer2, Pentagon, RectangleHorizontal, Redo2, Slash, Tag, Undo2 } from 'lucide-react';
+import { ArrowLeft, FileUp, Hash, Hexagon, MousePointer2, Pentagon, Plus, RectangleHorizontal, Redo2, Slash, Tag, Undo2 } from 'lucide-react';
 import {
   PAGE_PRESETS,
   addPage,
@@ -112,6 +112,7 @@ export default function DrawShell() {
     { id: 'rect', label: t('Rectangle'), tip: t('Drag from one corner to the opposite corner.'), icon: <RectangleHorizontal className="h-4 w-4" aria-hidden="true" /> },
     { id: 'ngon', label: t('Polygon'), tip: t('Drag from the middle out to the first corner. Many sides make a circle.'), icon: <Hexagon className="h-4 w-4" aria-hidden="true" /> },
     { id: 'fold', label: t('Fold line'), tip: t('Drag a fold line. It is drawn in the kind chosen below: mountain (red) or valley (blue).'), icon: <Slash className="h-4 w-4" aria-hidden="true" /> },
+    { id: 'addpoint', label: t('Add a point'), tip: t('Click a line to put a new point on it. A Bézier curve keeps its shape; a smooth curve becomes the Bézier curve it would be.'), icon: <Plus className="h-4 w-4" aria-hidden="true" /> },
     { id: 'tab', label: t('Glue tab'), tip: t('Click an edge of a closed outline to put a glue tab on it, with a fold line along the edge.'), icon: <Tag className="h-4 w-4" aria-hidden="true" /> },
     { id: 'number', label: t('Number'), tip: t('Click to put a number on a part. It counts up by one each time. It is drawn as lines, so it can be cut or drawn with a pen.'), icon: <Hash className="h-4 w-4" aria-hidden="true" /> },
   ];
@@ -292,7 +293,7 @@ export default function DrawShell() {
                 </button>
               )}
               {only && only.kind !== 'text' && (
-                <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Double-click the line to add a point there. Ctrl- or Cmd-click a point to take it away.')}</p>
+                <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Double-click the line, or use the Add a point tool, to put a point there. Ctrl- or Cmd-click a point to take it away. Shift-click points, or Shift-drag a rectangle, to choose several and press Delete.')}</p>
               )}
               {only?.handles && (
                 <p className="text-xs text-[var(--studio-ink-subtle)]">{t('Drag a round handle to bend the curve. Hold Alt to move one handle on its own. Double-click a point to make it a corner or to give it handles.')}</p>

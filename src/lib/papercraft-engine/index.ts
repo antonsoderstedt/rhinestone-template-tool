@@ -7,7 +7,7 @@ export { extrudeShape, latheShape, shapeOutline, simplifyOutline, rasterizeShape
 export { extrudeFaces, ringSweep, type LimbStep, type LimbOp, type RingSection, type RingSweep, type RingProfile } from './mesh/limbs';
 export {
   PART_KINDS, PART_OPENS, PART_LIMITS, PARAMETRIC_TEMPLATES, defaultPart, clampPart, partMesh, buildParts, findTemplate, templateValues,
-  partsOfRecipe, meshOfRecipe, recipeOfTemplate, longestSide, moveBuildPart, turnBuildPart, resizeBuildPart, partFaceCentre, partAxes, PART_FACES,
+  partsOfRecipe, meshOfRecipe, recipeOfTemplate, longestSide, moveBuildPart, turnBuildPart, resizeBuildPart, rotateBuildPart, rotationAxes, partFaceCentre, partAxes, PART_FACES,
   type BuildPart, type PartFace, type PartKind, type PartOpen, type ParametricTemplate, type TemplateParam, type ModelRecipe,
 } from './mesh/builder';
 export { simplifyMesh, type SimplifyOptions, type SimplifyResult } from './mesh/simplify';
@@ -37,6 +37,6 @@ export {
   DRAW_LIMITS, DEFAULT_TAB, TEXT_CHARACTERS, newDoc, addItem, removeItems, moveItems, setItemPoint, rotateItems, mirrorItems, scaleItems, duplicateItems, flipFolds,
   setText, addTab, cleanItem, hitTest, snapPoint, drawProblems, drawingOf, serializeDoc, parseDoc, rectanglePoints, regularPolygonPoints, signedArea,
   distanceToSegment, pointInPolygon, selfIntersects, boundsOf,
-  flattenItem, itemsOnPage, pageView, addPage, removePage, moveToPage, setSmooth, setBezier, setHandle, toggleCorner, hitHandle, autoHandles, isCurved, nearestOnItem, insertPoint, removePoint, drawingsOf,
+  flattenItem, itemsOnPage, pageView, addPage, removePage, moveToPage, setSmooth, setBezier, setHandle, toggleCorner, hitHandle, autoHandles, isCurved, nearestOnItem, insertPoint, removePoint, removePoints, pointsInRect, drawingsOf,
   type DrawDoc, type DrawItem, type BezierHandle, type HandleHit, type LinePoint, type NewDrawItem, type DrawKind, type DrawProblem, type DrawProblemCode, type DrawingOptions, type Hit, type SerializedDrawing, type TabOptions,
 } from './draw/doc';
